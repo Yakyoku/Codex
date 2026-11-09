@@ -1,0 +1,7 @@
+export const defaultBindings=['KeyW','KeyS','KeyA','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'];
+export function validBindings(value    )         {return Array.isArray(value)&&value.length===8&&value.every(v=>typeof v==='string'&&v.length>0)&&new Set(value).size===8?[...value]:[...defaultBindings];}
+export function rebind(keys         ,index       ,code       ){const next=validBindings(keys);if(!Number.isInteger(index)||index<0||index>7||!code||['Escape','Space','KeyR','Tab'].includes(code))return next;const old=next[index],other=next.indexOf(code);next[index]=code;if(other>=0&&other!==index)next[other]=old;return next;}
+export function progressText(g    ){const remaining=g.targets.filter((t    )=>t.active&&(g.bonus?t.id>=200:t.kind==='flower')).length;return `${g.bonus?'ボーナス残り':'花の残り'} ${remaining} / 連続 ×${g.combo+1}${g.powered?` / 強化 ${Math.ceil(g.powered/60)}秒`:''}${g.bonus?` / ${Math.ceil(g.bonusTicks/60)}秒`:''}`;}
+export function loadReducedMotion(){try{const v=localStorage.getItem('tg-reduced-motion');return v===null?!!globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches:v==='true';}catch{return false;}}
+export function saveReducedMotion(value        ){try{localStorage.setItem('tg-reduced-motion',String(value));}catch{}}
+export function downloadReplay(g    ){const url=URL.createObjectURL(new Blob([JSON.stringify(g.exportReplay())],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download=`twin-garden-stage-${g.stage}-replay.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
