@@ -1,0 +1,13 @@
+export const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+export const lerp=(a,b,t)=>a+(b-a)*t;
+export const I=()=>new Float32Array([1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]);
+export function mul(a,b){let o=new Float32Array(16);for(let c=0;c<4;c++)for(let r=0;r<4;r++)for(let k=0;k<4;k++)o[c*4+r]+=a[k*4+r]*b[c*4+k];return o;}
+export function transform(p=[0,0,0],s=[1,1,1],r=[0,0,0]){let [x,y,z]=r;let cx=Math.cos(x),sx=Math.sin(x),cy=Math.cos(y),sy=Math.sin(y),cz=Math.cos(z),sz=Math.sin(z);let rx=new Float32Array([1,0,0,0,0,cx,sx,0,0,-sx,cx,0,0,0,0,1]),ry=new Float32Array([cy,0,-sy,0,0,1,0,0,sy,0,cy,0,0,0,0,1]),rz=new Float32Array([cz,sz,0,0,-sz,cz,0,0,0,0,1,0,0,0,0,1]);let m=mul(mul(rz,ry),rx);for(let c=0;c<3;c++)for(let j=0;j<3;j++)m[c*4+j]*=s[c];m[12]=p[0];m[13]=p[1];m[14]=p[2];return m;}
+export function inverse(a){let out=I(),m=Array.from(a);for(let i=0;i<4;i++){let pivot=i;for(let j=i+1;j<4;j++)if(Math.abs(m[i*4+j])>Math.abs(m[i*4+pivot]))pivot=j;for(let c=0;c<4;c++){[m[c*4+i],m[c*4+pivot]]=[m[c*4+pivot],m[c*4+i]];[out[c*4+i],out[c*4+pivot]]=[out[c*4+pivot],out[c*4+i]];}let d=m[i*4+i];if(Math.abs(d)<1e-12)return I();for(let c=0;c<4;c++){m[c*4+i]/=d;out[c*4+i]/=d;}for(let j=0;j<4;j++)if(j!==i){let f=m[i*4+j];for(let c=0;c<4;c++){m[c*4+j]-=f*m[c*4+i];out[c*4+j]-=f*out[c*4+i];}}}return out;}
+export function perspective(fov,aspect,near,far){let f=1/Math.tan(fov/2),nf=1/(near-far);return new Float32Array([f/aspect,0,0,0,0,f,0,0,0,0,(far+near)*nf,-1,0,0,2*far*near*nf,0]);}
+export function ortho(l,r,b,t,n,f){return new Float32Array([2/(r-l),0,0,0,0,2/(t-b),0,0,0,0,-2/(f-n),0,-(r+l)/(r-l),-(t+b)/(t-b),-(f+n)/(f-n),1]);}
+export function lookAt(eye,target,up=[0,1,0]){const norm=a=>{let l=Math.hypot(...a)||1;return a.map(x=>x/l)},cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]],dot=(a,b)=>a.reduce((s,x,i)=>s+x*b[i],0);let z=norm(eye.map((v,i)=>v-target[i])),x=norm(cross(up,z)),y=cross(z,x);return new Float32Array([x[0],y[0],z[0],0,x[1],y[1],z[1],0,x[2],y[2],z[2],0,-dot(x,eye),-dot(y,eye),-dot(z,eye),1]);}
+export function point(m,p){return [m[0]*p[0]+m[4]*p[1]+m[8]*p[2]+m[12],m[1]*p[0]+m[5]*p[1]+m[9]*p[2]+m[13],m[2]*p[0]+m[6]*p[1]+m[10]*p[2]+m[14]];}
+export const distance=(a,b)=>Math.hypot(...a.map((v,i)=>v-b[i]));
+// Relative motion, swept sphere against an expanded vertical player capsule AABB.
+export function sweptHit(a,b,p,q,rx=.73,ry=1.05,rz=.73){let t0=0,t1=1;const ext=[rx,ry,rz];for(let i=0;i<3;i++){let s=a[i]-p[i],d=(b[i]-a[i])-(q[i]-p[i]);if(Math.abs(d)<1e-9){if(Math.abs(s)>ext[i])return false;}else{let u=(-ext[i]-s)/d,v=(ext[i]-s)/d;if(u>v)[u,v]=[v,u];t0=Math.max(t0,u);t1=Math.min(t1,v);if(t0>t1)return false;}}return true;}

@@ -1,0 +1,20 @@
+<!doctype html><html lang="ja"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover"><meta name="theme-color" content="#102832"><meta name="description" content="樽をかわし、工房の空へ。2DとWebXRの立体空間で遊ぶオリジナル登頂救出ゲーム。"><title>SKY RIVET — 空の工房救出隊</title><link rel="icon" href="./assets/icon.svg" type="image/svg+xml"><link rel="stylesheet" href="./style.css"></head><body>
+<canvas id="game" aria-label="SKY RIVET ゲーム画面"></canvas>
+<div class="grain" aria-hidden="true"></div>
+<header id="topbar"><a class="brand" href="#" id="brand">SR<span>SKY RIVET<small>空の工房救出隊</small></span></a><span class="edition">AN ORIGINAL ARCADE ADVENTURE <b>PC 4K EDITION · 04</b></span><button class="icon" id="soundToggle" aria-label="BGMを切り替え">♫</button></header>
+<main id="title" class="title">
+ <div class="eyebrow"><i></i> REACH FOR THE SKY</div><h1>SKY<br><span>RIVET</span><sup>✦</sup></h1><p class="subtitle">空の工房救出隊</p><p class="lead">樽をかわし、はしごを登り、<br>星灯りの工房で、大切な仲間を救い出せ。</p>
+ <div class="title-actions"><button id="start2d" class="primary">2Dで遊ぶ <span>→</span></button><button id="startVR" class="secondary">3D VRで遊ぶ <span>◉</span></button></div><p id="xrStatus" class="micro" role="status">VR対応を確認中…</p>
+ <div class="links"><button id="tutorial">あそび方から始める</button><button id="selectStage">ステージ選択</button><button id="settingsButton">設定</button></div>
+ <div class="platforms"><span>PC / iPad / Quest Browser</span><span>全4ステージ · 端末内セーブ</span></div>
+</main>
+<aside id="stageBadge" class="stage-badge"><span>01 / THE IRONWORKS</span><strong>鉄骨の夕暮れ</strong><small>CRAFTED IN 3D · PLAY IN 2D OR VR</small></aside>
+<div id="hud" hidden><div class="hud-stage"><small id="hudChapter">STAGE 01</small><strong id="hudStage"></strong></div><div class="stat"><small>SCORE</small><b id="score">000000</b></div><div class="stat"><small>BEST</small><b id="best">000000</b></div><div class="stat"><small>TIME</small><b id="time">200</b></div><div class="stat"><small>LIFE</small><b id="lives">♥ ♥ ♥</b></div><button id="pauseButton" class="icon" aria-label="ポーズ">Ⅱ</button></div>
+<div id="hazardStatus" class="hazard-status" role="status" aria-live="polite" hidden></div>
+<div id="tip" hidden><span id="tipText"></span><span id="power"></span></div>
+<div id="controls" hidden><div class="dpad"><button data-control="up" aria-label="はしごを上る">▲</button><button data-control="left" aria-label="左へ移動">◀</button><button data-control="down" aria-label="はしごを下りる">▼</button><button data-control="right" aria-label="右へ移動">▶</button></div><div class="actionpad"><button data-control="action" class="action" aria-label="アクション">E<small>道具 / 解除</small></button><button data-control="jump" class="jump" aria-label="ジャンプ">↑<small>ジャンプ</small></button></div></div>
+<footer id="footer"><span><kbd>← →</kbd> 移動 <kbd>↑ ↓</kbd> はしご <kbd>SPACE</kbd> ジャンプ <kbd>E</kbd> 道具 <kbd>ESC</kbd> ポーズ</span><button id="help">操作・対応環境</button><span class="local">LOCAL ASSETS / ORIGINAL SCORE</span></footer>
+<div id="modal" class="modal" hidden><section class="sheet" role="dialog" aria-modal="true" aria-labelledby="modalTitle" tabindex="-1"><div class="sheet-head"><span class="eyebrow" id="modalEyebrow">SKY RIVET</span><button id="closeModal" class="icon" aria-label="閉じる">×</button></div><h2 id="modalTitle"></h2><div id="modalBody"></div></section></div>
+<div id="toast" role="status" hidden></div>
+<div id="fatal" hidden role="alert"></div>
+<script type="module" src="./src/main.js"></script></body></html>

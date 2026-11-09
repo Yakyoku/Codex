@@ -1,0 +1,7 @@
+/*
+  Permissions-Policy: xr-spatial-tracking=(self), microphone=(), camera=()
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: same-origin
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' ws://localhost:*; object-src 'none'; base-uri 'self'; frame-ancestors 'self'
+/assets/*
+  Cache-Control: public, max-age=3600
