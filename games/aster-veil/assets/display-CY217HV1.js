@@ -1,0 +1,1 @@
+function x(s,n,e,t,a=1.5){const c=Math.max(1,s),h=Math.max(1,n),o=Number.isFinite(e)&&e>0?e:1,i=t==="pc"?4:t==="quest"?1:t==="tablet"?1.5:a,m=t==="quest"?1920*1080:t==="tablet"?2560*1440:3840*2160;return Math.min(o,i,Math.sqrt(m/(c*h)))}export{x as d};
