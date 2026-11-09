@@ -1,0 +1,74 @@
+name: Netlify deploy (games)
+
+# games/<フォルダ>/ に変更が push されたら、そのゲームだけを Netlify に公開する。
+# 手動で動かすときは Actions → この workflow → Run workflow（game に フォルダ名 か all）。
+on:
+  push:
+    branches: [main]
+    paths: ['games/**']
+  workflow_dispatch:
+    inputs:
+      game:
+        description: 'games/ の下のフォルダ名（all で全部）'
+        required: true
+        default: all
+
+concurrency:
+  group: netlify-deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 公開するゲームを決める
+        env:
+          EVENT: ${{ github.event_name }}
+          INPUT_GAME: ${{ inputs.game }}
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          all() { find games -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | sort; }
+          if [ "$EVENT" = "workflow_dispatch" ]; then
+            if [ "$INPUT_GAME" = "all" ]; then all > list.txt; else printf '%s\n' "$INPUT_GAME" > list.txt; fi
+          elif [ -z "$BEFORE" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ] || ! git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
+            all > list.txt
+          else
+            git diff --name-only "$BEFORE" "$AFTER" -- games | awk -F/ 'NF>=3{print $2}' | sort -u > list.txt
+          fi
+          : > targets.txt
+          while IFS= read -r g; do
+            [ -n "$g" ] && [ -f "games/$g/index.html" ] && echo "$g" >> targets.txt || true
+          done < list.txt
+          echo "対象:"; cat targets.txt
+          {
+            echo "## Netlify 公開結果"
+            echo ""
+            echo "| ゲーム | URL | HTTP | デプロイID |"
+            echo "|---|---|---|---|"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Netlify に公開
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+        run: |
+          set -uo pipefail
+          FAIL=0
+          while IFS= read -r g; do
+            echo "::group::$g"
+            if ! bash scripts/deploy-game.sh "games/$g"; then
+              FAIL=1
+              echo "| $g | 失敗（ログを見てください） | - | - |" >> "$GITHUB_STEP_SUMMARY"
+            fi
+            echo "::endgroup::"
+          done < targets.txt
+          exit $FAIL
