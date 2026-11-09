@@ -25,11 +25,25 @@ games/
 4. `gh run view <ID> --log | grep DEPLOYED` で公開URLを読む（`DEPLOYED <フォルダ> <URL> http=200 ...`）
 5. `curl -sI <URL>` で 200 を確認して、URL を報告する（URL は飾らず1行に単独で）
 
+### gh run が権限エラー（403）で使えないとき
+Actions を見られなくても、公開できたかは次の方法で確かめられる（公開には 1〜3 分かかる）。
+```
+URL=https://<name>.netlify.app/
+LOCAL=$(sha256sum games/<フォルダ>/index.html | cut -d' ' -f1)
+for i in $(seq 1 36); do
+  REMOTE=$(curl -fsS "$URL" | sha256sum | cut -d' ' -f1)
+  [ "$LOCAL" = "$REMOTE" ] && echo "公開を確認: $URL" && break
+  sleep 10
+done
+```
+6分たっても一致しなければ、持ち主に https://github.com/Yakyoku/codex/actions の確認を頼む。
+
 ## 失敗したとき
 | 症状 | 原因と対処 |
 |---|---|
 | `NETLIFY_AUTH_TOKEN が登録されていません` | リポジトリの Secrets にトークンがない。持ち主（藤田さん）に登録を頼む |
 | `index.html がありません` | index.html をフォルダの一番上に移す |
 | `サイト … を作れませんでした（HTTP 422）` | サイト名が使われている。`netlify-site.json` の name を変える |
-| push が拒否される | `git pull --rebase origin main` してからもう一度 |
+| push が拒否される（競合） | `git pull --rebase origin main` してからもう一度 |
+| push が 403（Permission denied） | Codex の GitHub App（トークン先頭 `ghu_`）に、このリポジトリへのアクセスがない。持ち主に https://github.com/settings/installations で App の Repository access に Yakyoku/Codex を追加してもらう |
 | 手動で公開し直したい | `gh workflow run netlify-deploy.yml -f game=<フォルダ>` |
