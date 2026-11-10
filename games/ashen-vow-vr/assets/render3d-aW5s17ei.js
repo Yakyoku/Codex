@@ -1,4 +1,4 @@
-import{e as Zn,r as jl,a as Ql,t as tc,w as ec,b as nc}from"./input-B74gGNw1.js";function ic(i,t,e,n=0,r=!1){const s=Math.max(1,Number.isFinite(i)?i:960),a=Math.max(1,Number.isFinite(t)?t:540),o=Math.min(s/16,a/9),c=o*16,l=o*9,h=n===1?2560:n===2?3840:r?2560:3840,u=Math.max(1,Math.min(4,Number.isFinite(e)?e:1)),d=Math.max(16,Math.min(h,Math.round(c*u/16)*16));return{cssWidth:c,cssHeight:l,width:d,height:d*9/16,pixelRatio:d/c}}function rc(i,t,e){return!e&&(i===2||i===0&&!t)}/**
+import{e as Zn,r as jl,a as Ql,t as tc,w as ec,b as nc}from"./input-BMbhDAs4.js";function ic(i,t,e,n=0,r=!1){const s=Math.max(1,Number.isFinite(i)?i:960),a=Math.max(1,Number.isFinite(t)?t:540),o=Math.min(s/16,a/9),c=o*16,l=o*9,h=n===1?2560:n===2?3840:r?2560:3840,u=Math.max(1,Math.min(4,Number.isFinite(e)?e:1)),d=Math.max(16,Math.min(h,Math.round(c*u/16)*16));return{cssWidth:c,cssHeight:l,width:d,height:d*9/16,pixelRatio:d/c}}function rc(i,t,e){return!e&&(i===2||i===0&&!t)}/**
  * @license
  * Copyright 2010-2025 Three.js Authors
  * SPDX-License-Identifier: MIT
