@@ -1,0 +1,2515 @@
+{
+  "report_id": "skygrip-r011-verification-closeout-20261110",
+  "application_release": "skygrip-20261110-r011",
+  "recorded_at_utc": "2026-11-10T11:49:29.274281+00:00",
+  "source_input_sha256": "943d60fbe98ee39ed3f688e0d235e706560241c3f399be575591b160f50343da",
+  "original_zip_sha256": "56ad04391a674fbabab4acd99f378b1bcb1ed7046df03ceb59d5e7348c159565",
+  "original_zip_bytes": 166582,
+  "work_status": "closed_under_user_requested_limit",
+  "application_fully_accepted": false,
+  "regression": {
+    "passed": 72,
+    "failed": 0,
+    "environment": "Node 24.22.1 with DOM/WebGL/Audio boundaries mocked; not real browser/XR"
+  },
+  "reproducible_build": {
+    "application_release": "skygrip-20261110-r011",
+    "command": "npm run build -- --outDir verification-closeout-20261110/rebuilt",
+    "files": [
+      {
+        "path": "_headers",
+        "sha256": "3afc60bf94f9625b555665e6f02e8b7d83e63569230400b5680010973bf897e5",
+        "matches": true
+      },
+      {
+        "path": "assets/index-BTwkDBX6.js",
+        "sha256": "985842b8f770d0396a85b5c202536d2ac54f83a1e814039aef463522c5e1b2ab",
+        "matches": true
+      },
+      {
+        "path": "assets/index-C5UuSP4x.css",
+        "sha256": "c8df94e3129613248d6103eb2a77d1c9d6511d26883f9baeedd250ab21418531",
+        "matches": true
+      },
+      {
+        "path": "assets/main-DYW2bFu_.js",
+        "sha256": "f2c84370420eef7f93d9e4135e2cef4ae976060239de3435900c95f489eaed11",
+        "matches": true
+      },
+      {
+        "path": "index.html",
+        "sha256": "e979ed83bc33e387fdcc17c2e0db75015f4cbb50b269796a10b8dd5c32c96add",
+        "matches": true
+      }
+    ],
+    "release_info": "Immutable metadata from original fixed build retained, not regenerated"
+  },
+  "save_isolation": "0 get/set/remove/clear calls through boot, settings, all roofs, falls, retry; sentinel saves unchanged in regression",
+  "gamepad": "Standard-pad independent/simultaneous sticks, pause, disconnect/reconnect pass in mocked input; physical controller unverified",
+  "cpu_benchmarks": [
+    {
+      "revision": "skygrip-20261110-r011",
+      "environment": {
+        "node": "v24.22.1",
+        "platform": "linux",
+        "arch": "x64",
+        "cpu": "INTEL(R) XEON(R) PLATINUM 8573C",
+        "logicalCpus": 5,
+        "gpu": "NOT USED; mock WebGL renderer",
+        "audio": "mock",
+        "display": "mock DOM 1280x720 pixelRatio 1",
+        "gc": "explicit Node --expose-gc"
+      },
+      "measurement": "CPU actual app integration only. Synthetic frame timestamps, NOT browser animation intervals/FPS/GPU time.",
+      "scenarios": [
+        {
+          "name": "normal",
+          "stage": 1,
+          "quality": "quest",
+          "startedAtUTC": "2026-11-10T11:40:52.740Z",
+          "endedAtUTC": "2026-11-10T11:40:53.822Z",
+          "wallDurationMs": 1073.608085,
+          "simulatedDurationMs": 60000,
+          "frameStepMs": 16.666666666666668,
+          "cpuIntegrationMs": {
+            "samples": 3600,
+            "p50": 0.23091299999987314,
+            "p95": 0.596215999999913,
+            "p99": 1.1045930000000226,
+            "max": 3.6455869999999777,
+            "over16_67ms": 0,
+            "over50ms": 0
+          },
+          "memoryBefore": {
+            "rss": 169029632,
+            "heapTotal": 50941952,
+            "heapUsed": 12964952,
+            "external": 78322494,
+            "arrayBuffers": 75888000
+          },
+          "memoryAfter": {
+            "rss": 182730752,
+            "heapTotal": 49106944,
+            "heapUsed": 13308672,
+            "external": 72106033,
+            "arrayBuffers": 69671499
+          },
+          "heapDeltaAfterGC": 343720,
+          "resourcesBefore": {
+            "objects": 912,
+            "geometries": 238,
+            "materials": 70,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 45
+          },
+          "resourcesAfter": {
+            "objects": 912,
+            "geometries": 238,
+            "materials": 70,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 45
+          },
+          "endPhase": "clear"
+        },
+        {
+          "name": "high-load",
+          "stage": 4,
+          "quality": "high",
+          "startedAtUTC": "2026-11-10T11:40:55.011Z",
+          "endedAtUTC": "2026-11-10T11:40:57.464Z",
+          "wallDurationMs": 2445.0905690000004,
+          "simulatedDurationMs": 60000,
+          "frameStepMs": 16.666666666666668,
+          "cpuIntegrationMs": {
+            "samples": 3600,
+            "p50": 0.6061030000000756,
+            "p95": 1.1077230000000782,
+            "p99": 1.6261969999995927,
+            "max": 4.7394019999997,
+            "over16_67ms": 0,
+            "over50ms": 0
+          },
+          "memoryBefore": {
+            "rss": 265842688,
+            "heapTotal": 87904256,
+            "heapUsed": 13102536,
+            "external": 140475379,
+            "arrayBuffers": 121006979
+          },
+          "memoryAfter": {
+            "rss": 271982592,
+            "heapTotal": 87117824,
+            "heapUsed": 13389568,
+            "external": 72246011,
+            "arrayBuffers": 69815051
+          },
+          "heapDeltaAfterGC": 287032,
+          "resourcesBefore": {
+            "objects": 1196,
+            "geometries": 246,
+            "materials": 78,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 45
+          },
+          "resourcesAfter": {
+            "objects": 1196,
+            "geometries": 246,
+            "materials": 78,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 45
+          },
+          "endPhase": "playing"
+        },
+        {
+          "name": "paused-high-load",
+          "stage": 4,
+          "quality": "high",
+          "startedAtUTC": "2026-11-10T11:40:58.565Z",
+          "endedAtUTC": "2026-11-10T11:40:59.817Z",
+          "wallDurationMs": 1237.9016330000004,
+          "simulatedDurationMs": 60000,
+          "frameStepMs": 16.666666666666668,
+          "cpuIntegrationMs": {
+            "samples": 3600,
+            "p50": 0.2857979999998861,
+            "p95": 0.6172110000006796,
+            "p99": 0.9496989999997822,
+            "max": 4.726560000000063,
+            "over16_67ms": 0,
+            "over50ms": 0
+          },
+          "memoryBefore": {
+            "rss": 310300672,
+            "heapTotal": 87265280,
+            "heapUsed": 14107216,
+            "external": 145913035,
+            "arrayBuffers": 112226219
+          },
+          "memoryAfter": {
+            "rss": 309977088,
+            "heapTotal": 84119552,
+            "heapUsed": 14267808,
+            "external": 72246011,
+            "arrayBuffers": 69815051
+          },
+          "heapDeltaAfterGC": 160592,
+          "resourcesBefore": {
+            "objects": 1196,
+            "geometries": 246,
+            "materials": 78,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          "resourcesAfter": {
+            "objects": 1196,
+            "geometries": 246,
+            "materials": 78,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          "endPhase": "paused"
+        }
+      ],
+      "repeatedStarts": {
+        "iterations": 30,
+        "cpuStartMs": {
+          "samples": 30,
+          "p50": 8.568895000000339,
+          "p95": 52.24904999999853,
+          "p99": 59.42768299999989,
+          "max": 59.42768299999989,
+          "over16_67ms": 15,
+          "over50ms": 2
+        },
+        "resourcesBefore": {
+          "objects": 1196,
+          "geometries": 246,
+          "materials": 78,
+          "eventListeners": 33,
+          "audioContexts": 1,
+          "audioNodes": 43
+        },
+        "resourcesAfter": {
+          "objects": 1196,
+          "geometries": 246,
+          "materials": 78,
+          "eventListeners": 33,
+          "audioContexts": 1,
+          "audioNodes": 43
+        },
+        "snapshots": [
+          {
+            "iteration": 0,
+            "stage": 0,
+            "objects": 503,
+            "geometries": 238,
+            "materials": 70,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 1,
+            "stage": 4,
+            "objects": 1196,
+            "geometries": 246,
+            "materials": 78,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 2,
+            "stage": 0,
+            "objects": 503,
+            "geometries": 238,
+            "materials": 70,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 3,
+            "stage": 4,
+            "objects": 1196,
+            "geometries": 246,
+            "materials": 78,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 4,
+            "stage": 0,
+            "objects": 503,
+            "geometries": 238,
+            "materials": 70,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 5,
+            "stage": 4,
+            "objects": 1196,
+            "geometries": 246,
+            "materials": 78,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 6,
+            "stage": 0,
+            "objects": 503,
+            "geometries": 238,
+            "materials": 70,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 7,
+            "stage": 4,
+            "objects": 1196,
+            "geometries": 246,
+            "materials": 78,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 8,
+            "stage": 0,
+            "objects": 503,
+            "geometries": 238,
+            "materials": 70,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 9,
+            "stage": 4,
+            "objects": 1196,
+            "geometries": 246,
+            "materials": 78,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 10,
+            "stage": 0,
+            "objects": 503,
+            "geometries": 238,
+            "materials": 70,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 11,
+            "stage": 4,
+            "objects": 1196,
+            "geometries": 246,
+            "materials": 78,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 12,
+            "stage": 0,
+            "objects": 503,
+            "geometries": 238,
+            "materials": 70,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 13,
+            "stage": 4,
+            "objects": 1196,
+            "geometries": 246,
+            "materials": 78,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 14,
+            "stage": 0,
+            "objects": 503,
+            "geometries": 238,
+            "materials": 70,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 15,
+            "stage": 4,
+            "objects": 1196,
+            "geometries": 246,
+            "materials": 78,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 16,
+            "stage": 0,
+            "objects": 503,
+            "geometries": 238,
+            "materials": 70,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 17,
+            "stage": 4,
+            "objects": 1196,
+            "geometries": 246,
+            "materials": 78,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 18,
+            "stage": 0,
+            "objects": 503,
+            "geometries": 238,
+            "materials": 70,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 19,
+            "stage": 4,
+            "objects": 1196,
+            "geometries": 246,
+            "materials": 78,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 20,
+            "stage": 0,
+            "objects": 503,
+            "geometries": 238,
+            "materials": 70,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 21,
+            "stage": 4,
+            "objects": 1196,
+            "geometries": 246,
+            "materials": 78,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 22,
+            "stage": 0,
+            "objects": 503,
+            "geometries": 238,
+            "materials": 70,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 23,
+            "stage": 4,
+            "objects": 1196,
+            "geometries": 246,
+            "materials": 78,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 24,
+            "stage": 0,
+            "objects": 503,
+            "geometries": 238,
+            "materials": 70,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 25,
+            "stage": 4,
+            "objects": 1196,
+            "geometries": 246,
+            "materials": 78,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 26,
+            "stage": 0,
+            "objects": 503,
+            "geometries": 238,
+            "materials": 70,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 27,
+            "stage": 4,
+            "objects": 1196,
+            "geometries": 246,
+            "materials": 78,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 28,
+            "stage": 0,
+            "objects": 503,
+            "geometries": 238,
+            "materials": 70,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 29,
+            "stage": 4,
+            "objects": 1196,
+            "geometries": 246,
+            "materials": 78,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          }
+        ],
+        "heapDeltaAfterGC": 565616,
+        "memoryBefore": {
+          "rss": 311828480,
+          "heapTotal": 155684864,
+          "heapUsed": 18976600,
+          "external": 145535275,
+          "arrayBuffers": 138896779
+        },
+        "memoryAfter": {
+          "rss": 399384576,
+          "heapTotal": 167219200,
+          "heapUsed": 19542216,
+          "external": 141679667,
+          "arrayBuffers": 138737931
+        }
+      },
+      "browserFPS": null,
+      "questFPS": null,
+      "rtx4060FPS": null
+    },
+    {
+      "revision": "skygrip-20261110-r011",
+      "environment": {
+        "node": "v24.22.1",
+        "platform": "linux",
+        "arch": "x64",
+        "cpu": "INTEL(R) XEON(R) PLATINUM 8573C",
+        "logicalCpus": 5,
+        "gpu": "NOT USED; mock WebGL renderer",
+        "audio": "mock",
+        "display": "mock DOM 1280x720 pixelRatio 1",
+        "gc": "explicit Node --expose-gc"
+      },
+      "measurement": "CPU actual app integration only. Synthetic frame timestamps, NOT browser animation intervals/FPS/GPU time.",
+      "scenarios": [
+        {
+          "name": "normal",
+          "stage": 1,
+          "quality": "quest",
+          "startedAtUTC": "2026-11-10T11:41:03.600Z",
+          "endedAtUTC": "2026-11-10T11:41:04.751Z",
+          "wallDurationMs": 1142.01468,
+          "simulatedDurationMs": 60000,
+          "frameStepMs": 16.666666666666668,
+          "cpuIntegrationMs": {
+            "samples": 3600,
+            "p50": 0.24044000000003507,
+            "p95": 0.6532469999999648,
+            "p99": 1.2427460000001247,
+            "max": 3.2625410000000556,
+            "over16_67ms": 0,
+            "over50ms": 0
+          },
+          "memoryBefore": {
+            "rss": 163405824,
+            "heapTotal": 52514816,
+            "heapUsed": 12966408,
+            "external": 78460255,
+            "arrayBuffers": 70855884
+          },
+          "memoryAfter": {
+            "rss": 180051968,
+            "heapTotal": 50941952,
+            "heapUsed": 13310376,
+            "external": 72243794,
+            "arrayBuffers": 69874796
+          },
+          "heapDeltaAfterGC": 343968,
+          "resourcesBefore": {
+            "objects": 912,
+            "geometries": 238,
+            "materials": 70,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 45
+          },
+          "resourcesAfter": {
+            "objects": 912,
+            "geometries": 238,
+            "materials": 70,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 45
+          },
+          "endPhase": "clear"
+        },
+        {
+          "name": "high-load",
+          "stage": 4,
+          "quality": "high",
+          "startedAtUTC": "2026-11-10T11:41:05.958Z",
+          "endedAtUTC": "2026-11-10T11:41:08.504Z",
+          "wallDurationMs": 2537.1009990000002,
+          "simulatedDurationMs": 60000,
+          "frameStepMs": 16.666666666666668,
+          "cpuIntegrationMs": {
+            "samples": 3600,
+            "p50": 0.6072260000000824,
+            "p95": 1.2571600000001126,
+            "p99": 1.9129430000002685,
+            "max": 4.327277999999751,
+            "over16_67ms": 0,
+            "over50ms": 0
+          },
+          "memoryBefore": {
+            "rss": 251404288,
+            "heapTotal": 88690688,
+            "heapUsed": 13088576,
+            "external": 140613140,
+            "arrayBuffers": 91379524
+          },
+          "memoryAfter": {
+            "rss": 260034560,
+            "heapTotal": 86593536,
+            "heapUsed": 13375664,
+            "external": 72383772,
+            "arrayBuffers": 70018348
+          },
+          "heapDeltaAfterGC": 287088,
+          "resourcesBefore": {
+            "objects": 1196,
+            "geometries": 246,
+            "materials": 78,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 45
+          },
+          "resourcesAfter": {
+            "objects": 1196,
+            "geometries": 246,
+            "materials": 78,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 45
+          },
+          "endPhase": "playing"
+        },
+        {
+          "name": "paused-high-load",
+          "stage": 4,
+          "quality": "high",
+          "startedAtUTC": "2026-11-10T11:41:09.543Z",
+          "endedAtUTC": "2026-11-10T11:41:10.788Z",
+          "wallDurationMs": 1234.8830020000005,
+          "simulatedDurationMs": 60000,
+          "frameStepMs": 16.666666666666668,
+          "cpuIntegrationMs": {
+            "samples": 3600,
+            "p50": 0.28347300000132236,
+            "p95": 0.6218840000001364,
+            "p99": 1.0043539999996938,
+            "max": 3.344207999999526,
+            "over16_67ms": 0,
+            "over50ms": 0
+          },
+          "memoryBefore": {
+            "rss": 310755328,
+            "heapTotal": 87789568,
+            "heapUsed": 14105424,
+            "external": 146050796,
+            "arrayBuffers": 111820124
+          },
+          "memoryAfter": {
+            "rss": 310190080,
+            "heapTotal": 83857408,
+            "heapUsed": 14266208,
+            "external": 72383772,
+            "arrayBuffers": 70018348
+          },
+          "heapDeltaAfterGC": 160784,
+          "resourcesBefore": {
+            "objects": 1196,
+            "geometries": 246,
+            "materials": 78,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          "resourcesAfter": {
+            "objects": 1196,
+            "geometries": 246,
+            "materials": 78,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          "endPhase": "paused"
+        }
+      ],
+      "repeatedStarts": {
+        "iterations": 30,
+        "cpuStartMs": {
+          "samples": 30,
+          "p50": 11.280688999999256,
+          "p95": 50.663526000000275,
+          "p99": 52.0013629999994,
+          "max": 52.0013629999994,
+          "over16_67ms": 15,
+          "over50ms": 2
+        },
+        "resourcesBefore": {
+          "objects": 1196,
+          "geometries": 246,
+          "materials": 78,
+          "eventListeners": 33,
+          "audioContexts": 1,
+          "audioNodes": 43
+        },
+        "resourcesAfter": {
+          "objects": 1196,
+          "geometries": 246,
+          "materials": 78,
+          "eventListeners": 33,
+          "audioContexts": 1,
+          "audioNodes": 43
+        },
+        "snapshots": [
+          {
+            "iteration": 0,
+            "stage": 0,
+            "objects": 503,
+            "geometries": 238,
+            "materials": 70,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 1,
+            "stage": 4,
+            "objects": 1196,
+            "geometries": 246,
+            "materials": 78,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 2,
+            "stage": 0,
+            "objects": 503,
+            "geometries": 238,
+            "materials": 70,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 3,
+            "stage": 4,
+            "objects": 1196,
+            "geometries": 246,
+            "materials": 78,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 4,
+            "stage": 0,
+            "objects": 503,
+            "geometries": 238,
+            "materials": 70,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 5,
+            "stage": 4,
+            "objects": 1196,
+            "geometries": 246,
+            "materials": 78,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 6,
+            "stage": 0,
+            "objects": 503,
+            "geometries": 238,
+            "materials": 70,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 7,
+            "stage": 4,
+            "objects": 1196,
+            "geometries": 246,
+            "materials": 78,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 8,
+            "stage": 0,
+            "objects": 503,
+            "geometries": 238,
+            "materials": 70,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 9,
+            "stage": 4,
+            "objects": 1196,
+            "geometries": 246,
+            "materials": 78,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 10,
+            "stage": 0,
+            "objects": 503,
+            "geometries": 238,
+            "materials": 70,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 11,
+            "stage": 4,
+            "objects": 1196,
+            "geometries": 246,
+            "materials": 78,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 12,
+            "stage": 0,
+            "objects": 503,
+            "geometries": 238,
+            "materials": 70,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 13,
+            "stage": 4,
+            "objects": 1196,
+            "geometries": 246,
+            "materials": 78,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 14,
+            "stage": 0,
+            "objects": 503,
+            "geometries": 238,
+            "materials": 70,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 15,
+            "stage": 4,
+            "objects": 1196,
+            "geometries": 246,
+            "materials": 78,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 16,
+            "stage": 0,
+            "objects": 503,
+            "geometries": 238,
+            "materials": 70,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 17,
+            "stage": 4,
+            "objects": 1196,
+            "geometries": 246,
+            "materials": 78,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 18,
+            "stage": 0,
+            "objects": 503,
+            "geometries": 238,
+            "materials": 70,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 19,
+            "stage": 4,
+            "objects": 1196,
+            "geometries": 246,
+            "materials": 78,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 20,
+            "stage": 0,
+            "objects": 503,
+            "geometries": 238,
+            "materials": 70,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 21,
+            "stage": 4,
+            "objects": 1196,
+            "geometries": 246,
+            "materials": 78,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 22,
+            "stage": 0,
+            "objects": 503,
+            "geometries": 238,
+            "materials": 70,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 23,
+            "stage": 4,
+            "objects": 1196,
+            "geometries": 246,
+            "materials": 78,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 24,
+            "stage": 0,
+            "objects": 503,
+            "geometries": 238,
+            "materials": 70,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 25,
+            "stage": 4,
+            "objects": 1196,
+            "geometries": 246,
+            "materials": 78,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 26,
+            "stage": 0,
+            "objects": 503,
+            "geometries": 238,
+            "materials": 70,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 27,
+            "stage": 4,
+            "objects": 1196,
+            "geometries": 246,
+            "materials": 78,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 28,
+            "stage": 0,
+            "objects": 503,
+            "geometries": 238,
+            "materials": 70,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 29,
+            "stage": 4,
+            "objects": 1196,
+            "geometries": 246,
+            "materials": 78,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          }
+        ],
+        "heapDeltaAfterGC": 564144,
+        "memoryBefore": {
+          "rss": 316497920,
+          "heapTotal": 155422720,
+          "heapUsed": 18976584,
+          "external": 145673036,
+          "arrayBuffers": 139043604
+        },
+        "memoryAfter": {
+          "rss": 402481152,
+          "heapTotal": 165646336,
+          "heapUsed": 19540728,
+          "external": 141796588,
+          "arrayBuffers": 138937028
+        }
+      },
+      "browserFPS": null,
+      "questFPS": null,
+      "rtx4060FPS": null
+    },
+    {
+      "revision": "skygrip-20261110-r011",
+      "environment": {
+        "node": "v24.22.1",
+        "platform": "linux",
+        "arch": "x64",
+        "cpu": "INTEL(R) XEON(R) PLATINUM 8573C",
+        "logicalCpus": 5,
+        "gpu": "NOT USED; mock WebGL renderer",
+        "audio": "mock",
+        "display": "mock DOM 1280x720 pixelRatio 1",
+        "gc": "explicit Node --expose-gc"
+      },
+      "measurement": "CPU actual app integration only. Synthetic frame timestamps, NOT browser animation intervals/FPS/GPU time.",
+      "scenarios": [
+        {
+          "name": "normal",
+          "stage": 1,
+          "quality": "quest",
+          "startedAtUTC": "2026-11-10T11:41:15.016Z",
+          "endedAtUTC": "2026-11-10T11:41:16.175Z",
+          "wallDurationMs": 1148.775986,
+          "simulatedDurationMs": 60000,
+          "frameStepMs": 16.666666666666668,
+          "cpuIntegrationMs": {
+            "samples": 3600,
+            "p50": 0.2569199999998091,
+            "p95": 0.6105840000000171,
+            "p99": 0.9331670000001395,
+            "max": 3.7659980000000814,
+            "over16_67ms": 0,
+            "over50ms": 0
+          },
+          "memoryBefore": {
+            "rss": 169758720,
+            "heapTotal": 52776960,
+            "heapUsed": 12961928,
+            "external": 78069727,
+            "arrayBuffers": 69733388
+          },
+          "memoryAfter": {
+            "rss": 185356288,
+            "heapTotal": 48582656,
+            "heapUsed": 13304592,
+            "external": 71853266,
+            "arrayBuffers": 69484268
+          },
+          "heapDeltaAfterGC": 342664,
+          "resourcesBefore": {
+            "objects": 912,
+            "geometries": 238,
+            "materials": 70,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 45
+          },
+          "resourcesAfter": {
+            "objects": 912,
+            "geometries": 238,
+            "materials": 70,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 45
+          },
+          "endPhase": "clear"
+        },
+        {
+          "name": "high-load",
+          "stage": 4,
+          "quality": "high",
+          "startedAtUTC": "2026-11-10T11:41:17.489Z",
+          "endedAtUTC": "2026-11-10T11:41:19.795Z",
+          "wallDurationMs": 2295.727289,
+          "simulatedDurationMs": 60000,
+          "frameStepMs": 16.666666666666668,
+          "cpuIntegrationMs": {
+            "samples": 3600,
+            "p50": 0.5542269999996279,
+            "p95": 1.0999300000003132,
+            "p99": 1.7800500000003012,
+            "max": 2.9882809999999154,
+            "over16_67ms": 0,
+            "over50ms": 0
+          },
+          "memoryBefore": {
+            "rss": 271978496,
+            "heapTotal": 87379968,
+            "heapUsed": 13089816,
+            "external": 140222612,
+            "arrayBuffers": 120819748
+          },
+          "memoryAfter": {
+            "rss": 273268736,
+            "heapTotal": 86069248,
+            "heapUsed": 13387728,
+            "external": 71993244,
+            "arrayBuffers": 69627820
+          },
+          "heapDeltaAfterGC": 297912,
+          "resourcesBefore": {
+            "objects": 1196,
+            "geometries": 246,
+            "materials": 78,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 45
+          },
+          "resourcesAfter": {
+            "objects": 1196,
+            "geometries": 246,
+            "materials": 78,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 45
+          },
+          "endPhase": "playing"
+        },
+        {
+          "name": "paused-high-load",
+          "stage": 4,
+          "quality": "high",
+          "startedAtUTC": "2026-11-10T11:41:21.014Z",
+          "endedAtUTC": "2026-11-10T11:41:22.300Z",
+          "wallDurationMs": 1278.0789400000003,
+          "simulatedDurationMs": 60000,
+          "frameStepMs": 16.666666666666668,
+          "cpuIntegrationMs": {
+            "samples": 3600,
+            "p50": 0.29567599999973027,
+            "p95": 0.6497909999998228,
+            "p99": 0.9656349999995655,
+            "max": 3.4109910000006494,
+            "over16_67ms": 0,
+            "over50ms": 0
+          },
+          "memoryBefore": {
+            "rss": 311603200,
+            "heapTotal": 86740992,
+            "heapUsed": 14118096,
+            "external": 145660268,
+            "arrayBuffers": 70786644
+          },
+          "memoryAfter": {
+            "rss": 311603200,
+            "heapTotal": 85954560,
+            "heapUsed": 14279928,
+            "external": 71993244,
+            "arrayBuffers": 69627820
+          },
+          "heapDeltaAfterGC": 161832,
+          "resourcesBefore": {
+            "objects": 1196,
+            "geometries": 246,
+            "materials": 78,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          "resourcesAfter": {
+            "objects": 1196,
+            "geometries": 246,
+            "materials": 78,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          "endPhase": "paused"
+        }
+      ],
+      "repeatedStarts": {
+        "iterations": 30,
+        "cpuStartMs": {
+          "samples": 30,
+          "p50": 26.017132999999376,
+          "p95": 87.15556000000106,
+          "p99": 94.16416500000014,
+          "max": 94.16416500000014,
+          "over16_67ms": 16,
+          "over50ms": 7
+        },
+        "resourcesBefore": {
+          "objects": 1196,
+          "geometries": 246,
+          "materials": 78,
+          "eventListeners": 33,
+          "audioContexts": 1,
+          "audioNodes": 43
+        },
+        "resourcesAfter": {
+          "objects": 1196,
+          "geometries": 246,
+          "materials": 78,
+          "eventListeners": 33,
+          "audioContexts": 1,
+          "audioNodes": 43
+        },
+        "snapshots": [
+          {
+            "iteration": 0,
+            "stage": 0,
+            "objects": 503,
+            "geometries": 238,
+            "materials": 70,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 1,
+            "stage": 4,
+            "objects": 1196,
+            "geometries": 246,
+            "materials": 78,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 2,
+            "stage": 0,
+            "objects": 503,
+            "geometries": 238,
+            "materials": 70,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 3,
+            "stage": 4,
+            "objects": 1196,
+            "geometries": 246,
+            "materials": 78,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 4,
+            "stage": 0,
+            "objects": 503,
+            "geometries": 238,
+            "materials": 70,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 5,
+            "stage": 4,
+            "objects": 1196,
+            "geometries": 246,
+            "materials": 78,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 6,
+            "stage": 0,
+            "objects": 503,
+            "geometries": 238,
+            "materials": 70,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 7,
+            "stage": 4,
+            "objects": 1196,
+            "geometries": 246,
+            "materials": 78,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 8,
+            "stage": 0,
+            "objects": 503,
+            "geometries": 238,
+            "materials": 70,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 9,
+            "stage": 4,
+            "objects": 1196,
+            "geometries": 246,
+            "materials": 78,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 10,
+            "stage": 0,
+            "objects": 503,
+            "geometries": 238,
+            "materials": 70,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 11,
+            "stage": 4,
+            "objects": 1196,
+            "geometries": 246,
+            "materials": 78,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 12,
+            "stage": 0,
+            "objects": 503,
+            "geometries": 238,
+            "materials": 70,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 13,
+            "stage": 4,
+            "objects": 1196,
+            "geometries": 246,
+            "materials": 78,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 14,
+            "stage": 0,
+            "objects": 503,
+            "geometries": 238,
+            "materials": 70,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 15,
+            "stage": 4,
+            "objects": 1196,
+            "geometries": 246,
+            "materials": 78,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 16,
+            "stage": 0,
+            "objects": 503,
+            "geometries": 238,
+            "materials": 70,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 17,
+            "stage": 4,
+            "objects": 1196,
+            "geometries": 246,
+            "materials": 78,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 18,
+            "stage": 0,
+            "objects": 503,
+            "geometries": 238,
+            "materials": 70,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 19,
+            "stage": 4,
+            "objects": 1196,
+            "geometries": 246,
+            "materials": 78,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 20,
+            "stage": 0,
+            "objects": 503,
+            "geometries": 238,
+            "materials": 70,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 21,
+            "stage": 4,
+            "objects": 1196,
+            "geometries": 246,
+            "materials": 78,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 22,
+            "stage": 0,
+            "objects": 503,
+            "geometries": 238,
+            "materials": 70,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 23,
+            "stage": 4,
+            "objects": 1196,
+            "geometries": 246,
+            "materials": 78,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 24,
+            "stage": 0,
+            "objects": 503,
+            "geometries": 238,
+            "materials": 70,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 25,
+            "stage": 4,
+            "objects": 1196,
+            "geometries": 246,
+            "materials": 78,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 26,
+            "stage": 0,
+            "objects": 503,
+            "geometries": 238,
+            "materials": 70,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 27,
+            "stage": 4,
+            "objects": 1196,
+            "geometries": 246,
+            "materials": 78,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 28,
+            "stage": 0,
+            "objects": 503,
+            "geometries": 238,
+            "materials": 70,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          },
+          {
+            "iteration": 29,
+            "stage": 4,
+            "objects": 1196,
+            "geometries": 246,
+            "materials": 78,
+            "eventListeners": 33,
+            "audioContexts": 1,
+            "audioNodes": 43
+          }
+        ],
+        "heapDeltaAfterGC": 555104,
+        "memoryBefore": {
+          "rss": 317681664,
+          "heapTotal": 155947008,
+          "heapUsed": 19006368,
+          "external": 145282508,
+          "arrayBuffers": 138640044
+        },
+        "memoryAfter": {
+          "rss": 400388096,
+          "heapTotal": 167219200,
+          "heapUsed": 19561472,
+          "external": 141398364,
+          "arrayBuffers": 138546500
+        }
+      },
+      "browserFPS": null,
+      "questFPS": null,
+      "rtx4060FPS": null
+    }
+  ],
+  "repeat_resources": [
+    {
+      "run": 1,
+      "iterations": 30,
+      "scene_counts_stable_by_stage": true,
+      "heap_delta_after_gc": 565616,
+      "limitation": "Node heap only; retained delta is not proof of no browser/GPU leak"
+    },
+    {
+      "run": 2,
+      "iterations": 30,
+      "scene_counts_stable_by_stage": true,
+      "heap_delta_after_gc": 564144,
+      "limitation": "Node heap only; retained delta is not proof of no browser/GPU leak"
+    },
+    {
+      "run": 3,
+      "iterations": 30,
+      "scene_counts_stable_by_stage": true,
+      "heap_delta_after_gc": 555104,
+      "limitation": "Node heap only; retained delta is not proof of no browser/GPU leak"
+    }
+  ],
+  "browser_routes": [
+    {
+      "method": "Installed Chromium with its sandbox enabled and fresh isolated profile",
+      "attempted": true,
+      "outcome": "blocked",
+      "reason": "Crashpad setsockopt: Operation not permitted (SIGTRAP) before page creation; no application rendering occurred"
+    },
+    {
+      "method": "Managed shared cloud browser",
+      "attempted": false,
+      "capability_check": true,
+      "outcome": "unavailable",
+      "reason": "Runtime declares remote desktop enabled/unknown but no callable CUA/browser tool is provided"
+    },
+    {
+      "method": "Connected local PC browser",
+      "attempted": false,
+      "capability_check": true,
+      "outcome": "unavailable",
+      "reason": "No browser js/list_tabs/handoff tool; cannot access RTX4060 Ti, physical pad, Quest, iPad or audio output"
+    }
+  ],
+  "retry_policy_result": "One actual browser launch failed. Two alternative access routes are unavailable; do not claim three actual browser or hardware runs. Initial ESM harness import error was corrected using the installed CommonJS module resolution. No sandbox/certificate/permission bypass used.",
+  "unverified_closed": [
+    "RTX4060 Ti actual FPS/4K appearance",
+    "physical gamepad",
+    "Quest stereoscopy/tracking/comfort/72-90Hz/15-minute heat",
+    "iPad touch/rotation",
+    "real audio direction/quality/synchronization",
+    "real browser full-game and dynamic obstacle playthrough",
+    "browser/GPU memory growth and graphical quality",
+    "original missing natural voice, dedicated baked/compressed/preload assets and stage balancing"
+  ],
+  "finite_acceptance": [
+    {
+      "id": "R01",
+      "requirement": "正本/旧版/入力差分を照合 (A03,V14)",
+      "final_disposition": "verified_within_recorded_scope",
+      "remaining_hardware_or_quality_check": "なし",
+      "evidence": "r011 source/build/hash + 72 Node tests; real browser/Quest never inferred from Node",
+      "reason": "Verification completed in available environment"
+    },
+    {
+      "id": "U01",
+      "requirement": "2Dタイトル/設定/再開/再試行導線 (A02,A70,IMP008)",
+      "final_disposition": "closed_unverified_or_incomplete",
+      "remaining_hardware_or_quality_check": "r007実起動と読込失敗から復旧",
+      "evidence": "r011 source/build/hash + 72 Node tests; real browser/Quest never inferred from Node",
+      "reason": "User requested finite closure; unavailable device/browser or incomplete feature remains recorded, not passed"
+    },
+    {
+      "id": "U02",
+      "requirement": "保存正常系/拒否/破損で起動継続 (A34,A60,V11,IMP009)",
+      "final_disposition": "closed_unverified_or_incomplete",
+      "remaining_hardware_or_quality_check": "r007ブラウザー保存API拒否/再読込",
+      "evidence": "r011 source/build/hash + 72 Node tests; real browser/Quest never inferred from Node",
+      "reason": "User requested finite closure; unavailable device/browser or incomplete feature remains recorded, not passed"
+    },
+    {
+      "id": "D01",
+      "requirement": "左右キーボード/同時タッチ/標準ゲームパッド (A10,A11,A24)",
+      "final_disposition": "closed_unverified_or_incomplete",
+      "remaining_hardware_or_quality_check": "PC実デバイス・iPad同時タッチ・回転",
+      "evidence": "r011 source/build/hash + 72 Node tests; real browser/Quest never inferred from Node",
+      "reason": "User requested finite closure; unavailable device/browser or incomplete feature remains recorded, not passed"
+    },
+    {
+      "id": "D02",
+      "requirement": "つかみ/片手/両手/失敗した再保持 (A13–A19,V03)",
+      "final_disposition": "closed_unverified_or_incomplete",
+      "remaining_hardware_or_quality_check": "B/Qの無飛び・無振動",
+      "evidence": "r011 source/build/hash + 72 Node tests; real browser/Quest never inferred from Node",
+      "reason": "User requested finite closure; unavailable device/browser or incomplete feature remains recorded, not passed"
+    },
+    {
+      "id": "D03",
+      "requirement": "窓/設備/看板/鳥/鉢の予告と接触 (A27–A32,V04,V07)",
+      "final_disposition": "closed_unverified_or_incomplete",
+      "remaining_hardware_or_quality_check": "動的障害を含むB/Q攻略、鳥実接触",
+      "evidence": "r011 source/build/hash + 72 Node tests; real browser/Quest never inferred from Node",
+      "reason": "User requested finite closure; unavailable device/browser or incomplete feature remains recorded, not passed"
+    },
+    {
+      "id": "D04",
+      "requirement": "全解除→短い落下→残機→復帰/終了 (A18,A35,A36,A61,IMP004)",
+      "final_disposition": "closed_unverified_or_incomplete",
+      "remaining_hardware_or_quality_check": "B/Qで両落下設定・快適性",
+      "evidence": "r011 source/build/hash + 72 Node tests; real browser/Quest never inferred from Node",
+      "reason": "User requested finite closure; unavailable device/browser or incomplete feature remains recorded, not passed"
+    },
+    {
+      "id": "D05",
+      "requirement": "練習＋4棟の頂上→次棟→最終結果 (A25,A33,A37,V01,V06,IMP002)",
+      "final_disposition": "closed_unverified_or_incomplete",
+      "remaining_hardware_or_quality_check": "通常攻略B/Q、試聴、難易度の体感",
+      "evidence": "r011 source/build/hash + 72 Node tests; real browser/Quest never inferred from Node",
+      "reason": "User requested finite closure; unavailable device/browser or incomplete feature remains recorded, not passed"
+    },
+    {
+      "id": "D06",
+      "requirement": "手動停止を設定閉鎖で解除せず演出静止 (A08,A46,V05)",
+      "final_disposition": "closed_unverified_or_incomplete",
+      "remaining_hardware_or_quality_check": "B/Q非表示/復帰/設定操作",
+      "evidence": "r011 source/build/hash + 72 Node tests; real browser/Quest never inferred from Node",
+      "reason": "User requested finite closure; unavailable device/browser or incomplete feature remains recorded, not passed"
+    },
+    {
+      "id": "D07",
+      "requirement": "30回開始終了・建物交換で資源が増殖しない (A49,A68,IMP010)",
+      "final_disposition": "closed_unverified_or_incomplete",
+      "remaining_hardware_or_quality_check": "GPUバッファ/ブラウザーheapの15分測定",
+      "evidence": "r011 source/build/hash + 72 Node tests; real browser/Quest never inferred from Node",
+      "reason": "User requested finite closure; unavailable device/browser or incomplete feature remains recorded, not passed"
+    },
+    {
+      "id": "D08",
+      "requirement": "超高層の布/看板/風音が同じ風に追従 (A72,IMP001)",
+      "final_disposition": "closed_unverified_or_incomplete",
+      "remaining_hardware_or_quality_check": "B実描画と試聴の同期",
+      "evidence": "r011 source/build/hash + 72 Node tests; real browser/Quest never inferred from Node",
+      "reason": "User requested finite closure; unavailable device/browser or incomplete feature remains recorded, not passed"
+    },
+    {
+      "id": "G01",
+      "requirement": "近景手/窓/材質/街/鳥/昼夕夜の完成品質 (A39–A47,A50,A52,V10,IMP006)",
+      "final_disposition": "closed_unverified_or_incomplete",
+      "remaining_hardware_or_quality_check": "PC高画質/Quest両眼の見た目受入",
+      "evidence": "r011 source/build/hash + 72 Node tests; real browser/Quest never inferred from Node",
+      "reason": "User requested finite closure; unavailable device/browser or incomplete feature remains recorded, not passed"
+    },
+    {
+      "id": "A01",
+      "requirement": "音方向/距離/イベント同期/ミュート/再開 (A54–A56,A58,A60,V08–V09,IMP001)",
+      "final_disposition": "closed_unverified_or_incomplete",
+      "remaining_hardware_or_quality_check": "実音声出力で試聴",
+      "evidence": "r011 source/build/hash + 72 Node tests; real browser/Quest never inferred from Node",
+      "reason": "User requested finite closure; unavailable device/browser or incomplete feature remains recorded, not passed"
+    },
+    {
+      "id": "X01",
+      "requirement": "VR開始終了再入場、左右Touch (A04–A07,A12,V02)",
+      "final_disposition": "closed_unverified_or_incomplete",
+      "remaining_hardware_or_quality_check": "Quest Browser実セッション",
+      "evidence": "r011 source/build/hash + 72 Node tests; real browser/Quest never inferred from Node",
+      "reason": "User requested finite closure; unavailable device/browser or incomplete feature remains recorded, not passed"
+    },
+    {
+      "id": "X02",
+      "requirement": "追跡喪失/切断で安全停止、復帰直後に落ちない (A08,A15,V05)",
+      "final_disposition": "closed_unverified_or_incomplete",
+      "remaining_hardware_or_quality_check": "Qヘッドセット取り外し/再接続",
+      "evidence": "r011 source/build/hash + 72 Node tests; real browser/Quest never inferred from Node",
+      "reason": "User requested finite closure; unavailable device/browser or incomplete feature remains recorded, not passed"
+    },
+    {
+      "id": "X03",
+      "requirement": "3D設定/体格/座位/保持切替 (A09,A21–A24,A62,A64–A65,IMP007)",
+      "final_disposition": "closed_unverified_or_incomplete",
+      "remaining_hardware_or_quality_check": "Qレイ操作と無理のないリーチ",
+      "evidence": "r011 source/build/hash + 72 Node tests; real browser/Quest never inferred from Node",
+      "reason": "User requested finite closure; unavailable device/browser or incomplete feature remains recorded, not passed"
+    },
+    {
+      "id": "X04",
+      "requirement": "両眼ビネット・フェード・快適性 (A20,A50,A61,A63,IMP003/004)",
+      "final_disposition": "closed_unverified_or_incomplete",
+      "remaining_hardware_or_quality_check": "Q両眼・遮蔽・快適性",
+      "evidence": "r011 source/build/hash + 72 Node tests; real browser/Quest never inferred from Node",
+      "reason": "User requested finite closure; unavailable device/browser or incomplete feature remains recorded, not passed"
+    },
+    {
+      "id": "P01",
+      "requirement": "RTX4060級60fps、通常/高負荷のp50/p95/p99 (A49,A51)",
+      "final_disposition": "closed_unverified_or_incomplete",
+      "remaining_hardware_or_quality_check": "PC高画質/標準 各60秒×3、遅延frame/heap",
+      "evidence": "r011 source/build/hash + 72 Node tests; real browser/Quest never inferred from Node",
+      "reason": "User requested finite closure; unavailable device/browser or incomplete feature remains recorded, not passed"
+    },
+    {
+      "id": "P02",
+      "requirement": "Quest72/90Hz・15分熱/音/メモリ (A66–A71,IMP005)",
+      "final_disposition": "closed_unverified_or_incomplete",
+      "remaining_hardware_or_quality_check": "Q実Hz・72fps・連続15分",
+      "evidence": "r011 source/build/hash + 72 Node tests; real browser/Quest never inferred from Node",
+      "reason": "User requested finite closure; unavailable device/browser or incomplete feature remains recorded, not passed"
+    },
+    {
+      "id": "M01",
+      "requirement": "自然な音声＋字幕・個別音量 (A57,A59)",
+      "final_disposition": "closed_unverified_or_incomplete",
+      "remaining_hardware_or_quality_check": "自然音声制作と試聴",
+      "evidence": "r011 source/build/hash + 72 Node tests; real browser/Quest never inferred from Node",
+      "reason": "User requested finite closure; unavailable device/browser or incomplete feature remains recorded, not passed"
+    },
+    {
+      "id": "M02",
+      "requirement": "ベイク/圧縮/先読み/段階品質 (A48,A68)",
+      "final_disposition": "closed_unverified_or_incomplete",
+      "remaining_hardware_or_quality_check": "制作と端末性能評価",
+      "evidence": "r011 source/build/hash + 72 Node tests; real browser/Quest never inferred from Node",
+      "reason": "User requested finite closure; unavailable device/browser or incomplete feature remains recorded, not passed"
+    },
+    {
+      "id": "M03",
+      "requirement": "各棟3–5分・複合攻略・難易度調整 (A26,A35,A72)",
+      "final_disposition": "closed_unverified_or_incomplete",
+      "remaining_hardware_or_quality_check": "各棟3走以上の通常攻略計測・調整",
+      "evidence": "r011 source/build/hash + 72 Node tests; real browser/Quest never inferred from Node",
+      "reason": "User requested finite closure; unavailable device/browser or incomplete feature remains recorded, not passed"
+    },
+    {
+      "id": "L01",
+      "requirement": "型/回帰/固定ZIP/全配信hash (A53,A69,V13–V14)",
+      "final_disposition": "verified_within_recorded_scope",
+      "remaining_hardware_or_quality_check": "PC受領SHA一致",
+      "evidence": "r011 source/build/hash + 72 Node tests; real browser/Quest never inferred from Node",
+      "reason": "Verification completed in available environment"
+    },
+    {
+      "id": "L02",
+      "requirement": "同じサイトに公開し実URLで開始/得点/停止/リトライ (V12,V15)",
+      "final_disposition": "closed_unverified_or_incomplete",
+      "remaining_hardware_or_quality_check": "PC受領→既存サイト更新→全素材hash/MIME/CORS/操作",
+      "evidence": "r011 source/build/hash + 72 Node tests; real browser/Quest never inferred from Node",
+      "reason": "User requested finite closure; unavailable device/browser or incomplete feature remains recorded, not passed"
+    }
+  ],
+  "original_87_history": [
+    {
+      "id": "A01 / 1",
+      "requirement": "一人称3D外壁登攀、街と高さ",
+      "historical_state": "実装済み未検証",
+      "historical_evidence": "S:M/W。平面画面方式ではない。R/Qで見え方未確認",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "A02 / 1",
+      "requirement": "日本語タイトル・練習・通常・失敗・再挑戦・屋上・結果",
+      "historical_state": "実装済み未検証",
+      "historical_evidence": "S:M/U。r002に次ビルボタン追加。通し実操作なし",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "A03 / 2",
+      "requirement": "TypeScript/Vite/Three/Web Audio・単一3Dエンジン",
+      "historical_state": "検証済み",
+      "historical_evidence": "B、package-lock.json。WebGLRenderer利用、WebGPU依存なし",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "A04 / 2",
+      "requirement": "Quest Browser WebGL2描画互換",
+      "historical_state": "実装済み未検証",
+      "historical_evidence": "S:M。Q未実施",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "A05 / 2",
+      "requirement": "navigator.xr / isSessionSupported / 操作起点immersive-vr",
+      "historical_state": "実装済み未検証",
+      "historical_evidence": "S:M setupVR。R/X/Q未実施",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "A06 / 2",
+      "requirement": "6DoF、頭部カメラと移動rig分離",
+      "historical_state": "実装済み未検証",
+      "historical_evidence": "S:M。追跡姿勢へスムージングなし。Q未確認",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "A07 / 2",
+      "requirement": "左右Touch、VR終了・再入場",
+      "historical_state": "実装済み未検証",
+      "historical_evidence": "S:M sources/handedness/session end。Q未確認",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "A08 / 2,7",
+      "requirement": "一時停止・再開・コントローラー再接続・追跡喪失",
+      "historical_state": "実装済み未検証",
+      "historical_evidence": "S:M pose/visibility/disconnect。Nは拘束無効化のみ検証",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "A09 / 2",
+      "requirement": "コントローラー操作の3Dメニュー",
+      "historical_state": "実装済み未検証",
+      "historical_evidence": "S:M。体格に加えBGM/効果音/ビネット/落下/Hzを3Dレイで変更可能。r005での実操作未確認",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "A10 / 2,3",
+      "requirement": "PC左右WASD/矢印・マウス・標準ゲームパッド",
+      "historical_state": "実装済み未検証",
+      "historical_evidence": "S:M。実デバイス未確認",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "A11 / 2",
+      "requirement": "タッチ左右同時・横向き・回転・safe-area",
+      "historical_state": "実装済み未検証",
+      "historical_evidence": "S:M/U。r002 pointercancel対応。iPad実操作未確認",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "A12 / 3",
+      "requirement": "左右独立グリップ・handedness判定",
+      "historical_state": "実装済み未検証",
+      "historical_evidence": "S:M squeezestart/end、配列番号から左右を決定しない",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "A13 / 3",
+      "requirement": "握った瞬間の変位ゼロ、局所手座標と固定支点の区別",
+      "historical_state": "検証済み",
+      "historical_evidence": "N:C grabbing introduces no displacement。機器での座標供給はQ未確認",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "A14 / 3",
+      "requirement": "両手の平均拘束・rig再加算なし",
+      "historical_state": "検証済み",
+      "historical_evidence": "N:C two hands average constraints without doubling or feedback",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "A15 / 3",
+      "requirement": "追跡ジャンプ・欠落・復帰で飛ばない",
+      "historical_state": "検証済み",
+      "historical_evidence": "N:C discontinuity / opposite jumps / missing controller / regrab reset。実XRイベントは未検証",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "A16 / 3",
+      "requirement": "両手競合時の振動抑制",
+      "historical_state": "検証済み",
+      "historical_evidence": "N:C conflicting small two-hand movements。実機振動の体感は未確認",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "A17 / 3",
+      "requirement": "片手保持・左右移動・つかみ直し・解除・落下・復帰",
+      "historical_state": "実装済み未検証",
+      "historical_evidence": "S:M/C。統合した通し操作なし",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "A18 / 3",
+      "requirement": "解除時の無反動・無支持の猶予・追跡再開直後の保護",
+      "historical_state": "検証済み",
+      "historical_evidence": "N:C SupportGuard 3テスト。初回保持まで待機、解除0.4秒猶予、長フレーム抑制。視覚的跳ねは未確認",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "A19 / 3",
+      "requirement": "遠距離・壁裏をつかまない、控えめな候補表示",
+      "historical_state": "実装済み未検証",
+      "historical_evidence": "S:M nearestのz/距離制限、リング",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "A20 / 3",
+      "requirement": "壁への頭部めり込み破綻抑制",
+      "historical_state": "実装済み未検証",
+      "historical_evidence": "S:M近壁フェード。完全な身体衝突解決は未実装",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "A21 / 3",
+      "requirement": "指・手首姿勢・接触音・軽い振動同期",
+      "historical_state": "実装済み未検証",
+      "historical_evidence": "S:M/H/A。r003で多関節の指の握り/開き、左右親指、手袋の掌パッド。Nで変形/対称性確認、音/振動同期Q未確認",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "A22 / 3,7",
+      "requirement": "身長・腕長・座位/立位キャリブレーション",
+      "historical_state": "実装済み未検証",
+      "historical_evidence": "S:F/M/U。r003で目の高さ測定/座位補正、前方リーチ測定、腕長/手サイズ設定と保存。Nで変換・両手拘束・不正値確認。Q体感未確認",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "A23 / 3",
+      "requirement": "中継保持点、無理なリーチを要求しない",
+      "historical_state": "実装済み未検証",
+      "historical_evidence": "S:C/W 0.4m縦、0.6m横のレール。体格ごとのQ確認必要",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "A24 / 3",
+      "requirement": "左右スティックのクラシック操作、方式切替の安全性",
+      "historical_state": "実装済み未検証",
+      "historical_evidence": "S:M xr-standard axes、切替で拘束破棄・停止。左右交互を強制する規則なし",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "A25 / 4",
+      "requirement": "低い練習壁＋異なる4棟",
+      "historical_state": "実装済み未検証",
+      "historical_evidence": "S:C/W 7/48/56/64/76m、昼夕夜等。実際の攻略差未評価",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "A26 / 4",
+      "requirement": "各棟初回3～5分・攻略変化の調整",
+      "historical_state": "未実装",
+      "historical_evidence": "高さ/障害段階はあるがプレイ計測と調整なし",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "A27 / 4",
+      "requirement": "開閉窓・事前予告・保持解除",
+      "historical_state": "実装済み未検証",
+      "historical_evidence": "S:M、窓の周期と字幕/音。統合状態遷移未確認",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "A28 / 4",
+      "requirement": "落下植木鉢・回転・予告・片手解除",
+      "historical_state": "実装済み未検証",
+      "historical_evidence": "S:M/W/D。r003で鉢の縁/土/葉と固定数16破片（軽量8）を追加。破損はプレイヤー下方通過時の視覚効果で厳密な破壊衝突ではない",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "A29 / 4",
+      "requirement": "飛来鳥・羽ばたき・予告・接触",
+      "historical_state": "実装済み未検証",
+      "historical_evidence": "S:M/W/birds.ts。鳥を嘴/目/尾羽/曲面胴/分節翼と羽根に更新。N形状と可動域確認、実描画/避けやすさ未確認",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "A30 / 4",
+      "requirement": "看板・設備・横移動ルート",
+      "historical_state": "実装済み未検証",
+      "historical_evidence": "S:C/W。看板揺れ/保持点除外あり。身体衝突なし",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "A31 / 4",
+      "requirement": "回避不能な攻撃を避ける配置検証",
+      "historical_state": "実装済み未検証",
+      "historical_evidence": "N静的中央経路は確認。動的窓/鳥/鉢の同時攻撃と反応猶予は実プレイ未確認",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "A32 / 4",
+      "requirement": "再現可能seed・全棟の保持経路",
+      "historical_state": "検証済み",
+      "historical_evidence": "N:C seed再現、全5ステージ連結、設備/看板除外後経路。動的攻略の証明ではない",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "A33 / 4",
+      "requirement": "高さ・得点・残機・コンボ・クリア時間",
+      "historical_state": "実装済み未検証",
+      "historical_evidence": "S:M/U。N:C r002同高さ反復得点と無効進捗を拒否",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "A34 / 4",
+      "requirement": "ベスト・進行保存",
+      "historical_state": "実装済み未検証",
+      "historical_evidence": "S:M/persistence.ts。null/異常型/範囲外/破損保存を既定値へ復旧。N移行/往復/不正値確認。ブラウザー保存実操作未確認",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "A35 / 4",
+      "requirement": "初心者・標準・挑戦",
+      "historical_state": "実装済み未検証",
+      "historical_evidence": "S:M/U 残機と鉢間隔。バランス未調整",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "A36 / 4",
+      "requirement": "練習救済・復帰地点・残機切れ",
+      "historical_state": "検証済み",
+      "historical_evidence": "N:C recoveryOutcome、練習無消費/最終残機over。M統合は未検証",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "A37 / 4",
+      "requirement": "屋上到達演出・救助の達成感",
+      "historical_state": "実装済み未検証",
+      "historical_evidence": "S:M/W/rescue.ts。屋上で救助ドローン接近/到着通知/チャイム。視点は固定追跡を維持。N一度のみ到着/停止/再挑戦を確認、演出実描画未確認",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "A38 / 4",
+      "requirement": "原作参照とVR変更を区別",
+      "historical_state": "検証済み",
+      "historical_evidence": "DESIGN.md、README、独自タイトル。公式作品を表示していない",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "A39 / 5",
+      "requirement": "厚い窓枠・面取り・金具",
+      "historical_state": "実装済み未検証",
+      "historical_evidence": "S:W。厚い面取り枠/金具に蝶番を支点とする内開きサッシ/ハンドルを追加。枠形状を結合、近景の見え方未確認",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "A40 / 5",
+      "requirement": "外壁継ぎ目・汚れ・塗装・微細凹凸",
+      "historical_state": "実装済み未検証",
+      "historical_evidence": "S:P/W。r003で実寸UV、粒/細孔/汚れ、塗装色、カラー/法線/粗さマップ。近景の自然さと両眼ちらつき未確認",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "A41 / 5",
+      "requirement": "金属・コンクリート・ガラス・陶器・布の差",
+      "historical_state": "実装済み未検証",
+      "historical_evidence": "S:P/W。布織り/金属の筋/陶器/コンクリート、PMREM環境反射。ガラスは不透明反射表現。材質の見え方未確認",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "A42 / 5",
+      "requirement": "窓別カーテン・照明・室内奥行き",
+      "historical_state": "実装済み未検証",
+      "historical_evidence": "S:W。r003で凹部/側壁/窓台/奥壁/ひだ付きカーテン/家具/室内灯を追加。実描画の奥行き/干渉未確認",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "A43 / 5",
+      "requirement": "空調・配管・屋上設備",
+      "historical_state": "実装済み未検証",
+      "historical_evidence": "S:W 手続き形状。外観未確認",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "A44 / 5",
+      "requirement": "街路・車・人影・遠景・高度眺望",
+      "historical_state": "実装済み未検証",
+      "historical_evidence": "S:W。街路/車/建物に70体の遠景人影をインスタンシング追加。都市の自然さ・眺望の体感未評価",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "A45 / 5",
+      "requirement": "自然な手形状と握り",
+      "historical_state": "実装済み未検証",
+      "historical_evidence": "S:H。r003で掌/先細り指の断面ロフト、左右親指、複数関節、縫い目/補強。N有限法線/左右対称/握り確認。人体らしさとグリップ方向Q未確認、腕は非表示",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "A46 / 5",
+      "requirement": "鳥羽ばたき・看板揺れ・鉢破損",
+      "historical_state": "実装済み未検証",
+      "historical_evidence": "S:W/D/M。羽ばたき/看板揺れ/鉢回転に破片プール追加。N停止/再利用/消失確認。実描画とイベント同期未確認",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "A47 / 5",
+      "requirement": "昼・夕・夜の統一した照明",
+      "historical_state": "実装済み未検証",
+      "historical_evidence": "S:W/M。r003で夕景の暖色光/夜の低照度と寒色光/環境反射強度を段階化。色と露出の実描画評価なし",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "A48 / 5,8",
+      "requirement": "ベイク照明・環境反射・LOD・カリング",
+      "historical_state": "未実装",
+      "historical_evidence": "共有PMREM、遠距離窓のインスタンス代理と近距離サッシLODを追加。専用ベイク照明は不足",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "A49 / 5,8",
+      "requirement": "共有材質・描画まとめ・インスタンシング",
+      "historical_state": "実装済み未検証",
+      "historical_evidence": "S:W/lod.ts。街路は材質別描画まとめ、50台の車を2インスタンス群、遠距離窓を1群化。N構造/切替確認、GPU負荷未計測",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "A50 / 5",
+      "requirement": "両眼効果・透明物・発光・細線の品質",
+      "historical_state": "実装済み未検証",
+      "historical_evidence": "S:Mステレオ用UI/フェード。Q左右眼未確認",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "A51 / 5",
+      "requirement": "PC高画質・Quest標準・軽量",
+      "historical_state": "実装済み未検証",
+      "historical_evidence": "S:M quality解像度/街数。各モード描画比較なし",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "A52 / 5",
+      "requirement": "主要グラフィックスに未仕上げを残さない",
+      "historical_state": "実装済み未検証",
+      "historical_evidence": "手/壁/内装に加えr005で鳥/救助機/車を制作。主要グラフィックスの完成品質は実描画で未評価。原作要件の品質達成を宣言しない",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "A53 / 5,12",
+      "requirement": "素材権利・クレジット・制作物",
+      "historical_state": "検証済み",
+      "historical_evidence": "ASSET_CREDITS.md。W/A内自作手続き生成。外部モデル/画像/音源なし",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "A54 / 6",
+      "requirement": "Web Audio空間化・頭向き/距離追従",
+      "historical_state": "実装済み未検証",
+      "historical_evidence": "S:A/M HRTF Panner/Listener。実聴取なし",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "A55 / 6",
+      "requirement": "鉢・鳥・窓・材質別接触音",
+      "historical_state": "実装済み未検証",
+      "historical_evidence": "S:A/Mイベント発音。音色/同期/連打の聴取評価なし",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "A56 / 6",
+      "requirement": "眼下交通・高度の風・屋上救助の空間音",
+      "historical_state": "実装済み未検証",
+      "historical_evidence": "S:A/M/W。走行車3音源、左右風2音源、屋上ファン、救助音をHRTF空間化。N音源位置/頭向き/停止/再開グラフ確認、実聴取未実施",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "A57 / 6",
+      "requirement": "自然な掛け声・案内音声＋字幕",
+      "historical_state": "未実装",
+      "historical_evidence": "字幕のみ。自然音声素材/音声音量なし",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "A58 / 6",
+      "requirement": "オリジナルアーケードBGM・危険音の明瞭さ",
+      "historical_state": "実装済み未検証",
+      "historical_evidence": "S:A。警告時BGM減衰、ソフトアタック/コンプレッサー、音源数上限。Nミックスと破棄確認。合成音の品質/明瞭さは未試聴",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "A59 / 6",
+      "requirement": "BGM/効果音/音声の独立音量、音割れ防止",
+      "historical_state": "未実装",
+      "historical_evidence": "BGM/効果音/コンプレッサーあり、音声系なし",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "A60 / 6",
+      "requirement": "ユーザー起点AudioContext・再開/復帰・読込失敗耐性",
+      "historical_state": "実装済み未検証",
+      "historical_evidence": "S:A/M。再開時の音源二重生成防止、再挑戦で予約音停止、非表示後の再有効化。Nモック音声グラフ試験のみ、実ブラウザー音未確認",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "A61 / 7",
+      "requirement": "強制旋回/カメラ揺れなし、短いフェード復帰",
+      "historical_state": "実装済み未検証",
+      "historical_evidence": "S:M/comfort.ts。標準は頭部を動かさないフェード復帰、任意の降下は最大20cm。N変位/時間境界確認、Quest快適性未確認",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "A62 / 7",
+      "requirement": "速度・補助・保持切替・座位設定",
+      "historical_state": "実装済み未検証",
+      "historical_evidence": "S:M/U/F。速度/補助/保持切替/姿勢に体格測定/微調整を追加。VR内体格UIの実操作未確認",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "A63 / 7",
+      "requirement": "真の周辺ビネット・落下演出の選択",
+      "historical_state": "実装済み未検証",
+      "historical_evidence": "S:comfort.ts/M。中心透明の周辺マスクを各眼viewportへ適用。フェード/短い降下の設定をHTML/VR双方に追加。N中心透明/上限/復帰時間確認、両眼表示未確認",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "A64 / 7",
+      "requirement": "予約ボタン不要・常時メニュー・文字距離",
+      "historical_state": "実装済み未検証",
+      "historical_evidence": "S:M select ray。パネル可読性/操作性Q未確認",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "A65 / 7",
+      "requirement": "現実の歩行・跳躍を要求しない",
+      "historical_state": "実装済み未検証",
+      "historical_evidence": "S:C密な保持点、rig移動。体格別リーチQ未確認",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "A66 / 8",
+      "requirement": "対応Hz確認・72Hz要求・90Hz選択",
+      "historical_state": "実装済み未検証",
+      "historical_evidence": "S:comfort.ts/M/U。72/90Hz選択、対応一覧確認、拒否時継続、実際のHzと要求を区別。N対応/非対応/拒否/欠落API確認、実機未確認",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "A67 / 8",
+      "requirement": "Quest安定72fps以上・長フレーム評価",
+      "historical_state": "障害",
+      "historical_evidence": "Qなし。animation intervalのp95診断はGPU時間ではない",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "A68 / 8",
+      "requirement": "圧縮テクスチャ・pool・解放・先読み・動的品質",
+      "historical_state": "未実装",
+      "historical_evidence": "r003で共有mipmap材質、固定破片プール、段階遷移時の重複geometry解放を整理。圧縮テクスチャ/先読み/動的品質未完成",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "A69 / 8",
+      "requirement": "初期20MB目安",
+      "historical_state": "検証済み",
+      "historical_evidence": "Z:ZIP159492 bytes。HTTP実転送量とは区別、品質合格の根拠にしない",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "A70 / 8",
+      "requirement": "段階読込・進捗・失敗・再試行",
+      "historical_state": "実装済み未検証",
+      "historical_evidence": "S:bootstrap.ts/U。軽量起動入口と遅延ゲームchunk、段階メッセージ/失敗/再読込/context lost導線。ステージ別先読みはA68未達。実読込障害操作未確認",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "A71 / 8",
+      "requirement": "Quest15分・熱/メモリー/音切れ/遷移",
+      "historical_state": "障害",
+      "historical_evidence": "Qなし、未実施",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "A72 / 4",
+      "requirement": "超高層の強風・夜の濡れた壁面・複合攻略",
+      "historical_state": "未実装",
+      "historical_evidence": "r003で夜の壁の粗さ/反射を変更し濡れた表面を表現。r006で高度/seedに応じる吹き流し・看板・風音の同期を追加。各棟の攻略調整は不足、演出は実描画/試聴未確認",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "V01 / 1",
+      "requirement": "開始→屋上→結果→再挑戦を実プレイ",
+      "historical_state": "障害",
+      "historical_evidence": "R/Qなし。A02実装の有無と区別",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "V02 / 2",
+      "requirement": "没入VRと左右独立実操作",
+      "historical_state": "障害",
+      "historical_evidence": "X/Qなし",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "V03 / 3",
+      "requirement": "片手/両手/つかみ直しの無飛び・無振動",
+      "historical_state": "実装済み未検証",
+      "historical_evidence": "N拘束単体は成功、Q統合体験未確認",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "V04 / 4",
+      "requirement": "窓閉/鉢接触/全解除の状態遷移",
+      "historical_state": "実装済み未検証",
+      "historical_evidence": "N部分ロジックのみ。M実イベント統合未確認",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "V05 / 5",
+      "requirement": "追跡喪失/切断/VR再入場",
+      "historical_state": "実装済み未検証",
+      "historical_evidence": "N座標異常のみ成功、Q未確認",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "V06 / 6",
+      "requirement": "全4棟攻略可能",
+      "historical_state": "実装済み未検証",
+      "historical_evidence": "N静的経路成功。動的障害を含む完走未確認",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "V07 / 7",
+      "requirement": "予告/判定/得点/残機/復帰の整合",
+      "historical_state": "実装済み未検証",
+      "historical_evidence": "N39成功、r002得点/救済修正。統合実操作未確認",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "V08 / 8",
+      "requirement": "音とゲームイベント同期の聴取",
+      "historical_state": "障害",
+      "historical_evidence": "R/Q音聴取環境なし",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "V09 / 9",
+      "requirement": "ミュート・再開・ブラウザー復帰音",
+      "historical_state": "障害",
+      "historical_evidence": "R/Q実操作なし",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "V10 / 10",
+      "requirement": "主要グラフィックス完成",
+      "historical_state": "実装済み未検証",
+      "historical_evidence": "r005で主要形状を追加したが、実描画での品質基準の受入は未達。ビルド/形状テストで見た目を合格にしない",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "V11 / 11",
+      "requirement": "設定保存・画面回転・PC/タッチ",
+      "historical_state": "実装済み未検証",
+      "historical_evidence": "S:M/U、R/iPad未確認",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "V12 / 12",
+      "requirement": "本番404/CORS/MIMEなし",
+      "historical_state": "障害",
+      "historical_evidence": "未公開/未観測。DEPLOYMENT_ACCEPTANCE.mdで別管理",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "V13 / 9,10",
+      "requirement": "重要ロジック自動テスト",
+      "historical_state": "検証済み",
+      "historical_evidence": "N39件、時刻/ログ/ハッシュをr006へ対応づけ",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "V14 / 12",
+      "requirement": "ソース・ビルド手順・クレジット・引継ぎ",
+      "historical_state": "検証済み",
+      "historical_evidence": "README/ASSET_CREDITS/TEST_REPORT/HANDOFF/RELEASE_CONTROL。正本はこの作業領域、外部リポジトリ未作成",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    },
+    {
+      "id": "V15 / 11",
+      "requirement": "Netlify本番公開と公開URL実操作",
+      "historical_state": "実装済み未検証",
+      "historical_evidence": "基準r003はPC側で初回公開の基本起動/描画を確認。r005はPC再公開と部分検証を受領。r006は未公開、実URL検証なし。DEPLOYMENT_ACCEPTANCE.md参照",
+      "scope_note": "Original history retained. Latest executable evidence is in this report; hardware/unfinished work is not upgraded to passed."
+    }
+  ],
+  "improvement_10_acceptance": "Implementation history retained; real-device full acceptance remains unverified and closed from active work per user instruction.",
+  "evidence_files": [
+    {
+      "file": "regression.log",
+      "bytes": 6961,
+      "sha256": "1a4a98708575e7b69f8c48ef2de10041c6dec9f87191f2f6ca6b57f79a7226df"
+    },
+    {
+      "file": "build.log",
+      "bytes": 962,
+      "sha256": "da1769308e198efe4050c8fc41868ab4c3e40f8731c4062776a69c2def3cb68d"
+    },
+    {
+      "file": "reproducible-build.json",
+      "bytes": 1018,
+      "sha256": "2ccb099d139980d66e8ed65917c807f06e1d61a70fd0afd3cab26ea84861a207"
+    },
+    {
+      "file": "browser-attempt.json",
+      "bytes": 4640,
+      "sha256": "1b722792f8b35ab0c64458b6c56377f3a696c2e999a8cd3d38cea9c31c4b46e1"
+    },
+    {
+      "file": "cpu-runs.json",
+      "bytes": 1146,
+      "sha256": "4839b0576e1937270c7ee97a945ee65fe8126a67300e711e657f831a3326303d"
+    },
+    {
+      "file": "cpu-run-1.json",
+      "bytes": 12332,
+      "sha256": "fe4516fc9c0e290d0fb5fbce55015a70ad62642d377966133e752cd75b47b1c4"
+    },
+    {
+      "file": "cpu-run-2.json",
+      "bytes": 12334,
+      "sha256": "a2f31e3871c4ff87a7927e216e85b5556b69f62080fa03fa0d16b73d9c3e493c"
+    },
+    {
+      "file": "cpu-run-3.json",
+      "bytes": 12330,
+      "sha256": "719dde01125694c76ad068767092849859400229062d75013712f6c92a6df5e9"
+    }
+  ],
+  "verification_url": "https://skygrip-climber.netlify.app/?verify=1&scenario=3d-normal",
+  "notes": [
+    "SKYGRIP has no standalone 2D game: 2D refers only to menu/HUD, with 60-row synthetic HUD load; 3D is actual climbing.",
+    "CPU loop measurements use synthetic frame timestamps; no GPU FPS or hardware performance result is asserted.",
+    "All prior fixed ZIPs/manifests, ordinary saves and other games are preserved."
+  ]
+}
