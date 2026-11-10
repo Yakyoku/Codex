@@ -80,9 +80,14 @@
     "sha256": "7a649783c870a71a70fe5212c8925e946a7378eaae5312bc901c181dd66d11c1"
   },
   {
+    "path": "build-info.json",
+    "bytes": 214,
+    "sha256": "3c96a7a426ec0daed80fe2b97e5c0acaf7430c91ac3b3333f450a0be7e5a3c7d"
+  },
+  {
     "path": "index.html",
-    "bytes": 3972,
-    "sha256": "8ceed714fdc6d2c0a5789cbcaa7a73025f972e5720b54cd89a3a77e31d0e1255"
+    "bytes": 3979,
+    "sha256": "8ab8514fab1f263a02bdbc342e342cfb483bc8205b0fd3a00426edaa5770c7a0"
   },
   {
     "path": "src/art.js",
@@ -93,6 +98,11 @@
     "path": "src/audio.js",
     "bytes": 3864,
     "sha256": "5d9ffd68be221a22cd16d192b70b7059f60066b05d305fca55d37e99b7f3720c"
+  },
+  {
+    "path": "src/diagnostics.js",
+    "bytes": 8534,
+    "sha256": "2410082ced768cba8f44e38a9b687418a0e26783df226af3c0b6204855a889f9"
   },
   {
     "path": "src/frame-loop.js",
@@ -111,13 +121,13 @@
   },
   {
     "path": "src/input.js",
-    "bytes": 3054,
-    "sha256": "da01e4f2c307489fbf966181006a17804f84ef754eb9b6b06f181bd489ae0d6d"
+    "bytes": 3505,
+    "sha256": "89db221d736cfcfdcfa790d8974f8132a9fa8a68ce54eab24f50a961de595326"
   },
   {
     "path": "src/main.js",
-    "bytes": 18180,
-    "sha256": "9b0f52d8ecedf1d7a306faf3daa494c693509ee1e6dde0a8cb3eea470b6cc14d"
+    "bytes": 19781,
+    "sha256": "874be94d45ece69f878bad977b2d33cb67e508dd29039b69197eb4447048a1e1"
   },
   {
     "path": "src/math.js",
@@ -145,18 +155,23 @@
     "sha256": "535f84b1c5d8bc90daef559605748e7dfc303072591418f4e4c6ec35e0c351e5"
   },
   {
+    "path": "src/session.js",
+    "bytes": 712,
+    "sha256": "9d754b0a57f22d6f43afd02609e8f51348a93980c46b24af504c6bcd8360869e"
+  },
+  {
     "path": "src/stages.js",
     "bytes": 2484,
     "sha256": "c32d1338b23605800b36c2fdb5f6c873e04fdfad5cebc9f975d7fd99865fabe4"
   },
   {
     "path": "src/xr.js",
-    "bytes": 14791,
-    "sha256": "eabf3570b6a9f34d4afcc03f32239bce7a467ad71f1c54deed731b0d9044e95a"
+    "bytes": 15540,
+    "sha256": "52abef66ce91feb57d522f86c7b7ed726d3795474f12b97b66c4612e1a66616f"
   },
   {
     "path": "style.css",
-    "bytes": 14191,
-    "sha256": "62ac1607ec93ac4be5772753f195c38945c956ac33e41dd14120e661c572a872"
+    "bytes": 15168,
+    "sha256": "41c05ece4d5976968d513f6f984343f0ff586d4a871a946291d2ef5b9963411f"
   }
 ]

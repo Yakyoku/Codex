@@ -29,3 +29,8 @@
  body.pc-display .sheet{width:min(920px,85vw);padding:40px}body.pc-display h2{font-size:clamp(32px,1.2vw,46px)}body.pc-display #modalBody{font-size:clamp(18px,.65vw,25px)}
  body.pc-display .notice,body.pc-display .table td,body.pc-display .perf{font-size:clamp(15px,.5vw,19px)}body.pc-display .setting input[type=range]{width:240px}
 }
+
+/* Explicit verification UI; never affects ordinary play or its saved settings. */
+#diagnostics{position:fixed;z-index:12;right:max(14px,env(safe-area-inset-right));top:clamp(130px,11vh,240px);width:min(720px,calc(100vw - 28px));max-height:calc(89dvh - 140px);overflow:auto;padding:18px;border:1px solid #e7be73;border-radius:10px;background:#102832f5;color:#f4ebd8;font-size:clamp(13px,.55vw,21px)}
+#diagnostics h2{font-size:1.25em;margin:0 0 8px}#diagnostics p{font-size:.85em;line-height:1.6;margin:8px 0}#diagnostics label{display:inline-block;margin:4px}#diagnostics select{font:inherit;color:inherit;background:#193b45;max-width:260px;padding:6px;border:1px solid #8aabab}#diagnostics button{padding:9px;font-size:inherit}.diag-actions{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}#diagReadout{white-space:pre-wrap;overflow-wrap:anywhere;font:inherit;font-family:ui-monospace,monospace;line-height:1.6;margin:8px 0;color:#f7d595}
+body.vr #diagnostics{display:none}
