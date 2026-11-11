@@ -1,10 +1,10 @@
 {
   "release": "astral-relay-mobile-r06",
   "mode": "3d",
-  "sourceRevision": "working-tree",
+  "sourceRevision": "8b1b5852fc527a602c9e7ebeffa79ef333467a05",
   "baselinePublication": "cf150b2536706f7bb8c2d58d1af5b12b289b12ea",
   "inputHash": "e3eb97a77cbd3e195c621ba1be3c4bc84d817a336889a2ebc81d99ac29e14d6c",
-  "buildUTC": "2026-11-11T21:34:49.235Z",
+  "buildUTC": "2026-11-11T21:36:35.467Z",
   "site": {
     "name": "astral-relay-spatial",
     "siteId": "d26fbd41-5e66-4df2-8533-5153a2221ed2"
