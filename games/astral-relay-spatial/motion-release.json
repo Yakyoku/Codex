@@ -1,20 +1,20 @@
 {
-  "release": "astral-relay-motion-r05",
+  "release": "astral-relay-mobile-r06",
   "mode": "3d",
-  "sourceRevision": "86b023f226dddcd89f80abdf68b1abaea996d7a4",
+  "sourceRevision": "working-tree",
   "baselinePublication": "cf150b2536706f7bb8c2d58d1af5b12b289b12ea",
-  "inputHash": "98cde7cde4bc783c1ffe627480f34c41ec5e9834698d5529e8a755e641192697",
-  "buildUTC": "2026-11-11T15:23:22.754Z",
+  "inputHash": "e3eb97a77cbd3e195c621ba1be3c4bc84d817a336889a2ebc81d99ac29e14d6c",
+  "buildUTC": "2026-11-11T21:34:49.235Z",
   "site": {
     "name": "astral-relay-spatial",
     "siteId": "d26fbd41-5e66-4df2-8533-5153a2221ed2"
   },
-  "entry": "index-motion-feef70ad0fa9.js",
+  "entry": "index-motion-4d292d95a79b.js",
   "renderer": "view3d-motion-b025c1ca909e.js",
   "files": {
     "index.html": {
-      "bytes": 500,
-      "sha256": "86995a404d76d4cf15525bab0fa906aa4eaad67613e8f21c1017ef754278ac16"
+      "bytes": 576,
+      "sha256": "532478745216ad1cc4d1a0acb635fa500e01e516f5a39d7e8000e12b98e66a3f"
     },
     "_headers": {
       "bytes": 226,
@@ -36,9 +36,17 @@
       "bytes": 532552,
       "sha256": "b025c1ca909ed2442f7131b8a0234461ef7ceeb8a6f6fcc52fb4c03b216ef9b5"
     },
-    "assets/index-motion-feef70ad0fa9.js": {
-      "bytes": 19993,
-      "sha256": "feef70ad0fa96b72c741d7162149c22db75c316ccfd3919b3f49c827ba941efc"
+    "assets/touch-16916b26e6f4.js": {
+      "bytes": 4538,
+      "sha256": "16916b26e6f431cc3e798e54e50b498ec81807817f048cf312982592a605ae3e"
+    },
+    "assets/mobile-b09b08e832b1.css": {
+      "bytes": 2997,
+      "sha256": "b09b08e832b1d3feba807577a1c84d5ce27247283d3b156ab61f95e2fb0f7cb8"
+    },
+    "assets/index-motion-4d292d95a79b.js": {
+      "bytes": 19597,
+      "sha256": "4d292d95a79b35c311af77bbc307f3c9d97a442a54486035a803223a2baea861"
     },
     "assets/results-BmcsftrC.js": {
       "bytes": 2637,

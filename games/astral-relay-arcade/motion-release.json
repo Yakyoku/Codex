@@ -1,20 +1,20 @@
 {
-  "release": "astral-relay-motion-r05",
+  "release": "astral-relay-mobile-r06",
   "mode": "2d",
-  "sourceRevision": "86b023f226dddcd89f80abdf68b1abaea996d7a4",
+  "sourceRevision": "working-tree",
   "baselinePublication": "cf150b2536706f7bb8c2d58d1af5b12b289b12ea",
-  "inputHash": "b438d6ab7dceea5ff255b9ed91c5da7a32d8228ed2b6e994601f415f30b659f2",
-  "buildUTC": "2026-11-11T15:23:22.674Z",
+  "inputHash": "fc0dea110479e89de364a19b4dc3698e4843c39ff16e4e9323fd90be0a28d965",
+  "buildUTC": "2026-11-11T21:34:49.185Z",
   "site": {
     "name": "astral-relay-arcade",
     "siteId": "e3e58594-14bb-49ce-9374-6cb5128e20d9"
   },
-  "entry": "index-motion-347d89d09a1a.js",
+  "entry": "index-motion-62601ec164fe.js",
   "renderer": "view2d-motion-e14022680753.js",
   "files": {
     "index.html": {
-      "bytes": 501,
-      "sha256": "f215eac58b275f685e1839ab9bb87e045d89f6e0fe3ac0eff9e9788f19b0c8a8"
+      "bytes": 577,
+      "sha256": "e528993b5c16b2d9d0a77d126ddd8422ebb55e6f0956a4e8545c0c6d4320c517"
     },
     "_headers": {
       "bytes": 226,
@@ -36,9 +36,17 @@
       "bytes": 7353,
       "sha256": "e140226807538827c7cb526122929e17a237a575427f52b9c2e7e45cab064115"
     },
-    "assets/index-motion-347d89d09a1a.js": {
-      "bytes": 20222,
-      "sha256": "347d89d09a1af76566e76ce7af1d11a8cfb91408fff2aa1fea7f9d16ae815601"
+    "assets/touch-16916b26e6f4.js": {
+      "bytes": 4538,
+      "sha256": "16916b26e6f431cc3e798e54e50b498ec81807817f048cf312982592a605ae3e"
+    },
+    "assets/mobile-b09b08e832b1.css": {
+      "bytes": 2997,
+      "sha256": "b09b08e832b1d3feba807577a1c84d5ce27247283d3b156ab61f95e2fb0f7cb8"
+    },
+    "assets/index-motion-62601ec164fe.js": {
+      "bytes": 19826,
+      "sha256": "62601ec164feb1baa492ef8cdfeebbc93f06c23b71a28566d040c099d6ea71f7"
     },
     "assets/features-CDx28dQD.js": {
       "bytes": 2082,
