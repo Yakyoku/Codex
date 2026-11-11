@@ -82,22 +82,27 @@
   {
     "path": "build-info.json",
     "bytes": 214,
-    "sha256": "3c96a7a426ec0daed80fe2b97e5c0acaf7430c91ac3b3333f450a0be7e5a3c7d"
+    "sha256": "3263af154266b861e9e653ec4c93b80664f053233aa4d61ce5b0015dca937155"
   },
   {
     "path": "index.html",
-    "bytes": 3979,
-    "sha256": "8ab8514fab1f263a02bdbc342e342cfb483bc8205b0fd3a00426edaa5770c7a0"
+    "bytes": 3975,
+    "sha256": "cd1fac809cf6aafd4bfa37c87c522341da86a672f130c806978217d07fe3482c"
   },
   {
     "path": "src/art.js",
-    "bytes": 13643,
-    "sha256": "5b01ef5befd9590803137f39811fc80bf75297707d4186773e618746fb3deae9"
+    "bytes": 8058,
+    "sha256": "aeb1d3ab0b866ce9bae48488863c789e2555da27716b6f85f9469ca3d3725655"
   },
   {
     "path": "src/audio.js",
     "bytes": 3864,
     "sha256": "5d9ffd68be221a22cd16d192b70b7059f60066b05d305fca55d37e99b7f3720c"
+  },
+  {
+    "path": "src/characters.js",
+    "bytes": 11495,
+    "sha256": "8a35a4ec4971e8e52fafd72464915a600876cea276d0ba14d63098d590803f81"
   },
   {
     "path": "src/diagnostics.js",
@@ -111,8 +116,8 @@
   },
   {
     "path": "src/game.js",
-    "bytes": 8479,
-    "sha256": "d383ef2449082b0698285648f751e44d63d1ae6cf7e5e9a86d48796c7407e4ca"
+    "bytes": 8749,
+    "sha256": "1b7218e8f835ef5390cc9dbadc9301596356616e0a5dc344b03f096d6a1409e1"
   },
   {
     "path": "src/hazards.js",
@@ -126,8 +131,8 @@
   },
   {
     "path": "src/main.js",
-    "bytes": 19781,
-    "sha256": "874be94d45ece69f878bad977b2d33cb67e508dd29039b69197eb4447048a1e1"
+    "bytes": 20081,
+    "sha256": "15a4801c54494e4137de1e4b380f71723b6976581fe256e95e3ea3bd2270c72a"
   },
   {
     "path": "src/math.js",
@@ -138,6 +143,11 @@
     "path": "src/metrics.js",
     "bytes": 1084,
     "sha256": "b735ec6f3e4c8a767b635b06f790affe15c8c33c61f9e1c09f99261d206ce5a5"
+  },
+  {
+    "path": "src/motion.js",
+    "bytes": 12051,
+    "sha256": "4e2cc325ac8e50de2534e3b921b103fd4ab4ca14d8f4e1a691d32748337e881a"
   },
   {
     "path": "src/quality.js",
@@ -166,8 +176,8 @@
   },
   {
     "path": "src/xr.js",
-    "bytes": 15540,
-    "sha256": "52abef66ce91feb57d522f86c7b7ed726d3795474f12b97b66c4612e1a66616f"
+    "bytes": 15568,
+    "sha256": "244e011114cf43abf74a386c63477f51b2f60d4287924ab46abb424f254563f1"
   },
   {
     "path": "style.css",
