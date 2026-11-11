@@ -1,9 +1,9 @@
 {
   "game_id": "skygrip",
-  "release_id": "skygrip-20261111-r012",
-  "source_input_sha256": "3bc0142ad3f415811a7c0bd40441dae02991c867d3b79ae8864d42bd2c65f40d",
-  "build_started_at_utc": "2026-11-11T11:34:14.929164Z",
-  "build_finished_at_utc": "2026-11-11T11:34:19.843817Z",
+  "release_id": "skygrip-20261111-r013",
+  "source_input_sha256": "6b2f31a53f8d4681c1e528ba68bf3423ced1560017a6419c122d0046a2b9df36",
+  "build_started_at_utc": "2026-11-11T12:57:35.500108Z",
+  "build_finished_at_utc": "2026-11-11T12:57:42.492508Z",
   "files": [
     {
       "path": "_headers",
@@ -11,29 +11,44 @@
       "sha256": "3afc60bf94f9625b555665e6f02e8b7d83e63569230400b5680010973bf897e5"
     },
     {
-      "path": "assets/index-BRGJSTpp.js",
+      "path": "assets/index-2ZbEfvFv.css",
+      "bytes": 5447,
+      "sha256": "d72a205ef32dddb2f6aede78c2b16788ff6d50a89e10e868637fbf3e4b9ef2ac"
+    },
+    {
+      "path": "assets/index-DjgF69uE.js",
       "bytes": 2827,
-      "sha256": "91035c8da6ca159b6527db6d4fcb9aed601ab1dfc8f3a2ccfe3919fc2653ee0c"
+      "sha256": "f4d4c2645c0263d59179b4e7a24a53b407e4d287888edfd5c811ce9affb67cdd"
     },
     {
-      "path": "assets/index-C5UuSP4x.css",
-      "bytes": 3868,
-      "sha256": "c8df94e3129613248d6103eb2a77d1c9d6511d26883f9baeedd250ab21418531"
+      "path": "assets/main-CkYcZMRC.js",
+      "bytes": 611890,
+      "sha256": "4f23f89a8d3de7ad5b0e18841b68c8735708f94c406c2b18c295d4a817789e75"
     },
     {
-      "path": "assets/main-DG0rw7Gj.js",
-      "bytes": 598502,
-      "sha256": "c634509d975718f811fa5258005600153af5554e66fe5f2a88a256cc2d7c59e5"
-    },
-    {
-      "path": "character-updates.html",
+      "path": "character-updates-r012.html",
       "bytes": 5125,
       "sha256": "6fa7c5eaea82a3971f5ede479929142877d5c36a63c53b98b0763d13a80b472a"
     },
     {
+      "path": "character-updates.html",
+      "bytes": 8328,
+      "sha256": "a85d28f25b50b09fb757ca1fc31c4e5da04bd284e218d5c2da9ce22e1656c0b7"
+    },
+    {
       "path": "index.html",
-      "bytes": 6031,
-      "sha256": "3013aef1d7e00685038978954e2a44c24f8336db7d27322460cd254524588c58"
+      "bytes": 6601,
+      "sha256": "92be821914dbb4e43677024c86dc7068dd6aec5f14d237c84da4627984133caa"
+    },
+    {
+      "path": "review/birds-r013.png",
+      "bytes": 438020,
+      "sha256": "54a71f343c9438a6abca072669c28410eb73223ec1e3d0d0a4091d486717af9a"
+    },
+    {
+      "path": "review/drone-r013.png",
+      "bytes": 472813,
+      "sha256": "cd70c0b48f16784a24eecf1fe86b0c2da005ce4d5e8166eadd5834e49f4c270b"
     },
     {
       "path": "review/hand-oblique-r012.png",
@@ -44,6 +59,11 @@
       "path": "review/hand-palm-r012.png",
       "bytes": 659380,
       "sha256": "29865f6d9bbaee91df5e75883de301f6cb2d1adfd5dd401440938b7457a8e08e"
+    },
+    {
+      "path": "review/pedestrians-r013.png",
+      "bytes": 1230251,
+      "sha256": "56c0fe6a23d86ba54e5938955f6ac77a5cf0743af4f7059d4dbaddf94d6e9b43"
     }
   ]
 }
