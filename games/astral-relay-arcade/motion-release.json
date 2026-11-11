@@ -1,10 +1,10 @@
 {
   "release": "astral-relay-motion-r05",
   "mode": "2d",
-  "sourceRevision": "working-tree",
+  "sourceRevision": "86b023f226dddcd89f80abdf68b1abaea996d7a4",
   "baselinePublication": "cf150b2536706f7bb8c2d58d1af5b12b289b12ea",
   "inputHash": "b438d6ab7dceea5ff255b9ed91c5da7a32d8228ed2b6e994601f415f30b659f2",
-  "buildUTC": "2026-11-11T12:58:54.997Z",
+  "buildUTC": "2026-11-11T15:23:22.674Z",
   "site": {
     "name": "astral-relay-arcade",
     "siteId": "e3e58594-14bb-49ce-9374-6cb5128e20d9"

@@ -1,0 +1,24 @@
+{
+  "release": "astral-relay-motion-r05",
+  "observedUTC": "2026-11-11T15:23:23.156338+00:00",
+  "sourceRevision": "86b023f226dddcd89f80abdf68b1abaea996d7a4",
+  "appAcceptance": {
+    "changes": 30,
+    "testsPassed": 49,
+    "bothStaticBuilds": "passed",
+    "visualReview": "not performed",
+    "physical4060TiQuestIpad": "not performed"
+  },
+  "publicationAcceptance": {
+    "status": "stopped_user_aborted_git_pull",
+    "abortedCommand": "git pull --rebase origin main",
+    "pushPerformed": false,
+    "actionsRunID": null,
+    "deployID": null,
+    "newProductionHashVerified": false,
+    "requiredConfirmation": "Resume the GitHub pull/push communication cancelled by the user. Then read current AGENTS, rebase (stop on conflict), push these two folders only, watch own Actions and verify HTTPS file hashes."
+  },
+  "processInspection": "git PIDs 847/850/1259 are exited zombies (Zs), no running build/publish task; no index lock/rebase directory observed. /proc details unavailable, not retried.",
+  "baselineCanonical": "Original /workspace/astral-relay absent; published JS base retained, see MOTION-R05.md",
+  "preservedWorkHistory": "/workspace/astral-motion-r05-workhistory"
+}

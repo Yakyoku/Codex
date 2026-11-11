@@ -1,0 +1,63 @@
+Validation UTC: 2026-11-11T15:23:23.156338+00:00
+Node v24.22.1 / CPU simulation, Canvas command recorder, real Three.js scene with mock WebGL renderer. Not GPU FPS.
+✔ M01 player banks into lateral motion and returns (4.037449ms)
+✔ M02 forward/back pitch has correct signs and bounds (0.418851ms)
+✔ M03 thrust reacts to speed without instantaneous jump (0.183156ms)
+✔ M04 navigation lights follow simulation time (0.186792ms)
+✔ M05 focus wings deploy progressively (0.355426ms)
+✔ M06 power-up geometry transitions smoothly (0.194383ms)
+✔ M07 shooting recoil settles without moving collision point (0.366793ms)
+✔ M08 damage recoil is stronger and decays (0.341816ms)
+✔ M09 protected craft stays visible in real Three scene (63.91507ms)
+✔ M10 enemies face travel with a bounded shortest-angle turn (0.413975ms)
+✔ M11 enemy bank differs by lateral direction (0.271019ms)
+✔ M12 dart fins articulate independently (0.218399ms)
+✔ M13 orb attitude has a distinct continuous phase (0.219571ms)
+✔ M14 carrier turns more slowly than dart (0.187002ms)
+✔ M15 relay hover stays within two logical pixels (1.501744ms)
+✔ M16 relay beacon cycles without random flicker (0.192951ms)
+✔ M17 fire warning applies only to actual firing air enemies (0.367664ms)
+✔ M18 ground impact causes bounded armor recoil (0.328595ms)
+✔ M19 hidden structure unfolds progressively with hits (0.206241ms)
+✔ M20 core assembly converges and stops at correct radius (0.209216ms)
+✔ M21 core vulnerable pulse ends exactly at 4.2 seconds (0.201604ms)
+✔ M22 muzzle flash expires quickly (0.531581ms)
+✔ M23 shot trail remains short and behind projectile (0.197968ms)
+✔ M24 bullet trail follows its own velocity (0.184779ms)
+✔ M25 impact sparks fan out and expire (0.293783ms)
+✔ M26 explosion has a fast core and longer shockwave (0.738894ms)
+✔ M27 debris follows deterministic drag and fades (1.015963ms)
+✔ M28 merge particles converge in both renderers (0.263348ms)
+✔ M29 bonus floats upward with an eased path (0.253943ms)
+✔ M30 extend presents three orbiting markers (0.242686ms)
+✔ motion does not read or write any storage (1.278859ms)
+✔ pause freezes poses and effects; retry removes ghosts (0.720918ms)
+✔ visual state never mutates game coordinates, HP, arrays or scores (0.346272ms)
+✔ reduced motion attenuates banking without modifying input or physics (0.169135ms)
+✔ event queues bounded in a sustained burst (1.812574ms)
+✔ continuous response is independent of 60,90,144Hz integration (0.123136ms)
+✔ 2D actual renderer handles all types/events at 4K-scale canvas (8.441ms)
+✔ 3D actual geometry, effects pool, camera stability and pause (23.088222ms)
+✔ published core: game over, one result, no postdeath scoring, retry (2.772522ms)
+✔ published core: 60/90Hz same simulation and pause; motion integration noninterference (95.288699ms)
+✔ fixed-step interpolation for player/enemy/projectiles does not alter source (0.504131ms)
+✔ interpolation snaps teleports and resets without trails across the field (0.125569ms)
+✔ published core: normalized diagonal speed, focus and power speed (1.927397ms)
+✔ published core: duplicate kill, extend and core timing rewards (1.141321ms)
+✔ published core: ground contact safe, relay merges, area loops (1.361264ms)
+✔ published core: hidden target and chain bonuses (1.307853ms)
+✔ long simulation retains bounded pose state and effects, no CPU timing claim (73.946981ms)
+✔ release runtime rules and original gamepad paths are byte-identical (0.963012ms)
+✔ baseline static files preserved and every release hash matches (6.991455ms)
+ℹ tests 49
+ℹ suites 0
+ℹ pass 49
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 325.693138
+
+Both static builds exit 0:
+{"release":"astral-relay-motion-r05","mode":"2d","inputHash":"b438d6ab7dceea5ff255b9ed91c5da7a32d8228ed2b6e994601f415f30b659f2","entry":"index-motion-347d89d09a1a.js","renderer":"view2d-motion-e14022680753.js","files":9}
+{"release":"astral-relay-motion-r05","mode":"3d","inputHash":"98cde7cde4bc783c1ffe627480f34c41ec5e9834698d5529e8a755e641192697","entry":"index-motion-feef70ad0fa9.js","renderer":"view3d-motion-b025c1ca909e.js","files":9}

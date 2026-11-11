@@ -1,10 +1,10 @@
 {
   "release": "astral-relay-motion-r05",
   "mode": "3d",
-  "sourceRevision": "working-tree",
+  "sourceRevision": "86b023f226dddcd89f80abdf68b1abaea996d7a4",
   "baselinePublication": "cf150b2536706f7bb8c2d58d1af5b12b289b12ea",
   "inputHash": "98cde7cde4bc783c1ffe627480f34c41ec5e9834698d5529e8a755e641192697",
-  "buildUTC": "2026-11-11T12:58:55.082Z",
+  "buildUTC": "2026-11-11T15:23:22.754Z",
   "site": {
     "name": "astral-relay-spatial",
     "siteId": "d26fbd41-5e66-4df2-8533-5153a2221ed2"

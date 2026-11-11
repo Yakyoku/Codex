@@ -1,0 +1,98 @@
+{
+  "release": "astral-relay-motion-r05",
+  "generatedUTC": "2026-11-11T15:23:23.156338+00:00",
+  "excludes": [
+    "motion-distribution.json (self hash)"
+  ],
+  "note": "All package files; _headers and netlify-site.json are deploy configuration, not browser assets. Runtime assets are separately identified in motion-release.json.",
+  "files": {
+    "MOTION-HANDOFF.json": {
+      "bytes": 1191,
+      "sha256": "579a282bcb955a63363f9fa5a3354e7a3fc5a1005238da2add8c108108ced448"
+    },
+    "MOTION-R05.md": {
+      "bytes": 10119,
+      "sha256": "a43c04e41226fdfa3f15fb3e2d8033004da2925563c829384564929bd20308ab"
+    },
+    "THREE-LICENSE.txt": {
+      "bytes": 1081,
+      "sha256": "bfe119ea4fd413f5f7ca3fcd63adb0c4a073ed39daa2fe7d3e6b769e21272601"
+    },
+    "_headers": {
+      "bytes": 226,
+      "sha256": "36f4df4a3e3fc4511d30a4eddd4b61dd9d26c88ea0844243fe6e73fc072fe4a6"
+    },
+    "assets/index-5f3c327b2848.js": {
+      "bytes": 19936,
+      "sha256": "5f3c327b28482566bc3f204f1b5190de0ef21e4d68d364b62655e47ae83a9a2d"
+    },
+    "assets/index-motion-feef70ad0fa9.js": {
+      "bytes": 19993,
+      "sha256": "feef70ad0fa96b72c741d7162149c22db75c316ccfd3919b3f49c827ba941efc"
+    },
+    "assets/index-thUveMIn.css": {
+      "bytes": 6355,
+      "sha256": "7d0fa6b67daa264fb1a33383ce8b9db55b3d87e10d561cc56358a4ecabd30e1a"
+    },
+    "assets/motion-e57b71ed95ab.js": {
+      "bytes": 5906,
+      "sha256": "e57b71ed95abb1f04086de68a2a018bb470a8a7c6ce8476c396d8b5066d777c7"
+    },
+    "assets/motion3d-dfa22967227d.js": {
+      "bytes": 4327,
+      "sha256": "dfa22967227d3d14c4d3d424425d09ac5cb2fc9d1e0b38b5557bb0e616a9a9a1"
+    },
+    "assets/results-BmcsftrC.js": {
+      "bytes": 2637,
+      "sha256": "45696c4a465b279930d46b21950dd10e3f52bf5b8f152e14ea506a153fbc5a97"
+    },
+    "assets/view3d-5xJHh8Cr.js": {
+      "bytes": 531634,
+      "sha256": "84df5fb1489ba51a66261f3e1fab36adbb218182a6294cf346ea1413e37a94fb"
+    },
+    "assets/view3d-motion-b025c1ca909e.js": {
+      "bytes": 532552,
+      "sha256": "b025c1ca909ed2442f7131b8a0234461ef7ceeb8a6f6fcc52fb4c03b216ef9b5"
+    },
+    "index.html": {
+      "bytes": 500,
+      "sha256": "86995a404d76d4cf15525bab0fa906aa4eaad67613e8f21c1017ef754278ac16"
+    },
+    "motion-release.json": {
+      "bytes": 1837,
+      "sha256": "8eaf7479f90af67c4811a312410d8c4a2bd5a944991c517c42d1b8b3e103237a"
+    },
+    "motion-source/build.mjs": {
+      "bytes": 2623,
+      "sha256": "fc096060d0213ecd61db9282c3760b99fc67ffe64e4c6731ac2b2984af2097a0"
+    },
+    "motion-source/entry.mjs": {
+      "bytes": 19979,
+      "sha256": "69434a1bd7195e01f60ffb466a330f4ca05e664a29237c7f7ffa2266546f0066"
+    },
+    "motion-source/motion.mjs": {
+      "bytes": 5906,
+      "sha256": "e57b71ed95abb1f04086de68a2a018bb470a8a7c6ce8476c396d8b5066d777c7"
+    },
+    "motion-source/motion2d.mjs": {
+      "bytes": 2960,
+      "sha256": "3c45fc22df88eabaabb9612aa0ffaa9adc4b23291f340faf93f9e741e28c3874"
+    },
+    "motion-source/motion3d.mjs": {
+      "bytes": 4315,
+      "sha256": "d52e1d1aca0104b3f94c382b2e17cd36dbc85ae15d33fe875f534eb5990f1da7"
+    },
+    "motion-source/renderer.mjs": {
+      "bytes": 532566,
+      "sha256": "45d5b9a9ba4a92350baf901809d6750e1505789d86c2f380628f574f01122f09"
+    },
+    "motion-validation.txt": {
+      "bytes": 4214,
+      "sha256": "c99816bbc9477a2c370aa5a6d0d0562e397f62f47c95dac2051979d347e7000e"
+    },
+    "netlify-site.json": {
+      "bytes": 89,
+      "sha256": "bacbf29fad82d27dce24c36f6e24f77c0988f473b9a99c7ed1e4d5ef27d04762"
+    }
+  }
+}
