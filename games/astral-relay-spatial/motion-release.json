@@ -1,0 +1,52 @@
+{
+  "release": "astral-relay-motion-r05",
+  "mode": "3d",
+  "sourceRevision": "working-tree",
+  "baselinePublication": "cf150b2536706f7bb8c2d58d1af5b12b289b12ea",
+  "inputHash": "98cde7cde4bc783c1ffe627480f34c41ec5e9834698d5529e8a755e641192697",
+  "buildUTC": "2026-11-11T12:58:55.082Z",
+  "site": {
+    "name": "astral-relay-spatial",
+    "siteId": "d26fbd41-5e66-4df2-8533-5153a2221ed2"
+  },
+  "entry": "index-motion-feef70ad0fa9.js",
+  "renderer": "view3d-motion-b025c1ca909e.js",
+  "files": {
+    "index.html": {
+      "bytes": 500,
+      "sha256": "86995a404d76d4cf15525bab0fa906aa4eaad67613e8f21c1017ef754278ac16"
+    },
+    "_headers": {
+      "bytes": 226,
+      "sha256": "36f4df4a3e3fc4511d30a4eddd4b61dd9d26c88ea0844243fe6e73fc072fe4a6"
+    },
+    "THREE-LICENSE.txt": {
+      "bytes": 1081,
+      "sha256": "bfe119ea4fd413f5f7ca3fcd63adb0c4a073ed39daa2fe7d3e6b769e21272601"
+    },
+    "assets/motion-e57b71ed95ab.js": {
+      "bytes": 5906,
+      "sha256": "e57b71ed95abb1f04086de68a2a018bb470a8a7c6ce8476c396d8b5066d777c7"
+    },
+    "assets/motion3d-dfa22967227d.js": {
+      "bytes": 4327,
+      "sha256": "dfa22967227d3d14c4d3d424425d09ac5cb2fc9d1e0b38b5557bb0e616a9a9a1"
+    },
+    "assets/view3d-motion-b025c1ca909e.js": {
+      "bytes": 532552,
+      "sha256": "b025c1ca909ed2442f7131b8a0234461ef7ceeb8a6f6fcc52fb4c03b216ef9b5"
+    },
+    "assets/index-motion-feef70ad0fa9.js": {
+      "bytes": 19993,
+      "sha256": "feef70ad0fa96b72c741d7162149c22db75c316ccfd3919b3f49c827ba941efc"
+    },
+    "assets/results-BmcsftrC.js": {
+      "bytes": 2637,
+      "sha256": "45696c4a465b279930d46b21950dd10e3f52bf5b8f152e14ea506a153fbc5a97"
+    },
+    "assets/index-thUveMIn.css": {
+      "bytes": 6355,
+      "sha256": "7d0fa6b67daa264fb1a33383ce8b9db55b3d87e10d561cc56358a4ecabd30e1a"
+    }
+  }
+}

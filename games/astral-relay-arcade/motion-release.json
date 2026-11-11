@@ -1,0 +1,52 @@
+{
+  "release": "astral-relay-motion-r05",
+  "mode": "2d",
+  "sourceRevision": "working-tree",
+  "baselinePublication": "cf150b2536706f7bb8c2d58d1af5b12b289b12ea",
+  "inputHash": "b438d6ab7dceea5ff255b9ed91c5da7a32d8228ed2b6e994601f415f30b659f2",
+  "buildUTC": "2026-11-11T12:58:54.997Z",
+  "site": {
+    "name": "astral-relay-arcade",
+    "siteId": "e3e58594-14bb-49ce-9374-6cb5128e20d9"
+  },
+  "entry": "index-motion-347d89d09a1a.js",
+  "renderer": "view2d-motion-e14022680753.js",
+  "files": {
+    "index.html": {
+      "bytes": 501,
+      "sha256": "f215eac58b275f685e1839ab9bb87e045d89f6e0fe3ac0eff9e9788f19b0c8a8"
+    },
+    "_headers": {
+      "bytes": 226,
+      "sha256": "36f4df4a3e3fc4511d30a4eddd4b61dd9d26c88ea0844243fe6e73fc072fe4a6"
+    },
+    "THREE-LICENSE.txt": {
+      "bytes": 1081,
+      "sha256": "bfe119ea4fd413f5f7ca3fcd63adb0c4a073ed39daa2fe7d3e6b769e21272601"
+    },
+    "assets/motion-e57b71ed95ab.js": {
+      "bytes": 5906,
+      "sha256": "e57b71ed95abb1f04086de68a2a018bb470a8a7c6ce8476c396d8b5066d777c7"
+    },
+    "assets/motion2d-92de3f3631fc.js": {
+      "bytes": 2972,
+      "sha256": "92de3f3631fcab1ae31eb2d7968acf11bc8bc546dabfdd2aa2c70b8cc0469366"
+    },
+    "assets/view2d-motion-e14022680753.js": {
+      "bytes": 7353,
+      "sha256": "e140226807538827c7cb526122929e17a237a575427f52b9c2e7e45cab064115"
+    },
+    "assets/index-motion-347d89d09a1a.js": {
+      "bytes": 20222,
+      "sha256": "347d89d09a1af76566e76ce7af1d11a8cfb91408fff2aa1fea7f9d16ae815601"
+    },
+    "assets/features-CDx28dQD.js": {
+      "bytes": 2082,
+      "sha256": "1e13c2e14a7b68098b9b564d637fda42b04ea53094874528c6fcd0312ef6c8bb"
+    },
+    "assets/index-thUveMIn.css": {
+      "bytes": 6355,
+      "sha256": "7d0fa6b67daa264fb1a33383ce8b9db55b3d87e10d561cc56358a4ecabd30e1a"
+    }
+  }
+}
