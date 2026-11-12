@@ -18,3 +18,8 @@ canvas{width:min(100%,calc(65dvh * 10 / 7));height:auto;aspect-ratio:10/7;max-he
 body{overscroll-behavior-y:contain}header{padding-top:max(12px,env(safe-area-inset-top))}
 @media(max-width:600px){:root[data-touch-controls="on"] .stick{width:82px;height:82px}dialog{max-width:94vw;padding:20px}dialog label{flex-wrap:wrap}.heading{margin-bottom:10px}#overlay h2{font-size:30px}#overlay p{font-size:11px;line-height:1.6}#overlay .eyebrow{display:none}.hud{gap:4px}main{padding-bottom:env(safe-area-inset-bottom)}}
 @media(max-height:600px) and (orientation:landscape){:root[data-touch-controls="on"] .game{margin-inline:90px}:root[data-touch-controls="on"] .touch{bottom:4px;padding:0}.touch #line{font-size:10px;padding:5px 10px}}
+#overlay{background:linear-gradient(90deg,#071e29e8,#071e2970),url('../../packages/assets/hero-garden.svg') center/cover;backdrop-filter:none;text-shadow:0 2px 8px #061924}
+#overlay h2{color:#fff0c8}#overlay p{color:#eff4df}#overlay .primary{text-shadow:none}
+footer .creation-note{margin-left:auto;text-align:right;color:#c6d4c6;font-size:11px;letter-spacing:.02em}
+@media(min-width:1600px){footer .creation-note{font-size:14px}}
+@media(max-height:600px){footer{display:flex;padding:2px 0}footer>span,footer>a{display:none}footer .creation-note{font-size:9px}}

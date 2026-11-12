@@ -1,7 +1,7 @@
 {
   "app": "game-2d",
-  "build_id": "f0d5ac20a285-20261112031313",
-  "build_utc": "2026-11-12T03:13:13.605000+00:00",
-  "source_revision": "f0d5ac20a2857560cc12c9ecf7654afb912827ba",
-  "input_spec_sha256": "f297f4fa63a68b58caa7efb12b56ac58d9ddb50b14ef125eeb5a953d26d99cbf"
+  "build_id": "f665f0717e09-20261112064046",
+  "build_utc": "2026-11-12T06:40:46.728000+00:00",
+  "source_revision": "f665f0717e091b12856ae305ac8c22b6cffdcf45",
+  "input_spec_sha256": "15eb2373882467fa6f3bf08a3ebb3f352510282d32b1c2592342157cd4f6fbcd"
 }
