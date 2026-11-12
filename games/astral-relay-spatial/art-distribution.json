@@ -1,0 +1,174 @@
+{
+  "release": "astral-relay-art-r07",
+  "generatedUTC": "2026-11-12T06:56:23.205450+00:00",
+  "sourceRevision": "3ea176c614949e77d93b31a03950c42cf2e0f162",
+  "excludes": [
+    "art-distribution.json (self)"
+  ],
+  "files": {
+    "ART-R07.md": {
+      "bytes": 3584,
+      "sha256": "4f6a5a5b7c1400341819f0ad827918dccd94078302b1eea58a69654cfc4ba0e6"
+    },
+    "MOBILE-R06.md": {
+      "bytes": 3486,
+      "sha256": "253748572a86ce6fb319867c94cfa17d62e5fda335a8eb76e133e56de90dfd53"
+    },
+    "MOTION-HANDOFF.json": {
+      "bytes": 1191,
+      "sha256": "579a282bcb955a63363f9fa5a3354e7a3fc5a1005238da2add8c108108ced448"
+    },
+    "MOTION-R05.md": {
+      "bytes": 10119,
+      "sha256": "a43c04e41226fdfa3f15fb3e2d8033004da2925563c829384564929bd20308ab"
+    },
+    "PUBLICATION-SUBMISSION.json": {
+      "bytes": 1405,
+      "sha256": "f0a7cb307958853be266df3a729d8d6cb94048c26d83f12bc620f55fc7981574"
+    },
+    "THREE-LICENSE.txt": {
+      "bytes": 1081,
+      "sha256": "bfe119ea4fd413f5f7ca3fcd63adb0c4a073ed39daa2fe7d3e6b769e21272601"
+    },
+    "_headers": {
+      "bytes": 226,
+      "sha256": "36f4df4a3e3fc4511d30a4eddd4b61dd9d26c88ea0844243fe6e73fc072fe4a6"
+    },
+    "art-validation.txt": {
+      "bytes": 5432,
+      "sha256": "e6eea108291f9554f6cff125db24be3bab694ab24bb6c81dd40e987597c773e8"
+    },
+    "assets/art3d-203256e7a0c2.js": {
+      "bytes": 4050,
+      "sha256": "203256e7a0c2d46628d02154977a02f6f5a479ab6661b7c3c259cbc1253fd94c"
+    },
+    "assets/hangar-b27f21d396ba.svg": {
+      "bytes": 14109,
+      "sha256": "b27f21d396ba37e61829ab36462c6b2f1aee54624c81e2ee5a563931b725a0f0"
+    },
+    "assets/index-5f3c327b2848.js": {
+      "bytes": 19936,
+      "sha256": "5f3c327b28482566bc3f204f1b5190de0ef21e4d68d364b62655e47ae83a9a2d"
+    },
+    "assets/index-motion-153f60bf6f4c.js": {
+      "bytes": 19936,
+      "sha256": "153f60bf6f4cb47caea7e9a6b5c715b040d8aa9c1b1ccbdb57766820b1683acf"
+    },
+    "assets/index-motion-4d292d95a79b.js": {
+      "bytes": 19597,
+      "sha256": "4d292d95a79b35c311af77bbc307f3c9d97a442a54486035a803223a2baea861"
+    },
+    "assets/index-motion-feef70ad0fa9.js": {
+      "bytes": 19993,
+      "sha256": "feef70ad0fa96b72c741d7162149c22db75c316ccfd3919b3f49c827ba941efc"
+    },
+    "assets/index-thUveMIn.css": {
+      "bytes": 6355,
+      "sha256": "7d0fa6b67daa264fb1a33383ce8b9db55b3d87e10d561cc56358a4ecabd30e1a"
+    },
+    "assets/mobile-616f0cd32f89.css": {
+      "bytes": 4101,
+      "sha256": "616f0cd32f89fc1fb74b42da61777396a9dd77dfe78fd73974c954faacf44b35"
+    },
+    "assets/mobile-b09b08e832b1.css": {
+      "bytes": 2997,
+      "sha256": "b09b08e832b1d3feba807577a1c84d5ce27247283d3b156ab61f95e2fb0f7cb8"
+    },
+    "assets/motion-e57b71ed95ab.js": {
+      "bytes": 5906,
+      "sha256": "e57b71ed95abb1f04086de68a2a018bb470a8a7c6ce8476c396d8b5066d777c7"
+    },
+    "assets/motion3d-dfa22967227d.js": {
+      "bytes": 4327,
+      "sha256": "dfa22967227d3d14c4d3d424425d09ac5cb2fc9d1e0b38b5557bb0e616a9a9a1"
+    },
+    "assets/results-BmcsftrC.js": {
+      "bytes": 2637,
+      "sha256": "45696c4a465b279930d46b21950dd10e3f52bf5b8f152e14ea506a153fbc5a97"
+    },
+    "assets/touch-16916b26e6f4.js": {
+      "bytes": 4538,
+      "sha256": "16916b26e6f431cc3e798e54e50b498ec81807817f048cf312982592a605ae3e"
+    },
+    "assets/view3d-5xJHh8Cr.js": {
+      "bytes": 531634,
+      "sha256": "84df5fb1489ba51a66261f3e1fab36adbb218182a6294cf346ea1413e37a94fb"
+    },
+    "assets/view3d-motion-512e1c025022.js": {
+      "bytes": 533111,
+      "sha256": "512e1c0250223c50fd10dc1160ebdc0ae4b7840ffcef22301f20726b17d6d412"
+    },
+    "assets/view3d-motion-b025c1ca909e.js": {
+      "bytes": 532552,
+      "sha256": "b025c1ca909ed2442f7131b8a0234461ef7ceeb8a6f6fcc52fb4c03b216ef9b5"
+    },
+    "index.html": {
+      "bytes": 573,
+      "sha256": "b7f5ca11bd1e0cc3e9017e3b77a0e47b0f737b9ef8bec28d2c05703f1f244eeb"
+    },
+    "mobile-distribution.json": {
+      "bytes": 4663,
+      "sha256": "939ea7caeec3fe2e2ad6461bf0f4d84513c31c860972832565d514b6a1983c54"
+    },
+    "mobile-validation.txt": {
+      "bytes": 4726,
+      "sha256": "2d801836b00dae59825885e51362d3473908ec6b538092d65d713eb0022677d9"
+    },
+    "motion-distribution.json": {
+      "bytes": 3527,
+      "sha256": "e3f3d06a289176b0db7e202b02db572a4edcc22c9f2d8718ae01a100c79bcff5"
+    },
+    "motion-release.json": {
+      "bytes": 2507,
+      "sha256": "cbe9c74e44fdd479ba72779dd670a6ab10d69cca45c28b293c079e5364a7678a"
+    },
+    "motion-source/art3d.mjs": {
+      "bytes": 4050,
+      "sha256": "203256e7a0c2d46628d02154977a02f6f5a479ab6661b7c3c259cbc1253fd94c"
+    },
+    "motion-source/build.mjs": {
+      "bytes": 3242,
+      "sha256": "87e54d9a72c0c2af09e6b5b4817d73d07800af3364654c98042f9badd50efd30"
+    },
+    "motion-source/entry.mjs": {
+      "bytes": 19897,
+      "sha256": "dfb2bda88aa77afec8644f6edfbbd49f95a733422f7d0d7251f609bc8b266854"
+    },
+    "motion-source/hangar.svg": {
+      "bytes": 14109,
+      "sha256": "b27f21d396ba37e61829ab36462c6b2f1aee54624c81e2ee5a563931b725a0f0"
+    },
+    "motion-source/mobile.css": {
+      "bytes": 4101,
+      "sha256": "616f0cd32f89fc1fb74b42da61777396a9dd77dfe78fd73974c954faacf44b35"
+    },
+    "motion-source/motion.mjs": {
+      "bytes": 5906,
+      "sha256": "e57b71ed95abb1f04086de68a2a018bb470a8a7c6ce8476c396d8b5066d777c7"
+    },
+    "motion-source/motion2d.mjs": {
+      "bytes": 2960,
+      "sha256": "3c45fc22df88eabaabb9612aa0ffaa9adc4b23291f340faf93f9e741e28c3874"
+    },
+    "motion-source/motion3d.mjs": {
+      "bytes": 4315,
+      "sha256": "d52e1d1aca0104b3f94c382b2e17cd36dbc85ae15d33fe875f534eb5990f1da7"
+    },
+    "motion-source/renderer.mjs": {
+      "bytes": 533113,
+      "sha256": "5f786ac8b3707d967d851388745b900c85ef317f452a7ac168ffa464f1a1bb98"
+    },
+    "motion-source/touch.mjs": {
+      "bytes": 4538,
+      "sha256": "16916b26e6f431cc3e798e54e50b498ec81807817f048cf312982592a605ae3e"
+    },
+    "motion-validation.txt": {
+      "bytes": 4214,
+      "sha256": "c99816bbc9477a2c370aa5a6d0d0562e397f62f47c95dac2051979d347e7000e"
+    },
+    "netlify-site.json": {
+      "bytes": 89,
+      "sha256": "bacbf29fad82d27dce24c36f6e24f77c0988f473b9a99c7ed1e4d5ef27d04762"
+    }
+  }
+}

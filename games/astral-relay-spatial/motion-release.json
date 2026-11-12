@@ -1,7 +1,7 @@
 {
   "release": "astral-relay-art-r07",
   "mode": "3d",
-  "sourceRevision": "066b9413c68b6f90ca16910ff066933b4b675cf8",
+  "sourceRevision": "3ea176c614949e77d93b31a03950c42cf2e0f162",
   "baselinePublication": "cf150b2536706f7bb8c2d58d1af5b12b289b12ea",
   "inputHash": "e37dd561fdc20138094c7b3d611d98227a356a92a3dd08cd25345677ea2da42e",
   "buildUTC": "2026-11-12T06:25:35.543Z",
@@ -64,5 +64,6 @@
       "bytes": 6355,
       "sha256": "7d0fa6b67daa264fb1a33383ce8b9db55b3d87e10d561cc56358a4ecabd30e1a"
     }
-  }
+  },
+  "originalSourceRevision": "066b9413c68b6f90ca16910ff066933b4b675cf8"
 }
