@@ -1,0 +1,176 @@
+{
+  "release_id": "pump-patrol-20261111-r20",
+  "at_utc": "2026-11-12T03:08:57.795800+00:00",
+  "unit_tests_passed": 71,
+  "typecheck": "passed",
+  "motion_improvements": 30,
+  "automated_campaigns_cleared": 36,
+  "automated_campaigns_total": 36,
+  "browser_groups_passed": 8,
+  "browser_evidence": [
+    {
+      "path": "extended-qa-attempt2.json",
+      "sha256": "7746afb66bd28b4d5bbc040b5ae3e86f8d64fa6f1eda75e1b45fedfe2744b77a"
+    },
+    {
+      "path": "extended-qa-attempt3.json",
+      "sha256": "4ecd9fbc7f73b6881600ac7f81394b55eb538b70a7fb2fd02b78ad68425c486e"
+    }
+  ],
+  "browser_results": [
+    {
+      "name": "Fresh user gesture starts real Web Audio; pause, resume and suspended-context recovery",
+      "passed": true,
+      "elapsed_ms": 4887,
+      "evidence": {
+        "started": [
+          {
+            "state": "running",
+            "time": 1.2509750566893425,
+            "rms": 0.00958444108917657
+          }
+        ],
+        "paused": [
+          {
+            "state": "running",
+            "time": 1.8517913832199546,
+            "rms": 0
+          }
+        ],
+        "resumed": [
+          {
+            "state": "running",
+            "time": 3.201451247165533,
+            "rms": 0.01123790932923579
+          }
+        ],
+        "recovered": [
+          {
+            "state": "running",
+            "time": 3.982222222222222,
+            "rms": 0.0012970849917079707
+          }
+        ]
+      }
+    },
+    {
+      "name": "Settings survive reload and master mute silences actual output",
+      "passed": true,
+      "elapsed_ms": 1466,
+      "evidence": {
+        "muted": [
+          {
+            "state": "running",
+            "time": 0.9317006802721088,
+            "rms": 0
+          }
+        ],
+        "saved": {
+          "quality": "tablet",
+          "difficulty": 1,
+          "move": "smooth",
+          "left": true,
+          "volume": [
+            0,
+            0.38,
+            0.8
+          ]
+        }
+      }
+    },
+    {
+      "name": "Repeated 2D/3D/title transitions reuse one audio context and one WebGL canvas",
+      "passed": true,
+      "elapsed_ms": 11358,
+      "evidence": {
+        "samples": [
+          {
+            "audioContexts": 1,
+            "webglCanvases": 1,
+            "heap": 12786066,
+            "autoPaused": true
+          },
+          {
+            "audioContexts": 1,
+            "webglCanvases": 1,
+            "heap": 16361040,
+            "autoPaused": false
+          },
+          {
+            "audioContexts": 1,
+            "webglCanvases": 1,
+            "heap": 19373736,
+            "autoPaused": false
+          }
+        ],
+        "note": "Software rendering at diagnostic 256x160 canvas; production quality unchanged; no GPU/FPS or XR session claim"
+      }
+    },
+    {
+      "name": "VR unsupported dialog pauses simulation and music until explicit return",
+      "passed": true,
+      "elapsed_ms": 6584,
+      "evidence": {
+        "failedVR": [
+          {
+            "state": "running",
+            "time": 15.650249433106575,
+            "rms": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "Corrupt and unavailable storage still allow gameplay",
+      "passed": true,
+      "elapsed_ms": 1803,
+      "evidence": [
+        "corrupt",
+        "denied"
+      ]
+    },
+    {
+      "name": "Two touch contacts move and pump concurrently; release stops movement",
+      "passed": true,
+      "elapsed_ms": 7063,
+      "evidence": {
+        "lesson": "練習 2 / 3　ポンプで送気",
+        "hud": "STAGE 1 / 6　こもれび坑道000000 pts♥ 5　残り 1",
+        "fullTutorial": true,
+        "replay": true,
+        "skip": true,
+        "note": "CDP synthetic simultaneous contacts; not physical iPad"
+      }
+    },
+    {
+      "name": "XR failure route: permission-denied",
+      "passed": true,
+      "elapsed_ms": 6172,
+      "evidence": {
+        "rms": 0,
+        "message": "Error: VRを開始できませんでした。権限とヘッドセットの状態を確認してください。",
+        "method": "API failure injection plus atomic DOM event dispatch to avoid software-frame-gap modal race; real renderer/WebAudio, not a real-controller or normal-pointer test"
+      }
+    },
+    {
+      "name": "XR failure route: support-check-rejected",
+      "passed": true,
+      "elapsed_ms": 5850,
+      "evidence": {
+        "rms": 0,
+        "message": "Error: QA capability check rejected",
+        "method": "API failure injection plus atomic DOM event dispatch to avoid software-frame-gap modal race; real renderer/WebAudio, not a real-controller or normal-pointer test"
+      }
+    }
+  ],
+  "visual_diagnostic_states": 7,
+  "browser_scope": "Chromium/SwiftShader; 3D functional tests use diagnostic 256x160 buffer. Unsupported XR uses real click; two injected XR failures use atomic DOM dispatch. Production quality profiles unchanged. Synthetic touch and amplitude measurements are not hardware tests or listening.",
+  "unverified": [
+    "Quest 3 physical stereo/tracking/controllers/comfort/FPS/audio",
+    "physical iPad/Safari",
+    "RTX4060 Ti sustained 4K FPS",
+    "human listening and full-campaign play",
+    "direct production Chromium navigation (environment TLS trust error)"
+  ],
+  "application_complete": false
+}
