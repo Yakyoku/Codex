@@ -1,13 +1,13 @@
 {
   "release": "astral-relay-mobile-r06",
-  "generatedUTC": "2026-11-11T21:36:35.873827+00:00",
+  "generatedUTC": "2026-11-12T03:06:45.076958+00:00",
   "excludes": [
     "mobile-distribution.json (self)"
   ],
   "files": {
     "MOBILE-R06.md": {
-      "bytes": 3411,
-      "sha256": "111bfb4c536965e5d2d4649b8074a7f41c5dd3fd5af8949450fb486ebcc2ba3c"
+      "bytes": 3486,
+      "sha256": "253748572a86ce6fb319867c94cfa17d62e5fda335a8eb76e133e56de90dfd53"
     },
     "MOTION-HANDOFF.json": {
       "bytes": 1191,
@@ -16,6 +16,10 @@
     "MOTION-R05.md": {
       "bytes": 10119,
       "sha256": "a43c04e41226fdfa3f15fb3e2d8033004da2925563c829384564929bd20308ab"
+    },
+    "PUBLICATION-SUBMISSION.json": {
+      "bytes": 1405,
+      "sha256": "3f364cd609ebd0a631bf4044cd719c28567a0993300fc4f8a5c6ab4221aaaecd"
     },
     "THREE-LICENSE.txt": {
       "bytes": 1081,

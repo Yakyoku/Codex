@@ -27,4 +27,4 @@ node --test --test-isolation=none --test-reporter=spec games/astral-relay-arcade
 
 ## 公開状態
 
-ローカル保存のみ。前工程のGitHub `git pull --rebase origin main` がユーザー中止となり、通信再開が未確認のためpush/Actions/Netlify公開は実行していない。旧公開サイトを新版として案内しない。再開時は最新AGENTSを確認し、同じ2フォルダだけをGitHubへpush、Actionsと本番hashを検証する。直接Netlify公開・新サイト・新認証は行わない。
+2026-11-12、ユーザーの再開指示を受領し、GitHubの最新mainへ競合なくrebase。旧固定ZIPの全ファイル一致を確認し、ゲーム本体は再ビルドせずGitHub Actionsへ提出する。commitの対応はPUBLICATION-SUBMISSION.jsonを参照。以前の「未push・再開確認待ち」は中止時点の履歴。公開の成否は、提出commitのActionsと本番ファイルの照合結果を別途確認する。直接Netlify公開・新サイト・新認証は行わない。

@@ -1,0 +1,23 @@
+{
+  "release": "astral-relay-mobile-r06",
+  "preparedUTC": "2026-11-12T03:06:45.076958+00:00",
+  "status": "publication resumed by user; Actions outcome must be checked separately",
+  "route": "Yakyoku/Codex main -> netlify-deploy.yml -> existing dedicated site",
+  "commitMappingAfterRebase": {
+    "86b023f226dddcd89f80abdf68b1abaea996d7a4": "6c86fe4a7d28497abe160bf2c88319671df2f055",
+    "6e1faf395f8462037739ecea2a2f8c814a9b41a5": "9522c2b92796f640e9fb4b008c1bbd1a4e28d177",
+    "8b1b5852fc527a602c9e7ebeffa79ef333467a05": "5577487280c64cbaf2bb9aad51e088f7345243f7",
+    "47f7e0e1d171e59b4038c6653892afc66c89b887": "99082eb85b35fd0b532501656e6b5c80318173fe"
+  },
+  "artifact": {
+    "file": "/workspace/astral-mobile-r06-release/astral-relay-mobile-r06-spatial.zip",
+    "bytes": 489705,
+    "sha256": "150686949b27f34d874ffa4e3f9f6b17f824c4e67da9a318d10b0df54438b073",
+    "sourceRevision": "8b1b5852fc527a602c9e7ebeffa79ef333467a05",
+    "inputHash": "e3eb97a77cbd3e195c621ba1be3c4bc84d817a336889a2ebc81d99ac29e14d6c",
+    "buildUTC": "2026-11-11T21:36:35.467Z",
+    "zipReadback": "all hashes match"
+  },
+  "verification": "All files matched fixed r06 ZIP before documentation-only publication preparation; game JS/CSS/HTML were not rebuilt or modified",
+  "historicalNotes": "Earlier NOT PUSHED notices in R05/R06 records describe the prior stopped attempt, not the current publication state."
+}
