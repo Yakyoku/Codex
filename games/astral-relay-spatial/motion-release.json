@@ -1,20 +1,20 @@
 {
-  "release": "astral-relay-mobile-r06",
+  "release": "astral-relay-art-r07",
   "mode": "3d",
-  "sourceRevision": "8b1b5852fc527a602c9e7ebeffa79ef333467a05",
+  "sourceRevision": "working-tree",
   "baselinePublication": "cf150b2536706f7bb8c2d58d1af5b12b289b12ea",
-  "inputHash": "e3eb97a77cbd3e195c621ba1be3c4bc84d817a336889a2ebc81d99ac29e14d6c",
-  "buildUTC": "2026-11-11T21:36:35.467Z",
+  "inputHash": "e37dd561fdc20138094c7b3d611d98227a356a92a3dd08cd25345677ea2da42e",
+  "buildUTC": "2026-11-12T06:24:00.894Z",
   "site": {
     "name": "astral-relay-spatial",
     "siteId": "d26fbd41-5e66-4df2-8533-5153a2221ed2"
   },
-  "entry": "index-motion-4d292d95a79b.js",
-  "renderer": "view3d-motion-b025c1ca909e.js",
+  "entry": "index-motion-153f60bf6f4c.js",
+  "renderer": "view3d-motion-512e1c025022.js",
   "files": {
     "index.html": {
-      "bytes": 576,
-      "sha256": "532478745216ad1cc4d1a0acb635fa500e01e516f5a39d7e8000e12b98e66a3f"
+      "bytes": 573,
+      "sha256": "b7f5ca11bd1e0cc3e9017e3b77a0e47b0f737b9ef8bec28d2c05703f1f244eeb"
     },
     "_headers": {
       "bytes": 226,
@@ -32,21 +32,29 @@
       "bytes": 4327,
       "sha256": "dfa22967227d3d14c4d3d424425d09ac5cb2fc9d1e0b38b5557bb0e616a9a9a1"
     },
-    "assets/view3d-motion-b025c1ca909e.js": {
-      "bytes": 532552,
-      "sha256": "b025c1ca909ed2442f7131b8a0234461ef7ceeb8a6f6fcc52fb4c03b216ef9b5"
+    "assets/art3d-203256e7a0c2.js": {
+      "bytes": 4050,
+      "sha256": "203256e7a0c2d46628d02154977a02f6f5a479ab6661b7c3c259cbc1253fd94c"
+    },
+    "assets/hangar-b27f21d396ba.svg": {
+      "bytes": 14109,
+      "sha256": "b27f21d396ba37e61829ab36462c6b2f1aee54624c81e2ee5a563931b725a0f0"
+    },
+    "assets/view3d-motion-512e1c025022.js": {
+      "bytes": 533111,
+      "sha256": "512e1c0250223c50fd10dc1160ebdc0ae4b7840ffcef22301f20726b17d6d412"
     },
     "assets/touch-16916b26e6f4.js": {
       "bytes": 4538,
       "sha256": "16916b26e6f431cc3e798e54e50b498ec81807817f048cf312982592a605ae3e"
     },
-    "assets/mobile-b09b08e832b1.css": {
-      "bytes": 2997,
-      "sha256": "b09b08e832b1d3feba807577a1c84d5ce27247283d3b156ab61f95e2fb0f7cb8"
+    "assets/mobile-616f0cd32f89.css": {
+      "bytes": 4101,
+      "sha256": "616f0cd32f89fc1fb74b42da61777396a9dd77dfe78fd73974c954faacf44b35"
     },
-    "assets/index-motion-4d292d95a79b.js": {
-      "bytes": 19597,
-      "sha256": "4d292d95a79b35c311af77bbc307f3c9d97a442a54486035a803223a2baea861"
+    "assets/index-motion-153f60bf6f4c.js": {
+      "bytes": 19936,
+      "sha256": "153f60bf6f4cb47caea7e9a6b5c715b040d8aa9c1b1ccbdb57766820b1683acf"
     },
     "assets/results-BmcsftrC.js": {
       "bytes": 2637,
