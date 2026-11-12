@@ -1,9 +1,9 @@
 {
   "game_id": "skygrip",
-  "release_id": "skygrip-20261111-r013",
-  "source_input_sha256": "6b2f31a53f8d4681c1e528ba68bf3423ced1560017a6419c122d0046a2b9df36",
-  "build_started_at_utc": "2026-11-11T12:57:35.500108Z",
-  "build_finished_at_utc": "2026-11-11T12:57:42.492508Z",
+  "release_id": "skygrip-20261112-r014",
+  "source_input_sha256": "62c9deb5bf266385abfa67d393f56650f5d7fc07ed76d28eefec43997dd36149",
+  "build_started_at_utc": "2026-11-12T06:19:02.769214Z",
+  "build_finished_at_utc": "2026-11-12T06:19:07.803121Z",
   "files": [
     {
       "path": "_headers",
@@ -11,19 +11,19 @@
       "sha256": "3afc60bf94f9625b555665e6f02e8b7d83e63569230400b5680010973bf897e5"
     },
     {
-      "path": "assets/index-2ZbEfvFv.css",
-      "bytes": 5447,
-      "sha256": "d72a205ef32dddb2f6aede78c2b16788ff6d50a89e10e868637fbf3e4b9ef2ac"
-    },
-    {
-      "path": "assets/index-DjgF69uE.js",
+      "path": "assets/index-BRRFNHxj.js",
       "bytes": 2827,
-      "sha256": "f4d4c2645c0263d59179b4e7a24a53b407e4d287888edfd5c811ce9affb67cdd"
+      "sha256": "8ee51aa3146900e7c7267ee9ad4e876506ccea6b037386727bc1a83a75d5078a"
     },
     {
-      "path": "assets/main-CkYcZMRC.js",
-      "bytes": 611890,
-      "sha256": "4f23f89a8d3de7ad5b0e18841b68c8735708f94c406c2b18c295d4a817789e75"
+      "path": "assets/index-CNSUAkfF.css",
+      "bytes": 5983,
+      "sha256": "d9ecca4decc525e4aad6930f471077e16cd87fb303cc5aede1c474eff9bfe605"
+    },
+    {
+      "path": "assets/main-CbAZV5Ol.js",
+      "bytes": 612779,
+      "sha256": "53a46f3f7567f1c98c8b497a809692e533ac4abd9d935a64c62f034575571086"
     },
     {
       "path": "character-updates-r012.html",
@@ -37,8 +37,8 @@
     },
     {
       "path": "index.html",
-      "bytes": 6601,
-      "sha256": "92be821914dbb4e43677024c86dc7068dd6aec5f14d237c84da4627984133caa"
+      "bytes": 6817,
+      "sha256": "766af196094e2c87bbdf262a9dbcfd2761885d1991e17ad84d6652f6776beade"
     },
     {
       "path": "review/birds-r013.png",
