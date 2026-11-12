@@ -82,17 +82,17 @@
   {
     "path": "build-info.json",
     "bytes": 214,
-    "sha256": "3263af154266b861e9e653ec4c93b80664f053233aa4d61ce5b0015dca937155"
+    "sha256": "95d4ee5e20db361eda8227a220250e0be56bb64b82428a6a3ff9f5fe6ba21f9e"
   },
   {
     "path": "index.html",
-    "bytes": 3975,
-    "sha256": "cd1fac809cf6aafd4bfa37c87c522341da86a672f130c806978217d07fe3482c"
+    "bytes": 4159,
+    "sha256": "9aa32d29a69af10ee316a8a11a399eecf979169660806c27a41299b3e4a4bdcf"
   },
   {
     "path": "src/art.js",
-    "bytes": 8058,
-    "sha256": "aeb1d3ab0b866ce9bae48488863c789e2555da27716b6f85f9469ca3d3725655"
+    "bytes": 8401,
+    "sha256": "322239c8d6e2faf5f5b1ea17324997b20996c733e69479fb25b3cabd2b53f076"
   },
   {
     "path": "src/audio.js",
@@ -101,8 +101,8 @@
   },
   {
     "path": "src/characters.js",
-    "bytes": 11495,
-    "sha256": "8a35a4ec4971e8e52fafd72464915a600876cea276d0ba14d63098d590803f81"
+    "bytes": 11503,
+    "sha256": "b28848e3a58ee382bc60a9f019fb4b5057f283f5f2f20701ea45a31e8dd46e3f"
   },
   {
     "path": "src/diagnostics.js",
@@ -131,8 +131,8 @@
   },
   {
     "path": "src/main.js",
-    "bytes": 20081,
-    "sha256": "15a4801c54494e4137de1e4b380f71723b6976581fe256e95e3ea3bd2270c72a"
+    "bytes": 20247,
+    "sha256": "0139bc2bcd4368e5939d07edec268df91892e62ab11aede0df4c17df41633bc2"
   },
   {
     "path": "src/math.js",
@@ -151,18 +151,23 @@
   },
   {
     "path": "src/quality.js",
-    "bytes": 890,
-    "sha256": "196a1fd6fda75f1ad72aa4b28d824df48068a464632e5ba2a45ac5bd7f449524"
+    "bytes": 940,
+    "sha256": "20752e64c436a0c13189976003f63461a6716400a741d050102d44adb94eacad"
   },
   {
     "path": "src/render.js",
-    "bytes": 16158,
-    "sha256": "ec706b819ac84bc81b7bd1934fc087f1910e507ab8b061d434aada4e71e7d21f"
+    "bytes": 18782,
+    "sha256": "1141fc75d448cec4e7b2e8269b4e3f7dbae8b982d024b9c7abad81b1f3209199"
   },
   {
     "path": "src/save.js",
     "bytes": 2189,
     "sha256": "535f84b1c5d8bc90daef559605748e7dfc303072591418f4e4c6ec35e0c351e5"
+  },
+  {
+    "path": "src/scenery.js",
+    "bytes": 3182,
+    "sha256": "1bf9ba012a62814c304fed3deba55fb6737cb15086a056efb02d5ec6bdd86c69"
   },
   {
     "path": "src/session.js",
@@ -175,13 +180,18 @@
     "sha256": "c32d1338b23605800b36c2fdb5f6c873e04fdfad5cebc9f975d7fd99865fabe4"
   },
   {
+    "path": "src/surfaces.js",
+    "bytes": 1621,
+    "sha256": "792e2b33afb77d146940a775aa1630a197ff8350fc4e2993e99d965fd5ccb903"
+  },
+  {
     "path": "src/xr.js",
     "bytes": 15568,
     "sha256": "244e011114cf43abf74a386c63477f51b2f60d4287924ab46abb424f254563f1"
   },
   {
     "path": "style.css",
-    "bytes": 15168,
-    "sha256": "41c05ece4d5976968d513f6f984343f0ff586d4a871a946291d2ef5b9963411f"
+    "bytes": 16175,
+    "sha256": "ac45910e3d4e724c72bbdc9489eb1e764a972eb55071f8a28066c1e56d072ef1"
   }
 ]

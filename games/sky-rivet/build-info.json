@@ -1,6 +1,6 @@
 {
-  "release_id": "sky-rivet-0.1.0-20261111-r06",
-  "input_manifest_sha256": "d2e83a18cb39814cb56a657a6bb268757a442a3414d5912e18eb7acc7bd8155a",
-  "built_at_utc": "2026-11-11T21:33:43.983Z",
+  "release_id": "sky-rivet-0.1.0-20261112-r07",
+  "input_manifest_sha256": "2e74df13f572e7e3ca6e253cb1ab0c1d726b0b5d34afba33580148b09d113324",
+  "built_at_utc": "2026-11-12T06:38:57.020Z",
   "node": "v24.22.1"
 }

@@ -24,7 +24,7 @@ function face(l,pose,scale=1){
  ell(l,[0,.008,.254],[.042,.052,.061],C.skin,.6,5);
  const smile=.014+.030*pose.smile+pose.air*.012;ell(l,[0,-.107,.222],[.060+pose.win*.010,smile,.013],C.ink,.8,5);ell(l,[0,-.096,.235],[.045,.008+.009*pose.win,.005],C.ivory,.65,5);
 }
-function shoe(l,ankle,pitch,yaw=0){l.group(transform(ankle,[1,1,1],[pitch,yaw,0]),()=>{ell(l,[0,-.023,.045],[.119,.105,.174],C.ink,.83,3);ell(l,[0,-.085,.078],[.126,.045,.207],'#172d38',.95,3);ell(l,[0,-.031,.182],[.121,.061,.086],C.copper,.7,3);for(let z of [.02,.07,.12])stitch(l,[-.065,.057,z],[.065,.057,z],C.ivory);});}
+function shoe(l,ankle,pitch,yaw=0){l.group(transform(ankle,[1,1,1],[pitch,yaw,0]),()=>{ell(l,[0,-.023,.045],[.119,.105,.174],C.ink,.83,3);ell(l,[0,-.085,.078],[.126,.045,.207],'#172d38',.95,8);ell(l,[0,-.031,.182],[.121,.061,.086],C.copper,.7,3);for(let z of [.02,.07,.12])stitch(l,[-.065,.057,z],[.065,.057,z],C.ivory);});}
 function hammer(l,wrist,angle){l.group(transform(wrist,[1,1,1],[angle,0,0]),()=>{l.cylinder([0,.19,0],[.034,.55,.034],'#a9794b',undefined,.9,0,1);ell(l,[0,.45,0],[.27,.095,.12],C.ink,.32,2);for(const x of [-.22,.22])ell(l,[x,.45,0],[.055,.105,.128],C.gold,.26,2);});}
 
 // Articulated mechanic and aviator share proportions, with distinct costume and
@@ -45,12 +45,12 @@ export function human(l,p,time,state='idle',facing=1,role='hero',hasHammer=false
   l.group(transform([0,1.465+offset,.018+pose.lean*.85],[1,1,1],[-pose.lean*.3-(pose.headLag||0)-(pose.lookPitch||0),-pose.yaw*.12+(pose.lookYaw||0)*.7-(pose.spineTwist||0)*.4,0]),()=>{
    ell(l,[0,0,0],[.237,.267,.217],C.skin,.67,5);ell(l,[0,.15,-.075],[.235,.15,.19],C.hair,.93,4);face(l,pose);
    if(role==='hero'){
-    ell(l,[0,.238,-.025],[.278,.163,.259],C.gold,.41,0);l.cylinder([0,.168,.028],[.293,.029,.295],C.gold,undefined,.4);
+    ell(l,[0,.238,-.025],[.278,.163,.259],C.gold,.41,6);l.cylinder([0,.168,.028],[.293,.029,.295],C.gold,undefined,.4,0,6);
     segment(l,[0,.365,-.17],[0,.37,.14],.025,C.ivory,0);ell(l,[0,.21,.25],[.095,.045,.023],C.ivory,.24,2);badge(l,[0,.225,.277],.03);
     ell(l,[-.253,.015,-.01],[.048,.095,.072],C.ink,.6,3);ell(l,[-.28,.015,-.01],[.022,.063,.05],C.copper,.4,2);
     segment(l,[-.275,-.015,.015],[-.20,-.13,.17],.012,C.ink,2);ell(l,[-.17,-.14,.20],[.034,.023,.019],C.ink);
    }else{
-    for(const side of [-1,1]){ell(l,[side*.19,-.12,-.13],[.095,.19,.10],C.hair,.95,4,[0,0,side*.15]);l.torus([side*.103,.19,.18],[.083,.083,.083],C.gold,[Math.PI/2,0,0],.35,0,2);ell(l,[side*.103,.19,.182],[.062,.06,.012],'#678f9f',.26,2);}
+    for(const side of [-1,1]){ell(l,[side*.19,-.12,-.13],[.095,.19,.10],C.hair,.95,4,[0,0,side*.15]);l.torus([side*.103,.19,.18],[.083,.083,.083],C.gold,[Math.PI/2,0,0],.35,0,2);ell(l,[side*.103,.19,.182],[.062,.06,.012],'#678f9f',.15,7);}
     segment(l,[-.18,.20,.05],[.18,.20,.05],.020,C.copper,3);
    }
   });
@@ -90,7 +90,7 @@ export function beast(l,p,time,throwing=false,defeated=false,reaction=0,endingTi
    }
    ell(l,[0,-.06,.63],[.16,.115,.105],C.ink,.6,5);ell(l,[0,-.37,.51],[.19,.04+.04*defeat,.05],'#56423c',.8,5);
    for(const x of [-.075,.075])ell(l,[x,-.355,.555],[.063,.064,.018],C.ivory,.7,5);
-   ell(l,[0,.51,-.025],[.64,.20,.47],C.gold,.5,0);l.cylinder([0,.415,.045],[.69,.055,.52],C.gold,undefined,.5);badge(l,[0,.55,.47],.08);
+   ell(l,[0,.51,-.025],[.64,.20,.47],C.gold,.5,6);l.cylinder([0,.415,.045],[.69,.055,.52],C.gold,undefined,.5,0,6);badge(l,[0,.55,.47],.08);
    for(let i=0;i<8;i++){const a=i*Math.PI/4;ell(l,[Math.cos(a)*.57,-.26+Math.sin(a)*.22,-.25],[.15,.24,.15],'#785747',.97,4,[0,0,a]);}
   });
   const center=visual?.held?visual.held.map((v,i)=>(v-p[i])/1.4):[lerp(0,-.64,release),lerp(1.5,.315,release),lerp(.58,.07,release)];

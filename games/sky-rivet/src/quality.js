@@ -1,8 +1,8 @@
 // Pixel budgets are output limits, not claims about measured device performance.
 export const QUALITY={
- pc:{detail:'high',shadowSize:4096,maxPixels:3840*2160,maxScale:4,label:'PC 高精細 4K'},
- ipad:{detail:'standard',shadowSize:1536,maxPixels:2732*2048,maxScale:2,label:'iPad 高精細'},
- quest:{detail:'standard',shadowSize:1024,maxPixels:2048*2048,maxScale:1,label:'Quest 軽量'}
+ pc:{surfaceDetail:1,detail:'high',shadowSize:4096,maxPixels:3840*2160,maxScale:4,label:'PC 高精細 4K'},
+ ipad:{surfaceDetail:.35,detail:'standard',shadowSize:1536,maxPixels:2732*2048,maxScale:2,label:'iPad 高精細'},
+ quest:{surfaceDetail:0,detail:'standard',shadowSize:1024,maxPixels:2048*2048,maxScale:1,label:'Quest 軽量'}
 };
 export function renderSize(width,height,dpr=1,profile='pc',limit=8192){
  const q=QUALITY[profile]||QUALITY.pc;

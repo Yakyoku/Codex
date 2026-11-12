@@ -34,3 +34,10 @@
 #diagnostics{position:fixed;z-index:12;right:max(14px,env(safe-area-inset-right));top:clamp(130px,11vh,240px);width:min(720px,calc(100vw - 28px));max-height:calc(89dvh - 140px);overflow:auto;padding:18px;border:1px solid #e7be73;border-radius:10px;background:#102832f5;color:#f4ebd8;font-size:clamp(13px,.55vw,21px)}
 #diagnostics h2{font-size:1.25em;margin:0 0 8px}#diagnostics p{font-size:.85em;line-height:1.6;margin:8px 0}#diagnostics label{display:inline-block;margin:4px}#diagnostics select{font:inherit;color:inherit;background:#193b45;max-width:260px;padding:6px;border:1px solid #8aabab}#diagnostics button{padding:9px;font-size:inherit}.diag-actions{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}#diagReadout{white-space:pre-wrap;overflow-wrap:anywhere;font:inherit;font-family:ui-monospace,monospace;line-height:1.6;margin:8px 0;color:#f7d595}
 body.vr #diagnostics{display:none}
+
+/* Title provenance note remains readable at 4K and in safe areas on tablets. */
+.production-note{position:fixed;z-index:3;right:max(24px,env(safe-area-inset-right));bottom:max(18px,env(safe-area-inset-bottom));max-width:min(42vw,520px);display:flex;flex-direction:column;gap:5px;text-align:right;font-size:clamp(11px,.48vw,18px);line-height:1.6;color:#d5dbcf;letter-spacing:.02em;text-shadow:0 1px 8px #061924}
+.production-note small{font-size:.85em;color:#a5b7b5}body.playing .production-note,body.vr .production-note{display:none}
+body:not(.playing) footer{right:46%}
+@media(max-width:1100px){body:not(.playing) footer>span{display:none}.production-note{max-width:65vw;font-size:11px}body:not(.playing) footer{left:14px;right:auto}}
+@media(max-width:600px){.production-note{right:max(16px,env(safe-area-inset-right));bottom:max(13px,env(safe-area-inset-bottom));max-width:calc(100vw - 32px);font-size:11px}body:not(.playing) footer{bottom:74px;left:7%;right:auto}.title{max-height:calc(83dvh - 124px)}}
