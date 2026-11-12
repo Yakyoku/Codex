@@ -1,7 +1,7 @@
 {
   "app": "game-vr",
-  "build_id": "825c66d9c4f3-20261107231101",
-  "build_utc": "2026-11-07T23:11:01.531000+00:00",
-  "source_revision": "825c66d9c4f3896a2a7a9983f086d3295ef62c39",
-  "input_spec_sha256": "7a8c2349226dedff4e751dd303d3634aa3dc747c1797939b62ffc85bab7c4aa8"
+  "build_id": "f0d5ac20a285-20261112031313",
+  "build_utc": "2026-11-12T03:13:13.605000+00:00",
+  "source_revision": "f0d5ac20a2857560cc12c9ecf7654afb912827ba",
+  "input_spec_sha256": "f297f4fa63a68b58caa7efb12b56ac58d9ddb50b14ef125eeb5a953d26d99cbf"
 }

@@ -12,3 +12,9 @@ canvas{width:min(100%,calc(65dvh * 10 / 7));height:auto;aspect-ratio:10/7;max-he
 @media(max-width:700px){main{width:100%;padding:12px 8px}header{flex-wrap:wrap;gap:8px}nav{flex-wrap:wrap}.game:fullscreen canvas{width:min(100vw,calc((100dvh - 140px) * 10 / 7))}}
 
 @media(pointer:coarse){#fullscreen{display:none}}
+/* Primary touch devices get controls; keyboard/mouse desktops keep the board clear. */
+:root[data-touch-controls="off"] .touch{display:none}
+:root[data-touch-controls="on"] .touch{display:flex;padding-bottom:max(16px,env(safe-area-inset-bottom));touch-action:none}
+body{overscroll-behavior-y:contain}header{padding-top:max(12px,env(safe-area-inset-top))}
+@media(max-width:600px){:root[data-touch-controls="on"] .stick{width:82px;height:82px}dialog{max-width:94vw;padding:20px}dialog label{flex-wrap:wrap}.heading{margin-bottom:10px}#overlay h2{font-size:30px}#overlay p{font-size:11px;line-height:1.6}#overlay .eyebrow{display:none}.hud{gap:4px}main{padding-bottom:env(safe-area-inset-bottom)}}
+@media(max-height:600px) and (orientation:landscape){:root[data-touch-controls="on"] .game{margin-inline:90px}:root[data-touch-controls="on"] .touch{bottom:4px;padding:0}.touch #line{font-size:10px;padding:5px 10px}}

@@ -1,12 +1,13 @@
+import {storage} from './storage.js';
                                                            
 export function validQuality(value         )                 {
   return value === 'ultra' || value === 'balanced' ? value : 'high';
 }
 export function loadQuality()                 {
-  try { return validQuality(localStorage.getItem('tg-display-quality')); } catch { return 'high'; }
+  try { return validQuality(storage.getItem('tg-display-quality')); } catch { return 'high'; }
 }
 export function saveQuality(value                ) {
-  try { localStorage.setItem('tg-display-quality', value); } catch {}
+  try { storage.setItem('tg-display-quality', value); } catch {}
 }
 // A pixel budget, not a low fixed DPR: 4K desktop remains native at DPR 1 or 2.
 // XR uses its compositor's recommended framebuffer instead of this desktop budget.

@@ -1,3 +1,4 @@
+import {storage} from '../player-ui/storage.js';
 /** Twin Garden's original score. All oscillators, envelopes and noise are local.
  * A look-ahead scheduler keeps musical time independent of rendering FPS. */
                                                              
@@ -10,7 +11,7 @@ const tunes                            = {
  bonus:[79,84,88,91,88,84,86,89,93,89,86,84,83,86,91,95,93,89,86,81,88,91,96,91,89,86,83,79,84,88,91,84]
 };
 const chords=[[48,52,55],[45,48,52],[53,57,60],[43,47,50]];
-const safeStorage={read()                       {try{const value        =JSON.parse(localStorage.getItem('twin-garden-audio')||'{}');return value!==null&&typeof value==='object'&&!Array.isArray(value)?value                          :{};}catch{return {}}},write(v        ){try{localStorage.setItem('twin-garden-audio',JSON.stringify(v))}catch{}}};
+const safeStorage={read()                       {try{const value        =JSON.parse(storage.getItem('twin-garden-audio')||'{}');return value!==null&&typeof value==='object'&&!Array.isArray(value)?value                          :{};}catch{return {}}},write(v        ){try{storage.setItem('twin-garden-audio',JSON.stringify(v))}catch{}}};
 export class AudioEngine {
  context                  =null;
  volumes                       ={music:.46,sfx:.65,ambient:.2};
