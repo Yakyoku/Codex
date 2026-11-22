@@ -51,6 +51,7 @@ export class Diver {
       d.sp[n] = [new Spring(soft ? 70 : 140, soft ? 0.62 : 0.85), new Spring(soft ? 70 : 140, soft ? 0.62 : 0.85), new Spring(soft ? 70 : 140, soft ? 0.62 : 0.85)];
     }
     if (nodes.emitterTip) d.hand = nodes.emitterTip;
+    d.initAnimations(g.animations, model);
     const mount = nodes.lampMount ?? nodes.head ?? model;
     mount.add(d.lamp); mount.add(d.lamp.target);
     d.lamp.target.position.set(0, 0, 6).applyQuaternion(mount.getWorldQuaternion(new THREE.Quaternion()).invert());
@@ -94,46 +95,62 @@ export class Diver {
     this.qa.setFromAxisAngle(r.ax, ax); this.qb.setFromAxisAngle(r.ay, ay); this.qc.setFromAxisAngle(r.az, az);
     r.bone.quaternion.copy(this.qa).multiply(this.qb).multiply(this.qc).multiply(r.rest);
   }
-  // 安静の姿勢（MakeHuman の標準の姿勢）は腕を斜め下に開き、脚も少し開いている。立つときの補正
-  static ARM_DOWN = 0.62; static LEG_IN = 0.09;
-  /** speed: 歩く速さ（µm/s）, aiming: 道具を構えているか, pitch: 視点の上下, turn: 向きの変わる速さ（rad/s） */
-  update(dt: number, speed: number, aiming: boolean, pitch: number, turn = 0) {
-    if (dt <= 0) return;
+  // 安静の姿勢（MakeHuman の標準の姿勢）は腕を斜め下に開いている。構えの補正に使う
+  static ARM_DOWN = 0.62;
+  // ---- Blender で作ったアニメーション（idle・walk・run・squat・crouch）を、重みで滑らかに混ぜる ----
+  mixer?: THREE.AnimationMixer; private act: Record<string, THREE.AnimationAction> = {};
+  private w: Record<string, number> = { idle: 1, walk: 0, run: 0, squat: 0, crouch: 0 };
+  static WALK_SPEED = 1.5; static RUN_SPEED = 3.6;   // それぞれの動きが、足が滑らずに見える速さ（µm/s）
+  private still = 0;
+  initAnimations(clips: THREE.AnimationClip[], model: THREE.Object3D) {
+    this.mixer = new THREE.AnimationMixer(model);
+    for (const c of clips) { const a = this.mixer.clipAction(c); a.play(); a.setEffectiveWeight(c.name === 'idle' ? 1 : 0); this.act[c.name] = a; }
+  }
+  private qa2 = new THREE.Quaternion(); private qt = new THREE.Quaternion();
+  /** speed: 進む速さ（µm/s）, aiming: 道具を構えているか, pitch: 視点の上下, turn: 向きの変わる速さ（rad/s）, scanning: スキャン中か */
+  update(dt: number, speed: number, aiming: boolean, pitch: number, turn = 0, scanning = false) {
+    if (dt <= 0 || !this.mixer) return;
     this.t += dt;
     const sp = this.speedS.step(speed, dt);
-    const amp = Math.min(1, sp / 4.5), idle = 1 - amp;
-    this.phase += dt * (sp / 0.62) * 1.0 + dt * 0.0;                 // 歩幅に合わせて進む（足が滑って見えないように）
-    const ph = this.phase, s = Math.sin(ph), c = Math.cos(ph);
-    const A = this.aimS.step(aiming ? 1 : 0, dt);
+    this.still = sp < 0.15 && !aiming ? this.still + dt : 0;
+    // 目標の重み：止まっていれば立ち、ゆっくりなら歩き、速ければ走り。止まってスキャンすると片ひざ
+    const k = (x: number, a: number, b: number) => Math.min(1, Math.max(0, (x - a) / (b - a)));
+    const crouch = scanning && sp < 0.6 ? 1 : 0;
+    const squat = !crouch && this.still > 9 && (this.still % 14) < 4 ? 1 : 0;   // 長く立ち止まると、ときどきしゃがむ
+    const move = k(sp, 0.12, 0.7), run = k(sp, Diver.WALK_SPEED * 1.2, Diver.RUN_SPEED * 0.85);
+    const target = { idle: (1 - move) * (1 - crouch) * (1 - squat), walk: move * (1 - run) * (1 - crouch), run: move * run * (1 - crouch), squat: squat * (1 - crouch), crouch };
+    for (const n of Object.keys(target) as (keyof typeof target)[]) {
+      this.w[n] += (target[n] - this.w[n]) * Math.min(1, dt * (n === 'crouch' || n === 'squat' ? 3.5 : 7));
+      this.act[n]?.setEffectiveWeight(this.w[n]);
+    }
+    // 足が滑って見えないよう、歩き・走りの速さを進む速さに合わせる
+    if (this.act.walk) this.act.walk.timeScale = Math.max(0.6, Math.min(1.6, sp / Diver.WALK_SPEED));
+    if (this.act.run) this.act.run.timeScale = Math.max(0.75, Math.min(1.45, sp / Diver.RUN_SPEED));
+    this.mixer.update(dt);
+    // 上乗せ：加速で前に傾き、曲がるときは内側へ傾く
     const accel = (sp - this.lastSpeed) / dt; this.lastSpeed = sp;
-    const lean = this.leanS.step(Math.max(-0.12, Math.min(0.18, accel * 0.025)) + 0.05 * amp, dt);   // 加速で前に傾く
-    const bank = this.bankS.step(Math.max(-0.2, Math.min(0.2, -turn * 0.06 * amp)), dt);             // 曲がるとき内側へ
-    const br = Math.sin(this.t * 1.5), sway = Math.sin(this.t * 0.55);                               // 呼吸と、ゆっくりした重心の移動
-    // 腰：歩くと左右に傾いて振れる（曲線のある歩き方）。止まると片足に重心をのせる
-    const hipTilt = s * 0.085 * amp + (0.06 + 0.02 * sway) * idle;
-    const hipTwist = s * 0.13 * amp;
-    this.set('pelvis', lean * 0.4, hipTwist, hipTilt + bank, dt);
-    // 胴：腰と逆にひねり、傾きを打ち消す。構えると道具の方へ向く
-    this.set('chest', lean * 0.6 + 0.012 * br - 0.02 * idle, -hipTwist * 1.25 + 0.22 * A, -hipTilt * 0.75 - 0.03 * idle + bank * 0.4, dt);
-    // 頭：体のねじれを打ち消して前を見続ける
-    this.set('head', -pitch * 0.4 * A + 0.04 * idle - lean * 0.6, hipTwist * 0.2 - 0.18 * A, hipTilt * 0.25 + 0.04 * idle, dt);
-    // 脚：一本の線の上に足を運ぶ。ひざは振り出しで曲がり、着地で伸びる
-    const kneeL = Math.pow(Math.max(0, Math.sin(ph + 1.25)), 1.4) * 1.05 * amp, kneeR = Math.pow(Math.max(0, Math.sin(ph + Math.PI + 1.25)), 1.4) * 1.05 * amp;
-    const tL = -s * 0.5 * amp, tR = s * 0.5 * amp;
-    const cross = 0.05 * amp;
-    this.set('thighL', tL - 0.1 * idle, 0.04 * idle, -Diver.LEG_IN - cross - 0.04 * idle, dt);
-    this.set('thighR', tR + 0.03 * idle, 0, Diver.LEG_IN + cross + 0.06 * idle, dt);
-    this.set('shinL', kneeL + 0.04 + 0.16 * idle, 0, 0, dt); this.set('shinR', kneeR + 0.04 + 0.02 * idle, 0, 0, dt);
-    this.set('footL', -(tL + kneeL) * 0.62 - 0.08 * idle, 0, 0, dt); this.set('footR', -(tR + kneeR) * 0.62, 0, 0, dt);
-    // 腕：胴より少し遅れて振れる。手首はしなやかに
-    const swL = Math.sin(ph - 0.35), swR = Math.sin(ph + Math.PI - 0.35);
-    this.set('upperArmL', -swL * 0.36 * amp + 0.04 * idle + 0.02 * br, 0.05, -Diver.ARM_DOWN + 0.07 + 0.03 * amp, dt);
-    this.set('foreArmL', -(0.12 + 0.22 * amp + 0.15 * Math.max(0, -swL) * amp + 0.06 * idle), 0, 0, dt);
-    this.set('handL', -0.12 - 0.08 * idle, 0, 0.05, dt);
-    this.set('upperArmR', (-swR * 0.36 * amp - 0.02 * idle) * (1 - A) + (-1.42 + pitch * 0.85) * A, 0, Diver.ARM_DOWN - (0.07 + 0.03 * amp) * (1 - A) + 0.05 * A, dt);
-    this.set('foreArmR', -(0.12 + 0.22 * amp + 0.15 * Math.max(0, -swR) * amp) * (1 - A) + 0.3 * A, 0, 0, dt);
-    this.set('handR', -0.1 * (1 - A), 0, -0.05 * (1 - A), dt);
-    // 体の上下：着地のたびに少し沈む
-    this.root.position.y += (Math.abs(c) - 0.6) * 0.03 * amp;
+    const lean = this.leanS.step(Math.max(-0.1, Math.min(0.14, accel * 0.02)), dt);
+    const bank = this.bankS.step(Math.max(-0.22, Math.min(0.22, -turn * 0.07 * Math.min(1, sp / 2))), dt);
+    this.addRot('pelvis', lean * 0.5, 0, bank);
+    // 上乗せ：構えると右腕を前へ伸ばし、胴と頭を道具の方へ向ける（アニメーションの上に重ねる）
+    const A = this.aimS.step(aiming ? 1 : 0, dt);
+    if (A > 0.001) {
+      this.blendTo('upperArmR', -1.42 + pitch * 0.85, 0, Diver.ARM_DOWN + 0.05, A);
+      this.blendTo('foreArmR', 0.3, 0, 0, A); this.blendTo('handR', 0, 0, 0, A);
+      this.addRot('chest', 0, 0.2 * A, 0); this.addRot('head', -pitch * 0.35 * A, -0.15 * A, 0);
+    }
+  }
+  /** アニメーションの姿勢に、体の向きを基準にした回転を上乗せする */
+  private addRot(n: string, x: number, y: number, z: number) {
+    const r = this.b[n]; if (!r) return;
+    this.qa.setFromAxisAngle(r.ax, x); this.qb.setFromAxisAngle(r.ay, y); this.qc.setFromAxisAngle(r.az, z);
+    this.qa2.copy(this.qa).multiply(this.qb).multiply(this.qc); r.bone.quaternion.premultiply(this.qa2);
+  }
+  /** アニメーションの姿勢から、体の向きを基準にした目標の姿勢へ、割合 t だけ寄せる */
+  private blendTo(n: string, x: number, y: number, z: number, t: number) {
+    const r = this.b[n]; if (!r) return;
+    this.qa.setFromAxisAngle(r.ax, x); this.qb.setFromAxisAngle(r.ay, y); this.qc.setFromAxisAngle(r.az, z);
+    this.qt.copy(this.qa).multiply(this.qb).multiply(this.qc).multiply(r.rest);
+    r.bone.quaternion.slerp(this.qt, t);
   }
 }

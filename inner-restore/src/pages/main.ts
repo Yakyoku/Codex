@@ -142,7 +142,7 @@ async function main() {
     const P = tuning.player;
     // 移動：カメラの向きを基準に。加速と減速に慣性を持たせる
     const fx = Math.sin(yaw), fz = Math.cos(yaw);
-    const sp = input.dash ? P.dashSpeed : P.walkSpeed;
+    const sp = (input.dash ? P.dashSpeed : P.walkSpeed) * (input.fire ? 0.42 : 1) * (input.scan ? 0.35 : 1);
     tmp.set((fx * input.moveY - fz * input.moveX) * sp, 0, (fz * input.moveY + fx * input.moveX) * sp);
     const moving = tmp.lengthSq() > 0.01;
     vel.lerp(tmp, Math.min(1, dt * (moving ? P.accel : P.decel)));
@@ -153,7 +153,7 @@ async function main() {
     const wantFace = input.fire ? yaw : speed > 0.3 ? Math.atan2(vel.x, vel.z) : facing;
     let df = wantFace - facing; df = Math.atan2(Math.sin(df), Math.cos(df)); const dFace = df * Math.min(1, dt * P.turnLerp); facing += dFace; const turnRate = dt > 0 ? dFace / dt : 0;
     diver.root.position.copy(pos); diver.root.rotation.y = facing; diver.root.visible = !firstPerson;
-    diver.update(dt, speed, input.fire, pitch, turnRate);
+    diver.update(dt, speed, input.fire, pitch, turnRate, input.scan);
     // カメラ：肩ごしの三人称。対象の紹介中は、ゆっくり対象のほうへ寄る
     dir.set(Math.sin(yaw) * Math.cos(pitch), -Math.sin(pitch), Math.cos(yaw) * Math.cos(pitch));
     focusAmt += ((focusOn ? 1 : 0) - focusAmt) * Math.min(1, dt * 1.6);
