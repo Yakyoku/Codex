@@ -62,7 +62,7 @@ export class Prologue {
   // 蓮
   ps: PState = 'free'; pt = 0; mind = 1; body = 1; inka = 0; lastAtkEnd = -9; hitDone = false; runPh = 0;
   staffEuler = new THREE.Euler(0, 0, 0); staffQ = new THREE.Quaternion();
-  camYaw = Math.PI; camPitch = 0.22; camPos = new THREE.Vector3(); camLook = new THREE.Vector3(); camInit = false; camOff = 0;
+  camYaw = 0; camPitch = 0.22; camPos = new THREE.Vector3(); camLook = new THREE.Vector3(); camInit = false; camOff = 0;
   cine: { from: THREE.Vector3; to: THREE.Vector3; lf: THREE.Vector3; lt: THREE.Vector3; t: number; dur: number } | null = null;
   time = 0; cycleT = 2.2; beatPhase = 0; cycleN = 0; lastPhase = 0;
   checkpointDone = false; hintT = 0; hint = ''; guardPressT = -9; breathHold = 0; busy = false; photo = false;
@@ -105,10 +105,10 @@ export class Prologue {
 
   start(from: 'begin' | 'jizo' | 'court'): void {
     this.mode = 'explore'; this.phase = 0; this.mind = 1; this.body = 1; this.inka = 0; this.ps = 'free'; this.camInit = false;
-    if (from === 'begin') { this.monk.place(pathX(STEP_Z1 - 3), STEP_Z1 - 3, Math.PI); this.camYaw = Math.PI; }
+    if (from === 'begin') { this.monk.place(pathX(STEP_Z1 - 3), STEP_Z1 - 3, Math.PI); this.camYaw = 0; }
     else if (from === 'jizo') { const z = this.scene.jizoPos.z - 1; this.monk.place(pathX(z), z, Math.PI); this.checkpointDone = true; }
     else { this.monk.place(0, COURT_R - 0.5, Math.PI); this.checkpointDone = true; }
-    this.camYaw = Math.PI; this.camPitch = 0.2;
+    this.camYaw = 0; this.camPitch = 0.16;
     this.audio.playChapter('prologue'); this.audio.setPhase(0);
     this.setHint(from === 'begin' ? '石段を上り、山門へ' : '');
   }
