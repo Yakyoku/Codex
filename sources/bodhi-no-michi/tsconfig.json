@@ -1,0 +1,8 @@
+{
+  "compilerOptions": {
+    "target": "ES2022", "module": "ESNext", "moduleResolution": "bundler",
+    "strict": true, "noUnusedLocals": false, "noImplicitAny": true,
+    "skipLibCheck": true, "types": ["vite/client", "webxr"], "lib": ["ES2022", "DOM", "DOM.Iterable"]
+  },
+  "include": ["src"]
+}
