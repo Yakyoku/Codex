@@ -1,7 +1,7 @@
 // 地上の変化：シロツメクサの発芽を、実写の早回しのように、その場で描いて見せる。単位は mm。
 // 地下の暗さとの対比のため、ここは朝の斜めの光で、明るく色彩豊かに。
 import * as THREE from 'three/webgpu';
-import { attribute, float, vec2, vec3, mix, uniform, saturate, smoothstep, normalWorld, positionWorld, positionLocal, cameraPosition, dot, pow, texture, uv, abs, oneMinus, fract, mx_noise_float } from 'three/tsl';
+import { attribute, float, vec2, vec3, mix, uniform, saturate, smoothstep, normalWorld, positionWorld, positionLocal, cameraPosition, dot, pow, texture, uv, abs, oneMinus, fract, step, mx_noise_float, mx_worley_noise_float } from 'three/tsl';
 import { loadGLB, loadTexture } from '../core/assets';
 import { makeRng } from './rng';
 import { makeSoilMaterial } from './soilMaterial';
@@ -77,44 +77,64 @@ export async function buildSurface(renderer: THREE.WebGPURenderer, base: string,
     const vc = attribute('color', 'vec4'); const isCot = vc.r, isRoot = vc.g, topSide = vc.b, alongCot = vc.a;
     const pm = new THREE.MeshPhysicalNodeMaterial();
     const u2 = uv();
-    // 表面の細かい粒状感（表皮の細胞の凹凸が、光を受けて細かくきらめく）。写真で確認した特徴
-    // 表皮の細胞のきらめき：形の座標（mm）からの3次元ノイズ。UV の伸びに左右されない
-    const pl = positionLocal;
-    const stipple = saturate(mx_noise_float(pl.mul(9.0)).mul(0.45).add(mx_noise_float(pl.mul(22.0)).mul(0.45)).add(0.5));
-    // 色：土の中では淡い黄白色。地上で光に当たると、子葉から先に緑になる。写真の目測 RGB(120,190,70) 前後を線形に直した値
+    // 子葉の色は一色ではない（写真を拡大して確かめた。#919C41 日陰、#CACD89 日なた、縁 #D1D187）：
+    //  ① 大きなまだら：黄緑と緑が数百 µm の大きさで混じる  ② 縁：薄く黄色みを帯びて透ける  ③ 付け根と中央の溝はやや濃い
+    //  ④ 表皮の細胞の凹凸：銀白色の細かい光の点が、表面のほぼ半分を覆う（霜をふいたような質感） ⑤ 小さな土の粒が少し付いている
+    // 模様の座標は、子葉の実際の寸法（幅 約2.25 mm × 長さ 約3.8 mm）に合わせた UV（mm）。圧縮したモデルの座標は mm ではないので使わない
+    const pl = vec3(u2.x.mul(2.25), u2.y.mul(3.8), topSide.mul(5.0));
+    const blot = saturate(mx_noise_float(pl.mul(1.6)).mul(0.8).add(mx_noise_float(pl.mul(4.3)).mul(0.4)).add(0.5));
     const pale = vec3(0.62, 0.58, 0.16), rootCol = vec3(0.88, 0.86, 0.78);
-    // 縁はわずかに黄色みを帯び、厚みのせいで少し暗く見える（写真 8615）
-    const edge = smoothstep(0.32, 0.5, abs(u2.x.sub(0.5))).add(smoothstep(0.85, 1.0, alongCot)).min(1.0);
-    // 写真から測った色（sRGB #838945・#909E3C・#9BA566）を線形に直した値。緑より黄色みの強い、くすんだオリーブ色
-    const cotTop = mix(mix(vec3(0.17, 0.20, 0.06), vec3(0.27, 0.30, 0.12), stipple), vec3(0.30, 0.31, 0.12), edge.mul(0.4));
-    const cotGreen = mix(vec3(0.30, 0.36, 0.12), cotTop, topSide);            // 裏は淡い
-    const midline = oneMinus(smoothstep(0.0, 0.10, abs(u2.x.sub(0.5)))).mul(topSide).mul(smoothstep(0.15, 0.4, alongCot));
-    // 胚軸：淡い緑。地ぎわはわずかに赤みを帯びる個体がある（写真1点で確認。弱く入れる）
-    const stemGreen = mix(vec3(0.15, 0.12, 0.03), vec3(0.20, 0.25, 0.07), smoothstep(0.3, 0.75, vc.b));   // 写真の茎 #6B6429 前後
-    const green = mix(stemGreen, cotGreen.mul(mix(float(1), float(1.12), midline)), isCot);
-    const greening = uGreen.mul(mix(float(0.9), float(1), isCot)).mul(aboveGround);
+    const edgeU = smoothstep(0.36, 0.5, abs(u2.x.sub(0.5))), edgeTip = smoothstep(0.9, 1.0, alongCot);
+    const edge = edgeU.add(edgeTip).min(1.0);
+    const base = smoothstep(0.35, 0.1, alongCot);                                           // 付け根
+    const midline = oneMinus(smoothstep(0.0, 0.08, abs(u2.x.sub(0.5)))).mul(topSide).mul(smoothstep(0.15, 0.4, alongCot));
+    let cotTop = mix(vec3(0.16, 0.20, 0.035), vec3(0.30, 0.33, 0.08), blot);                // ① まだら（日陰色〜黄緑）
+    cotTop = mix(cotTop, vec3(0.50, 0.50, 0.16), edge.mul(0.75));                             // ② 黄色みの縁
+    cotTop = cotTop.mul(mix(float(1.0), float(0.78), base.mul(0.6).add(midline.mul(0.35))));   // ③ 付け根と溝
+    // ④ 光の点：0.03〜0.06 mm 間隔の細かいセル。点そのものは銀白色で、鋭く光る
+    const cellA = mx_worley_noise_float(pl.mul(17.0)), cellB = mx_worley_noise_float(pl.mul(29.0).add(vec3(3.1, 1.3, 2.2)));
+    const dots = smoothstep(0.32, 0.12, cellA).add(smoothstep(0.26, 0.1, cellB).mul(0.7)).min(1.0).mul(topSide.mul(0.7).add(0.3));
+    cotTop = mix(cotTop, vec3(0.66, 0.68, 0.52), dots.mul(0.62));
+    // ⑤ 付いた土の粒：まばらな茶色の小さな点
+    const speck = smoothstep(0.06, 0.02, mx_worley_noise_float(pl.mul(6.0).add(vec3(7.0, 2.0, 5.0)))).mul(step(0.6, saturate(mx_noise_float(pl.mul(2.0)).add(0.5))));
+    cotTop = mix(cotTop, vec3(0.16, 0.10, 0.06), speck.mul(0.85));
+    const cotGreen = mix(mix(vec3(0.28, 0.33, 0.11), vec3(0.36, 0.38, 0.15), blot), cotTop, topSide);   // 裏は淡く、つやが少ない
+    // 胚軸：淡い緑で半透明。地ぎわはわずかに赤みを帯び、上へ行くほど緑
+    const stemGreen = mix(vec3(0.18, 0.12, 0.05), vec3(0.24, 0.30, 0.09), smoothstep(0.3, 0.8, vc.b)).mul(mix(float(0.9), float(1.1), saturate(mx_noise_float(vec3(u2.x.mul(1.2), u2.y.mul(4.0), float(0)).mul(6.0)).add(0.5))));
+    const green = mix(stemGreen, cotGreen, isCot);
+    // 緑になる順番：光に当たった所から。縁と先が先に緑になり、付け根はしばらく黄色が残る
+    const greening = saturate(uGreen.mul(1.3).sub(base.mul(0.3)).sub(oneMinus(isCot).mul(0.15))).mul(aboveGround);
     const col = mix(mix(pale, green, greening), rootCol, isRoot);
     pm.colorNode = col;
-    const glint = smoothstep(0.72, 0.9, mx_noise_float(positionLocal.mul(11.0)).add(0.5));
-    pm.roughnessNode = mix(float(0.5), mix(float(0.86), float(0.08), glint), isCot);   // 鈍いつや＋細かいきらめき
+    // 粗さ：土台はつやなし。光の点だけ鋭く光る
+    pm.roughnessNode = mix(float(0.5), mix(float(0.88), float(0.12), dots.mul(topSide)), isCot);
     pm.metalnessNode = float(0);
-    pm.clearcoatNode = isCot.mul(0.06); pm.clearcoatRoughnessNode = float(0.4);
-    pm.sheen = 0.4; pm.sheenRoughness = 0.5; pm.sheenColor = new THREE.Color(0.55, 0.7, 0.3);
-    // 透け：子葉は厚いので、逆光では縁だけが明るい黄緑に光る。胚軸は細いので全体が透ける
-    const rimThin = pow(oneMinus(saturate(dot(normalWorld, viewDir))), 2.0);
-    pm.emissiveNode = col.mul(vec3(1.1, 1.1, 0.5)).mul(back).mul(mix(float(0.25), float(0.18), isCot)).mul(aboveGround).mul(oneMinus(isRoot));
+    pm.clearcoatNode = dots.mul(isCot).mul(0.35); pm.clearcoatRoughnessNode = float(0.15);
+    pm.sheen = 0.3; pm.sheenRoughness = 0.6; pm.sheenColor = new THREE.Color(0.6, 0.65, 0.45);
+    // 透け：縁と胚軸は薄いので、光が抜けて明るむ
+    pm.emissiveNode = col.mul(vec3(1.1, 1.1, 0.5)).mul(back.mul(0.6).add(0.12)).mul(mix(float(0.3), edge.mul(0.6), isCot)).mul(aboveGround).mul(oneMinus(isRoot));
     plant.material = pm; plant.castShadow = true; plant.receiveShadow = true; plant.frustumCulled = false;
   }
   {
     // 最初の本葉：子葉より暗く、つやのない青みの緑（写真の目測 RGB(90,150,80)）。薄いので、逆光で葉脈が浮かぶ
     const vc = attribute('color', 'vec4'); const isBlade = vc.r, fromMid = vc.g, along = vc.b;
     const lm = new THREE.MeshPhysicalNodeMaterial({ side: THREE.DoubleSide });
-    const veins = oneMinus(smoothstep(0.0, 0.05, abs(fract(along.mul(7.0).sub(fromMid.mul(2.2))).sub(0.5)))).mul(smoothstep(0.06, 0.2, fromMid)).mul(0.5);
-    const mid = oneMinus(smoothstep(0.0, 0.06, fromMid));
-    const bladeCol = mix(vec3(0.07, 0.14, 0.025), vec3(0.09, 0.17, 0.035), mid.mul(0.5));
-    const colL = mix(vec3(0.42, 0.56, 0.26), bladeCol, isBlade);
-    lm.colorNode = colL; lm.roughnessNode = mix(float(0.5), float(0.78), isBlade); lm.metalnessNode = float(0);
-    lm.emissiveNode = colL.mul(vec3(1.2, 1.35, 0.5)).mul(back.mul(0.5).add(facing.mul(0.0)));
+    // 本葉も一色ではない（写真 #88BA7E・#7FB375 前後）：青みがかった灰緑の上に、白っぽい細い葉脈の網目と、中央の葉脈。
+    // 表面は細かい毛のような、ビロードに近い鈍い光沢。縁はわずかに明るい
+    const lu = uv(); const lp = vec3(lu.x.mul(4.3), lu.y.mul(3.5), float(0));          // 本葉の実際の寸法（mm）
+    const net = mx_worley_noise_float(lp.mul(2.1)), net2 = mx_worley_noise_float(lp.mul(5.5).add(vec3(1.7, 0.3, 2.9)));
+    const veinNet = smoothstep(0.45, 0.8, net).mul(0.75).add(smoothstep(0.55, 0.85, net2).mul(0.4)).mul(smoothstep(0.08, 0.2, fromMid));
+    const mid = oneMinus(smoothstep(0.0, 0.05, fromMid)).mul(smoothstep(0.02, 0.2, along));
+    const blotL = saturate(mx_noise_float(lp.mul(1.2)).mul(0.9).add(0.5));
+    let bladeCol = mix(vec3(0.09, 0.20, 0.07), vec3(0.14, 0.28, 0.10), blotL);                 // 灰緑のまだら
+    bladeCol = mix(bladeCol, vec3(0.34, 0.48, 0.30), veinNet.mul(0.55).add(mid.mul(0.6)).min(1.0));  // 白っぽい葉脈
+    bladeCol = mix(bladeCol, vec3(0.30, 0.42, 0.20), smoothstep(0.85, 1.0, fromMid).mul(0.5));    // 縁
+    const fine = saturate(mx_noise_float(lp.mul(40.0)).add(0.5));
+    bladeCol = bladeCol.mul(mix(float(0.92), float(1.06), fine));
+    const colL = mix(vec3(0.30, 0.42, 0.18), bladeCol, isBlade);
+    lm.colorNode = colL; lm.roughnessNode = mix(float(0.5), float(0.72), isBlade); lm.metalnessNode = float(0);
+    lm.sheen = 0.25; lm.sheenRoughness = 0.5; lm.sheenColor = new THREE.Color(0.7, 0.8, 0.7);
+    lm.emissiveNode = colL.mul(vec3(1.2, 1.35, 0.6)).mul(back.mul(0.45)).mul(oneMinus(veinNet.mul(0.5)));
     leaf.material = lm; leaf.castShadow = true; leaf.receiveShadow = true; leaf.frustumCulled = false;
   }
   const holder = new THREE.Group(); holder.position.y = height(0, 0) - SEED_DEPTH; holder.rotation.y = 0.6; holder.add(gltf.scene); scene.add(holder);
