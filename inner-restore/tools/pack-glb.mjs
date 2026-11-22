@@ -26,7 +26,9 @@ if (opt.orm) {
   }
 }
 const size = Number(opt.texsize || 1024);
-await doc.transform(
+const plain = 'plain' in opt || rest.includes('--plain');
+if (plain) await doc.transform(dedup(), prune({ keepAttributes: true }), weld());
+else await doc.transform(
   dedup(), prune({ keepAttributes: true }), weld(),
   reorder({ encoder: MeshoptEncoder }), quantize(),
   textureCompress({ encoder: sharp, targetFormat: 'webp', quality: 90, resize: [size, size] }),

@@ -1,0 +1,50 @@
+#ui { position:fixed; inset:0; z-index:10; pointer-events:none; font-size:clamp(14px,1.35vw,24px); }
+#ui > * { pointer-events:auto; }
+.hide { display:none !important; }
+/* タイトルと読み込み */
+#title { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1.2em; text-align:center;
+  background:radial-gradient(ellipse at 50% 60%, #1a0d0acc 0%, #050305f2 70%); transition:opacity .9s; padding:24px; }
+#title h1 { font-weight:300; letter-spacing:.42em; font-size:clamp(28px,5vw,84px); margin:0; text-indent:.42em; }
+#title .sub { color:var(--dim); letter-spacing:.3em; font-size:.85em; }
+#title .note { color:var(--dim); font-size:.72em; max-width:38em; line-height:1.8; }
+#title .links { display:flex; gap:1.6em; font-size:.8em; flex-wrap:wrap; justify-content:center; } #title .links a { color:var(--acc); text-decoration:none; }
+#load { width:min(60vw,420px); } #load .bar { height:2px; background:#ffffff1c; } #load .bar i { display:block; height:100%; width:0; background:var(--acc); transition:width .4s; }
+#load .tip { color:var(--dim); font-size:.74em; margin-top:1em; min-height:3.4em; line-height:1.8; }
+#opts { display:flex; gap:1em; flex-wrap:wrap; justify-content:center; font-size:.72em; color:var(--dim); } #opts select { background:#0c1416; color:var(--ink); border:1px solid #ffffff2a; padding:.3em .5em; font:inherit; }
+/* バイザー表示 */
+#hud { position:absolute; left:max(18px,env(safe-area-inset-left)); top:max(14px,env(safe-area-inset-top)); width:min(34vw,22em); text-shadow:0 1px 3px #000; }
+#hud .lab { font-size:.68em; letter-spacing:.22em; color:var(--dim); } #hud .val { font-size:1.5em; font-variant-numeric:tabular-nums; font-weight:300; }
+#hud .meter { height:3px; background:#ffffff22; margin:.35em 0 .6em; } #hud .meter i { display:block; height:100%; background:linear-gradient(90deg,#f2b36b,#7fe0d2); width:0; transition:width .3s; }
+#hud .small { font-size:.66em; color:var(--dim); line-height:1.7; }
+#reticle { position:absolute; left:50%; top:50%; width:18px; height:18px; margin:-9px; border:1px solid #ffffff66; border-radius:50%; pointer-events:none; }
+#reticle.on { border-color:var(--acc); box-shadow:0 0 12px #7fe0d2aa; }
+#hint { position:absolute; left:50%; bottom:max(34px,env(safe-area-inset-bottom)); transform:translateX(-50%); font-size:.72em; color:var(--dim); letter-spacing:.08em; white-space:nowrap; text-shadow:0 1px 3px #000; pointer-events:none; }
+#subs { position:absolute; left:50%; bottom:14%; transform:translateX(-50%); max-width:min(86vw,44em); text-align:center; font-size:1.05em; line-height:1.7; text-shadow:0 1px 4px #000, 0 0 12px #000; pointer-events:none; opacity:0; transition:opacity .5s; }
+#subs.on { opacity:1; }
+/* 紹介カード */
+#card { position:absolute; right:max(22px,env(safe-area-inset-right)); bottom:22%; width:min(88vw,24em); background:#070c0ed9; border-left:2px solid var(--acc); padding:1em 1.2em 1.1em; backdrop-filter:blur(10px);
+  transform:translateX(30px); opacity:0; transition:transform .5s, opacity .5s; }
+#card.on { transform:none; opacity:1; }
+#card .k { font-size:.62em; letter-spacing:.3em; color:var(--acc); } #card .n { font-size:1.55em; margin:.15em 0 0; font-weight:500; } #card .e { font-size:.72em; color:var(--dim); letter-spacing:.06em; }
+#card .s { font-size:.8em; margin:.7em 0 .5em; color:#d9e4e8; } #card .s b { font-weight:500; color:var(--warn); } #card .d { font-size:.9em; line-height:1.75; }
+#card .p { height:2px; background:#ffffff1c; margin-top:.9em; } #card .p i { display:block; height:100%; background:var(--acc); width:0; } #card .h { font-size:.6em; color:var(--dim); margin-top:.5em; }
+/* 患者の視界 */
+#patient { position:absolute; right:max(18px,env(safe-area-inset-right)); top:max(14px,env(safe-area-inset-top)); width:min(30vw,300px); aspect-ratio:16/9; border:1px solid #ffffff2a; background:#000; overflow:hidden; transition:all 1.4s cubic-bezier(.6,0,.2,1); }
+#patient img { width:100%; height:100%; object-fit:cover; display:block; } #patient .spot { position:absolute; inset:0; pointer-events:none; }
+#patient .cap { position:absolute; left:8px; bottom:6px; font-size:.6em; letter-spacing:.2em; color:#fff; text-shadow:0 1px 3px #000; }
+#patient.full { right:0; top:0; width:100vw; height:100vh; aspect-ratio:auto; border-color:transparent; z-index:30; } #patient.full .cap { font-size:1em; left:5vw; bottom:6vh; }
+/* タッチ操作 */
+#touch { position:absolute; inset:0; pointer-events:none; } #touch .tb { position:absolute; pointer-events:auto; width:4.6em; height:4.6em; border-radius:50%; border:1px solid #ffffff55; background:#0c141688; color:var(--ink); font:inherit; font-size:.8em; touch-action:none; -webkit-user-select:none; user-select:none; }
+#touch .tb:active, #touch .tb.on { background:#1c4a4699; border-color:var(--acc); }
+#tb-fire { right:max(22px,env(safe-area-inset-right)); bottom:max(86px,calc(env(safe-area-inset-bottom) + 70px)); width:5.6em !important; height:5.6em !important; } #tb-scan { right:max(118px,calc(env(safe-area-inset-right) + 100px)); bottom:max(34px,env(safe-area-inset-bottom)); }
+#stick { position:absolute; width:112px; height:112px; margin:-56px; border-radius:50%; border:1px solid #ffffff33; pointer-events:none; } #stick i { position:absolute; left:50%; top:50%; width:44px; height:44px; margin:-22px; border-radius:50%; background:#ffffff33; }
+#topbtns { position:absolute; left:50%; top:max(10px,env(safe-area-inset-top)); transform:translateX(-50%); display:flex; gap:.6em; } #topbtns button { background:#0c141688; color:var(--dim); border:1px solid #ffffff2a; font:inherit; font-size:.66em; padding:.45em .9em; letter-spacing:.1em; }
+/* 一時停止・図鑑 */
+.sheet { position:absolute; inset:0; background:#040608e6; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1em; padding:24px; z-index:40; overflow:auto; }
+#atlas { justify-content:flex-start; } #atlas .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(min(100%,19em),1fr)); gap:14px; width:min(96vw,1200px); }
+#atlas .it { background:#0b1114; border:1px solid #ffffff14; padding:.9em 1em; font-size:.82em; line-height:1.7; } #atlas .it.unk { opacity:.45; } #atlas .it h3 { margin:0; font-size:1.25em; font-weight:500; } #atlas .it .e { color:var(--dim); font-size:.8em; }
+#atlas .it img { width:100%; aspect-ratio:2/1; object-fit:cover; margin:.5em 0; } #atlas .it.unk img { filter:brightness(0) invert(.25); } #atlas .it dt { color:var(--acc); font-size:.72em; letter-spacing:.16em; margin-top:.5em; } #atlas .it dd { margin:0; }
+#fade { position:absolute; inset:0; background:#000; opacity:0; pointer-events:none; transition:opacity 1.2s; z-index:25; } #fade.on { opacity:1; }
+#done { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); text-align:center; z-index:35; text-shadow:0 2px 12px #000; } #done h2 { font-weight:300; letter-spacing:.3em; font-size:1.6em; }
+
+body:has(#ui) .ir-hud { left:auto; right:max(12px,env(safe-area-inset-right)); bottom:max(8px,env(safe-area-inset-bottom)); font-size:10px; opacity:.7; }

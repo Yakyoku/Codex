@@ -6,10 +6,10 @@ const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
 const cache = new Map<string, Promise<GLTF>>();
 export let bytesLoaded = 0;
 
-export function loadGLB(url: string): Promise<GLTF> {
+export function loadGLB(url: string, keepHierarchy = false): Promise<GLTF> {
   let p = cache.get(url);
   if (!p) {
-    p = loader.loadAsync(url, (e) => { if (e.loaded === e.total) bytesLoaded += e.total; });
+    p = loader.loadAsync(url, (e) => { if (e.loaded === e.total) bytesLoaded += e.total; }).then((g) => { if (!keepHierarchy) dequantize(g.scene); return g; });
     cache.set(url, p);
   }
   return p;
@@ -39,4 +39,31 @@ export function makeEnvironment(renderer: THREE.WebGPURenderer, tint = new THREE
   const rt = pmrem.fromScene(s, 0.04);
   pmrem.dispose();
   return rt.texture;
+}
+
+/** 圧縮のために量子化された頂点（整数＋ノードの拡大率）を、実寸（µm）の浮動小数に戻す。
+ *  こうしておくと、シェーダーの中の頂点アニメーションを実寸の単位で書ける。 */
+export function dequantize(root: THREE.Object3D) {
+  root.updateMatrixWorld(true);
+  const v = new THREE.Vector3();
+  root.traverse((o) => {
+    const m = o as THREE.Mesh;
+    if (!m.isMesh) return;
+    const g = m.geometry, nm = new THREE.Matrix3().getNormalMatrix(m.matrixWorld);
+    for (const name of Object.keys(g.attributes)) {
+      const a = g.attributes[name] as THREE.BufferAttribute;
+      const out = new Float32Array(a.count * a.itemSize);
+      for (let i = 0; i < a.count; i++) {
+        if (name === 'position' || name === 'normal') {
+          v.fromBufferAttribute(a, i);
+          if (name === 'position') v.applyMatrix4(m.matrixWorld); else v.applyMatrix3(nm).normalize();
+          out[i * 3] = v.x; out[i * 3 + 1] = v.y; out[i * 3 + 2] = v.z;
+        } else for (let k = 0; k < a.itemSize; k++) out[i * a.itemSize + k] = a.getComponent(i, k);
+      }
+      g.setAttribute(name, new THREE.BufferAttribute(out, a.itemSize));
+    }
+    g.computeBoundingSphere(); g.computeBoundingBox();
+  });
+  root.traverse((o) => { o.position.set(0, 0, 0); o.quaternion.identity(); o.scale.set(1, 1, 1); o.updateMatrix(); });
+  root.updateMatrixWorld(true);
 }

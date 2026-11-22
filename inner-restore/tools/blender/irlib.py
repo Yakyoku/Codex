@@ -22,7 +22,7 @@ def reset():
     return sc
 
 
-def mesh_object(name, verts, faces, uvs=None, smooth=True, attrs=None):
+def mesh_object(name, verts, faces, uvs=None, smooth=True, attrs=None, colors=None):
     """verts:(N,3) faces:list of index tuples uvs:(N,2) 頂点ごと attrs:{name:(N,) float}"""
     me = bpy.data.meshes.new(name)
     me.from_pydata([tuple(v) for v in verts], [], [tuple(f) for f in faces])
@@ -35,6 +35,12 @@ def mesh_object(name, verts, faces, uvs=None, smooth=True, attrs=None):
         for k, arr in attrs.items():
             a = me.attributes.new(k, "FLOAT", "POINT")
             a.data.foreach_set("value", np.asarray(arr, dtype=np.float32))
+    if colors is not None:
+        ca = me.color_attributes.new("Col", "FLOAT_COLOR", "POINT")
+        c = np.ones((len(verts), 4), dtype=np.float32)
+        c[:, :np.asarray(colors).shape[1]] = colors
+        ca.data.foreach_set("color", c.ravel())
+        me.color_attributes.active_color = ca
     if smooth:
         me.polygons.foreach_set("use_smooth", [True] * len(me.polygons))
     me.update()
@@ -161,13 +167,14 @@ def render_views(objs, name, radius, res=512, samples=24, world=(0.012, 0.01, 0.
     return outp
 
 
-def export_glb(objs, path, draco=False):
+def export_glb(objs, path, draco=False, yup=True):
     for o in bpy.context.scene.objects:
         o.select_set(False)
     for o in objs:
         o.select_set(True)
     bpy.context.view_layer.objects.active = objs[0]
     bpy.ops.export_scene.gltf(filepath=path, export_format="GLB", use_selection=True, export_apply=True,
-                              export_yup=True, export_draco_mesh_compression_enable=draco,
-                              export_attributes=True, export_animations=True)
+                              export_yup=yup, export_draco_mesh_compression_enable=draco,
+                              export_attributes=True, export_animations=True,
+                              export_vertex_color="ACTIVE", export_all_vertex_colors=False)
     return os.path.getsize(path)

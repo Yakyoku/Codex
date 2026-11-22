@@ -6,14 +6,30 @@
 <title>INNER RESTORE — VR</title>
 <link rel="stylesheet" href="/src/base.css">
 <style>
-#vrui { position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; gap:14px; padding-bottom:12vh; pointer-events:none; z-index:6; }
-#vrui > * { pointer-events:auto; }
-#vrmsg { color:var(--dim); font-size:14px; max-width:36em; text-align:center; line-height:1.7; padding:10px 16px; background:#06090bcc; border-radius:2px; }
+#vrui { position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px; padding:20px; z-index:6; background:radial-gradient(ellipse at 50% 60%, #1a0d0aaa 0%, #050305e6 75%); text-align:center; }
+#vrui h1 { font-weight:300; letter-spacing:.4em; font-size:clamp(24px,4vw,60px); margin:0; }
+#vrmsg, .vnote { color:var(--dim); font-size:15px; max-width:38em; line-height:1.8; }
+.vnote b { color:var(--ink); font-weight:500; }
+#vrui select { background:#0c1416; color:var(--ink); border:1px solid #ffffff2a; padding:.4em .6em; font:inherit; font-size:15px; }
+#vrui .row { display:flex; gap:18px; flex-wrap:wrap; justify-content:center; color:var(--dim); font-size:14px; }
+#vrui a { color:var(--acc); font-size:14px; }
+#vrui.min { background:none; justify-content:flex-end; pointer-events:none; } #vrui.min > *:not(#entervr) { display:none; } #vrui.min #entervr { pointer-events:auto; opacity:.6; }
 </style>
 </head>
 <body>
 <canvas id="view"></canvas>
-<div id="vrui"><button class="btn" id="entervr" disabled>VR で遊ぶ</button><div id="vrmsg">VR の対応状況を確認しています…</div></div>
+<div id="vrui">
+  <h1>INNER RESTORE</h1>
+  <div class="vnote"><b>座ったまま遊べます。</b>30分に一度は休憩をとり、気分が悪くなったら、すぐにヘッドセットを外して中断してください。<br>本作は娯楽作品であり、医療上の助言ではありません。</div>
+  <div class="row">
+    <label>表現の強さ <select id="v-intense"><option value="std">標準</option><option value="mild">控えめ</option></select></label>
+    <label>移動 <select id="v-move"><option value="smooth">なめらか</option><option value="step">短い距離を一瞬で</option></select></label>
+    <label>移動中の視野 <select id="v-vig"><option value="0.6">絞る（標準）</option><option value="0.9">強く絞る</option><option value="0">絞らない</option></select></label>
+  </div>
+  <button class="btn" id="entervr" disabled>VR で遊ぶ</button>
+  <div id="vrmsg">VR の対応状況を確認しています…</div>
+  <a href="/">画面版に戻る</a>
+</div>
 <script type="module" src="/src/pages/vr.ts"></script>
 </body>
 </html>
