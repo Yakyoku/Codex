@@ -1,17 +1,21 @@
-/* 紹介カード：スーツのバイザー表示。50インチのテレビから離れても、iPhone でも読める大きさ */
-.card { position: fixed; left: max(3vw, env(safe-area-inset-left)); bottom: max(13vh, 96px); width: min(34em, 92vw); z-index: 10;
-  font-size: clamp(15px, 1.55vw, 30px); color: var(--ink); background: linear-gradient(100deg, rgba(14, 11, 8, .88), rgba(14, 11, 8, .62)); border-left: 2px solid var(--accent);
-  padding: 1em 1.3em .9em; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); opacity: 0; transform: translateX(-18px); transition: opacity .6s ease, transform .6s ease; pointer-events: none; }
+/* 紹介カード：スーツのバイザーに出る、小さく控えめな表示。画面の左下、操作ボタンの上 */
+.card { position: fixed; left: max(24px, env(safe-area-inset-left)); bottom: max(96px, calc(env(safe-area-inset-bottom) + 84px)); width: min(24em, calc(100vw - 48px)); z-index: 10;
+  font-size: clamp(13px, 1.05vw, 22px); color: var(--ink);
+  background: linear-gradient(180deg, rgba(20, 15, 11, .66), rgba(12, 9, 7, .5)); border: 1px solid rgba(239, 230, 216, .10); border-radius: 14px;
+  padding: .95em 1.15em .8em; backdrop-filter: blur(14px) saturate(1.1); -webkit-backdrop-filter: blur(14px) saturate(1.1);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, .35); opacity: 0; transform: translateY(10px); transition: opacity .6s ease, transform .6s ease; pointer-events: none; }
 .card.show { opacity: 1; transform: none; pointer-events: auto; }
-.card-tag { font-size: .62em; letter-spacing: .3em; color: var(--accent); margin-bottom: .5em; }
-.card h2 { margin: 0; font-size: 1.55em; font-weight: 600; letter-spacing: .08em; }
-.card .sci { font-style: italic; color: var(--dim); font-size: .85em; margin-top: .15em; font-family: Georgia, "Times New Roman", serif; min-height: 1.2em; }
-.card .size { margin: .6em 0 .5em; font-size: .82em; display: flex; gap: .8em; align-items: baseline; flex-wrap: wrap; }
-.card .size b { color: var(--leaf); font-weight: 600; letter-spacing: .05em; }
+.card::before { content: ""; position: absolute; left: 1.15em; top: 0; width: 2.2em; height: 2px; background: var(--accent); border-radius: 2px; }
+.card-tag { font-size: .7em; letter-spacing: .28em; color: var(--accent); margin-bottom: .35em; }
+.card h2 { margin: 0; font-size: 1.32em; font-weight: 600; letter-spacing: .04em; line-height: 1.35; }
+.card .sci { font-style: italic; color: var(--dim); font-size: .82em; margin-top: .1em; font-family: Georgia, "Times New Roman", serif; min-height: 0; }
+.card .sci:empty { display: none; }
+.card .size { margin: .55em 0 .45em; font-size: .78em; display: flex; gap: .3em .7em; align-items: baseline; flex-wrap: wrap; }
+.card .size b { color: var(--leaf); font-weight: 600; }
 .card .size span { color: var(--dim); }
-.card p { margin: 0; line-height: 1.85; font-size: .95em; }
+.card p { margin: 0; line-height: 1.75; font-size: .88em; color: rgba(239, 230, 216, .92); }
 .card.name-only p, .card.name-only .size { display: none; }
-.card-foot { display: flex; align-items: center; gap: 1em; margin-top: .8em; }
-.card-foot .btn { font-size: .7em; padding: .6em 1.2em; min-height: 0; }
-.card-foot .life { height: 1px; background: var(--dim); display: block; flex: 0 0 auto; width: 100%; max-width: calc(100% - 7em); }
-@media (max-width: 720px) and (orientation: portrait) { .card { bottom: 150px; } }
+.card-foot { display: flex; align-items: center; gap: .8em; margin-top: .7em; }
+.card-foot .btn { font-size: .72em; padding: .45em 1.1em; min-height: 0; background: transparent; white-space: nowrap; flex: 0 0 auto; }
+.card-foot .life { height: 1px; background: rgba(239, 230, 216, .35); display: block; flex: 1 1 auto; max-width: 100%; }
+@media (max-width: 720px) { .card { bottom: 178px; font-size: 13px; } }

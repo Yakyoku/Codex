@@ -49,7 +49,7 @@ export function makeSoilMaterial(kind: GrainKind, na: THREE.Texture, detail: THR
   m.normalNode = n;
   // 水の膜：クリアコートの二層反射。膜は滑らかなので、下地の凹凸は拾わせない
   m.clearcoatNode = wet.mul(L.coat);
-  m.clearcoatRoughnessNode = mix(float(0.22), float(0.05), wet);
+  m.clearcoatRoughnessNode = mix(float(0.25), float(0.12), wet);
   if (kind === 'quartz') {
     // 石英は半透明：縁で光が抜けて明るむ（厚みの代わりに視線と法線の角度で近似する）
     const rim = pow(oneMinus(saturate(dot(normalView, positionViewDirection))), 2.5);

@@ -24,17 +24,17 @@ function narrate(text: string) {
     synth.speak(u);
   } catch { /* 読み上げが使えない機器では字幕だけ */ }
 }
-export function showCard(s: Species, opts: { narration?: boolean; done?: () => void } = {}) {
+export function showCard(s: Species, opts: { narration?: boolean; done?: () => void; holdMs?: number } = {}) {
   const mode = introMode(); if (mode === 'off') { opts.done?.(); return; }
   const r = root(); onDone = opts.done ?? null;
   r.querySelector('.card-tag')!.textContent = s.kind === 'organism' ? 'はじめての出会い' : '土のしくみ';
-  r.querySelector('h2')!.textContent = s.nameJa;
+  r.querySelector('h2')!.textContent = s.title ?? s.nameJa;
   r.querySelector('.sci')!.textContent = s.sci ?? '';
   r.querySelector('.size b')!.textContent = s.size; r.querySelector('.size span')!.textContent = s.sizeCompare;
   r.querySelector('p')!.textContent = mode === 'name' ? '' : s.intro;
   r.classList.toggle('name-only', mode === 'name');
   // 表示は 5〜8 秒（文の長さに合わせる）
-  const ms = mode === 'name' ? 3500 : Math.max(5000, Math.min(8000, 2500 + s.intro.length * 90));
+  const ms = opts.holdMs ?? (mode === 'name' ? 3500 : Math.max(5000, Math.min(8000, 2500 + s.intro.length * 90)));
   const life = r.querySelector('.life') as HTMLElement; life.style.transition = 'none'; life.style.width = '100%';
   requestAnimationFrame(() => { r.classList.add('show'); life.style.transition = `width ${ms}ms linear`; life.style.width = '0%'; });
   if (opts.narration !== false && mode === 'all') narrate(`${s.nameJa}。${s.intro}`);

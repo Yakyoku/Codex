@@ -11,6 +11,8 @@ import { makeDemo } from '../game/demo';
 import { makePost } from '../game/post';
 import { buildSurface, type Surface } from '../game/surface';
 import { makeEncounters } from '../game/encounters';
+import { SPECIES } from '../game/species';
+import { showCard } from '../ui/card';
 import { mountSettings, savedTier } from '../ui/settings';
 import { createAudio } from '../audio/engine';
 import { makeHud } from './hud';
@@ -80,7 +82,9 @@ async function main() {
   // シェーダーの初回コンパイルの引っかかりを避けるため、読み込み中に準備しておく
   await renderer.compileAsync(scene, camera);
   ($('loadBar') as HTMLElement).style.width = '100%';
-  const begin = () => { started = true; audio.start(); $('loading').classList.add('hide'); stopFacts(); if (wetQ === null && !testing) setTimeout(() => demo.start(), 2500); };
+  const begin = () => { started = true; audio.start(); setTimeout(() => $('loading').classList.add('hide'), 250); stopFacts(); if (wetQ === null && !testing) setTimeout(() => demo.start(), 2500); };
+  // 確認用：?card=<id> で紹介カードをすぐ出す
+  const cardQ = Q.get('card'); if (cardQ && SPECIES[cardQ]) setTimeout(() => showCard(SPECIES[cardQ], { narration: false, holdMs: 600000 }), 50);
   if (testing) begin(); else { const b = $('start') as HTMLButtonElement; b.hidden = false; b.addEventListener('click', begin, { once: true }); }
 
   // 出会いの順番（M1 の自動の流れ用。M3 で、プレイヤーの位置と行動に結び付ける）

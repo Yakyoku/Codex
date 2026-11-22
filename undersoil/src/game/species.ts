@@ -4,6 +4,8 @@ export interface Species {
   /** 'organism' = 生き物、'element' = 土の要素（団粒・水の膜など） */
   kind: 'organism' | 'element';
   nameJa: string;
+  /** 題名の表示用。漢字には（よみ）を付ける。なければ nameJa */
+  title?: string;
   /** 学名（生き物のみ） */
   sci?: string;
   taxon?: string;

@@ -18,7 +18,7 @@ export async function createGame(renderer: THREE.WebGPURenderer, base: string, t
   const camera = new THREE.PerspectiveCamera(58, 1, 0.08, 400);
   const world = await buildWorld(base, { grainLod: q.grainLod as 0 | 1, density: q.grainCount, cheap: tier === 'vr' });
   scene.add(world.group);
-  const bridges = buildBridges(world.colliders, world.samples, world.cellAt, { refraction: q.refraction, max: tier === 'vr' ? 60 : 220 });
+  const bridges = buildBridges(world.colliders, world.samples, world.cellAt, { refraction: 'env', max: tier === 'vr' ? 60 : 220 });
   scene.add(bridges.mesh);
   const swarm = buildSwarm(world.colliders, world.cellAt, world.distToPath, q.swarmGpu ? Math.min(q.swarm, 12000) : q.swarm);
   scene.add(swarm.mesh);
