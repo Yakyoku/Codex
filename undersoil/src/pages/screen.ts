@@ -117,7 +117,7 @@ async function main() {
     const t = fixedT !== null ? Number(fixedT) : now / 1000; const dt = last ? Math.min(0.1, (now - last) / 1000) : 0; last = now;
     if (dbg) { const v = dbg.split(',').map(Number); camera.position.set(v[0], v[1], v[2]); camera.lookAt(v[3], v[4], v[5]); }
     else if (camT !== null) placeOnPath(Number(camT));
-    else if (touring) { tourU = (tourU + dt * 0.012) % 1; placeOnPath(0.02 + 0.9 * (0.5 - 0.5 * Math.cos(tourU * Math.PI * 2))); }
+    else if (touring) { tourU = (tourU + dt * 0.012) % 1; placeOnPath(0.02 + 0.66 * (0.5 - 0.5 * Math.cos(tourU * Math.PI * 2))); /* 奥の種のまわり（まだ作っていない）へは行かない */ }
     else controls.update(dt);
     if (wetQ === null) { demo.update(dt); game.update(dt, t); }
     if (mode === 'surface') {

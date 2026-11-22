@@ -42,6 +42,23 @@ function reverbBuffer(ctx: AudioContext, sec: number, damp: number) {
   return buf;
 }
 
+/** iPhone・iPad の Safari では、Web Audio の音は消音モードのときに鳴らない。
+ *  音声セッションの種類を「再生」にすると、消音モードでも鳴る（動画アプリと同じ扱い）。古い OS 向けに、無音の <audio> を流す方法も併用する。 */
+let unlocked = false;
+function unlockIOS() {
+  if (unlocked) return; unlocked = true;
+  try { const as = (navigator as unknown as { audioSession?: { type: string } }).audioSession; if (as) as.type = 'playback'; } catch { /* noop */ }
+  try {
+    // 0.1 秒の無音の WAV（その場で作る）を、くり返し再生する
+    const sr = 8000, n = 800, buf = new ArrayBuffer(44 + n * 2), v = new DataView(buf);
+    const w = (o: number, s: string) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
+    w(0, 'RIFF'); v.setUint32(4, 36 + n * 2, true); w(8, 'WAVE'); w(12, 'fmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+    v.setUint32(24, sr, true); v.setUint32(28, sr * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true); w(36, 'data'); v.setUint32(40, n * 2, true);
+    const el = document.createElement('audio'); el.src = URL.createObjectURL(new Blob([buf], { type: 'audio/wav' })); el.loop = true; el.setAttribute('playsinline', ''); el.volume = 0.01;
+    void el.play().catch(() => { /* 対応していない場合は何もしない */ });
+  } catch { /* noop */ }
+}
+
 export function createAudio(): AudioEngine {
   let ctx: AudioContext | null = null;
   let master: GainNode, music: GainNode, sfx: GainNode, verb: ConvolverNode, verbIn: GainNode;
@@ -50,38 +67,41 @@ export function createAudio(): AudioEngine {
   const api: AudioEngine = {
     muted: false,
     start() {
+      unlockIOS();
       if (ctx) { void ctx.resume(); return; }
       const AC = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext; if (!AC) return;
       ctx = new AC();
-      master = ctx.createGain(); master.gain.value = api.muted ? 0 : 0.9;
+      master = ctx.createGain(); master.gain.value = api.muted ? 0 : 1.0;
       // 小さな音量でも大事な音が聞こえるように、全体を軽く圧縮する
-      const comp = ctx.createDynamicsCompressor(); comp.threshold.value = -20; comp.ratio.value = 3; comp.attack.value = 0.01; comp.release.value = 0.3;
+      const comp = ctx.createDynamicsCompressor(); comp.threshold.value = -24; comp.ratio.value = 4; comp.attack.value = 0.01; comp.release.value = 0.3;
       master.connect(comp).connect(ctx.destination);
       verb = ctx.createConvolver(); verb.buffer = reverbBuffer(ctx, 3.2, 0.25); verbIn = ctx.createGain(); verbIn.gain.value = 0.5; verbIn.connect(verb).connect(master);
-      music = ctx.createGain(); music.gain.value = 0.55; music.connect(master); music.connect(verbIn);
-      sfx = ctx.createGain(); sfx.gain.value = 0.8; sfx.connect(master); sfx.connect(verbIn);
+      music = ctx.createGain(); music.gain.value = 0.9; music.connect(master); music.connect(verbIn);
+      sfx = ctx.createGain(); sfx.gain.value = 1.0; sfx.connect(master); sfx.connect(verbIn);
       // 土の中の音は、地面を通して聞こえるので高い音が削れる
-      under = ctx.createBiquadFilter(); under.type = 'lowpass'; under.frequency.value = 1400; under.Q.value = 0.3; under.connect(master);
+      under = ctx.createBiquadFilter(); under.type = 'lowpass'; under.frequency.value = 2600; under.Q.value = 0.3; under.connect(master);
       const loop = (buf: AudioBuffer, gain: number, dest: AudioNode, rate = 1) => { const s = ctx!.createBufferSource(); s.buffer = buf; s.loop = true; s.playbackRate.value = rate; const g = ctx!.createGain(); g.gain.value = gain; s.connect(g).connect(dest); s.start(); return g; };
       const brown = noiseBuffer(ctx, 6, 'brown'), pink = noiseBuffer(ctx, 5, 'pink'), white = noiseBuffer(ctx, 4, 'white');
       // 乾いた土：頭上を渡るくぐもった風（低い帯域の雑音が、ゆっくり強弱する）
       dryBed = ctx.createGain(); dryBed.gain.value = 0; dryBed.connect(under);
-      windBp = ctx.createBiquadFilter(); windBp.type = 'bandpass'; windBp.frequency.value = 320; windBp.Q.value = 0.6; windBp.connect(dryBed);
-      loop(brown, 0.9, windBp);
+      windBp = ctx.createBiquadFilter(); windBp.type = 'bandpass'; windBp.frequency.value = 700; windBp.Q.value = 0.5; windBp.connect(dryBed);
+      loop(pink, 1.4, windBp);
       // 湿った土：頭上から響く、くぐもった雨のような水の気配
       wetBed = ctx.createGain(); wetBed.gain.value = 0; wetBed.connect(under);
-      rainLp = ctx.createBiquadFilter(); rainLp.type = 'lowpass'; rainLp.frequency.value = 700; rainLp.connect(wetBed);
-      loop(pink, 0.35, rainLp);
+      rainLp = ctx.createBiquadFilter(); rainLp.type = 'lowpass'; rainLp.frequency.value = 1800; rainLp.connect(wetBed);
+      loop(pink, 0.5, rainLp);
       // 地上：風と、葉ずれ（高めの帯域の雑音）
       surfBed = ctx.createGain(); surfBed.gain.value = 0; surfBed.connect(master);
-      const surfWind = ctx.createBiquadFilter(); surfWind.type = 'lowpass'; surfWind.frequency.value = 600; surfWind.connect(surfBed); loop(brown, 0.5, surfWind, 1.3);
-      leafBp = ctx.createBiquadFilter(); leafBp.type = 'bandpass'; leafBp.frequency.value = 3800; leafBp.Q.value = 0.8; leafBp.connect(surfBed); loop(white, 0.05, leafBp);
+      const surfWind = ctx.createBiquadFilter(); surfWind.type = 'bandpass'; surfWind.frequency.value = 800; surfWind.Q.value = 0.4; surfWind.connect(surfBed); loop(pink, 0.9, surfWind, 1.0);
+      // 開始の合図：鳴っていることがすぐ分かるように、静かな和音を1つ
+      setTimeout(() => { if (ctx) [293.66, 440, 587.33].forEach((f, i) => piano(f, ctx!.currentTime + 0.05 + i * 0.12, 0.22, 5)); }, 300);
+      leafBp = ctx.createBiquadFilter(); leafBp.type = 'bandpass'; leafBp.frequency.value = 3800; leafBp.Q.value = 0.8; leafBp.connect(surfBed); loop(white, 0.09, leafBp);
     },
     setVitality(v) { vit = v; },
     setMode(m) { if (m !== mode) { mode = m; growth = 0; chordDone = false; } },
     setGrowth(g) { growth = g; },
     pause(p) { if (!ctx) return; if (p) void ctx.suspend(); else void ctx.resume(); },
-    setMuted(m) { api.muted = m; if (ctx) master.gain.setTargetAtTime(m ? 0 : 0.9, ctx.currentTime, 0.1); },
+    setMuted(m) { api.muted = m; if (ctx) master.gain.setTargetAtTime(m ? 0 : 1.0, ctx.currentTime, 0.1); },
     chime() {
       // 新しい生き物の紹介：短く上品な2音（鐘のような倍音）
       if (!ctx) return; const t = ctx.currentTime;
@@ -93,8 +113,8 @@ export function createAudio(): AudioEngine {
       gust += dt * 0.13;
       const gustAmt = 0.55 + 0.45 * Math.sin(gust) * Math.sin(gust * 0.37 + 1);
       dryBed.gain.setTargetAtTime(soil * (1 - vit) * 0.5 * gustAmt + 0.0001, t, 0.4);
-      windBp.frequency.setTargetAtTime(240 + 260 * gustAmt, t, 0.6);
-      wetBed.gain.setTargetAtTime(soil * vit * 0.28 + 0.0001, t, 0.6);
+      windBp.frequency.setTargetAtTime(500 + 600 * gustAmt, t, 0.6);
+      wetBed.gain.setTargetAtTime(soil * vit * 0.32 + 0.0001, t, 0.6);
       surfBed.gain.setTargetAtTime((1 - soil) * (0.22 + 0.2 * gustAmt) + 0.0001, t, 0.8);
       leafBp.frequency.setTargetAtTime(3200 + 1600 * gustAmt, t, 0.5);
       if (soil) {

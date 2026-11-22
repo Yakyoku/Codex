@@ -13,12 +13,14 @@
   <canvas id="view"></canvas>
   <div id="status">起動中…</div>
   <table><tbody id="rows"></tbody></table>
+  <p id="sndState" style="color:var(--dim);font-size:14px;margin:10px 0 0"></p>
   <textarea id="short" readonly placeholder="ここに結果が出ます"></textarea>
   <div class="row">
     <button class="btn primary" id="copy" disabled>結果をコピー</button>
     <button class="btn" id="reAuto">自動で測り直す</button>
     <button class="btn" id="reGPU">WebGPU で測る</button>
     <button class="btn" id="reGL">WebGL 2 で測る</button>
+    <button class="btn" id="snd">音を鳴らす</button>
     <a class="btn" href="../">画面版へ</a>
     <a class="btn" href="../vr/">VR 版へ</a>
   </div>

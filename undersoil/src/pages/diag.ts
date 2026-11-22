@@ -98,6 +98,12 @@ async function main() {
     ($('copy') as HTMLButtonElement).disabled = false;
     W.__state = { ready: true, done: true, isWebGPU, short, errors };
   }
+  // 音の確認：押すと和音が鳴る。鳴らない場合の原因を切り分けるため、状態を表示する
+  $('snd').addEventListener('click', async () => {
+    const { createAudio } = await import('../audio/engine');
+    const a = (W.__audio as ReturnType<typeof createAudio>) ?? createAudio(); W.__audio = a; a.start(); a.chime();
+    setTimeout(() => { const as = (navigator as unknown as { audioSession?: { type: string } }).audioSession; $('sndState').textContent = `音声：${(a as unknown as { state?: string }).state ?? '開始'}／音声セッション：${as ? as.type : '非対応'}`; }, 600);
+  });
   $('copy').addEventListener('click', async () => {
     const ta = $('short') as HTMLTextAreaElement;
     try { await navigator.clipboard.writeText(ta.value); } catch { ta.select(); document.execCommand('copy'); }
