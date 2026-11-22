@@ -1,7 +1,7 @@
 {
  "updated": "2026-11-22",
- "milestone": "M1 見た目の確立（途中）― 地上の場面を写真に近づけ、音を追加",
- "summary": "地上の発芽を、実物の写真と見比べてさらに直しました（背景のぼけ、細かい土と湿りのまだら、枯れ草・小枝・落ち葉のかけら、つやを抑えた平たい子葉、短い茎）。音も入りました（画面右上の「音：入／切」）。画像はクラウド環境の WebGL 2 で、PC 高画質の設定で撮ったものです。",
+ "milestone": "M1 見た目の確立（途中）― 地上の場面を、写真49点と見比べて作り直し",
+ "summary": "「まだ AI っぽい」とのご指摘を受け、実物の写真49点（シロツメクサの芽生え19点、ほかの植物の芽が出る瞬間17点、土13点）と見比べて、地上の場面を作り直しました。子葉は地面すれすれに水平に開き、土は細かい砂の地面になり、カメラは写真と同じく斜め上から見下ろして固定しています。早回しの動画は配信元の制限で取得できず、動きの確認はまだです。下の動画は作り直す前の版です。",
  "sections": [
   {
    "title": "プレイ動画（46秒）",
@@ -15,20 +15,20 @@
    ]
   },
   {
-   "title": "作り直した発芽（実物の写真と見比べてください）",
+   "title": "作り直した発芽（第3版。写真と見比べてください）",
    "note": "参考にした写真（Wikimedia Commons。写真そのものは載せず、出所だけを示します）： https://commons.wikimedia.org/wiki/File:Trifolium_repens_2020-05-20_8615.jpg ／ https://commons.wikimedia.org/wiki/File:Trifolium_repens_kz01.jpg ／ https://commons.wikimedia.org/wiki/File:Trifolium_repens_2018-04-27_9523.jpg ／ https://commons.wikimedia.org/wiki/File:Trifolium_repens_2020-05-22_9003.jpg 　残っている違い：朝露なし、種皮をかぶった姿なし、本葉の縁のぎざぎざなし、子葉の表面のきらめきが写真より弱い。",
    "items": [
     {
-     "src": "./img/m1/sprout_0.45.webp",
-     "caption": "土を割って出たところ。まだ光に当たっておらず、淡い黄白色（背景のぼけ付き）"
+     "src": "./img/m1/sprout_v3_0.42.webp",
+     "caption": "土を割って出たところ。出たばかりの子葉は黄色"
     },
     {
-     "src": "./img/m1/sprout_0.72.webp",
-     "caption": "子葉が開いて緑になる。間から最初の本葉の芽。まわりに枯れ草と小枝"
+     "src": "./img/m1/sprout_v3_0.72.webp",
+     "caption": "子葉が地面すれすれに開く（写真から測った、灰色がかった淡い黄緑）"
     },
     {
-     "src": "./img/m1/sprout_1.webp",
-     "caption": "最初の本葉（小葉が1枚の丸い葉）が伸びる"
+     "src": "./img/m1/sprout_v3_1.webp",
+     "caption": "最初の本葉が、長い柄の先に立つ"
     },
     {
      "src": "./img/m1/seedling_top.webp",

@@ -2,7 +2,7 @@
 // 写真の地面は「粒が浮いて並ぶ」のではなく、細かい土の面の上に、丸い土のかたまり（団粒）や小石が埋まって乗っている。
 // 芽のまわりほど頂点を細かくし（中心に寄せた格子）、遠くは粗くする。
 import * as THREE from 'three/webgpu';
-import { attribute, float, vec3, mix, smoothstep, saturate, positionWorld, mx_noise_float, mx_worley_noise_float, uniform, oneMinus, length, vec2, bumpMap } from 'three/tsl';
+import { attribute, float, vec3, mix, smoothstep, saturate, positionWorld, mx_noise_float, mx_worley_noise_float, uniform, oneMinus, length, vec2, bumpMap, step } from 'three/tsl';
 import { makeRng } from './rng';
 
 /** 決まった乱数で、格子の各マスに「土のかたまり」を1つずつ置く（ゆらぎのある格子）。近くのマスだけ調べるので速い */
@@ -63,23 +63,28 @@ export function buildGround(height: (x: number, z: number) => number, opts: { se
   const patch = saturate(mx_noise_float(p.xz.mul(0.06)).mul(0.9).add(0.45));
   const wet = saturate(patch.mul(0.65).add(cavity.mul(0.55)).sub(0.25));
   // 土の色：写真の乾いた表面は灰色がかった明るい茶、湿った所は濃いこげ茶（sRGB を線形に直した値）
-  const dry = mix(vec3(0.095, 0.066, 0.045), vec3(0.19, 0.14, 0.10), saturate(mx_noise_float(p.xz.mul(1.7)).mul(1.4).add(0.5)));
-  const moist = mix(vec3(0.03, 0.02, 0.014), vec3(0.06, 0.04, 0.028), saturate(mx_noise_float(p.xz.mul(2.3)).add(0.5)));
+  const dry = mix(vec3(0.16, 0.11, 0.075), vec3(0.30, 0.22, 0.15), saturate(mx_noise_float(p.xz.mul(1.7)).mul(1.4).add(0.5)));
+  const moist = mix(vec3(0.06, 0.035, 0.022), vec3(0.15, 0.09, 0.05), saturate(mx_noise_float(p.xz.mul(2.3)).add(0.5)));
   let col = mix(dry, moist, wet);
-  // 細かい砂粒（白〜灰色の小さな点）と、黒い有機物のかけら
-  const w1 = mx_worley_noise_float(p.xz.mul(7.0));
-  const sand = smoothstep(0.1, 0.04, w1).mul(smoothstep(0.55, 0.8, mx_noise_float(p.xz.mul(0.9)).add(0.5)));
-  const w2 = mx_worley_noise_float(p.xz.mul(3.1).add(vec2(7.0, 3.0)));
-  const humus = smoothstep(0.1, 0.04, w2).mul(0.8);
-  col = mix(col, vec3(0.50, 0.48, 0.44), sand.mul(0.9));
-  col = mix(col, vec3(0.025, 0.02, 0.015), humus);
+  // 細かい砂：0.1 mm と 0.4 mm の2段のセル模様（写真の地面はほとんどが砂）。粒の色は灰〜茶でばらつき、すき間はほぼ黒
+  const sA = mx_worley_noise_float(p.xz.mul(10.0)), sB = mx_worley_noise_float(p.xz.mul(2.6).add(vec2(3.1, 1.7)));
+  const grainA = smoothstep(0.62, 0.18, sA), grainB = smoothstep(0.7, 0.25, sB);
+  const tone = saturate(mx_noise_float(p.xz.mul(10.0).floor().add(0.5)).add(0.5));   // 粒ごとの色
+  const sandCol = mix(vec3(0.13, 0.095, 0.065), vec3(0.30, 0.235, 0.17), tone);
+  col = mix(col, sandCol, grainA.mul(0.45).add(grainB.mul(0.25)).mul(oneMinus(wet.mul(0.5))));
+  const gap = smoothstep(0.35, 0.75, sA).mul(smoothstep(0.4, 0.85, sB).mul(0.5).add(0.5));
+  col = col.mul(mix(float(1.0), float(0.18), gap.mul(0.75)));                  // 粒のすき間は暗い
+  // ガラスのように透き通った石英の粒（一部だけ）：小さく鋭い光
+  const quartz = smoothstep(0.08, 0.03, sA).mul(step(0.78, tone));
+  col = mix(col, vec3(0.55, 0.55, 0.52), quartz.mul(0.6));
+  const sand = quartz;
   col = col.mul(mix(float(1.0), float(0.55), cavity.mul(0.9)));            // くぼみは暗い
   m.colorNode = col;
   // 粗さ：乾いた所はつやなし、湿った所はしっとり。砂粒はわずかに光る
-  m.roughnessNode = saturate(mix(float(0.97), float(0.62), wet).sub(sand.mul(0.35)));
+  m.roughnessNode = saturate(mix(float(0.95), float(0.6), wet).sub(sand.mul(0.8)));
   m.metalnessNode = float(0);
   // 細かい凹凸：表面の小さな粒のざらつき（数百 µm）を、法線だけで足す
-  const bump = mx_noise_float(p.mul(9.0)).mul(0.5).add(mx_noise_float(p.mul(26.0)).mul(0.25)).add(mx_worley_noise_float(p.xz.mul(5.5)).mul(-0.4));
+  const bump = sA.mul(-0.6).add(sB.mul(-0.5)).add(mx_noise_float(p.mul(9.0)).mul(0.3));
   m.normalNode = bumpMap(bump, float(0.6));
   void uniform; void oneMinus; void length;
   const mesh = new THREE.Mesh(g, m); mesh.receiveShadow = true; mesh.castShadow = true; mesh.name = 'ground';

@@ -54,12 +54,14 @@ export function buildLitter(height: Height, opts: { density: number; keepOut: nu
     }
     return false;
   };
+  /** 芽のまわり（半径 2.8 mm）を、細長い落ちものが横切らないようにする */
+  const clear = (yaw: number, len: number) => { const dx = Math.sin(yaw), dz = Math.cos(yaw); const t = Math.max(0, Math.min(len, -(p.x * dx + p.z * dz))); return Math.hypot(p.x + dx * t, p.z + dz * t) > 2.8; };
   const sun = uniform(opts.sunDir);
   const back = pow(saturate(dot(cameraPosition.sub(positionWorld).normalize().negate(), sun)), 2.0);
 
   // 1) 枯れ草の葉のくず：幅 0.3〜0.9 mm、長さ 2〜11 mm。縦の筋（平行脈）があり、薄いので逆光で透ける
   {
-    const n = Math.round(120 * opts.density);
+    const n = Math.round(70 * opts.density);
     const geo = bladeGeometry(); const tone = new THREE.InstancedBufferAttribute(new Float32Array(n), 1);
     const mat = new THREE.MeshStandardNodeMaterial({ side: THREE.DoubleSide });
     const tn = attribute('tone', 'float'); const u2 = uv();
@@ -73,7 +75,7 @@ export function buildLitter(height: Height, opts: { density: number; keepOut: nu
     for (let i = 0; i < n; i++) {
       if (!place(1.3)) continue;
       const len = rng.range(1.5, 8) * (rng.next() < 0.12 ? 1.5 : 1), w = rng.range(0.25, 0.7);
-      q.setFromEuler(e.set(rng.range(-0.15, 0.25), rng.range(0, 6.28), rng.range(-0.3, 0.3)));
+      q.setFromEuler(e.set(rng.range(-0.15, 0.25), rng.range(0, 6.28), rng.range(-0.3, 0.3))); if (!clear(e.y, len)) continue;
       p.y += rng.range(-0.15, 0.25);
       mesh.setMatrixAt(i, m4.compose(p, q, s.set(w, 1, len))); (tone.array as Float32Array)[i] = rng.next();
     }
@@ -81,7 +83,7 @@ export function buildLitter(height: Height, opts: { density: number; keepOut: nu
   }
   // 2) 小枝：直径 0.3〜1.1 mm、長さ 3〜14 mm。こげ茶で、ところどころ樹皮がはげて明るい
   {
-    const n = Math.round(46 * opts.density);
+    const n = Math.round(18 * opts.density);
     const geo = new THREE.CylinderGeometry(0.5, 0.5, 1, 7, 6); geo.rotateX(Math.PI / 2); geo.translate(0, 0, 0.5);
     { const a = geo.attributes.position as THREE.BufferAttribute; for (let i = 0; i < a.count; i++) { const z = a.getZ(i); a.setX(i, a.getX(i) + Math.sin(z * 4.0) * 0.08); a.setY(i, a.getY(i) + Math.sin(z * 2.7) * 0.06); } geo.computeVertexNormals(); }
     const tone = new THREE.InstancedBufferAttribute(new Float32Array(n), 1); geo.setAttribute('tone', tone);
@@ -95,15 +97,15 @@ export function buildLitter(height: Height, opts: { density: number; keepOut: nu
     const mesh = new THREE.InstancedMesh(geo, mat, n);
     for (let i = 0; i < n; i++) {
       if (!place(2.0)) continue;
-      const len = rng.range(3, 14), d = rng.range(0.3, 1.1);
-      q.setFromEuler(e.set(rng.range(-0.08, 0.12), rng.range(0, 6.28), 0)); p.y += d * 0.25;
+      const len = rng.range(2.5, 9), d = rng.range(0.18, 0.55);
+      q.setFromEuler(e.set(rng.range(-0.08, 0.12), rng.range(0, 6.28), 0)); if (!clear(e.y, len)) continue; p.y += d * 0.25;
       mesh.setMatrixAt(i, m4.compose(p, q, s.set(d, d, len))); (tone.array as Float32Array)[i] = rng.next();
     }
     mesh.castShadow = true; mesh.receiveShadow = true; mesh.computeBoundingSphere(); group.add(mesh);
   }
   // 3) 落ち葉のかけら：差し渡し 1.5〜6 mm。赤茶〜こげ茶で、網目の葉脈が残る
   {
-    const n = Math.round(70 * opts.density);
+    const n = Math.round(26 * opts.density);
     const geo = flakeGeometry(3); const tone = new THREE.InstancedBufferAttribute(new Float32Array(n), 1); geo.setAttribute('tone', tone);
     const mat = new THREE.MeshStandardNodeMaterial({ side: THREE.DoubleSide });
     const tn = attribute('tone', 'float'); const u2 = uv();
@@ -114,8 +116,8 @@ export function buildLitter(height: Height, opts: { density: number; keepOut: nu
     mat.emissiveNode = leafC.mul(back).mul(0.3);
     const mesh = new THREE.InstancedMesh(geo, mat, n);
     for (let i = 0; i < n; i++) {
-      if (!place(1.6)) continue;
-      const sz = rng.range(1.5, 6) * 0.5;
+      if (!place(3.0)) continue;
+      const sz = rng.range(0.8, 2.6) * 0.5;
       q.setFromEuler(e.set(rng.range(-0.25, 0.25), rng.range(0, 6.28), rng.range(-0.25, 0.25))); p.y += rng.range(-0.05, 0.15);
       mesh.setMatrixAt(i, m4.compose(p, q, s.set(sz, sz, sz))); (tone.array as Float32Array)[i] = rng.next();
     }

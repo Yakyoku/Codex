@@ -30,12 +30,12 @@ export async function buildSurface(renderer: THREE.WebGPURenderer, base: string,
   const scene = new THREE.Scene();
   // 光：写真のような、白っぽい昼の光。太陽はやや高く、空からの柔らかい光を多めに（夕日のオレンジはやめる）
   const sunDir = new THREE.Vector3(-0.55, 0.62, 0.56).normalize();
-  scene.environment = skyEnvironment(renderer, sunDir); scene.environmentIntensity = 0.75;
+  scene.environment = skyEnvironment(renderer, sunDir); scene.environmentIntensity = 0.35;
   scene.background = new THREE.Color(0xb9bcb8); scene.fog = new THREE.Fog(0xb9bcb8, 45, 150);
   const camera = new THREE.PerspectiveCamera(30, 1, 0.3, 600);
-  const sun = new THREE.DirectionalLight(0xfff3e2, 2.6); sun.position.copy(sunDir).multiplyScalar(80); scene.add(sun);
+  const sun = new THREE.DirectionalLight(0xfff3e2, 3.4); sun.position.copy(sunDir).multiplyScalar(80); scene.add(sun);
   if (opts.shadows) { sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048); const c = sun.shadow.camera; c.left = -22; c.right = 22; c.top = 22; c.bottom = -22; c.near = 10; c.far = 160; sun.shadow.bias = -0.0006; sun.shadow.normalBias = 0.06; sun.shadow.radius = 4; }
-  scene.add(new THREE.HemisphereLight(0xd6e2f2, 0x55402c, 1.15));
+  scene.add(new THREE.HemisphereLight(0xd6e2f2, 0x55402c, 0.5));
 
   // 地面：細かい土がつながった面（ground.ts）。その上に、半分埋まった土のかたまりと小石
   const height = makeHeight();
@@ -45,7 +45,7 @@ export async function buildSurface(renderer: THREE.WebGPURenderer, base: string,
   const kinds: [string, 'quartz' | 'aggregate' | 'humus', number, number, number][] = [['aggregate_a', 'aggregate', 0.18, 1.1, 5200], ['aggregate_b', 'aggregate', 0.14, 0.8, 6400], ['aggregate_c', 'aggregate', 0.1, 0.55, 6400], ['quartz_a', 'quartz', 0.06, 0.32, 1800], ['quartz_b', 'quartz', 0.05, 0.25, 1800], ['humus_a', 'humus', 0.15, 0.8, 900]];
   const lifts: { mesh: THREE.InstancedMesh; idx: number[]; base: THREE.Matrix4[] }[] = [];
   for (const [nm, kind, r0, r1, n0] of kinds) {
-    const n = Math.round(n0 * opts.density);
+    const n = Math.round(n0 * opts.density * (kind === 'quartz' ? 0.8 : 0.25));
     const near = kind !== 'quartz';
     const [g, na] = await Promise.all([loadGLB(base, `models/grains/${nm}.glb`), loadTexture(base, `models/grains/${nm}_lod2_na.webp`)]);
     const geo = (g.scene.getObjectByName(`${nm}_LOD2`) as THREE.Mesh).geometry;
@@ -82,11 +82,11 @@ export async function buildSurface(renderer: THREE.WebGPURenderer, base: string,
     const pl = positionLocal;
     const stipple = saturate(mx_noise_float(pl.mul(9.0)).mul(0.45).add(mx_noise_float(pl.mul(22.0)).mul(0.45)).add(0.5));
     // 色：土の中では淡い黄白色。地上で光に当たると、子葉から先に緑になる。写真の目測 RGB(120,190,70) 前後を線形に直した値
-    const pale = vec3(0.80, 0.76, 0.48), rootCol = vec3(0.88, 0.86, 0.78);
+    const pale = vec3(0.62, 0.58, 0.16), rootCol = vec3(0.88, 0.86, 0.78);
     // 縁はわずかに黄色みを帯び、厚みのせいで少し暗く見える（写真 8615）
     const edge = smoothstep(0.32, 0.5, abs(u2.x.sub(0.5))).add(smoothstep(0.85, 1.0, alongCot)).min(1.0);
     // 写真から測った色（sRGB #838945・#909E3C・#9BA566）を線形に直した値。緑より黄色みの強い、くすんだオリーブ色
-    const cotTop = mix(mix(vec3(0.15, 0.18, 0.035), vec3(0.24, 0.29, 0.06), stipple), vec3(0.26, 0.28, 0.07), edge.mul(0.55));
+    const cotTop = mix(mix(vec3(0.17, 0.20, 0.06), vec3(0.27, 0.30, 0.12), stipple), vec3(0.30, 0.31, 0.12), edge.mul(0.4));
     const cotGreen = mix(vec3(0.30, 0.36, 0.12), cotTop, topSide);            // 裏は淡い
     const midline = oneMinus(smoothstep(0.0, 0.10, abs(u2.x.sub(0.5)))).mul(topSide).mul(smoothstep(0.15, 0.4, alongCot));
     // 胚軸：淡い緑。地ぎわはわずかに赤みを帯びる個体がある（写真1点で確認。弱く入れる）
@@ -95,13 +95,14 @@ export async function buildSurface(renderer: THREE.WebGPURenderer, base: string,
     const greening = uGreen.mul(mix(float(0.9), float(1), isCot)).mul(aboveGround);
     const col = mix(mix(pale, green, greening), rootCol, isRoot);
     pm.colorNode = col;
-    pm.roughnessNode = mix(float(0.5), mix(float(0.82), float(0.22), pow(stipple, float(4.0))), isCot);   // 鈍いつや＋細かいきらめき
+    const glint = smoothstep(0.72, 0.9, mx_noise_float(positionLocal.mul(11.0)).add(0.5));
+    pm.roughnessNode = mix(float(0.5), mix(float(0.86), float(0.08), glint), isCot);   // 鈍いつや＋細かいきらめき
     pm.metalnessNode = float(0);
     pm.clearcoatNode = isCot.mul(0.06); pm.clearcoatRoughnessNode = float(0.4);
     pm.sheen = 0.4; pm.sheenRoughness = 0.5; pm.sheenColor = new THREE.Color(0.55, 0.7, 0.3);
     // 透け：子葉は厚いので、逆光では縁だけが明るい黄緑に光る。胚軸は細いので全体が透ける
     const rimThin = pow(oneMinus(saturate(dot(normalWorld, viewDir))), 2.0);
-    pm.emissiveNode = col.mul(vec3(1.2, 1.15, 0.45)).mul(back).mul(mix(float(0.22), rimThin.mul(0.9), isCot)).mul(aboveGround).mul(oneMinus(isRoot));
+    pm.emissiveNode = col.mul(vec3(1.1, 1.1, 0.5)).mul(back).mul(mix(float(0.25), float(0.18), isCot)).mul(aboveGround).mul(oneMinus(isRoot));
     plant.material = pm; plant.castShadow = true; plant.receiveShadow = true; plant.frustumCulled = false;
   }
   {
@@ -110,10 +111,10 @@ export async function buildSurface(renderer: THREE.WebGPURenderer, base: string,
     const lm = new THREE.MeshPhysicalNodeMaterial({ side: THREE.DoubleSide });
     const veins = oneMinus(smoothstep(0.0, 0.05, abs(fract(along.mul(7.0).sub(fromMid.mul(2.2))).sub(0.5)))).mul(smoothstep(0.06, 0.2, fromMid)).mul(0.5);
     const mid = oneMinus(smoothstep(0.0, 0.06, fromMid));
-    const bladeCol = mix(vec3(0.085, 0.27, 0.085), vec3(0.14, 0.34, 0.11), veins.add(mid).min(1.0));
+    const bladeCol = mix(vec3(0.07, 0.14, 0.025), vec3(0.09, 0.17, 0.035), mid.mul(0.5));
     const colL = mix(vec3(0.42, 0.56, 0.26), bladeCol, isBlade);
     lm.colorNode = colL; lm.roughnessNode = mix(float(0.5), float(0.78), isBlade); lm.metalnessNode = float(0);
-    lm.emissiveNode = colL.mul(vec3(1.2, 1.35, 0.5)).mul(back.mul(0.5).add(facing.mul(0.0))).mul(mix(float(1), float(0.55), veins.add(mid).min(1.0)));
+    lm.emissiveNode = colL.mul(vec3(1.2, 1.35, 0.5)).mul(back.mul(0.5).add(facing.mul(0.0)));
     leaf.material = lm; leaf.castShadow = true; leaf.receiveShadow = true; leaf.frustumCulled = false;
   }
   const holder = new THREE.Group(); holder.position.y = height(0, 0) - SEED_DEPTH; holder.rotation.y = 0.6; holder.add(gltf.scene); scene.add(holder);
@@ -142,10 +143,11 @@ export async function buildSurface(renderer: THREE.WebGPURenderer, base: string,
       for (const L of lifts) { L.idx.forEach((ii, k) => { L.base[k].decompose(tp, tq, ts); const d = Math.hypot(tp.x, tp.z), w = Math.max(0, 1 - d / 3.2) * push; if (d > 1e-3) { tp.x += (tp.x / d) * w * 0.9; tp.z += (tp.z / d) * w * 0.9; } tp.y += w * 0.45; L.mesh.setMatrixAt(ii, tmp.compose(tp, tq, ts)); }); L.mesh.instanceMatrix.needsUpdate = true; }
     },
     update(_dt, t) {
-      // カメラ：斜め上から寄って、葉が「葉」として見える角度で、ゆっくり回り込む（急な動きや揺れは入れない）
-      const g = surf.growth, az = 2.35 - g * 1.05, el = 0.50 + 0.10 * Math.sin(g * Math.PI), dist = 13.5 + g * 4 + Math.max(0, g - 0.7) * 16;
-      camera.position.set(Math.cos(az) * Math.cos(el) * dist, Math.sin(el) * dist + 1.0 + gy, Math.sin(az) * Math.cos(el) * dist);
-      camera.lookAt(0.4, gy + 0.4 + Math.max(0, g - 0.2) * 3.4 + Math.max(0, g - 0.7) * 5, 0); void t;
+      // カメラ：写真のように 55°で見下ろし、固定（早回しの間、カメラは動かさない）。画面の幅は約 20 mm。地平線と空は写さない
+      const g = surf.growth; void t;
+      const k = Math.max(0, Math.min(1, (g - 0.7) / 0.3)); const kk = k * k * (3 - 2 * k);   // 本葉が伸びる間だけ、ごくゆっくり引く
+      camera.position.set(-9.5 - kk * 2.5, gy + 17.5 + kk * 5.0, 9.0 + kk * 2.0);
+      camera.lookAt(0.3 - kk * 0.8, gy + 0.6 + kk * 2.2, 0.2 - kk * 0.6);
       focusDistance.value = camera.position.length() - 0.5; // ピントは芽に合わせ続ける
     },
   };
