@@ -100,7 +100,7 @@ export class Diver {
   // ---- Blender で作ったアニメーション（idle・walk・run・squat・crouch）を、重みで滑らかに混ぜる ----
   mixer?: THREE.AnimationMixer; private act: Record<string, THREE.AnimationAction> = {};
   private w: Record<string, number> = { idle: 1, walk: 0, run: 0, squat: 0, crouch: 0 };
-  static WALK_SPEED = 1.5; static RUN_SPEED = 3.6;   // それぞれの動きが、足が滑らずに見える速さ（µm/s）
+  static WALK_SPEED = 0.91; static RUN_SPEED = 3.17;   // それぞれの動きが、足が滑らずに見える速さ（µm/s）
   private still = 0; private gait = 0;
   initAnimations(clips: THREE.AnimationClip[], model: THREE.Object3D) {
     this.mixer = new THREE.AnimationMixer(model);
@@ -117,7 +117,7 @@ export class Diver {
     const k = (x: number, a: number, b: number) => Math.min(1, Math.max(0, (x - a) / (b - a)));
     const crouch = scanning && sp < 0.6 ? 1 : 0;
     const squat = !crouch && this.still > 9 && (this.still % 14) < 4 ? 1 : 0;   // 長く立ち止まると、ときどきしゃがむ
-    const move = k(sp, 0.12, 0.7), run = k(sp, Diver.WALK_SPEED * 1.2, Diver.RUN_SPEED * 0.85);
+    const move = k(sp, 0.08, 0.5), run = k(sp, Diver.WALK_SPEED * 1.15, Diver.RUN_SPEED * 0.8);
     const target = { idle: (1 - move) * (1 - crouch) * (1 - squat), walk: move * (1 - run) * (1 - crouch), run: move * run * (1 - crouch), squat: squat * (1 - crouch), crouch };
     for (const n of Object.keys(target) as (keyof typeof target)[]) {
       this.w[n] += (target[n] - this.w[n]) * Math.min(1, dt * (n === 'crouch' || n === 'squat' ? 3.5 : 7));

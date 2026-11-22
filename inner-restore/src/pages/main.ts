@@ -142,7 +142,7 @@ async function main() {
     const P = tuning.player;
     // 移動：カメラの向きを基準に。加速と減速に慣性を持たせる
     const fx = Math.sin(yaw), fz = Math.cos(yaw);
-    const sp = (input.dash ? P.dashSpeed : P.walkSpeed) * (input.fire ? 0.42 : 1) * (input.scan ? 0.35 : 1);
+    const sp = (input.dash ? P.dashSpeed : P.walkSpeed) * (input.fire ? 0.3 : 1) * (input.scan ? 0.35 : 1);
     tmp.set((fx * input.moveY - fz * input.moveX) * sp, 0, (fz * input.moveY + fx * input.moveX) * sp);
     const moving = tmp.lengthSq() > 0.01;
     vel.lerp(tmp, Math.min(1, dt * (moving ? P.accel : P.decel)));

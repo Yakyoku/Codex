@@ -95,7 +95,7 @@ W_UP = {"pelvis": (0.02, -0.05, -0.05), "chest": (0.04, 0.06, 0.03), "head": (-0
 WF = {"pelvis": (1, 1.5, 1.35), "chest": (1, 1.5, 1.2), "upperArmL": (1.3, 1, 1), "upperArmR": (1.3, 1, 1), "thighL": (1.1, 1, 1), "thighR": (1.1, 1, 1)}
 half = [(W_CONTACT, -0.005, 0.4), (W_DOWN, -0.032, 1.0), (W_PASS, 0.0, 1.0), (W_UP, 0.02, 0.4)]
 keys = [(scale(p, WF), (0.014 * sx, 0, dz)) for p, dz, sx in half] + [(scale(mirror(p), WF), (-0.014 * sx, 0, dz)) for p, dz, sx in half]
-cyclic("walk", keys, 33)
+# 歩きは、下の loco() で足の軌道から作る（関節の角度だけで作ると足が地面に着かず、スキップのように見えた）
 
 # ---------------- 走り（0.7 秒＝21 コマで2歩） ----------------
 R_CONTACT = {"pelvis": (0.2, 0.16, 0.0), "chest": (0.32, -0.22, 0.0), "head": (-0.18, 0.06, 0),
@@ -117,7 +117,7 @@ R_FLIGHT = {"pelvis": (0.2, -0.12, 0.0), "chest": (0.32, 0.18, 0.0), "head": (-0
 RF = {"upperArmL": (1.3, 1, 1), "upperArmR": (1.3, 1, 1), "thighL": (1.08, 1, 1), "thighR": (1.08, 1, 1), "pelvis": (1, 1.25, 1.2), "chest": (1, 1.3, 1)}
 half = [(R_CONTACT, -0.012), (R_DOWN, -0.055), (R_PUSH, 0.0), (R_FLIGHT, 0.05)]
 keys = [(scale(p, RF), (0, -0.02, dz)) for p, dz in half] + [(scale(mirror(p), RF), (0, -0.02, dz)) for p, dz in half]
-cyclic("run", keys, 21)
+# 走りも loco() で作る
 
 # ---------------- IK を使う姿勢（立ち・しゃがみ・片ひざ） ----------------
 def world_of(bone_name, tail=True):
@@ -168,6 +168,66 @@ def ik_clip(name, frames, setup):
 
 AN_L, AN_R = world_of("shinL"), world_of("shinR")       # 足首（脛の骨の先）
 HIP_L, HIP_R = world_of("thighL", False), world_of("thighR", False)
+
+# ---------------- 歩き・走り：足の軌道を先に決め、IK で脚を求める ----------------
+# 地面に着いている間は、足は地面に固定（体から見ると一定の速さで後ろへ流れる）。離れている間は弧を描いて前へ運ぶ。
+# 着地はかかとから、蹴り出しはつま先で。腰の上下・左右、骨盤のひねり、腕の振りは止まらない滑らかな波で動かす。
+import math as _m
+def _ease(u): return 0.5 - 0.5 * _m.cos(_m.pi * u)
+def loco(name, T, fs, D, lift, drop, bob, twist, tilt, shift, lean, arm, elbow, elbow_fwd, run=False):
+    """T: 1周期（2歩）のコマ数, fs: 足が地面に着いている割合, D: 着いている間に足が後ろへ流れる距離（＝歩幅）,
+       lift: 足を上げる高さ, drop: 骨盤を下げる量, bob: 上下動, twist/tilt/shift: 骨盤のひねり・傾き・左右移動,
+       lean: 前傾, arm: 腕の振り, elbow: ひじの曲げ, elbow_fwd: 腕が前のときの追加の曲げ"""
+    a = new_action(name)
+    tg = {k: empty("ik_" + k, (0, 0, 0)) for k in ("footL", "footR")}
+    po = {k: empty("pole_" + k, (0, 0, 0)) for k in ("footL", "footR")}
+    rot = {k: empty("rot_" + k, (0, 0, 0)) for k in ("footL", "footR")}
+    base_q = {k: (rig.matrix_world @ rig.data.bones[k].matrix_local).to_quaternion() for k in ("footL", "footR")}
+    add_ik("shinL", tg["footL"], po["footL"]); add_ik("shinR", tg["footR"], po["footR"])
+    for k in ("footL", "footR"):
+        c = rig.pose.bones[k].constraints.new("COPY_ROTATION"); c.target = rot[k]
+    for f in range(T + 1):
+        p = f / T
+        # 骨盤：上下（歩き＝着地で低く片足立ちで高い／走り＝着地の中ほどで低く宙で高い）、左右、ひねり、傾き
+        if run: z = -drop - bob * _m.cos(4 * _m.pi * (p - fs / 2))
+        else: z = -drop - bob * _m.cos(4 * _m.pi * p)
+        x = shift * _m.sin(2 * _m.pi * p)
+        tw = twist * _m.cos(2 * _m.pi * p); tl = tilt * _m.sin(2 * _m.pi * p - 0.6)
+        armL = arm * _m.cos(2 * _m.pi * p); armR = -armL
+        pose = {"pelvis": (lean * 0.45, tw, tl), "chest": (lean * 0.55 + 0.012 * _m.cos(4 * _m.pi * p), -tw * 1.1, -tl * 0.7), "head": (-lean * 0.8, tw * 0.15, tl * 0.3),
+                "upperArmL": (armL, 0, 0.05 + abs(armL) * 0.05), "upperArmR": (armR, 0, -0.05 - abs(armR) * 0.05),
+                "foreArmL": (-(elbow + elbow_fwd * max(0, -armL) / max(arm, 1e-3)), 0, 0), "foreArmR": (-(elbow + elbow_fwd * max(0, -armR) / max(arm, 1e-3)), 0, 0),
+                "handL": (-0.12, 0, 0.05), "handR": (-0.12, 0, -0.05)}
+        apply(pose, (x, 0, z))
+        for k, ph0, AN, sx in (("footL", 0.0, AN_L, 1), ("footR", 0.5, AN_R, -1)):
+            ph = (p + ph0) % 1
+            if ph < fs:                         # 地面に着いている：後ろへ一定の速さで流れる
+                u = ph / fs; fwd = D / 2 - D * u; up = 0.0
+                tiltf = -0.28 * max(0, 1 - u / 0.14) + 0.7 * max(0, (u - 0.68) / 0.32) ** 1.5    # かかとから着地 → つま先で蹴る
+                heel = 0.09 * max(0, (u - 0.68) / 0.32) ** 1.5
+            else:                               # 離れている：弧を描いて前へ
+                u = (ph - fs) / (1 - fs); s = _ease(u)
+                back = (0.22 if run else 0.04) * _m.sin(_m.pi * min(1, u * 1.4)) * (1 - u)
+                fwd = -D / 2 + D * s - back
+                up = lift * _m.sin(_m.pi * u) ** (0.7 if run else 1.0)
+                tiltf = 0.7 * (1 - _ease(min(1, u * 1.6))) - 0.28 * _ease(max(0, (u - 0.6) / 0.4)); heel = 0.09 * (1 - min(1, u * 3))
+            tx = sx * 0.105 + (0.012 * sx if not run else 0.0)
+            tg[k].location = (tx, AN.y - fwd, AN.z + up + heel)
+            po[k].location = (tx + sx * 0.05, AN.y - fwd - 0.8, 0.6)
+            rot[k].rotation_quaternion = Quaternion(Vector((1, 0, 0)), tiltf) @ base_q[k]
+        key(1 + f)
+        for e in list(tg.values()) + list(po.values()): e.keyframe_insert("location", frame=1 + f)
+        for e in rot.values(): e.keyframe_insert("rotation_quaternion", frame=1 + f)
+    for e in list(tg.values()) + list(po.values()) + list(rot.values()):
+        if e.animation_data and e.animation_data.action:
+            for fc in getattr(e.animation_data.action, "fcurves", []):
+                for kp in fc.keyframe_points: kp.interpolation = "LINEAR"
+    bake(a, 1, 1 + T)
+    return a
+# 歩き：1.1 秒（33 コマ）で2歩。歩幅 0.62、ゲームでの速さ ≒ 0.62 / (0.62 × 1.1) ≒ 0.91
+loco("walk", 33, 0.62, 0.62, 0.075, 0.035, 0.012, 0.13, 0.07, 0.022, 0.03, 0.34, 0.2, 0.22)
+# 走り：0.68 秒（約 20 コマ）で2歩。着いている割合 0.36、歩幅 0.76、ゲームでの速さ ≒ 0.76 / (0.36 × 0.68) ≒ 3.1
+loco("run", 20, 0.36, 0.76, 0.24, 0.085, 0.03, 0.17, 0.05, 0.012, 0.22, 0.62, 1.2, 0.35, run=True)
 # 立ち：腰に手を当て、体重を左足に。ゆっくり呼吸し、重心を少し揺らす（4 秒＝120 コマ）
 def stand(f, tg, po, init=False):
     s = math.sin((f - 1) / 120 * 2 * math.pi); br = math.sin((f - 1) / 60 * 2 * math.pi)
