@@ -20,7 +20,7 @@ export function buildUI() {
   <div id="fade"></div>
   <div id="done" class="hide"><h2>区域の血流が戻りました</h2><p id="donetext"></p><button class="btn" id="b-cont">探索を続ける</button></div>
   <div id="pause" class="sheet hide"><h2 style="font-weight:300;letter-spacing:.3em">一時停止</h2><button class="btn" id="p-resume">再開する</button><button class="btn" id="p-atlas">図鑑</button><button class="btn" id="p-full">全画面表示</button>
-    <div style="font-size:.74em;color:var(--dim);max-width:34em;line-height:1.8;text-align:center">セーブはこのブラウザの中に保存され、別のブラウザや端末には引き継がれません。</div><a class="btn" href="/vr/" style="text-decoration:none">VR 版へ</a></div>
+    <div style="font-size:.88em;color:#b7c6cc;max-width:34em;line-height:1.8;text-align:center">セーブはこのブラウザの中に保存され、別のブラウザや端末には引き継がれません。</div><a class="btn" href="/vr/" style="text-decoration:none">VR 版へ</a></div>
   <div id="atlas" class="sheet hide"><h2 style="font-weight:300;letter-spacing:.3em">体内図鑑</h2><div class="grid"></div><button class="btn" id="a-close">閉じる</button></div>
   <div id="title"><div class="sub">体内紀行</div><h1>INNER RESTORE</h1>
     <div id="load"><div class="bar"><i></i></div><div class="tip"></div></div>

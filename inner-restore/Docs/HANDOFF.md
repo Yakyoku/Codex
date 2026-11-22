@@ -28,11 +28,14 @@
 - 主人公は身長 2µm、知覚加速 ×200（血流の速さ 1.7mm/s を 8.5µm/s として見せる）。
 - 赤血球の変形は CPU 側で形を作っておく（InstancedMesh で positionNode を使うと、インスタンスの位置まで変形されるため）。
 
+## 実機の結果（持ち主の iPad）
+- 2026-11-22：iPad Safari、WebGPU・モバイル高画質で 16fps、文字が小さすぎる。→ 対策：毎コマのノイズ計算を焼き込み画像に置換、PC 高画質以外はクリアコート・光の筋・主人公の灯りを外す、光を1つ減らす、描画解像度の自動調整（`src/core/dynres.ts`、モバイルは ×1.1 から開始）、文字を約1.5倍に。再確認待ち。
+
 ## 既知の問題・やり残し
 1. **WebGPU はこの環境で絵を確認できず、`popErrorScope` の失敗（Instance dropped）が2件出る**。実機の /diag/ の `err=` で確認が必要。
 2. 毛細血管の網目の間隔が実際（約100µm）より狭い（約40〜50µm）。区画を広げて直す。
 3. 内皮細胞の核は「内腔側へ盛り上がる」。いまは色の濃さだけで示している（内側の面のメッシュがない）。
-4. 潜行士は第3版（持ち主の参考画像 `Docs/REFERENCE/hero/reference-v3.jpg` に基づく細身のスーツ。ラベンダーの装甲板・濃い紫のインナー・黒い楕円バイザー・小さな背中のユニット。関節15個）。参考画像との差：装甲が横帯状で硬く、パネルの曲線的な切り分けが足りない／肩が球の関節に見える／立ち姿が直立のまま。手順：`tools/blender/make_diver.py` → `render_diver_closeup.py` → `node tools/pack-glb.mjs assets/models/diver.raw.glb public/static/models/diver.glb --plain 1 --ao assets/textures/diver_ao.png --texsize 1024 --ratio 0.6`（0.86MB）。
+4. 潜行士は第4版（参考画像 `Docs/REFERENCE/hero/reference-v3.jpg`）。体は距離の式→マーチングキューブで1枚の曲面にし、ボーン15本で自動の重み付け。塗り分けは位置を焼き込んだ 2048px の画像に、`make_hero.py` の `panels()` で描く。ヘルメット・背中のユニット・前腕の道具はボーンに取り付け。ゲーム側は `src/game/diver.ts` が「体の向きを基準にした軸」で骨を回す。手順：`tools/blender/make_hero.py` → `render_diver_closeup.py` → `node tools/pack-glb.mjs assets/models/diver.raw.glb public/static/models/diver.glb --plain 1 --texsize 2048 --ratio 1`（0.75MB）。注意：最適化で空の節（emitterTip・lampMount）を消さないよう `keepLeaves`。残り：手の指、靴の形、泳ぎの動き。
 5. 後処理（ブルーム、被写界深度、粒状感）は未実装。WebGPU 上乗せ（GPU 計算の群れ）も未実装。
 6. 音は実行時合成の仮のもの。Python 合成＋ffmpeg の素材化、出力先（テレビ／ヘッドホン／VR）の切り替え、立体音響は未実装。
 7. 図鑑の3Dビューア、セーブの書き出し・読み込み、設定画面（M4）、同梱フォントは未実装。

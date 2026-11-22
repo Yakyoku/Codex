@@ -4,6 +4,7 @@ import '../ui/ui.css';
 import { createRenderer, fitRenderer, backendPrefFromURL } from '../core/renderer';
 import { detectDevice, DEVICE_LABEL, pickTier, TIER_LABEL } from '../core/device';
 import { Hud } from '../core/hud';
+import { DynamicResolution } from '../core/dynres';
 import { Input } from '../core/input';
 import { GameAudio, speak } from '../core/audio';
 import { buildRetina } from '../stages/eye/retina';
@@ -40,7 +41,11 @@ async function main() {
   const { renderer, isWebGPU, backendLabel } = info;
   const tier = pickTier(device, isWebGPU);
   const camera = new THREE.PerspectiveCamera(tuning.camera.fov, 1, 0.08, 700);
-  fitRenderer(renderer, camera, tier === 'compat' ? 1.5 : 2);
+  const dprMax = Math.min(window.devicePixelRatio || 1, tier === 'pc-high' ? 1.5 : tier === 'compat' ? 1.25 : 1.5);
+  fitRenderer(renderer, camera, dprMax);
+  // モバイルは画素数が多いので、最初は控えめな解像度から始め、速さを見て上げ下げする
+  const dyn = Q.has('frames') || Q.has('sim') ? null : new DynamicResolution(renderer, 0.6, dprMax, tier === 'mobile-high' ? Math.min(1.1, dprMax) : dprMax);
+  W.__dyn = dyn;
   progress(0.3);
   const stage = await buildRetina(renderer, tier);
   progress(0.7);
@@ -67,7 +72,7 @@ async function main() {
   const known = new Set<string>((store.get('ir.known') ?? '').split(',').filter(Boolean));
   const camTarget = new THREE.Vector3(), camPos = new THREE.Vector3(), tmp = new THREE.Vector3(), dir = new THREE.Vector3(), hit = new THREE.Vector3(), focus = new THREE.Vector3();
   let focusAmt = 0; let focusOn = false;
-  const hud = new Hud(`${backendLabel} · ${TIER_LABEL[tier]} · ${DEVICE_LABEL[device]}`);
+  const hud = new Hud(`${backendLabel} · ${TIER_LABEL[tier]} · ${DEVICE_LABEL[device]}`, () => dyn ? `解像度 ×${dyn.scale.toFixed(2)}` : '');
   $('pf').textContent = String(tuning.flow.perceptionFactor);
 
   // ---- 紹介カード ----
@@ -171,7 +176,7 @@ async function main() {
     const bo = stage.u.beamOn.value as number; stage.u.beamOn.value = bo + ((firing ? 1 : 0) - bo) * Math.min(1, dt * 10);
     beamMat.opacity = 0.5 * (stage.u.beamOn.value as number) * (0.85 + 0.15 * Math.sin(t * 31)); beam.visible = beamMat.opacity > 0.01; beamLight.intensity = 26 * (stage.u.beamOn.value as number);
     const sc = stage.u.scan.value as number; stage.u.scan.value = sc + ((input.scan ? 1 : 0) - sc) * Math.min(1, dt * (input.scan ? tuning.scan.fadeIn : tuning.scan.fadeOut));
-    diver.lamp.intensity = 16;
+    diver.lamp.intensity = tier === 'pc-high' ? 16 : 0;
     stage.update(dt, t, camera);
     // 出会い（落ち着いている時だけ出す）
     const mean = stage.health.mean();
@@ -225,7 +230,7 @@ async function main() {
   let last = performance.now();
   renderer.setAnimationLoop(() => {
     const now = performance.now(); const dt = Math.min(0.05, (now - last) / 1000); last = now;
-    if (!debugCam && sim === null && !paused) { if (started) step(dt); else { t += dt; stage.update(dt, t, camera); } }
+    if (!debugCam && sim === null && !paused) { if (started) step(dt); else { t += dt; stage.update(dt, t, camera); } dyn?.tick(dt); }
     renderer.render(stage.scene, camera);
     hud.tick();
     W.__irFrames = ((W.__irFrames as number) || 0) + 1;

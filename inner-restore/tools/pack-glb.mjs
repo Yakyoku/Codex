@@ -35,7 +35,7 @@ const plain = 'plain' in opt || rest.includes('--plain');
 if (plain) {
   // 関節の親子関係と原点（回転の中心）を保つ：頂点は量子化せず、ポリゴン削減と meshopt の圧縮だけを掛ける
   await MeshoptSimplifier.ready;
-  await doc.transform(dedup(), prune({ keepAttributes: true }), weld(),
+  await doc.transform(dedup(), prune({ keepAttributes: true, keepLeaves: true }), weld(),
     simplify({ simplifier: MeshoptSimplifier, ratio: Number(opt.ratio || 0.5), error: Number(opt.error || 0.003) }),
     reorder({ encoder: MeshoptEncoder }), textureCompress({ encoder: sharp, targetFormat: 'webp', quality: 88, resize: [size, size] }));
   doc.createExtension(EXTMeshoptCompression).setRequired(true).setEncoderOptions({ method: EXTMeshoptCompression.EncoderMethod.FILTER });

@@ -2,7 +2,7 @@
 export class Hud {
   el: HTMLElement;
   private frames = 0; private last = performance.now(); fps = 0;
-  constructor(private base: string) {
+  constructor(private base: string, private extra: () => string = () => '') {
     this.el = document.createElement('div');
     this.el.className = 'ir-hud';
     this.el.textContent = base;
@@ -14,7 +14,7 @@ export class Hud {
     if (now - this.last >= 500) {
       this.fps = (this.frames * 1000) / (now - this.last);
       this.frames = 0; this.last = now;
-      this.el.textContent = `${this.base} · ${this.fps.toFixed(0)} fps`;
+      this.el.textContent = `${this.base} · ${this.fps.toFixed(0)} fps ${this.extra()}`;
     }
   }
 }

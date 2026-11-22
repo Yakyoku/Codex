@@ -25,6 +25,8 @@ export interface RetinaStage {
 }
 
 export async function buildRetina(renderer: THREE.WebGPURenderer, tier: Tier): Promise<RetinaStage> {
+  const noiseTex = new THREE.TextureLoader().load('/static/img/noise.png');
+  noiseTex.wrapS = noiseTex.wrapT = THREE.RepeatWrapping; noiseTex.colorSpace = THREE.NoColorSpace; noiseTex.anisotropy = 4;
   const [gltf, rbcGltf, data] = await Promise.all([
     loadGLB('/static/models/retina.glb'), loadGLB('/static/models/rbc.glb'),
     fetch('/static/data/retina.json').then((r) => r.json() as Promise<RetinaData>),
@@ -32,6 +34,9 @@ export async function buildRetina(renderer: THREE.WebGPURenderer, tier: Tier): P
   const [W, D] = data.size;
   const scene = new THREE.Scene();
   const vr = tier === 'vr';
+  const rich = tier === 'pc-high';   // 重い表現（クリアコート、光の筋、たくさんの光）は PC 高画質だけ
+  // 焼き込み済みのノイズを引く（毎コマ計算しない）。R=細胞の境目 G=細かい B=雲 A=中くらい。1枚で約29µm
+  const nz = (scale: number, off = vec2(0, 0)): N => texture(noiseTex, positionWorld.xz.mul(scale / 28.8).add(off));
   scene.background = new THREE.Color(0x050307);
   scene.fog = new THREE.FogExp2(0x0d0706, 0.0085);
   scene.environment = makeEnvironment(renderer, new THREE.Color(0.9, 0.5, 0.4));
@@ -62,21 +67,19 @@ export async function buildRetina(renderer: THREE.WebGPURenderer, tier: Tier): P
   // ---- 内境界膜（透明な床）----
   const meshes: Record<string, THREE.Mesh> = {};
   gltf.scene.traverse((o) => { if ((o as THREE.Mesh).isMesh) meshes[o.name] = o as THREE.Mesh; });
-  const ilmMat = new THREE.MeshPhysicalNodeMaterial({ transparent: true, depthWrite: false, side: THREE.FrontSide });
+  const ilmMat = new (rich ? THREE.MeshPhysicalNodeMaterial : THREE.MeshStandardNodeMaterial)({ transparent: true, depthWrite: false, side: THREE.FrontSide });
   {
     // ミュラー細胞の終足が作る敷石模様（約 4µm の区画）
-    const cellN = mx_worley_noise_float(positionWorld.xz.mul(0.28));
-    const border = smoothstep(0.32, 0.5, cellN);
-    const fine = mx_fractal_noise_float(positionWorld.xz.mul(0.9), 3).mul(0.5).add(0.5);
-    const cloud = mx_fractal_noise_float(positionWorld.xz.mul(0.07).add(vec2(3.1, 7.7)), 3).mul(0.5).add(0.5);
+    const n1 = nz(1), n2 = nz(0.12, vec2(0.37, 0.71));
+    const border = smoothstep(0.55, 0.9, n1.r);
+    const fine = n1.g;
+    const cloud = n2.b;
     const sick = float(1).sub(H);
     // 虚血で白く濁った網膜 → 健康な透明な網膜
     const haze = sick.mul(mix(float(0.62), float(0.9), cloud));
     ilmMat.colorNode = mix(color(0xb9aea2), color(0xd8cfc4), cloud).mul(mix(float(0.8), float(1.0), fine));
     ilmMat.roughnessNode = mix(float(0.16), float(0.55), sick).add(border.mul(0.12));
-    ilmMat.clearcoatNode = mix(float(0.35), float(0.05), sick);
-    ilmMat.clearcoatRoughnessNode = float(0.12);
-    ilmMat.specularIntensityNode = float(0.45);
+    if (rich) { const pm = ilmMat as THREE.MeshPhysicalNodeMaterial; pm.clearcoatNode = mix(float(0.35), float(0.05), sick); pm.clearcoatRoughnessNode = float(0.12); pm.specularIntensityNode = float(0.45); }
     const op = haze.add(fres.mul(0.3)).add(border.mul(0.035)).add(0.045);
     ilmMat.opacityNode = saturate(op.mul(float(1).sub(u.scan.mul(0.6)))).mul(edgeFade);
     ilmMat.emissiveNode = color(0xd9d2c8).mul(haze.mul(0.1)).mul(u.lightIn.add(0.25)).add(color(0xffe9c8).mul(beamGlow.mul(0.5))).add(scanCol.mul(u.scan).mul(border.mul(0.25).add(0.03)));
@@ -87,14 +90,14 @@ export async function buildRetina(renderer: THREE.WebGPURenderer, tier: Tier): P
   {
     const g = new THREE.PlaneGeometry(W * 2.4, D * 2.4, 1, 1); g.rotateX(-Math.PI / 2);
     const m = new THREE.MeshBasicNodeMaterial();
-    const n = mx_fractal_noise_float(positionWorld.xz.mul(0.018), 4).mul(0.5).add(0.5);
+    const n = nz(0.5).b;
     const glow = mix(color(0x241512), color(0x8f2c0b), smoothstep(0.1, 0.75, H).mul(u.lightIn)).mul(n.mul(0.45).add(0.7));
     m.colorNode = glow;
     const deep = new THREE.Mesh(g, m); deep.position.y = -15; scene.add(deep);
   }
 
   // ---- 毛細血管の壁（内皮細胞）----
-  const vesselMat = new THREE.MeshPhysicalNodeMaterial({ transparent: true, depthWrite: true, side: THREE.FrontSide });
+  const vesselMat = new (rich ? THREE.MeshPhysicalNodeMaterial : THREE.MeshStandardNodeMaterial)({ transparent: true, depthWrite: true, side: THREE.FrontSide });
   {
     const vc = vertexColor();
     const nucleus = vc.r;
@@ -102,19 +105,17 @@ export async function buildRetina(renderer: THREE.WebGPURenderer, tier: Tier): P
     // 脈動（健康なほど規則正しく）。流れのない血管はわずかに細い
     vesselMat.positionNode = positionLocal.add(normalLocal.mul(pulse.mul(0.07).mul(H).sub(sick.mul(0.22))));
     // 内皮細胞の輪郭（流れの向きに長い菱形の敷石）
-    const cells = mx_worley_noise_float(vec2(uv().x.mul(10 / 9), uv().y.mul(3.2)));
-    const edgeLine = smoothstep(0.38, 0.55, cells);
+    const edgeLine = smoothstep(0.55, 0.9, texture(noiseTex, vec2(uv().x.mul(10 / 9 / 8), uv().y.mul(3.2 / 8))).r);
     vesselMat.colorNode = mix(color(0xa59c94), color(0xb98a7c), H).mul(mix(float(1), float(0.82), edgeLine)).mul(mix(float(1), float(0.7), nucleus));
     vesselMat.roughnessNode = mix(float(0.55), float(0.3), H);
-    vesselMat.clearcoatNode = mix(float(0.1), float(0.5), H);
-    vesselMat.clearcoatRoughnessNode = float(0.2);
+    if (rich) { const pm = vesselMat as THREE.MeshPhysicalNodeMaterial; pm.clearcoatNode = mix(float(0.1), float(0.5), H); pm.clearcoatRoughnessNode = float(0.2); }
     vesselMat.opacityNode = saturate(float(0.07).add(sick.mul(0.14)).add(nucleus.mul(0.4)).add(fres.mul(0.26)).add(edgeLine.mul(0.05))).mul(edgeFade);
     vesselMat.emissiveNode = color(0xff5a3a).mul(H.mul(0.05)).add(color(0xffe9c8).mul(beamGlow.mul(0.35))).add(scanCol.mul(u.scan).mul(fres.mul(0.9).add(0.15)));
     const v = meshes.vessel; v.material = vesselMat; v.renderOrder = 20; scene.add(v);
   }
   // ---- 周皮細胞（血管の外に巻き付く）----
   {
-    const m = makeCellMaterial({ color: 0xa89484, transmit: 0xffb890, absorption: 1.2, wet: 0.45 });
+    const m = makeCellMaterial({ color: 0xa89484, transmit: 0xffb890, absorption: 1.2, wet: rich ? 0.45 : 0 });
     m.transparent = true;
     m.opacityNode = saturate(float(0.34).add(fres.mul(0.45))).mul(edgeFade);
     const base = m.emissiveNode as N;
@@ -141,7 +142,7 @@ export async function buildRetina(renderer: THREE.WebGPURenderer, tier: Tier): P
     rbcGeo.computeVertexNormals(); rbcGeo.computeBoundingSphere();
   }
   const rbcSrcMat = src[0].material as THREE.MeshPhysicalMaterial;
-  const rbcMat = makeCellMaterial({ color: 0x8a0f0b, transmit: 0xff2a12, orm: rbcSrcMat.aoMap, absorption: 2.6, wet: 0.5 });
+  const rbcMat = makeCellMaterial({ color: 0x8a0f0b, transmit: 0xff2a12, orm: rbcSrcMat.aoMap, absorption: 2.6, wet: rich ? 0.5 : 0 });
   {
     // 細い毛細血管の中では、赤血球はパラシュート形に変形して一列で通る（内径 5.2µm < 直径 7.8µm）
     // 流れていない赤血球は酸素を手放して暗い赤になる
@@ -199,7 +200,7 @@ export async function buildRetina(renderer: THREE.WebGPURenderer, tier: Tier): P
   // ---- 光 ----
   // 瞳から入る光：はるか上（硝子体の向こう）から網膜に届く。光の通り道が戻るほど強くなる
   const sun = new THREE.DirectionalLight(0xfff0dc, 1.0);
-  const fillUp = new THREE.DirectionalLight(0xff7a3c, 0.0); fillUp.position.set(10, -40, -6); scene.add(fillUp);   // 眼底で反射して下から戻る橙赤色の光
+  // 眼底で反射して下から戻る橙赤色の光は、半球光の地面側の色で表す（光の数を減らす）
   sun.position.set(-30, 90, 22); scene.add(sun);
   const hemi = new THREE.HemisphereLight(0x3a3040, 0x2a0e08, 0.5); scene.add(hemi);
   // 瞳の光の見た目（遠くのやわらかな光の円盤と、もやの中の光の筋）
@@ -209,11 +210,11 @@ export async function buildRetina(renderer: THREE.WebGPURenderer, tier: Tier): P
     const d = length(uv().sub(0.5)).mul(2);
     m.colorNode = color(0xfff3e0).mul(exp(d.mul(d).mul(-7)).mul(1.6).add(exp(d.mul(-3.2)).mul(0.25))).mul(u.lightIn.mul(0.8).add(0.12));
     const disc = new THREE.Mesh(g, m); disc.scale.setScalar(150); disc.position.copy(sun.position).multiplyScalar(2.6); disc.lookAt(0, 0, 0); disc.renderOrder = 1; scene.add(disc);
-    if (!vr) {
+    if (rich) {
       // 光の筋（円錐の内側をごく淡く加算）
       const cg = new THREE.CylinderGeometry(14, 60, 240, 40, 1, true); cg.translate(0, -120, 0);
       const cm = new THREE.MeshBasicNodeMaterial({ transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, fog: false });
-      const streak = mx_fractal_noise_float(vec2(uv().x.mul(26), u.time.mul(0.02)), 3).mul(0.5).add(0.5);
+      const streak = texture(noiseTex, vec2(uv().x.mul(3), u.time.mul(0.002))).g;
       cm.colorNode = color(0xffe2c0).mul(streak.mul(0.022)).mul(u.lightIn).mul(smoothstep(0.0, 0.25, uv().y)).mul(smoothstep(1.0, 0.6, uv().y)).mul(pow(saturate(dot(normalView, positionViewDirection).abs()), 1.5));
       const cone = new THREE.Mesh(cg, cm); cone.position.copy(sun.position).multiplyScalar(2.2);
       cone.quaternion.setFromUnitVectors(new THREE.Vector3(0, -1, 0), sun.position.clone().multiplyScalar(-1).normalize()); cone.renderOrder = 2; scene.add(cone);
@@ -222,7 +223,7 @@ export async function buildRetina(renderer: THREE.WebGPURenderer, tier: Tier): P
   // ---- 硝子体：コラーゲンの細い線維（太さ 10〜20nm。この縮尺では糸のように見える）と、ただよう微粒子 ----
   {
     let seed = 9; const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
-    const nF = vr ? 60 : 150, pos: number[] = [];
+    const nF = vr ? 60 : rich ? 150 : 90, pos: number[] = [];
     for (let i = 0; i < nF; i++) {
       const c = new THREE.Vector3((rnd() - 0.5) * W * 1.3, 5 + rnd() * rnd() * 46, (rnd() - 0.5) * D * 1.3);
       const d = new THREE.Vector3(rnd() - 0.5, (rnd() - 0.5) * 0.35, rnd() - 0.5).normalize();
@@ -233,7 +234,7 @@ export async function buildRetina(renderer: THREE.WebGPURenderer, tier: Tier): P
     const m = new THREE.LineBasicNodeMaterial({ transparent: true, depthWrite: false });
     m.colorNode = color(0xcfd8e0); m.opacityNode = float(0.04).mul(u.lightIn.mul(0.8).add(0.5));
     const lines = new THREE.LineSegments(g, m); lines.renderOrder = 40; scene.add(lines);
-    const nP = vr ? 250 : 900, pp = new Float32Array(nP * 3);
+    const nP = vr ? 250 : rich ? 900 : 400, pp = new Float32Array(nP * 3);
     for (let i = 0; i < nP; i++) { pp[i * 3] = (rnd() - 0.5) * W * 1.2; pp[i * 3 + 1] = 1.5 + rnd() * 34; pp[i * 3 + 2] = (rnd() - 0.5) * D * 1.2; }
     const pg = new THREE.BufferGeometry(); pg.setAttribute('position', new THREE.BufferAttribute(pp, 3));
     const pm = new THREE.PointsNodeMaterial({ transparent: true, depthWrite: false, sizeAttenuation: true });
@@ -264,7 +265,7 @@ export async function buildRetina(renderer: THREE.WebGPURenderer, tier: Tier): P
       u.heartPhase.value = heart; u.time.value = t;
       u.lightIn.value += ((0.35 + 0.65 * Math.min(1, mean / hc.doneAt)) - u.lightIn.value) * Math.min(1, dt * 1.5);
       sun.intensity = 0.9 + 3.4 * u.lightIn.value;
-      fillUp.intensity = 1.6 * mean * u.lightIn.value;
+      hemi.groundColor.setRGB(0.16 + 0.5 * mean * u.lightIn.value, 0.055 + 0.12 * mean * u.lightIn.value, 0.03);
       hemi.intensity = 0.7 + 0.8 * u.lightIn.value;
       scene.environmentIntensity = 0.16 + 0.22 * u.lightIn.value;
       health.spread(dt, hc.regrow);

@@ -8,6 +8,17 @@ import irlib as L
 from PIL import Image
 bpy.ops.wm.open_mainfile(filepath=os.path.join(L.OUT_MODELS, "diver.blend"))
 sc = bpy.context.scene; sc.render.engine = "CYCLES"; sc.cycles.device = "CPU"
+# 確認用の姿勢：片足に重心をのせた、自然な立ち姿（ゲームの中の立ちの動きに近いもの）
+rig = bpy.data.objects.get("rig")
+if rig and os.environ.get("POSE", "1") == "1":
+    from math import radians as R
+    pose = {"pelvis": (0, 0, R(4)), "chest": (R(-2), 0, R(-6)), "head": (R(4), R(-6), R(3)),
+            "upperArmL": (R(4), 0, 0), "foreArmL": (R(-12), 0, 0), "upperArmR": (R(-4), 0, 0), "foreArmR": (R(-18), 0, 0),
+            "thighL": (R(-6), 0, R(-3)), "shinL": (R(10), 0, 0), "thighR": (R(4), 0, R(4)), "shinR": (R(2), 0, 0)}
+    for n, (x, y, z) in pose.items():
+        pb = rig.pose.bones.get(n)
+        if pb: pb.rotation_mode = "XYZ"; pb.rotation_euler = (x, y, z)
+    bpy.context.view_layer.update()
 w = bpy.data.worlds.new("w"); w.use_nodes = True; w.node_tree.nodes["Background"].inputs[0].default_value = (0.03, 0.02, 0.02, 1); sc.world = w
 # 体内を思わせる光：上からの白い主光、下と後ろからの赤みのある回り込み
 for pos, e, size, col in [((2.0, -3.2, 3.6), 520, 3, (1, 0.96, 0.9)), ((-3.6, -0.5, 1.2), 180, 4, (0.7, 0.86, 1)), ((0.8, 3.6, 2.4), 520, 3, (1, 0.62, 0.48)), ((0, -1, -2.5), 160, 5, (1, 0.45, 0.3))]:

@@ -52,10 +52,13 @@ export async function createRenderer(canvas: HTMLCanvasElement, opts: { pref?: B
 
 /** 画面の大きさと向きの変化に追従する */
 export function fitRenderer(renderer: THREE.WebGPURenderer, camera: THREE.PerspectiveCamera, maxPixelRatio: number, onResize?: () => void) {
+  let first = true;
   const apply = () => {
     if (renderer.xr.isPresenting) return;
     const w = window.innerWidth, h = window.innerHeight;
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, maxPixelRatio));
+    // 2回目以降（画面の大きさや向きが変わったとき）は、自動調整された解像度をそのまま保つ
+    renderer.setPixelRatio(first ? Math.min(window.devicePixelRatio || 1, maxPixelRatio) : Math.min(renderer.getPixelRatio(), maxPixelRatio));
+    first = false;
     renderer.setSize(w, h, false);
     camera.aspect = w / h;
     camera.updateProjectionMatrix();

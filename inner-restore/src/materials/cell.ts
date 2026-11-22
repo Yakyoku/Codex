@@ -15,15 +15,14 @@ export const keyLightDirView = uniform(new THREE.Vector3(0, 1, 0)); // 主光源
 export const keyLightColor = uniform(new THREE.Color(1, 0.95, 0.9));
 
 export function makeCellMaterial(o: CellMaterialOpts): THREE.MeshPhysicalNodeMaterial {
-  const m = new THREE.MeshPhysicalNodeMaterial();
+  const m = new THREE.MeshPhysicalNodeMaterial();   // クリアコート 0 のときは中で省かれる
   const orm = o.orm ? texture(o.orm, uv()) : null;
   const ao = orm ? orm.r : float(1);
   const thick = orm ? orm.g : float(0.6);
   m.colorNode = color(new THREE.Color(o.color));
   m.roughnessNode = float(0.38);
   m.metalnessNode = float(0);
-  m.clearcoatNode = float(o.wet ?? 0.6);
-  m.clearcoatRoughnessNode = float(0.18);
+  if ((o.wet ?? 0.6) > 0) { m.clearcoatNode = float(o.wet ?? 0.6); m.clearcoatRoughnessNode = float(0.18); }
   m.aoNode = ao;
   // 透過：光源の反対側から見たとき、薄い所ほど明るく透ける（Beer-Lambert 風）
   const L = keyLightDirView;
