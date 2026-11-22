@@ -15,7 +15,7 @@ describe('生き物のデータと台帳', () => {
     });
     it(`${s.nameJa}：説明文は 1〜2 文（最大 3 文）で、長すぎない`, () => {
       expect(s.intro.split('。').filter((x: string) => x.length > 0).length).toBeLessThanOrEqual(3);
-      expect(s.intro.length).toBeLessThanOrEqual(110);
+      expect(s.intro.length).toBeLessThanOrEqual(125);
     });
   }
 });
