@@ -22,7 +22,11 @@ export class Diver {
       nodes[o.name] = o;
       const m = o as THREE.Mesh; m.frustumCulled = false;
       if (m.isMesh) for (const mt of (Array.isArray(m.material) ? m.material : [m.material]) as THREE.MeshPhysicalMaterial[]) {
-        mt.envMapIntensity = 2.2;
+        mt.envMapIntensity = 2.0;
+        if (mt.name === 'glow') { mt.emissiveIntensity = 1.6; }
+        // 体内は暖かい色の光なので、装甲とスーツの紫が灰色に寄らないよう、材質の色で少しだけ寒色に寄せる
+        if (mt.name === 'armor') mt.color.setRGB(0.95, 0.9, 1.0);
+        if (mt.name === 'suit') mt.color.setRGB(0.92, 0.85, 1.0);
         if (mt.name === 'visor') { mt.roughness = 0.03; mt.envMapIntensity = 3.2; }
       }
     });

@@ -56,7 +56,7 @@ async function main() {
   input.sens = { mouse: tuning.camera.mouseSens, pad: tuning.camera.padSens, touch: tuning.camera.touchSens };
 
   // 浄化ビーム（治療の光）。原色を避け、淡い白にわずかな青緑
-  const beamMat = new THREE.MeshBasicNodeMaterial({ transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, color: 0xe2d8ff });
+  const beamMat = new THREE.MeshBasicNodeMaterial({ transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, color: 0xb98cff });
   beamMat.opacity = 0.0;
   const beamGeo = new THREE.CylinderGeometry(0.035, 0.11, 1, 10, 1, true); beamGeo.translate(0, 0.5, 0); beamGeo.rotateX(Math.PI / 2);
   const beam = new THREE.Mesh(beamGeo, beamMat); beam.renderOrder = 50; beam.frustumCulled = false; stage.scene.add(beam);

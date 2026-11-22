@@ -35,7 +35,7 @@
 1. **WebGPU はこの環境で絵を確認できず、`popErrorScope` の失敗（Instance dropped）が2件出る**。実機の /diag/ の `err=` で確認が必要。
 2. 毛細血管の網目の間隔が実際（約100µm）より狭い（約40〜50µm）。区画を広げて直す。
 3. 内皮細胞の核は「内腔側へ盛り上がる」。いまは色の濃さだけで示している（内側の面のメッシュがない）。
-4. 潜行士は第4版（参考画像 `Docs/REFERENCE/hero/reference-v3.jpg`）。体は距離の式→マーチングキューブで1枚の曲面にし、ボーン15本で自動の重み付け。塗り分けは位置を焼き込んだ 2048px の画像に、`make_hero.py` の `panels()` で描く。ヘルメット・背中のユニット・前腕の道具はボーンに取り付け。ゲーム側は `src/game/diver.ts` が「体の向きを基準にした軸」で骨を回す。手順：`tools/blender/make_hero.py` → `render_diver_closeup.py` → `node tools/pack-glb.mjs assets/models/diver.raw.glb public/static/models/diver.glb --plain 1 --texsize 2048 --ratio 1`（0.75MB）。注意：最適化で空の節（emitterTip・lampMount）を消さないよう `keepLeaves`。残り：手の指、靴の形、泳ぎの動き。
+4. 潜行士は第5版（参考画像 `Docs/REFERENCE/hero/reference-v3.jpg`。持ち主から「参考画像とまったく違う」と2回指摘を受けて作り直したもの）。紫のボディスーツ（距離の式→マーチングキューブ）の上に、厚みのある装甲の板27枚を同じ式から切り出して重ねる（`make_hero.py` の `plate(...)`）。板の重みは近い体の点から写す。陰は頂点の色に焼き込み（色×AO、書き出しは `export_vertex_color="NAME"`）。右手に柄と紫に光る刃（浄化の道具）。ゲーム側で装甲・スーツの色を少し寒色に補正。確認用画像は `render_diver_closeup.py`（参考画像と同じ暗い背景と紫の縁の光、姿勢つき）。参考画像との残りの差：胸当て・腹の板の造形が単純、刃が細く短い、体つきが参考画像よりやや細い、立ち姿の姿勢。
 5. 後処理（ブルーム、被写界深度、粒状感）は未実装。WebGPU 上乗せ（GPU 計算の群れ）も未実装。
 6. 音は実行時合成の仮のもの。Python 合成＋ffmpeg の素材化、出力先（テレビ／ヘッドホン／VR）の切り替え、立体音響は未実装。
 7. 図鑑の3Dビューア、セーブの書き出し・読み込み、設定画面（M4）、同梱フォントは未実装。
