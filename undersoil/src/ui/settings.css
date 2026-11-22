@@ -1,0 +1,11 @@
+dialog.settings { background: rgba(16, 12, 9, .96); color: var(--ink); border: 1px solid var(--line); border-radius: 14px; padding: 22px 24px; width: min(30em, 92vw); font-size: clamp(15px, 1.3vw, 22px); }
+dialog.settings::backdrop { background: rgba(0, 0, 0, .6); backdrop-filter: blur(4px); }
+dialog.settings h2 { margin: 0 0 .6em; font-weight: 500; letter-spacing: .2em; font-size: 1.2em; }
+dialog.settings fieldset { border: 0; border-top: 1px solid var(--line); margin: 0; padding: .8em 0; display: flex; flex-wrap: wrap; gap: .5em; }
+dialog.settings legend { color: var(--dim); font-size: .8em; letter-spacing: .15em; padding: 0 .6em 0 0; }
+dialog.settings label input { position: absolute; opacity: 0; }
+dialog.settings label span { display: inline-block; padding: .55em 1em; border: 1px solid var(--line); border-radius: 999px; cursor: pointer; font-size: .9em; }
+dialog.settings label input:checked + span { background: var(--accent); color: #1c1206; border-color: transparent; }
+dialog.settings label input:focus-visible + span { outline: 2px solid var(--leaf); }
+dialog.settings .now, dialog.settings .note { color: var(--dim); font-size: .78em; line-height: 1.8; margin: .6em 0 0; }
+dialog.settings .row { display: flex; justify-content: flex-end; margin-top: 1em; }

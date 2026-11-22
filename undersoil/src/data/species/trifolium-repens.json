@@ -1,0 +1,15 @@
+{
+  "id": "trifolium-repens",
+  "kind": "organism",
+  "nameJa": "シロツメクサ",
+  "sci": "Trifolium repens",
+  "taxon": "マメ科 シャジクソウ属",
+  "size": "種は 1〜1.5 mm",
+  "sizeCompare": "ゴマ粒より小さい",
+  "intro": "ハート形の小さな種は、水を吸うとふくらんで根を出し、ふたばを地上へ持ち上げます。江戸時代にヨーロッパから来て、日本中に広がった草です。",
+  "stage": 1,
+  "model": "models/plants/clover_seedling.glb",
+  "sources": [
+    "Docs/SPECIES.md"
+  ]
+}

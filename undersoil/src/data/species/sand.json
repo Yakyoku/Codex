@@ -1,0 +1,12 @@
+{
+  "id": "sand",
+  "kind": "element",
+  "nameJa": "砂粒",
+  "size": "0.02〜2 mm",
+  "sizeCompare": "細菌から見れば、ビルのような岩",
+  "intro": "岩が砕けてできた鉱物の粒です。石英（せきえい）などからなり、土の骨組みになります。",
+  "stage": 1,
+  "sources": [
+    "Docs/SPECIES.md"
+  ]
+}

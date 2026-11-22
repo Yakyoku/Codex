@@ -1,0 +1,14 @@
+{
+  "id": "pseudomonas-fluorescens",
+  "kind": "organism",
+  "nameJa": "シュードモナスの仲間",
+  "sci": "Pseudomonas fluorescens 群",
+  "taxon": "細菌 シュードモナス属",
+  "size": "長さ 約 3 µm",
+  "sizeCompare": "髪の毛の太さの 25 分の 1",
+  "intro": "体の端の鞭毛（べんもう。回して進む細い毛）で、水の膜の中をすばやく泳ぐ細菌です。土の中の溶けにくいリンを溶かし、植物が使える形に変える仲間がいます。",
+  "stage": 1,
+  "sources": [
+    "Docs/SPECIES.md"
+  ]
+}

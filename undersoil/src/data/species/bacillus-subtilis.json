@@ -1,0 +1,14 @@
+{
+  "id": "bacillus-subtilis",
+  "kind": "organism",
+  "nameJa": "枯草菌",
+  "sci": "Bacillus subtilis",
+  "taxon": "細菌 バシラス属",
+  "size": "長さ 約 3 µm",
+  "sizeCompare": "髪の毛の太さの 25 分の 1",
+  "intro": "棒の形の細菌です。乾いた土では芽胞（がほう。殻に包まれた休眠の粒）になって何年も眠り、水が養分を運んでくると、数分で目を覚まします。",
+  "stage": 1,
+  "sources": [
+    "Docs/SPECIES.md"
+  ]
+}

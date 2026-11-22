@@ -1,0 +1,14 @@
+{
+  "id": "paramacrobiotus-metropolitanus",
+  "kind": "organism",
+  "nameJa": "トウキョウチョウメイムシ",
+  "sci": "Paramacrobiotus metropolitanus",
+  "taxon": "緩歩動物（クマムシ） チョウメイムシ科",
+  "size": "体長 約 0.5 mm",
+  "sizeCompare": "髪の毛の太さの 7 倍",
+  "intro": "東京の竹林の落ち葉から見つかったクマムシです。乾くと樽の形に縮んで乾眠（かんみん。水をほぼ失ったまま生きのびる休眠）に入り、水が戻ると、また8本の脚で歩き出します。",
+  "stage": 1,
+  "sources": [
+    "Docs/SPECIES.md"
+  ]
+}

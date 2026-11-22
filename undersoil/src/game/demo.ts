@@ -2,7 +2,7 @@
 import type { World } from './world';
 
 export interface Demo { update(dt: number): void; start(): void; dry(): void; progress: number; running: boolean; }
-export function makeDemo(world: World, secondsPerCell = 3.2): Demo {
+export function makeDemo(world: World, secondsPerCell = 1.6): Demo {
   const g = world.grid; let t = 0, linked = 0;
   const d: Demo = {
     progress: 0, running: false,

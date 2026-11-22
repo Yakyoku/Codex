@@ -1,7 +1,7 @@
 // 地上の変化：シロツメクサの発芽を、実写の早回しのように、その場で描いて見せる。単位は mm。
 // 地下の暗さとの対比のため、ここは朝の斜めの光で、明るく色彩豊かに。
 import * as THREE from 'three/webgpu';
-import { attribute, float, vec3, mix, uniform, saturate, smoothstep, uv, normalWorld, positionWorld, cameraPosition, dot, pow, sin, abs, oneMinus, normalView, positionViewDirection } from 'three/tsl';
+import { attribute, float, vec3, mix, uniform, saturate, smoothstep, normalWorld, positionWorld, cameraPosition, dot, pow } from 'three/tsl';
 import { loadGLB, loadTexture } from '../core/assets';
 import { makeRng } from './rng';
 import { makeSoilMaterial } from './soilMaterial';
@@ -14,7 +14,7 @@ const SEED_DEPTH = 5;
 function skyEnvironment(renderer: THREE.WebGPURenderer, sunDir: THREE.Vector3) {
   const s = new THREE.Scene(); const m = new THREE.MeshBasicNodeMaterial({ side: THREE.BackSide });
   const n = normalWorld.negate(); const h = saturate(n.y.mul(0.5).add(0.5));
-  const sky = mix(vec3(1.0, 0.86, 0.66), vec3(0.22, 0.42, 0.80), smoothstep(0.5, 0.8, h));
+  const sky = mix(vec3(1.0, 0.86, 0.66), vec3(0.16, 0.38, 0.86), smoothstep(0.5, 0.72, h));
   const ground = vec3(0.10, 0.075, 0.05);
   const sun = pow(saturate(dot(n, vec3(sunDir.x, sunDir.y, sunDir.z))), 24.0).mul(6.0);
   m.colorNode = mix(ground, sky, smoothstep(0.46, 0.54, h)).add(vec3(1.0, 0.85, 0.6).mul(sun));
@@ -27,7 +27,7 @@ export async function buildSurface(renderer: THREE.WebGPURenderer, base: string,
   const scene = new THREE.Scene();
   const sunDir = new THREE.Vector3(-0.72, 0.36, 0.48).normalize();
   scene.environment = skyEnvironment(renderer, sunDir); scene.environmentIntensity = 0.9;
-  scene.background = scene.environment; scene.backgroundBlurriness = 0.35; scene.backgroundIntensity = 0.85; scene.fog = new THREE.Fog(0xe2cfae, 60, 210);
+  scene.background = scene.environment; scene.backgroundBlurriness = 0.3; scene.backgroundIntensity = 1.25; scene.fog = new THREE.Fog(0xe2cfae, 60, 210);
   const camera = new THREE.PerspectiveCamera(32, 1, 0.3, 600);
   const sun = new THREE.DirectionalLight(0xffdfb4, 4.2); sun.position.copy(sunDir).multiplyScalar(80); scene.add(sun);
   if (opts.shadows) { sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048); const c = sun.shadow.camera; c.left = -26; c.right = 26; c.top = 26; c.bottom = -26; c.near = 10; c.far = 160; sun.shadow.bias = -0.0008; sun.shadow.normalBias = 0.12; }
@@ -66,21 +66,20 @@ export async function buildSurface(renderer: THREE.WebGPURenderer, base: string,
   const pm = new THREE.MeshPhysicalNodeMaterial({ side: THREE.DoubleSide });
   // 色：土の中では光が当たらず、淡い黄白色。地上に出ると、葉緑体ができて緑になる（子葉が先、胚軸は淡い緑）
   const pale = vec3(0.78, 0.74, 0.50), rootCol = vec3(0.86, 0.84, 0.76);
-  const u2 = uv(); const cu = u2.x.sub(0.25).div(0.75).mul(2).sub(1);
-  const midrib = oneMinus(smoothstep(0.0, 0.07, abs(cu))).mul(isCot);
-  const leafGreen = mix(vec3(0.16, 0.36, 0.045), vec3(0.24, 0.45, 0.07), sin(u2.y.mul(40.0).add(cu.mul(9.0))).mul(0.5).add(0.5).mul(0.35));
-  const stemGreen = vec3(0.42, 0.52, 0.20);
+  // 子葉：明るい黄緑で、鈍いつやがある。葉脈は見えない（形の仕様書：写真で確認）。目測の色 RGB(120,190,70) を線形に直した値
+  const leafGreen = vec3(0.19, 0.50, 0.065);
+  const stemGreen = vec3(0.50, 0.62, 0.30);
   const green = mix(stemGreen, leafGreen, isCot);
   const aboveGround = smoothstep(SEED_DEPTH - 0.6, SEED_DEPTH + 0.8, positionWorld.y.add(SEED_DEPTH));
   const col = mix(mix(pale, green, uGreen.mul(mix(float(0.55), float(1), isCot)).mul(aboveGround)), rootCol, isRoot);
-  pm.colorNode = col.mul(mix(float(1), float(1.18), midrib));
+  pm.colorNode = col;
   pm.roughnessNode = mix(float(0.42), float(0.6), isCot); pm.metalnessNode = float(0);
   pm.clearcoatNode = float(0.25); pm.clearcoatRoughnessNode = float(0.35);
   // 透け：逆光のとき、薄い子葉を光が抜けて明るい黄緑に光る
   const viewDir = cameraPosition.sub(positionWorld).normalize();
   const back = pow(saturate(dot(viewDir.negate(), uSun)), 2.0);
   pm.emissiveNode = col.mul(vec3(1.2, 1.25, 0.5)).mul(back).mul(mix(float(0.25), float(1.1), isCot)).mul(aboveGround);
-  void along; void normalView; void positionViewDirection;
+  void along;
   plant.material = pm; plant.castShadow = true; plant.receiveShadow = true; plant.frustumCulled = false;
   const holder = new THREE.Group(); holder.position.y = -SEED_DEPTH; holder.rotation.y = 0.6; holder.add(gltf.scene); scene.add(holder);
   const dict = plant.morphTargetDictionary!, infl = plant.morphTargetInfluences!;

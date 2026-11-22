@@ -1,0 +1,12 @@
+{
+  "id": "water-film",
+  "kind": "element",
+  "nameJa": "水の膜",
+  "size": "平らな面で 10〜20 nm",
+  "sizeCompare": "細菌の太さの 50 分の 1",
+  "intro": "土の粒の表面をおおう薄い水の層です。粒のすき間やくぼみにたまった水がつながったときだけ、細菌は泳いで移動できます。",
+  "stage": 1,
+  "sources": [
+    "Docs/SPECIES.md"
+  ]
+}
