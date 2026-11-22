@@ -161,8 +161,8 @@ def body_grid(key, U, S, detail=0.0):
     for lg in LEGS:
         t = np.linalg.norm(R0 - lg['c'], axis=2) / lg['rf']; A = leg_state(lg, body, ph)[0]
         if isinstance(body, Tun):
-            w = sstep(1.25, 0.2, t) * np.maximum(np.cos(a), 0) ** 0.5
-            N = B - body.center(s + 0 * a); N[..., 1] = 0; N /= np.maximum(np.linalg.norm(N, axis=2, keepdims=True), 1e-9); P = P - 1.0 * w[..., None] * N    # 引き込んだ脚の跡：浅いくぼみ
+            w = sstep(0.85, 0.15, t) * np.maximum(np.cos(a), 0) ** 0.5
+            N = B - body.center(s + 0 * a); N[..., 1] = 0; N /= np.maximum(np.linalg.norm(N, axis=2, keepdims=True), 1e-9); P = P - 1.2 * w[..., None] * N    # 引き込んだ脚の跡：浅いくぼみ
         else:
             w = leg_w(t) * (t < 1)
             if lg['hind']: w = w * sstep(-0.55, 0.25, np.cos(a))      # 4対目は、体の後ろの端の腹側から出る（背中側は動かさない）
@@ -191,15 +191,15 @@ def claw_tubes(tip, d, m, h, size, sides, seg):
     長い枝どうしが内側、短い枝が外側（2-1-1-2 の並び）。返り値：[(頂点, 輪の数)] × 4"""
     out = []; k = size / 1.15
     for sg in (-1.0, 1.0):
-        base = tip - d * 0.5 * k + m * sg * 0.3 * k
-        e = base + d * 0.82 * k + m * sg * 0.05 * k                    # 枝分かれの点
+        base = tip - d * 0.7 * k + m * sg * 0.3 * k                  # 根もとは脚の先の中に埋まる
+        e = tip + d * 0.3 * k + m * sg * 0.35 * k                    # 枝分かれの点
         for long in (True, False):
-            n = seg if long else max(3, seg - 2); Lb = (1.1 if long else 0.66) * k; kap = 1.75 if long else 1.7
+            n = seg if long else max(3, seg - 2); Lb = (1.3 if long else 0.75) * k; kap = 1.75 if long else 1.7
             lean = (-0.10 if long else 0.62) * sg
             tau = (np.linspace(0, 1, n - 2) if long else np.linspace(0.35, 1, n - 1))[:, None]
             arc = e + (Lb / kap) * (np.sin(kap * tau) * (d + m * lean) + (1 - np.cos(kap * tau)) * h)
             pts = np.concatenate([[base], [base * 0.5 + e * 0.5], arc]) if long else np.concatenate([[e - d * 0.12 * k], arc])
-            r = np.linspace(0.14, 0.02, len(pts)) * k * (1.0 if long else 0.85)
+            r = np.linspace(0.16, 0.025, len(pts)) * k * (1.0 if long else 0.85)
             out.append((tube(pts, r, sides, ref=m + 0.3 * h), len(pts)))
     return out
 
