@@ -6,6 +6,7 @@ import { Hud } from '../core/hud';
 import { GameAudio } from '../core/audio';
 import { buildRetina } from '../stages/eye/retina';
 import { ATLAS } from '../game/ui';
+import { PurifyBeam } from '../game/beam';
 import tuning from '../data/tuning.json';
 
 const W = window as unknown as Record<string, unknown>;
@@ -60,10 +61,10 @@ async function main() {
   });
   const emitter = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.012, 0.09, 10), new THREE.MeshBasicMaterial({ color: 0xc9a8ff })); emitter.rotation.x = Math.PI / 2; emitter.position.set(0, 0, -0.07);
   const wrist = new Panel(512, 384, 0.11); wrist.mesh.visible = true; wrist.mesh.rotation.x = -Math.PI / 2; wrist.mesh.position.set(0, 0.046, 0.09);
-  const beamMat = new THREE.MeshBasicMaterial({ color: 0xe2d8ff, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, fog: false });
-  const beamGeo = new THREE.CylinderGeometry(0.03, 0.09, 1, 8, 1, true); beamGeo.translate(0, 0.5, 0); beamGeo.rotateX(Math.PI / 2);
-  const beam = new THREE.Mesh(beamGeo, beamMat); beam.frustumCulled = false; beam.renderOrder = 50; stage.scene.add(beam);
-  const beamLight = new THREE.PointLight(0xece4ff, 0, 22, 1.6); stage.scene.add(beamLight);
+  // 浄化の光線は画面版と同じもの（VR では少し細く）
+  const noiseTex = new THREE.TextureLoader().load('/static/img/noise.png'); noiseTex.wrapS = noiseTex.wrapT = THREE.RepeatWrapping;
+  const purify = new PurifyBeam(noiseTex, 0.8); stage.scene.add(purify.group);
+  const beamFrom = new THREE.Vector3(), beamTo = new THREE.Vector3();
 
   // 視界の基準になる動かない枠（バイザーの縁）と、移動中に視野の周辺を暗くする幕
   const rim = new THREE.Mesh(new THREE.RingGeometry(0.62, 0.9, 48), new THREE.MeshBasicMaterial({ color: 0x0a0c0e, fog: false, side: THREE.DoubleSide })); rim.position.z = -0.42; rim.renderOrder = 90; camera.add(rim);
@@ -165,10 +166,10 @@ async function main() {
     if (fire && !finished) {
       const src = session ? right.ray : camera; src.getWorldPosition(v); src.getWorldQuaternion(q); d.set(0, 0, -1).applyQuaternion(q);
       let found = false; for (let s = 0.5; s < tuning.beam.range; s += 0.4) { hit.copy(v).addScaledVector(d, s); if (hit.y <= stage.floorHeight(hit.x, hit.z)) { found = true; break; } }
-      if (found) { stage.heal(hit.x, hit.z, dt); firing = true; if (!session) v.y -= 0.5; beam.position.copy(v); beam.lookAt(hit); beam.scale.set(1, 1, v.distanceTo(hit)); stage.u.beamPos.value.copy(hit); beamLight.position.copy(hit).y += 1.2; }
+      if (found) { stage.heal(hit.x, hit.z, dt); firing = true; if (!session) v.y -= 0.5; beamFrom.copy(v); beamTo.copy(hit); stage.u.beamPos.value.copy(hit); }
     }
     const bo = stage.u.beamOn.value as number; stage.u.beamOn.value = bo + ((firing ? 1 : 0) - bo) * Math.min(1, dt * 10);
-    beamMat.opacity = 0.5 * (stage.u.beamOn.value as number); beam.visible = beamMat.opacity > 0.01; beamLight.intensity = 26 * (stage.u.beamOn.value as number);
+    purify.update(dt, beamFrom, beamTo, firing, camera);
     // スキャン：左手首の端末を自分の顔に向けている間
     if (session) { left.grip.getWorldQuaternion(q); d.set(0, 1, 0).applyQuaternion(q); left.grip.getWorldPosition(v); camera.getWorldPosition(hit); scanOn = d.dot(hit.sub(v).normalize()) > 0.72; } else scanOn = keys.has('KeyQ');
     const sc = stage.u.scan.value as number; stage.u.scan.value = sc + ((scanOn ? 1 : 0) - sc) * Math.min(1, dt * 4);

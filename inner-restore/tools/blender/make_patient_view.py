@@ -63,7 +63,7 @@ nt.links.new(tr.outputs[0], m1.inputs[1]); nt.links.new(df.outputs[0], m1.inputs
 glass = mat("glass", (0.95, 0.97, 1.0), 0.02, trans=1.0)
 leaf = bpy.data.materials.new("leaf"); leaf.use_nodes = True; nt = leaf.node_tree; b = nt.nodes["Principled BSDF"]
 vo = nt.nodes.new("ShaderNodeTexVoronoi"); vo.inputs["Scale"].default_value = 60; ns = nt.nodes.new("ShaderNodeTexNoise"); ns.inputs["Scale"].default_value = 3
-cr = nt.nodes.new("ShaderNodeValToRGB"); cr.color_ramp.elements[0].color = (0.025, 0.07, 0.02, 1); cr.color_ramp.elements[1].color = (0.16, 0.3, 0.07, 1)
+cr = nt.nodes.new("ShaderNodeValToRGB"); cr.color_ramp.elements[0].color = (0.018, 0.05, 0.014, 1); cr.color_ramp.elements[1].color = (0.12, 0.24, 0.05, 1)
 bm_ = nt.nodes.new("ShaderNodeBump"); bm_.inputs["Strength"].default_value = 0.8
 nt.links.new(ns.outputs["Fac"], cr.inputs["Fac"]); nt.links.new(cr.outputs["Color"], b.inputs["Base Color"]); nt.links.new(vo.outputs["Distance"], bm_.inputs["Height"]); nt.links.new(bm_.outputs["Normal"], b.inputs["Normal"])
 b.inputs["Roughness"].default_value = 0.6; b.inputs["Subsurface Weight"].default_value = 0.3
@@ -112,7 +112,7 @@ for i, (x, y, s) in enumerate([(-7, 17, 1.5), (-3, 21, 1.8), (1.8, 18, 1.4), (6,
 for i in range(40):    # 遠くの木立ち（かすんで見える）
     x = -45 + i * 2.4 + rng.random() * 1.2; y = 50 + rng.random() * 12; r = 2.2 + rng.random() * 1.8
     bpy.ops.mesh.primitive_ico_sphere_add(radius=r, subdivisions=3, location=(x, y, r * 0.6)); o = bpy.context.object; o.scale = (1, 0.7, 1.1)
-    add(o, haze_mat("far", (0.09, 0.15, 0.07), 0.04))
+    add(o, haze_mat("far", (0.05, 0.1, 0.04), 0.02))
 
 # ---------- ベッドと掛け布団（しわ） ----------
 box("frameL", (0.05, 2.0, 0.05), (-0.55, 0.2, 0.62), metal, 0.01); box("frameR", (0.05, 2.0, 0.05), (0.55, 0.2, 0.62), metal, 0.01)
@@ -163,10 +163,10 @@ al = bpy.data.lights.new("bounce", "AREA"); al.energy = 12; al.size = 3; al.colo
 ao = bpy.data.objects.new("bounce", al); ao.location = (0, 0.5, 2.75); sc.collection.objects.link(ao)
 
 # ---------- カメラ：ベッドの上から窓へ。窓にピント ----------
-cd = bpy.data.cameras.new("cam"); cd.lens = 27; cd.dof.use_dof = True; cd.dof.aperture_fstop = 1.3
+cd = bpy.data.cameras.new("cam"); cd.lens = 30; cd.dof.use_dof = True; cd.dof.aperture_fstop = 1.0
 cam = bpy.data.objects.new("cam", cd); cam.location = (0.04, -1.5, 1.16); sc.collection.objects.link(cam); sc.camera = cam
 tgt = Vector((0.0, 3.0, 1.45)); cam.rotation_euler = (tgt - cam.location).to_track_quat("-Z", "Y").to_euler()
-cd.dof.focus_distance = (tgt - cam.location).length
+cd.dof.focus_distance = 2.4      # ベッドの足元にピント。窓の外はやわらかくぼける（目覚めたばかりの視界）
 sc.render.resolution_x, sc.render.resolution_y = int(os.environ.get("W", "1920")), int(os.environ.get("H", "1080"))
 sc.cycles.samples = int(os.environ.get("SAMPLES", "128")); sc.cycles.use_denoising = True
 sc.cycles.volume_step_rate = 4.0; sc.cycles.max_bounces = 6
