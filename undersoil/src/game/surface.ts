@@ -6,6 +6,7 @@ import { loadGLB, loadTexture } from '../core/assets';
 import { makeRng } from './rng';
 import { makeSoilMaterial } from './soilMaterial';
 import { buildLitter } from './litter';
+import { buildGround, makeHeight } from './ground';
 
 export interface Surface { scene: THREE.Scene; camera: THREE.PerspectiveCamera; focusDistance: { value: number }; setGrowth(g: number): void; update(dt: number, t: number): void; growth: number; }
 const STAGES = ['S0_seed', 'S1_radicle', 'S2_hook', 'S3_lift', 'S4_half', 'S5_open'];
@@ -16,10 +17,10 @@ const SEED_DEPTH = 3;
 function skyEnvironment(renderer: THREE.WebGPURenderer, sunDir: THREE.Vector3) {
   const s = new THREE.Scene(); const m = new THREE.MeshBasicNodeMaterial({ side: THREE.BackSide });
   const n = normalWorld.negate(); const h = saturate(n.y.mul(0.5).add(0.5));
-  const sky = mix(vec3(1.0, 0.86, 0.66), vec3(0.16, 0.38, 0.86), smoothstep(0.5, 0.72, h));
+  const sky = mix(vec3(0.85, 0.86, 0.84), vec3(0.42, 0.55, 0.78), smoothstep(0.5, 0.85, h));
   const ground = vec3(0.10, 0.075, 0.05);
   const sun = pow(saturate(dot(n, vec3(sunDir.x, sunDir.y, sunDir.z))), 24.0).mul(6.0);
-  m.colorNode = mix(ground, sky, smoothstep(0.46, 0.54, h)).add(vec3(1.0, 0.85, 0.6).mul(sun));
+  m.colorNode = mix(ground, sky, smoothstep(0.46, 0.54, h)).add(vec3(1.0, 0.95, 0.85).mul(sun));
   s.add(new THREE.Mesh(new THREE.SphereGeometry(50, 32, 16), m));
   const tex = new THREE.PMREMGenerator(renderer).fromScene(s, 0.03).texture;
   return tex;
@@ -27,41 +28,41 @@ function skyEnvironment(renderer: THREE.WebGPURenderer, sunDir: THREE.Vector3) {
 
 export async function buildSurface(renderer: THREE.WebGPURenderer, base: string, opts: { shadows: boolean; density: number }): Promise<Surface> {
   const scene = new THREE.Scene();
-  const sunDir = new THREE.Vector3(-0.72, 0.36, 0.48).normalize();
-  scene.environment = skyEnvironment(renderer, sunDir); scene.environmentIntensity = 0.9;
-  scene.background = new THREE.Color(0xd8c3a0); scene.fog = new THREE.Fog(0xd9c4a0, 38, 120);
+  // 光：写真のような、白っぽい昼の光。太陽はやや高く、空からの柔らかい光を多めに（夕日のオレンジはやめる）
+  const sunDir = new THREE.Vector3(-0.55, 0.62, 0.56).normalize();
+  scene.environment = skyEnvironment(renderer, sunDir); scene.environmentIntensity = 0.75;
+  scene.background = new THREE.Color(0xb9bcb8); scene.fog = new THREE.Fog(0xb9bcb8, 45, 150);
   const camera = new THREE.PerspectiveCamera(30, 1, 0.3, 600);
-  const sun = new THREE.DirectionalLight(0xffdfb4, 4.2); sun.position.copy(sunDir).multiplyScalar(80); scene.add(sun);
-  if (opts.shadows) { sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048); const c = sun.shadow.camera; c.left = -26; c.right = 26; c.top = 26; c.bottom = -26; c.near = 10; c.far = 160; sun.shadow.bias = -0.0008; sun.shadow.normalBias = 0.12; }
-  scene.add(new THREE.HemisphereLight(0x9fc0ff, 0x4a3520, 0.7));
+  const sun = new THREE.DirectionalLight(0xfff3e2, 2.6); sun.position.copy(sunDir).multiplyScalar(80); scene.add(sun);
+  if (opts.shadows) { sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048); const c = sun.shadow.camera; c.left = -22; c.right = 22; c.top = 22; c.bottom = -22; c.near = 10; c.far = 160; sun.shadow.bias = -0.0006; sun.shadow.normalBias = 0.06; sun.shadow.radius = 4; }
+  scene.add(new THREE.HemisphereLight(0xd6e2f2, 0x55402c, 1.15));
 
-  // 地面：土の粒を、ここでは肉眼で見える大きさ（砂粒 0.2〜1.5 mm、団粒 0.5〜3 mm）として敷く
+  // 地面：細かい土がつながった面（ground.ts）。その上に、半分埋まった土のかたまりと小石
+  const height = makeHeight();
+  scene.add(buildGround(height, { segments: opts.density >= 0.9 ? 420 : 300, size: 170, sunDir }));
   const rng = makeRng(4242); const detail = await loadTexture(base, 'tex/soil_detail.webp', { repeat: true });
-  const kinds: [string, 'quartz' | 'aggregate' | 'humus', number, number, number][] = [['aggregate_a', 'aggregate', 0.16, 1.0, 3400], ['aggregate_b', 'aggregate', 0.12, 0.7, 4200], ['aggregate_c', 'aggregate', 0.1, 0.5, 4200], ['quartz_a', 'quartz', 0.06, 0.3, 2400], ['quartz_b', 'quartz', 0.05, 0.22, 2400], ['humus_a', 'humus', 0.2, 1.1, 900]];
+  // 土のかたまり：0.15〜1.1 mm の小さな団粒と砂粒を、地面の上にぎっしり重ねる（写真の、ぼろぼろした表面）
+  const kinds: [string, 'quartz' | 'aggregate' | 'humus', number, number, number][] = [['aggregate_a', 'aggregate', 0.18, 1.1, 5200], ['aggregate_b', 'aggregate', 0.14, 0.8, 6400], ['aggregate_c', 'aggregate', 0.1, 0.55, 6400], ['quartz_a', 'quartz', 0.06, 0.32, 1800], ['quartz_b', 'quartz', 0.05, 0.25, 1800], ['humus_a', 'humus', 0.15, 0.8, 900]];
   const lifts: { mesh: THREE.InstancedMesh; idx: number[]; base: THREE.Matrix4[] }[] = [];
-  const height = (x: number, z: number) => Math.sin(x * 0.13) * 0.45 + Math.sin(z * 0.17 + 1.3) * 0.4 + Math.sin((x + z) * 0.41) * 0.18;
   for (const [nm, kind, r0, r1, n0] of kinds) {
     const n = Math.round(n0 * opts.density);
+    const near = kind !== 'quartz';
     const [g, na] = await Promise.all([loadGLB(base, `models/grains/${nm}.glb`), loadTexture(base, `models/grains/${nm}_lod2_na.webp`)]);
     const geo = (g.scene.getObjectByName(`${nm}_LOD2`) as THREE.Mesh).geometry;
     const wet = new THREE.InstancedBufferAttribute(new Float32Array(n), 1), seed = new THREE.InstancedBufferAttribute(new Float32Array(n), 1);
-    const mesh = new THREE.InstancedMesh(geo, makeSoilMaterial(kind, na, detail, wet, seed, { mottle: 0.08, tint: kind === 'quartz' ? [0.9, 0.88, 0.84] : [0.95, 0.80, 0.66] }), n);
-    const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), p = new THREE.Vector3(), s = new THREE.Vector3(); const idx: number[] = [], bases: THREE.Matrix4[] = [];
+    const mesh = new THREE.InstancedMesh(geo, makeSoilMaterial(kind, na, detail, wet, seed, { mottle: 0.08, tint: kind === 'quartz' ? [0.92, 0.9, 0.86] : [0.80, 0.68, 0.56] }), n);
+    const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), p = new THREE.Vector3(), sc = new THREE.Vector3(); const idx: number[] = [], bases: THREE.Matrix4[] = [];
     for (let i = 0; i < n; i++) {
-      const a = rng.range(0, Math.PI * 2), rad = 36 * rng.next() ** 0.62, r = (r0 + (r1 - r0) * rng.next() ** 2.2) * (1 + rad * 0.035);
-      p.set(Math.cos(a) * rad, 0, Math.sin(a) * rad); p.y = height(p.x, p.z) + rng.range(-0.6, 0.25) * r;
-      q.setFromEuler(e.set(rng.range(0, 6.28), rng.range(0, 6.28), rng.range(0, 6.28))); s.set(r, r * rng.range(0.7, 1), r * rng.range(0.85, 1.1));
-      mesh.setMatrixAt(i, m4.compose(p, q, s));
-      { const patch = 0.5 + 0.5 * Math.sin(p.x * 0.31 + Math.sin(p.z * 0.23) * 2.0) * Math.sin(p.z * 0.27 + 0.7); (wet.array as Float32Array)[i] = (0.1 + 0.3 * patch * patch) * rng.range(0.8, 1); } (seed.array as Float32Array)[i] = rng.next();
-      if (rad < 3.2) { idx.push(i); bases.push(m4.clone()); }
+      const a = rng.range(0, Math.PI * 2), rad = 34 * rng.next() ** 0.62, r = (r0 + (r1 - r0) * rng.next() ** 2.4) * (1 + rad * 0.03);
+      p.set(Math.cos(a) * rad, 0, Math.sin(a) * rad); p.y = height(p.x, p.z) - r * rng.range(0.15, 0.5);
+      q.setFromEuler(e.set(rng.range(0, 6.28), rng.range(0, 6.28), rng.range(0, 6.28))); sc.set(r, r * rng.range(0.6, 0.9), r * rng.range(0.85, 1.1));
+      mesh.setMatrixAt(i, m4.compose(p, q, sc));
+      { const patch = 0.5 + 0.5 * Math.sin(p.x * 0.31 + Math.sin(p.z * 0.23) * 2.0) * Math.sin(p.z * 0.27 + 0.7); (wet.array as Float32Array)[i] = (0.06 + 0.3 * patch * patch) * rng.range(0.7, 1); }
+      (seed.array as Float32Array)[i] = rng.next();
+      if (near && rad < 3.2) { idx.push(i); bases.push(m4.clone()); }
     }
     mesh.castShadow = true; mesh.receiveShadow = true; mesh.computeBoundingSphere(); scene.add(mesh); lifts.push({ mesh, idx, base: bases });
   }
-  // 粒の下を埋める土の面（すき間から下が抜けて見えないように）
-  const underMat = new THREE.MeshStandardNodeMaterial({ roughness: 1 });
-  { const t1 = texture(detail, positionWorld.xz.mul(0.9)), t2 = texture(detail, positionWorld.xz.mul(0.21));
-    underMat.colorNode = mix(vec3(0.045, 0.032, 0.022), vec3(0.10, 0.072, 0.048), t1.r.mul(0.6).add(t2.g.mul(0.4))).mul(oneMinus(t1.b.mul(0.5))); }
-  const under = new THREE.Mesh(new THREE.CircleGeometry(220, 48), underMat); under.rotation.x = -Math.PI / 2; under.position.y = -0.12; under.receiveShadow = true; scene.add(under);
   scene.add(buildLitter(height, { density: opts.density, keepOut: 1.6, radius: 30, sunDir }));
 
   // 芽生え（子葉・胚軸・根）と、最初の本葉
@@ -71,7 +72,7 @@ export async function buildSurface(renderer: THREE.WebGPURenderer, base: string,
   const viewDir = cameraPosition.sub(positionWorld).normalize();
   const back = pow(saturate(dot(viewDir.negate(), uSun)), 2.0);            // 逆光
   const facing = saturate(dot(normalWorld, uSun));
-  const aboveGround = smoothstep(-1.6, -0.1, positionWorld.y);
+  const gy = height(0, 0); const aboveGround = smoothstep(gy - 1.6, gy - 0.1, positionWorld.y);
   {
     const vc = attribute('color', 'vec4'); const isCot = vc.r, isRoot = vc.g, topSide = vc.b, alongCot = vc.a;
     const pm = new THREE.MeshPhysicalNodeMaterial();
@@ -114,7 +115,7 @@ export async function buildSurface(renderer: THREE.WebGPURenderer, base: string,
     lm.emissiveNode = colL.mul(vec3(1.2, 1.35, 0.5)).mul(back.mul(0.5).add(facing.mul(0.0))).mul(mix(float(1), float(0.55), veins.add(mid).min(1.0)));
     leaf.material = lm; leaf.castShadow = true; leaf.receiveShadow = true; leaf.frustumCulled = false;
   }
-  const holder = new THREE.Group(); holder.position.y = -SEED_DEPTH; holder.rotation.y = 0.6; holder.add(gltf.scene); scene.add(holder);
+  const holder = new THREE.Group(); holder.position.y = height(0, 0) - SEED_DEPTH; holder.rotation.y = 0.6; holder.add(gltf.scene); scene.add(holder);
   const dict = plant.morphTargetDictionary!, infl = plant.morphTargetInfluences!, ldict = leaf.morphTargetDictionary!, linfl = leaf.morphTargetInfluences!;
   const ease = (x: number) => x * x * (3 - 2 * x);
   /** 0..n の位置から、隣り合う2つのキーの重みを決める（最後の先は基本形＝重みなし） */
@@ -142,8 +143,8 @@ export async function buildSurface(renderer: THREE.WebGPURenderer, base: string,
     update(_dt, t) {
       // カメラ：斜め上から寄って、葉が「葉」として見える角度で、ゆっくり回り込む（急な動きや揺れは入れない）
       const g = surf.growth, az = 2.35 - g * 1.05, el = 0.50 + 0.10 * Math.sin(g * Math.PI), dist = 13.5 + g * 4 + Math.max(0, g - 0.7) * 16;
-      camera.position.set(Math.cos(az) * Math.cos(el) * dist, Math.sin(el) * dist + 1.0, Math.sin(az) * Math.cos(el) * dist);
-      camera.lookAt(0.4, 0.4 + Math.max(0, g - 0.2) * 3.4 + Math.max(0, g - 0.7) * 5, 0); void t;
+      camera.position.set(Math.cos(az) * Math.cos(el) * dist, Math.sin(el) * dist + 1.0 + gy, Math.sin(az) * Math.cos(el) * dist);
+      camera.lookAt(0.4, gy + 0.4 + Math.max(0, g - 0.2) * 3.4 + Math.max(0, g - 0.7) * 5, 0); void t;
       focusDistance.value = camera.position.length() - 0.5; // ピントは芽に合わせ続ける
     },
   };

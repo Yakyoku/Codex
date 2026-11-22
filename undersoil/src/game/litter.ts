@@ -107,7 +107,7 @@ export function buildLitter(height: Height, opts: { density: number; keepOut: nu
     const geo = flakeGeometry(3); const tone = new THREE.InstancedBufferAttribute(new Float32Array(n), 1); geo.setAttribute('tone', tone);
     const mat = new THREE.MeshStandardNodeMaterial({ side: THREE.DoubleSide });
     const tn = attribute('tone', 'float'); const u2 = uv();
-    const leafC = mix(vec3(0.30, 0.15, 0.07), vec3(0.13, 0.08, 0.05), tn);
+    const leafC = mix(vec3(0.17, 0.10, 0.055), vec3(0.08, 0.055, 0.035), tn);
     const vein = oneMinus(smoothstep(0.0, 0.06, abs(fract(u2.x.mul(6.0).add(u2.y.mul(3.0))).sub(0.5)))).mul(0.3).add(oneMinus(smoothstep(0.0, 0.03, abs(u2.y.sub(0.5)))).mul(0.4));
     mat.colorNode = leafC.mul(oneMinus(vein.mul(0.4)).add(vein.mul(0.25)));
     mat.roughnessNode = float(0.78); mat.metalnessNode = float(0);

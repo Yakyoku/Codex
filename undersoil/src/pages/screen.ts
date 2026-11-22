@@ -66,7 +66,7 @@ async function main() {
   let growT = 0; const GROW_SEC = Number(Q.get('grow') ?? 26);
   if (Q.get('g') !== null) surface.setGrowth(Number(Q.get('g')));
   const fade = document.createElement('div'); fade.className = 'fade'; document.body.append(fade);
-  const switchTo = (m: 'soil' | 'surface') => { fade.classList.add('on'); setTimeout(() => { mode = m; growT = 0; surface.setGrowth(0); document.body.classList.toggle('surface', m === 'surface'); renderer.toneMappingExposure = m === 'surface' ? 0.9 : 1.0; fade.classList.remove('on'); }, 900); };
+  const switchTo = (m: 'soil' | 'surface') => { fade.classList.add('on'); setTimeout(() => { mode = m; growT = 0; surface.setGrowth(0); document.body.classList.toggle('surface', m === 'surface'); renderer.toneMappingExposure = m === 'surface' ? 1.0 : 1.0; fade.classList.remove('on'); }, 900); };
   surfaceCam = surface.camera; resize();
   if (mode === 'surface') { document.body.classList.add('surface'); renderer.toneMappingExposure = 0.9; }
   let started = false;
@@ -150,7 +150,7 @@ async function main() {
     W.__state = { col: W.__col, ready: frames > 3, frozen, frames, isWebGPU, tier, device, errors, stats: world.stats, vitality: vit, bridges: game.bridges.count, swarm: game.swarm.count, mode };
   };
   // 動画づくり用：?manual を付けると、外から時間を1コマずつ進められる（この環境の描画は遅いので、そのまま録画しても滑らかにならない）
-  if (Q.has('manual')) { W.__frame = (ms: number) => frame(ms); W.__switch = (m: 'soil' | 'surface') => { mode = m; growT = 0; surface.setGrowth(0); document.body.classList.toggle('surface', m === 'surface'); renderer.toneMappingExposure = m === 'surface' ? 0.9 : 1.0; }; W.__demo = () => demo.start(); frame(0); frame(16); frame(32); frame(48); frame(64); }
+  if (Q.has('manual')) { W.__frame = (ms: number) => frame(ms); W.__switch = (m: 'soil' | 'surface') => { mode = m; growT = 0; surface.setGrowth(0); document.body.classList.toggle('surface', m === 'surface'); renderer.toneMappingExposure = m === 'surface' ? 1.0 : 1.0; }; W.__demo = () => demo.start(); frame(0); frame(16); frame(32); frame(48); frame(64); }
   else renderer.setAnimationLoop(frame);
 }
 main().catch((e) => { errors.push(String(e)); console.error(e); W.__state = { ready: false, failed: true, errors }; });
