@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>INNER RESTORE — 実機診断</title>
+<link rel="stylesheet" href="/src/base.css">
+<style>
+html,body{overflow:auto}
+canvas#view{position:fixed;inset:0;z-index:0;opacity:.55}
+#panel{position:relative;z-index:2;max-width:760px;margin:0 auto;padding:max(18px,env(safe-area-inset-top)) 18px 80px}
+h1{font-size:18px;letter-spacing:.2em;font-weight:500;margin:8px 0 4px}
+p.lead{color:var(--dim);font-size:13px;line-height:1.7;margin:0 0 14px}
+#status{font-size:15px;color:var(--acc);margin:10px 0;min-height:1.6em}
+#bar{height:3px;background:#ffffff18;margin:6px 0 16px}#bar i{display:block;height:100%;width:0;background:var(--acc);transition:width .3s}
+table{width:100%;border-collapse:collapse;font-size:14px;background:#06090bcc;backdrop-filter:blur(6px)}
+td{padding:7px 10px;border-bottom:1px solid #ffffff14;vertical-align:top}td:first-child{color:var(--dim);white-space:nowrap;width:9.5em}
+td:last-child{font-variant-numeric:tabular-nums;word-break:break-all}
+#out{width:100%;min-height:88px;margin-top:14px;background:#04070a;color:var(--ink);border:1px solid #ffffff22;padding:10px;font:12px/1.5 ui-monospace,Menlo,Consolas,monospace}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}.row .btn{font-size:14px;padding:.7em 1.2em}
+.bad{color:var(--warn)}
+</style>
+</head>
+<body>
+<canvas id="view"></canvas>
+<div id="panel">
+  <h1>実機診断</h1>
+  <p class="lead">開くと自動で測定します（約20秒）。終わったら「結果をコピー」を押して、その文字列をそのまま貼り付けてください。測定中は画面を触らず、このタブを表に出したままにしてください。</p>
+  <div id="status">準備中…</div><div id="bar"><i></i></div>
+  <table id="tbl"></table>
+  <textarea id="out" readonly></textarea>
+  <div class="row">
+    <button class="btn" id="copy" disabled>結果をコピー</button>
+    <button class="btn" id="again">もう一度測る</button>
+    <button class="btn" id="gl">WebGL 2 で測る</button>
+    <button class="btn" id="gpu">WebGPU で測る</button>
+    <a class="btn" href="/" style="text-decoration:none">戻る</a>
+  </div>
+</div>
+<script type="module" src="/src/pages/diag.ts"></script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.cache/
+*.blend1
+__pycache__/
+.netlify/
+progress/

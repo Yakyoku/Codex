@@ -1,0 +1,10 @@
+{
+  "updated": "2026-11-22",
+  "sections": [
+    { "title": "第1部：公開経路の確認", "note": "Blender(bpy)→焼き込み→GLB→最適化→ブラウザ表示までを通した最初の素材。",
+      "items": [
+        { "src": "assets/preview/rbc.jpg", "caption": "赤血球（Blender の確認用画像・4方向）。形は Evans & Fung (1972) の実測式。直径 7.82µm、中央の厚み 0.81µm、最も厚い所 2.57µm。写真との見比べは未実施（数式と文章の記述から作成）。" },
+        { "src": "progress-src/p1-main-webgl2.png", "caption": "画面版の最小ページ（WebGL 2・この環境の Chrome で撮影）。" }
+      ] }
+  ]
+}

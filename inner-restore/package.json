@@ -1,0 +1,22 @@
+{
+  "name": "inner-restore",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "build": "tsc --noEmit && vite build && node scripts/build-progress.mjs && node scripts/postbuild.mjs",
+    "test": "vitest run",
+    "shots": "node scripts/shots.mjs"
+  },
+  "dependencies": {
+    "three": "0.187.0"
+  },
+  "devDependencies": {
+    "@gltf-transform/cli": "4.5.1",
+    "@types/three": "0.187.0",
+    "iwer": "2.8.0",
+    "typescript": "7.0.2",
+    "vite": "8.3.8",
+    "vitest": "5.1.1"
+  }
+}
