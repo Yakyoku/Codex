@@ -8,7 +8,7 @@ const [query = '', out = '.shots/out.png', w = '1280', h = '720', wait = '2500',
 const root = new URL('../../../games/bodhi-no-michi/', import.meta.url).pathname;
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.bin': 'application/octet-stream', '.woff2': 'font/woff2', '.woff': 'font/woff', '.png': 'image/png', '.jpg': 'image/jpeg', '.svg': 'image/svg+xml' };
 const browser = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--autoplay-policy=no-user-gesture-required'] });
-const page = await browser.newPage({ viewport: { width: +w, height: +h }, deviceScaleFactor: +dpr });
+const page = await browser.newPage({ viewport: { width: +w, height: +h }, deviceScaleFactor: +dpr, hasTouch: !!process.env.TOUCH });
 const errs = [];
 page.on('console', m => { if ((m.type() === 'error' || m.type() === 'warning') && !/GPU stall|GL_CLOSE_PATH/.test(m.text())) errs.push(m.type() + ': ' + m.text().slice(0,600)); });
 page.on('pageerror', e => errs.push('pageerror: ' + e.message));

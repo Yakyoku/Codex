@@ -40,7 +40,7 @@ html, body {
   color: var(--ink);
   font-family: 'Shippori Mincho', 'Hiragino Mincho ProN', 'Yu Mincho', serif;
   font-weight: 400;
-  font-size: clamp(15px, calc(2.1vmin + 8px), 20px);
+  font-size: clamp(17px, calc(2.4vmin + 9px), 24px);
   line-height: 1.8;
   letter-spacing: 0.06em;
   font-feature-settings: 'palt' 0;
@@ -325,14 +325,14 @@ html, body {
   inset: 0;
   display: grid;
   place-items: center;
-  font-size: 15px;
+  font-size: 20px;
   line-height: 1;
   letter-spacing: 0;
   color: rgba(var(--ink-rgb), 0.82);
   transition: color 0.5s ease;
 }
 .bd-hud-tl.is-low .bd-enso-k { color: var(--doro); }
-.bd-body { display: flex; align-items: center; gap: 7px; padding-bottom: 7px; font-size: 12px; line-height: 1; letter-spacing: 0; }
+.bd-body { display: flex; align-items: center; gap: 8px; padding-bottom: 7px; font-size: 18px; line-height: 1; letter-spacing: 0; }
 .bd-body-track { position: relative; display: block; width: clamp(84px, 15vw, 132px); height: 5px; }
 .bd-body-track::before {
   content: '';
@@ -360,8 +360,8 @@ html, body {
   position: absolute;
   top: calc(var(--st) + 10px);
   left: 50%;
-  width: min(36vw, 280px);
-  margin-left: calc(min(36vw, 280px) / -2);
+  width: min(48vw, 380px);
+  margin-left: calc(min(48vw, 380px) / -2);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -370,7 +370,7 @@ html, body {
 }
 .bd-hud-tc.is-off { opacity: 0; }
 .bd-petals { display: flex; gap: 9px; }
-.bd-petals svg { width: 11px; height: 16px; fill: rgba(var(--ink-rgb), 0.07); stroke: rgba(var(--ink-rgb), 0.42); stroke-width: 0.9; transition: fill 0.5s ease, stroke 0.5s ease; }
+.bd-petals svg { width: 15px; height: 22px; fill: rgba(var(--ink-rgb), 0.07); stroke: rgba(var(--ink-rgb), 0.42); stroke-width: 0.9; transition: fill 0.5s ease, stroke 0.5s ease; }
 .bd-petals svg.is-lit { fill: var(--shu); stroke: var(--shu); }
 .bd-petals.is-full svg { fill: var(--kin); stroke: var(--kin); }
 .bd-inka-line { position: relative; width: 100%; height: 5px; }
@@ -398,7 +398,7 @@ html, body {
   opacity: 0;
   transition: opacity 0.3s linear;
 }
-.bd-phase { font-size: 12px; line-height: 1.4; letter-spacing: 0.3em; text-indent: 0.3em; white-space: nowrap; color: rgba(var(--ink-rgb), 0.86); }
+.bd-phase { font-size: clamp(16px, 2.6vmin, 22px); font-weight: 600; text-shadow: 0 0 6px var(--paper), 0 0 3px var(--paper); line-height: 1.4; letter-spacing: 0.3em; text-indent: 0.3em; white-space: nowrap; color: var(--ink); }
 
 .bd-hud-bc {
   position: absolute;
@@ -410,8 +410,8 @@ html, body {
   align-items: center;
   gap: 4px;
 }
-.bd-breath { position: relative; width: 70px; height: 70px; }
-.bd-breath svg { position: absolute; inset: 0; width: 100%; height: 100%; fill: none; stroke: rgba(var(--ink-rgb), 0.3); stroke-width: 0.8; stroke-dasharray: 3 4; }
+.bd-breath { position: relative; width: 92px; height: 92px; }
+.bd-breath svg { position: absolute; inset: 0; width: 100%; height: 100%; fill: rgba(var(--paper-rgb), 0.55); stroke: rgba(var(--ink-rgb), 0.55); stroke-width: 1.2; stroke-dasharray: 3 4; }
 .bd-breath-in {
   position: absolute;
   inset: 3px;
@@ -426,12 +426,12 @@ html, body {
   inset: 0;
   display: grid;
   place-items: center;
-  font-size: 19px;
+  font-size: 34px;
   font-weight: 600;
   line-height: 1;
   letter-spacing: 0;
 }
-.bd-hint { min-height: 1.5em; max-width: min(64vw, 520px); font-size: 0.74em; line-height: 1.5; letter-spacing: 0.14em; text-align: center; }
+.bd-hint { min-height: 1.5em; max-width: min(70vw, 640px); font-size: clamp(17px, 2.8vmin, 24px); font-weight: 600; text-shadow: 0 0 6px var(--paper), 0 0 3px var(--paper); line-height: 1.5; letter-spacing: 0.14em; text-align: center; }
 
 .bd-pausebtn {
   position: absolute;
@@ -500,7 +500,7 @@ html, body {
 .bd-touch.bd-hud-on .bd-sub-in { max-width: min(46vw, 560px); padding-left: 28px; padding-right: 28px; }
 .bd-touch .bd-hint { max-width: min(38vw, 420px); }
 .bd-sub-sp { display: block; font-size: 0.72em; line-height: 1.5; letter-spacing: 0.4em; text-indent: 0.4em; color: var(--shu); }
-.bd-sub-tx { font-size: 1.04em; line-height: 1.75; letter-spacing: 0.1em; }
+.bd-sub-tx { font-size: 1.2em; line-height: 1.75; letter-spacing: 0.1em; }
 
 .bd-chap {
   position: absolute;
@@ -1043,7 +1043,7 @@ html, body {
   place-items: center;
   border-radius: 50%;
   color: rgba(var(--ink-rgb), 0.86);
-  font-size: 22px;
+  font-size: 28px;
   font-weight: 600;
   line-height: 1;
   letter-spacing: 0;
@@ -1056,8 +1056,13 @@ html, body {
   cursor: pointer;
 }
 .bd-tc.is-on .bd-tbtn { pointer-events: auto; }
-.bd-tbtn span { position: relative; pointer-events: none; }
-.bd-tbtn-main { font-size: 30px; }
+.bd-tbtn span { position: relative; pointer-events: none; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.bd-tbtn small { font-size: 12px; font-weight: 600; letter-spacing: 0.04em; white-space: nowrap; }
+.bd-tbtn-main small { font-size: 14px; }
+.bd-tbtn.is-cue { animation: bd-cue 0.9s ease-in-out infinite; color: var(--shu); }
+.bd-tbtn.is-cue svg { stroke: var(--shu); stroke-width: 2.4; fill: rgba(181, 67, 46, 0.16); }
+@keyframes bd-cue { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.12); } }
+.bd-tbtn-main { font-size: 38px; }
 .bd-tbtn-main svg { stroke: rgba(181, 67, 46, 0.62); }
 .bd-tbtn.is-down svg { fill: rgba(var(--ink-rgb), 0.3); stroke: rgba(var(--ink-rgb), 0.86); }
 .bd-tbtn.is-down { color: var(--paper); text-shadow: none; }
@@ -1066,7 +1071,7 @@ html, body {
   height: 58px;
   padding: 0 22px;
   border-radius: 0;
-  font-size: 17px;
+  font-size: 21px;
   letter-spacing: 0.2em;
   white-space: nowrap;
   isolation: isolate;
@@ -1086,3 +1091,27 @@ html, body {
 @media (prefers-reduced-motion: reduce) {
   .bd-inka.is-on .bd-inka-seal { animation-duration: 0.01s; animation-delay: 0.3s; }
 }
+
+/* ───── 次の一手の合図（画面中央） ───── */
+.bd-cue {
+  position: absolute; left: 0; right: 0; top: calc(var(--st) + 96px); display: flex; flex-direction: column; align-items: center; gap: 4px;
+  pointer-events: none; opacity: 0; transition: opacity 0.18s ease; text-shadow: 0 0 10px var(--paper), 0 0 4px var(--paper), 0 0 2px var(--paper);
+}
+.bd-cue.is-on { opacity: 1; }
+.bd-cue-main { font-size: clamp(36px, 8.5vmin, 72px); font-weight: 600; letter-spacing: 0.3em; text-indent: 0.3em; line-height: 1.2; color: var(--ink); }
+.bd-cue-sub { font-size: clamp(17px, 3vmin, 26px); font-weight: 600; letter-spacing: 0.14em; color: var(--ink); }
+.bd-cue.is-urgent .bd-cue-main { color: var(--shu); animation: bd-cue 0.5s ease-in-out infinite; }
+
+/* ───── 遊び方 ───── */
+.bd-howto { position: absolute; inset: 0; z-index: 40; display: none; place-items: center; background: rgba(var(--paper-rgb), 0.97); pointer-events: auto; overflow: auto; }
+.bd-howto.is-on { display: grid; }
+.bd-howto-in { width: min(94vw, 980px); padding: calc(var(--st) + 16px) 20px calc(var(--sb) + 16px); }
+.bd-howto h2 { margin: 0 0 0.4em; font-size: clamp(24px, 4.6vmin, 36px); font-weight: 600; letter-spacing: 0.4em; }
+.bd-howto-lead { margin: 0 0 1em; font-size: clamp(17px, 2.7vmin, 22px); line-height: 1.8; }
+.bd-howto-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px 22px; }
+.bd-howto-step { display: grid; grid-template-columns: 64px 1fr; gap: 12px; align-items: center; font-size: clamp(16px, 2.5vmin, 21px); line-height: 1.6; }
+.bd-howto-key { width: 60px; height: 60px; border-radius: 50%; border: 2px solid rgba(var(--ink-rgb), 0.7); display: grid; place-items: center; font-size: 26px; font-weight: 600; background: rgba(var(--paper-rgb), 0.8); }
+.bd-howto-key.shu { border-color: var(--shu); color: var(--shu); }
+.bd-howto-step b { color: var(--shu); }
+.bd-howto-pc { margin-top: 1em; font-size: 17px; color: rgba(var(--ink-rgb), 0.72); line-height: 1.7; }
+.bd-howto-go { display: block; margin: 1.1em auto 0; padding: 0.5em 2.6em; font: 600 clamp(20px, 3.2vmin, 26px) "Shippori Mincho", serif; letter-spacing: 0.4em; color: var(--paper); background: var(--shu); border: 0; border-radius: 3px 6px 4px 7px; cursor: pointer; }

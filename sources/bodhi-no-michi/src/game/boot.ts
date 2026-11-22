@@ -7,6 +7,7 @@ import { createInput } from './input';
 import { createAudio } from './audio';
 import { loadSave, writeSave, resetSave } from './save';
 import { Prologue } from './prologue';
+import { createHowto } from '../ui/howto';
 import type { InputState, Settings } from './contracts';
 
 export async function boot(canvas: HTMLCanvasElement, q: URLSearchParams): Promise<void> {
@@ -14,7 +15,6 @@ export async function boot(canvas: HTMLCanvasElement, q: URLSearchParams): Promi
   const uiRoot = document.getElementById('ui')!;
   let save = loadSave();
   const audio = createAudio();
-  const input = createInput(canvas, uiRoot);
   type Scr = 'title' | 'play' | 'pause' | 'photo';
   let scr: Scr = 'title';
   let vrActive = false;
@@ -35,6 +35,7 @@ export async function boot(canvas: HTMLCanvasElement, q: URLSearchParams): Promi
       audio.sfx('uiSelect');
       if (c === 'new') { const st = save.settings; save = resetSave(); save.settings = st; writeSave(save); void begin('begin'); }
       else if (c === 'continue') void begin(save.checkpoint ? (save.checkpoint.id === 'court' ? 'court' : 'jizo') : 'begin');
+      else if (c === 'howto') void howto.show();
       else if (c === 'chapters') ui.showChapterSelect(save.chapter);
       else if (c === 'zukan') ui.showZukanList(save.zukan);
       else if (c === 'settings') ui.showSettings(save.settings);
@@ -52,8 +53,13 @@ export async function boot(canvas: HTMLCanvasElement, q: URLSearchParams): Promi
     onPhotoExit: () => { game.photo = false; ui.setPhotoMode(false); scr = 'pause'; ui.showPause(); input.setEnabled(false); },
   });
   ctx();
+  const input = createInput(canvas, uiRoot);
 
+  const howto = createHowto(uiRoot);
+  const showHowto = async () => { const was = scr; if (was === 'play') { audio.setDucked(true); input.setEnabled(false); } await howto.show(); if (scr === 'play') { audio.setDucked(false); input.setEnabled(true); } };
+  addEventListener('bodhi-howto', () => { void showHowto(); });
   const game = new Prologue(stage, ui, audio, {
+    onHowto: showHowto,
     onCheckpoint: id => { save.checkpoint = { chapter: 0, id }; writeSave(save); },
     onZukan: async id => { if (!save.zukan.includes(id)) { save.zukan.push(id); writeSave(save); ctx(); } audio.sfx('page'); if (!game.bot) await ui.showZukanCard(id); },
     onInka: async () => {
@@ -99,8 +105,9 @@ export async function boot(canvas: HTMLCanvasElement, q: URLSearchParams): Promi
     await ui.wash(true, 1200);
     location.href = location.pathname + location.search.replace(/[?&](auto|bot)=[^&]*/g, '');
   }
+  function clearCue(): void { howto.setCue(null); input.highlight(null); }
   function resume(): void { ui.hidePause(); scr = 'play'; audio.setDucked(false); input.setEnabled(true); }
-  function pause(): void { if (scr !== 'play' || ui.anyModalOpen) return; scr = 'pause'; ctx(); ui.showPause(); audio.setDucked(true); input.setEnabled(false); }
+  function pause(): void { if (scr !== 'play' || ui.anyModalOpen) return; scr = 'pause'; clearCue(); ctx(); ui.showPause(); audio.setDucked(true); input.setEnabled(false); }
   addEventListener('bodhi-pause', pause);
   document.addEventListener('visibilitychange', () => { if (document.hidden) pause(); });
 
@@ -140,9 +147,10 @@ export async function boot(canvas: HTMLCanvasElement, q: URLSearchParams): Promi
     }
     const inp = vr ? vr.input(dt) : input.update();
     if (scr === 'play') {
-      const frozen = ui.anyModalOpen && !vrActive;
+      const frozen = (ui.anyModalOpen || howto.open) && !vrActive;
       if (!frozen) for (let i = 0; i < speed; i++) game.update(dt, i === 0 ? inp : neutral);
       ui.setHud(game.hud());
+      const cue = vrActive ? null : game.cue(); howto.setCue(cue); input.highlight(cue?.action ?? null);
       input.showContext(game.nearJizo && game.mode === 'explore' ? '手を合わせる' : null, 'interact');
       if (inp.pressed.pause) pause();
     } else if (scr === 'title') {

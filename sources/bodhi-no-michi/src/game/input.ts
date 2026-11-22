@@ -35,7 +35,7 @@ interface TouchButton { el: HTMLElement; action: Action; pointer: number }
 export function createInput(
   canvas: HTMLCanvasElement,
   uiRoot: HTMLElement,
-): Input & { showContext(label: string | null, action: Action): void } {
+): Input & { showContext(label: string | null, action: Action): void; highlight(action: Action | null): void } {
   const ac = new AbortController();
   const sig = { signal: ac.signal } as const;
   const sigActive = { signal: ac.signal, passive: false } as const;
@@ -43,7 +43,8 @@ export function createInput(
   let enabled = true;
   let enabledAt = 0;
   let touchVisible = false;
-  let touchSeen = false;
+  // iPad・iPhone では最初からボタンを出す（iPadOS の Safari は Mac を名乗るので maxTouchPoints で見る）
+  let touchSeen = (navigator.maxTouchPoints ?? 0) > 0 || matchMedia('(pointer: coarse)').matches;
   let usingTouch = false;
 
   const keys = new Set<string>();
@@ -86,6 +87,7 @@ export function createInput(
     el.className = 'bd-tbtn ' + cls;
     el.setAttribute('role', 'button');
     el.innerHTML = RING_SVG + '<span>' + label + '</span>';
+    el.dataset.action = action;
     tc.appendChild(el);
     const b: TouchButton = { el, action, pointer: -1 };
     buttons.push(b);
@@ -113,12 +115,12 @@ export function createInput(
     el.addEventListener('contextmenu', (e) => e.preventDefault(), sig);
     return b;
   };
-  const bLight = makeButton('攻', 'light', 'bd-tbtn-main');
+  const bLight = makeButton('攻<small>せめる</small>', 'light', 'bd-tbtn-main');
   const arc: [TouchButton, number][] = [
-    [makeButton('重', 'heavy', ''), 2],
-    [makeButton('躱', 'dodge', ''), 37],
-    [makeButton('受', 'guard', ''), 72],
-    [makeButton('息', 'breathe', ''), 107],
+    [makeButton('重<small>つよく</small>', 'heavy', ''), 2],
+    [makeButton('躱<small>かわす</small>', 'dodge', ''), 37],
+    [makeButton('受<small>うける</small>', 'guard', ''), 72],
+    [makeButton('息<small>ととのえる</small>', 'breathe', ''), 107],
   ];
   const ctx = makeButton('', 'interact', 'bd-tbtn-ctx');
   ctx.el.hidden = true;
@@ -374,6 +376,10 @@ export function createInput(
     setTouchVisible(b: boolean) {
       touchVisible = b;
       refreshVisible();
+    },
+    /** 次に押すボタンを朱で光らせる（遊び方の手引き） */
+    highlight(action: Action | null) {
+      for (const b of buttons) b.el.classList.toggle('is-cue', action !== null && b.action === action);
     },
     showContext(label: string | null, action: Action) {
       if (label === null || label === '') {

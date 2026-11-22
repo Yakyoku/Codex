@@ -73,7 +73,7 @@ export interface HudState {
   hint: string;       // 操作の手がかり（空なら非表示）
 }
 export interface TitleOpts { canContinue: boolean; vrSupported: boolean }
-export type TitleChoice = 'new' | 'continue' | 'vr' | 'chapters' | 'zukan' | 'settings' | 'gallery';
+export type TitleChoice = 'new' | 'howto' | 'continue' | 'vr' | 'chapters' | 'zukan' | 'settings' | 'gallery';
 export interface UIHandlers {
   onTitle(choice: TitleChoice): void;
   onSettings(s: Settings): void;          // 設定が変わるたび

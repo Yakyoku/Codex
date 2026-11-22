@@ -137,6 +137,7 @@ export function createUI(root: HTMLElement, h: UIHandlers): UI & { setContext(c:
   function showTitle(o: TitleOpts) {
     const items: [TitleChoice, string, boolean][] = [
       ['new', 'はじめから', true],
+      ['howto', '遊び方', true],
       ['continue', 'つづきから', o.canContinue],
       ['vr', '<span class="bd-tcy">VR</span>で遊ぶ<small>（Meta Quest）</small>', o.vrSupported],
       ['chapters', '章を選ぶ', true],
@@ -563,6 +564,7 @@ export function createUI(root: HTMLElement, h: UIHandlers): UI & { setContext(c:
   };
   pauseMenu.append(
     vbutton('つづける', () => pauseAct('resume')),
+    vbutton('遊び方', () => window.dispatchEvent(new CustomEvent('bodhi-howto'))),
     vbutton('静止画モード', () => pauseAct('photo')),
     vbutton('設定', () => {
       if (ctx) showSettings(ctx.settings);

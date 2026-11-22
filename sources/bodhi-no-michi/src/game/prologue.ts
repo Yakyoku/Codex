@@ -54,7 +54,7 @@ const N_PALM = (w: number, s: number): Pose => ({ hips: [0, -0.5 * w + 0.6 * s, 
 const N_STOMP = (w: number, s: number): Pose => ({ spine: [-0.2 * w + 0.4 * s, 0, 0], chest: [-0.3 * w + 0.45 * s, 0, 0], head: [0.3, 0, 0],
   armL: [0, -0.2, 0.9 * w - 1.6 * s], foreL: [0, 0, 1.2 * w - 0.9 * s], armR: [0, 0.2, -0.9 * w + 1.6 * s], foreR: [0, 0, -1.2 * w + 0.9 * s] });
 
-export interface PrologueHooks { onCheckpoint(id: string): void; onZukan(id: string): Promise<void>; onInka(): Promise<void>; onDone(): void; difficulty(): Difficulty; vr(): boolean }
+export interface PrologueHooks { onHowto(): Promise<void>; onCheckpoint(id: string): void; onZukan(id: string): Promise<void>; onInka(): Promise<void>; onDone(): void; difficulty(): Difficulty; vr(): boolean }
 
 export class Prologue {
   scene!: PrologueScene; monk!: Monk; nio: Deity[] = [];
@@ -211,6 +211,7 @@ export class Prologue {
     await this.ui.subtitle('来たか、修行の者。', '阿形', 3000);
     await this.ui.subtitle('力を比べるのではない。息を見よ。<br>阿（あ）で開き、吽（うん）で閉じる。', '阿形', 5200);
     this.cine = null;
+    if (!this.bot) await this.hooks.onHowto();
     await this.beginPhase(1);
     this.busy = false;
   }
@@ -223,9 +224,9 @@ export class Prologue {
     for (const d of this.nio) { d.st = d.active ? 'approach' : 'rest'; d.t = 0; d.lastCycle = this.cycleN + 1; }
     const names = ['', '第一段　阿 ― 開く', '第二段　吽 ― 閉じる', '第三段　阿吽 ― ひとつの息'];
     this.phaseName = names[n];
-    if (n === 1) this.setHint('阿の拍で攻め（攻）、吽の拍で受ける（受）。焦って連打すると心が濁る', 12);
-    if (n === 2) this.setHint('打たれる瞬間に受けると、澄んだ音がする ― 印可が進む', 12);
-    if (n === 3) this.setHint('二尊の息はひとつ。乱れたら間合いを取り、調息（息）を', 12);
+    if (n === 1) this.setHint('中央の文字と、朱く光るボタンに従う', 8);
+    if (n === 2) this.setHint('第二段：吽形。「受ける！」の瞬間に受けると印可が大きく進む', 9);
+    if (n === 3) this.setHint('第三段：二尊が交互に打つ。乱れたら離れて「息」', 9);
   }
   phaseName = '';
 
@@ -251,6 +252,8 @@ export class Prologue {
         // 焦り：間を置かずに打ち続けると心が乱れる
         if (this.time - this.lastAtkEnd < 0.45) this.mind = Math.max(0, this.mind - (heavy ? 0.12 : 0.085));
         this.ps = heavy ? 'heavy' : 'light'; this.pt = 0; this.hitDone = false;
+        { const t = this.nearestActive(); const dur = heavy ? 0.58 : 0.22;
+          this.lungeV = t && this.mode === 'trial' ? Math.min(10, Math.max(0, t.h.pos.distanceTo(mk.pos) - 3.3) / dur) : 0; }
         this.audio.sfx(heavy ? 'swingHeavy' : 'swingLight', { pos: this.p3(mk.pos) });
         mk.kick(Math.sin(mk.yaw) * 1.5, 0.3, Math.cos(mk.yaw) * 1.5);
       } else if (inp.pressed.dodge) {
@@ -295,7 +298,7 @@ export class Prologue {
         faceTgt(); mk.target = atkPose(this.pt, heavy); mk.rate = 26; mk.hipDrop = 0.05;
         const w = heavy ? sm(this.pt / 0.5) : sm(this.pt / 0.16), s = heavy ? sm((this.pt - 0.5) / 0.14) : sm((this.pt - 0.16) / 0.1);
         this.staffEuler.set(-0.9 * w * (heavy ? 1.3 : 0.8) + 2.2 * s, 0, -0.5 * w + 0.5 * s);
-        if (this.pt < hitAt) speed = 0; if (this.pt > hitAt - 0.1 && this.pt < hitAt + 0.05) { speed = 3; wx = Math.sin(mk.yaw); wz = Math.cos(mk.yaw); }
+        speed = this.pt < hitAt + 0.04 ? Math.max(this.lungeV, this.pt > hitAt - 0.1 ? 3 : 0) : 0; wx = Math.sin(mk.yaw); wz = Math.cos(mk.yaw);
         if (!this.hitDone && this.pt >= hitAt) { this.hitDone = true; this.tryHit(heavy); }
         if (this.pt >= dur) { this.ps = 'free'; this.lastAtkEnd = this.time; }
         break;
@@ -328,6 +331,7 @@ export class Prologue {
     for (const d of this.nio) { const dx = nx - d.h.pos.x, dz = nz - d.h.pos.z, dd = Math.hypot(dx, dz), R = 1.9; if (dd < R && dd > 0.001) { nx = d.h.pos.x + (dx / dd) * R; nz = d.h.pos.z + (dz / dd) * R; } }
     mk.pos.x = nx; mk.pos.z = nz;
   }
+  private lungeV = 0;
   private dodgeDir = new THREE.Vector3(); private botDir: THREE.Vector3 | null = null;
   virtue = false;
 
@@ -347,7 +351,7 @@ export class Prologue {
   private tryHit(heavy: boolean): void {
     const mk = this.monk, d = this.nearestActive(); if (!d) return;
     const dx = d.h.pos.x - mk.pos.x, dz = d.h.pos.z - mk.pos.z, dist = Math.hypot(dx, dz);
-    if (dist > 3.9 || Math.abs(angDiff(mk.yaw, Math.atan2(dx, dz))) > 1.2) return;
+    if (dist > 4.8 || Math.abs(angDiff(mk.yaw, Math.atan2(dx, dz))) > 1.3) return;
     const inA = this.beatPhase < 0.5;
     const df = DIFF[this.hooks.difficulty()];
     let gain = (heavy ? 0.1 : 0.045) * (0.35 + 0.65 * this.mind) * (inA ? 1.7 : 0.6) * df.inka;
@@ -567,6 +571,28 @@ export class Prologue {
     this.camPos.lerp(_v2, k); this.camLook.lerp(_v, k);
     cam.position.copy(this.camPos); cam.lookAt(this.camLook);
     if (Math.abs(cam.fov - fov) > 0.05) { cam.fov = damp(cam.fov, fov, 2, dt); cam.updateProjectionMatrix(); }
+  }
+
+  /** 画面中央の「次の一手」。修行（難）では出さない */
+  cue(): import('../ui/howto').Cue | null {
+    if (this.mode !== 'trial' || this.busy || this.photo || this.hooks.difficulty() === 'ascetic') return null;
+    const mk = this.monk;
+    for (const d of this.nio) {
+      if (!((d.st === 'windup' || d.st === 'strike') && !d.struck)) continue;
+      const { r, arc } = this.reach(d);
+      const dx = mk.pos.x - d.h.pos.x, dz = mk.pos.z - d.h.pos.z, dist = Math.hypot(dx, dz);
+      if (dist < r + 0.6 && Math.abs(angDiff(d.h.yaw, Math.atan2(dx, dz))) < arc + 0.25) {
+        if (d.impactIn < 0.5) return { text: '受ける！', sub: '今「受」を押す', action: 'guard', urgent: true };
+        return { text: '構えた', sub: '墨の輪が濃くなったら「受」', action: 'guard', urgent: false };
+      }
+    }
+    if (this.ps === 'hurt') return { text: '崩された', sub: '離れて「息」で整える', action: 'breathe', urgent: false };
+    if (this.mind < 0.4) return { text: '心が濁った', sub: '離れて「息」を長押し', action: 'breathe', urgent: false };
+    const d = this.nearestActive(); if (!d) return null;
+    const dist = d.h.pos.distanceTo(mk.pos);
+    if (dist > 6.2) return { text: '近づく', sub: '左側を指でなぞって、尊格のそばへ', action: null, urgent: false };
+    if (this.beatPhase < 0.5) return { text: '攻める', sub: '「阿」のうちに「攻」', action: 'light', urgent: false };
+    return { text: '待つ', sub: '「吽」は受けの拍 ― 次の「阿」で攻める', action: null, urgent: false };
   }
 
   hud(): HudState {
