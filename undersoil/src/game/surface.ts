@@ -35,7 +35,7 @@ export async function buildSurface(renderer: THREE.WebGPURenderer, base: string,
   const camera = new THREE.PerspectiveCamera(30, 1, 0.3, 600);
   const sun = new THREE.DirectionalLight(0xfff3e2, 3.4); sun.position.copy(sunDir).multiplyScalar(80); scene.add(sun);
   if (opts.shadows) { sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048); const c = sun.shadow.camera; c.left = -22; c.right = 22; c.top = 22; c.bottom = -22; c.near = 10; c.far = 160; sun.shadow.bias = -0.0006; sun.shadow.normalBias = 0.06; sun.shadow.radius = 4; }
-  scene.add(new THREE.HemisphereLight(0xd6e2f2, 0x55402c, 0.5));
+  scene.add(new THREE.HemisphereLight(0xd6e2f2, 0x8a6a4c, 0.6));   // 下からの光は、土の照り返しの色
 
   // 地面：細かい土がつながった面（ground.ts）。その上に、半分埋まった土のかたまりと小石
   const height = makeHeight();
@@ -83,7 +83,6 @@ export async function buildSurface(renderer: THREE.WebGPURenderer, base: string,
     // 模様の座標は、子葉の実際の寸法（幅 約2.25 mm × 長さ 約3.8 mm）に合わせた UV（mm）。圧縮したモデルの座標は mm ではないので使わない
     const pl = vec3(u2.x.mul(2.25), u2.y.mul(3.8), topSide.mul(5.0));
     const blot = saturate(mx_noise_float(pl.mul(1.6)).mul(0.8).add(mx_noise_float(pl.mul(4.3)).mul(0.4)).add(0.5));
-    const pale = vec3(0.62, 0.58, 0.16), rootCol = vec3(0.88, 0.86, 0.78);
     const edgeU = smoothstep(0.36, 0.5, abs(u2.x.sub(0.5))), edgeTip = smoothstep(0.9, 1.0, alongCot);
     const edge = edgeU.add(edgeTip).min(1.0);
     const base = smoothstep(0.35, 0.1, alongCot);                                           // 付け根
@@ -98,21 +97,40 @@ export async function buildSurface(renderer: THREE.WebGPURenderer, base: string,
     // ⑤ 付いた土の粒：まばらな茶色の小さな点
     const speck = smoothstep(0.06, 0.02, mx_worley_noise_float(pl.mul(6.0).add(vec3(7.0, 2.0, 5.0)))).mul(step(0.6, saturate(mx_noise_float(pl.mul(2.0)).add(0.5))));
     cotTop = mix(cotTop, vec3(0.16, 0.10, 0.06), speck.mul(0.85));
-    const cotGreen = mix(mix(vec3(0.28, 0.33, 0.11), vec3(0.36, 0.38, 0.15), blot), cotTop, topSide);   // 裏は淡く、つやが少ない
+    // 裏側（日の当たらない側）も一色ではない（ダイコンの芽生えの写真）：灰色がかった淡い緑のまだら、白っぽい中央の葉脈と細い葉脈の網目、
+    // 白い粉をふいたような鈍い光沢（シーン）、縁のわずかな赤紫。光の点は表より少ない
+    const midU = oneMinus(smoothstep(0.0, 0.06, abs(u2.x.sub(0.5)))).mul(smoothstep(0.12, 0.5, alongCot));
+    const vnet = smoothstep(0.5, 0.85, mx_worley_noise_float(pl.mul(2.6))).mul(smoothstep(0.1, 0.35, abs(u2.x.sub(0.5)).oneMinus())).mul(0.6);
+    let under = mix(vec3(0.21, 0.27, 0.10), vec3(0.32, 0.36, 0.15), blot);
+    under = mix(under, vec3(0.48, 0.50, 0.29), midU.mul(0.65).add(vnet.mul(0.4)).min(1.0));
+    under = mix(under, vec3(0.30, 0.20, 0.13), edgeU.mul(0.35));
+    under = under.mul(mix(float(1.0), float(0.8), base.mul(0.5)));
+    under = mix(under, vec3(0.52, 0.55, 0.42), dots.mul(0.25));
+    const cotGreen = mix(under, cotTop, topSide);
     // 胚軸：淡い緑で半透明。地ぎわはわずかに赤みを帯び、上へ行くほど緑
     const stemGreen = mix(vec3(0.18, 0.12, 0.05), vec3(0.24, 0.30, 0.09), smoothstep(0.3, 0.8, vc.b)).mul(mix(float(0.9), float(1.1), saturate(mx_noise_float(vec3(u2.x.mul(1.2), u2.y.mul(4.0), float(0)).mul(6.0)).add(0.5))));
     const green = mix(stemGreen, cotGreen, isCot);
     // 緑になる順番：光に当たった所から。縁と先が先に緑になり、付け根はしばらく黄色が残る
     const greening = saturate(uGreen.mul(1.3).sub(base.mul(0.3)).sub(oneMinus(isCot).mul(0.15))).mul(aboveGround);
+    // 開く前（まだ光に慣れていない）色：付け根は淡い黄、先と外側ほど黄緑。まだら、縁の明るさ、裏はやや濃い。茎は根元が赤み
+    const rootCol = vec3(0.88, 0.86, 0.78);
+    const paleCot = mix(mix(vec3(0.72, 0.60, 0.17), vec3(0.42, 0.50, 0.10), smoothstep(0.2, 1.0, alongCot)), vec3(0.62, 0.58, 0.24), smoothstep(0.3, 0.8, blot).mul(0.6))
+      .mul(mix(float(1.0), float(0.82), oneMinus(topSide).mul(0.5))).add(vec3(0.08, 0.08, 0.02).mul(edge));
+    const paleStem = mix(vec3(0.42, 0.20, 0.10), vec3(0.62, 0.58, 0.22), smoothstep(0.15, 0.6, vc.b));
+    const pale = mix(paleStem, paleCot, isCot);
     const col = mix(mix(pale, green, greening), rootCol, isRoot);
     pm.colorNode = col;
     // 粗さ：土台はつやなし。光の点だけ鋭く光る
-    pm.roughnessNode = mix(float(0.5), mix(float(0.88), float(0.12), dots.mul(topSide)), isCot);
+    const opened = mix(float(0.88), float(0.12), dots.mul(topSide));
+    pm.roughnessNode = mix(float(0.45), mix(float(0.32), opened, greening), isCot);   // 開く前は、ろうのような強いつや
     pm.metalnessNode = float(0);
     pm.clearcoatNode = dots.mul(isCot).mul(0.35); pm.clearcoatRoughnessNode = float(0.15);
-    pm.sheen = 0.3; pm.sheenRoughness = 0.6; pm.sheenColor = new THREE.Color(0.6, 0.65, 0.45);
+    pm.sheenNode = mix(float(0.15), float(0.6), oneMinus(topSide)).mul(isCot); pm.sheenRoughness = 0.55; pm.sheenColor = new THREE.Color(0.75, 0.8, 0.7);   // 裏は白い粉をふいたような光沢
     // 透け：縁と胚軸は薄いので、光が抜けて明るむ
-    pm.emissiveNode = col.mul(vec3(1.1, 1.1, 0.5)).mul(back.mul(0.6).add(0.12)).mul(mix(float(0.3), edge.mul(0.6), isCot)).mul(aboveGround).mul(oneMinus(isRoot));
+    // 透過光：日の当たらない面には、葉を透けた黄緑の光が届く（薄い子葉は光の一部を通す）。縁と胚軸も薄いので少し明るむ
+    const through = saturate(dot(normalWorld, uSun).negate()).mul(0.8).add(0.2);
+    const transmitted = col.mul(vec3(0.9, 1.05, 0.45)).mul(through).mul(oneMinus(topSide).mul(0.9).add(0.1));   // 葉の模様の色のまま透ける
+    pm.emissiveNode = col.mul(vec3(1.1, 1.1, 0.5)).mul(back.mul(0.5)).mul(mix(float(0.3), edge.mul(0.25), isCot)).add(transmitted.mul(isCot).mul(0.5)).mul(aboveGround).mul(oneMinus(isRoot));
     plant.material = pm; plant.castShadow = true; plant.receiveShadow = true; plant.frustumCulled = false;
   }
   {
@@ -134,7 +152,8 @@ export async function buildSurface(renderer: THREE.WebGPURenderer, base: string,
     const colL = mix(vec3(0.30, 0.42, 0.18), bladeCol, isBlade);
     lm.colorNode = colL; lm.roughnessNode = mix(float(0.5), float(0.72), isBlade); lm.metalnessNode = float(0);
     lm.sheen = 0.25; lm.sheenRoughness = 0.5; lm.sheenColor = new THREE.Color(0.7, 0.8, 0.7);
-    lm.emissiveNode = colL.mul(vec3(1.2, 1.35, 0.6)).mul(back.mul(0.45)).mul(oneMinus(veinNet.mul(0.5)));
+    const thruL = saturate(dot(normalWorld, uSun).abs().oneMinus().mul(0.3).add(back));
+    lm.emissiveNode = colL.mul(vec3(1.2, 1.35, 0.6)).mul(thruL.mul(0.45)).mul(oneMinus(veinNet.mul(0.5)));
     leaf.material = lm; leaf.castShadow = true; leaf.receiveShadow = true; leaf.frustumCulled = false;
   }
   const holder = new THREE.Group(); holder.position.y = height(0, 0) - SEED_DEPTH; holder.rotation.y = 0.6; holder.add(gltf.scene); scene.add(holder);
@@ -169,6 +188,7 @@ export async function buildSurface(renderer: THREE.WebGPURenderer, base: string,
       const g = surf.growth; void t;
       const k = Math.max(0, Math.min(1, (g - 0.7) / 0.3)); const kk = k * k * (3 - 2 * k);   // 本葉が伸びる間だけ、ごくゆっくり引く
       camera.position.set(-9.5 - kk * 2.5, gy + 17.5 + kk * 5.0, 9.0 + kk * 2.0);
+      const sc = new URLSearchParams(location.search).get('scam'); if (sc) { const v = sc.split(',').map(Number); camera.position.set(v[0], gy + v[1], v[2]); camera.lookAt(0, gy + v[3], 0); focusDistance.value = camera.position.distanceTo(new THREE.Vector3(0, gy + v[3], 0)); return; }   // 確認用：?scam=x,y,z,注視の高さ
       camera.lookAt(0.3 - kk * 0.8, gy + 0.6 + kk * 2.2, 0.2 - kk * 0.6);
       focusDistance.value = camera.position.length() - 0.5; // ピントは芽に合わせ続ける
     },
