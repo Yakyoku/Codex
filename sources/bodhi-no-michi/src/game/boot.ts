@@ -105,7 +105,7 @@ export async function boot(canvas: HTMLCanvasElement, q: URLSearchParams): Promi
     await ui.wash(true, 1200);
     location.href = location.pathname + location.search.replace(/[?&](auto|bot)=[^&]*/g, '');
   }
-  function clearCue(): void { howto.setCue(null); input.highlight(null); }
+  function clearCue(): void { howto.setCue(null); howto.hideRing(); input.highlight(null); }
   function resume(): void { ui.hidePause(); scr = 'play'; audio.setDucked(false); input.setEnabled(true); }
   function pause(): void { if (scr !== 'play' || ui.anyModalOpen) return; scr = 'pause'; clearCue(); ctx(); ui.showPause(); audio.setDucked(true); input.setEnabled(false); }
   addEventListener('bodhi-pause', pause);
@@ -151,6 +151,13 @@ export async function boot(canvas: HTMLCanvasElement, q: URLSearchParams): Promi
       if (!frozen) for (let i = 0; i < speed; i++) game.update(dt, i === 0 ? inp : neutral);
       ui.setHud(game.hud());
       const cue = vrActive ? null : game.cue(); howto.setCue(cue); input.highlight(cue?.action ?? null);
+      for (const j of game.takeJudges()) if (!vrActive) howto.judge(j.text, j.sub, j.kind);
+      const tg = vrActive ? null : game.telegraph();
+      if (tg) {
+        const p = tg.pos.clone().project(stage.camera), r = canvas.getBoundingClientRect();
+        const sc = Math.max(0.55, Math.min(1, r.height / 820));
+        howto.setRing((p.x * 0.5 + 0.5) * r.width, (-p.y * 0.5 + 0.5) * r.height, tg.k, tg.hot, sc);
+      } else howto.hideRing();
       input.showContext(game.nearJizo && game.mode === 'explore' ? '手を合わせる' : null, 'interact');
       if (inp.pressed.pause) pause();
     } else if (scr === 'title') {

@@ -220,7 +220,7 @@ export function createUI(root: HTMLElement, h: UIHandlers): UI & { setContext(c:
   const hintEl = q<HTMLElement>('.bd-hint');
 
   // 前回の値（変わったときだけ DOM に触る）
-  const last = { visible: false, mind: -1, body: -1, inka: -1, petals: -1, phaseOn: false, phaseName: '', breath: -1, label: '', hint: '' };
+  const last = { visible: false, mind: -1, body: -1, inka: -1, petals: -1, phaseOn: false, phaseName: '', breath: -1, label: '', hint: '', showBreath: true };
 
   function setHud(s: HudState) {
     if (s.visible !== last.visible) {
@@ -280,6 +280,9 @@ export function createUI(root: HTMLElement, h: UIHandlers): UI & { setContext(c:
       last.label = s.breathLabel;
       breathLabel.textContent = s.breathLabel;
     }
+    // 呼吸の輪は「息」を整えているときだけ出す（試練中は蓮のまわりの輪が合図になる）
+    const showBreath = s.breath > 0.001 || s.breathLabel !== '';
+    if (showBreath !== last.showBreath) { last.showBreath = showBreath; (breathIn.parentElement as HTMLElement).style.visibility = showBreath ? 'visible' : 'hidden'; }
     if (s.hint !== last.hint) {
       last.hint = s.hint;
       hintEl.innerHTML = rich(s.hint);

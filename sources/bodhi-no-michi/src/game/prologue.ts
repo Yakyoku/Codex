@@ -1,5 +1,5 @@
 // 序章「山門」― 金剛力士の試練。学び：呼吸（阿吽）。
-// 阿（開く）で攻め、吽（閉じる）で受ける。連打ではなく、観て・息を合わせて・一手を選ぶ。
+// 観る → 受ける（吽＝閉じる）→ 返す（阿＝開く）。尊格の構えに合わせて輪が縮み、重なった瞬間に受けると隙が生まれる。
 import * as THREE from 'three';
 import type { Stage } from '../engine/stage';
 import { G, blotMaterial } from '../engine/watercolor';
@@ -12,16 +12,20 @@ import type { InputState, UI, HudState, Difficulty, Vec3 } from './contracts';
 type Nio = Humanoid & { kind: NioKind; vajra?: THREE.Mesh };
 type Monk = Humanoid & { staff: THREE.Mesh };
 type PState = 'free' | 'light' | 'heavy' | 'guard' | 'dodge' | 'breathe' | 'hurt' | 'sit' | 'pray';
-type DState = 'rest' | 'approach' | 'windup' | 'strike' | 'recover' | 'receive' | 'calm';
+type DState = 'rest' | 'approach' | 'windup' | 'strike' | 'wave' | 'open' | 'recover' | 'receive' | 'calm';
 type Mode = 'explore' | 'cutscene' | 'trial' | 'done';
 
 interface Deity {
   h: Nio; st: DState; t: number; active: boolean; home: THREE.Vector3; homeYaw: number;
   move: 'smash' | 'palm' | 'stomp'; impactIn: number; struck: boolean; ring: THREE.Mesh; ringMat: THREE.ShaderMaterial; lastCycle: number;
+  wind: number; cool: number; combo: number; feint: number; grace: number; waveR: number; waveHit: boolean; pat: number; spam: number; push: number;
 }
+type Judge = { text: string; sub: string; kind: 'great' | 'good' | 'bad' | 'counter' };
 
-const DIFF: Record<Difficulty, { dmg: number; perfect: number; inka: number }> = {
-  story: { dmg: 0.5, perfect: 0.34, inka: 1.5 }, standard: { dmg: 1, perfect: 0.24, inka: 1 }, ascetic: { dmg: 1.5, perfect: 0.15, inka: 0.8 },
+const DIFF: Record<Difficulty, { dmg: number; perfect: number; inka: number; open: number; wind: number }> = {
+  story: { dmg: 0.5, perfect: 0.36, inka: 1.5, open: 2.0, wind: 1.3 },
+  standard: { dmg: 1, perfect: 0.26, inka: 1, open: 1.5, wind: 1 },
+  ascetic: { dmg: 1.5, perfect: 0.16, inka: 0.8, open: 1.0, wind: 0.78 },
 };
 const _v = new THREE.Vector3(), _v2 = new THREE.Vector3(), _q = new THREE.Quaternion(), _q2 = new THREE.Quaternion(), _e = new THREE.Euler();
 const damp = (a: number, b: number, k: number, dt: number) => a + (b - a) * (1 - Math.exp(-k * dt));
@@ -70,7 +74,12 @@ export class Prologue {
   bot = false; private botAtk = 0;
   /** VR：頭の向き（移動の基準）と外部入力 */
   vrYaw: number | null = null;
-  stats = { perfect: 0, guard: 0, hits: 0, hurt: 0, sat: 0 };
+  stats = { perfect: 0, guard: 0, hits: 0, hurt: 0, sat: 0, counter: 0, evade: 0 };
+  // 手応え：時間の止め・遅回し・揺れ・判定の文字・墨しぶき
+  hitstop = 0; slow = 0; shake = 0; punch = 0; chain = 0; judgeQ: Judge[] = [];
+  /** 最初の一回だけ時間を止めて教える */
+  tut: null | 'parry' | 'counter' = null; tutParry = false; tutCounter = false; tutWave = false; tutFeint = false;
+  private burst!: { mesh: THREE.InstancedMesh; mat: THREE.ShaderMaterial; p: Float32Array; seed: Float32Array; n: number }[];
 
   constructor(private stage: Stage, private ui: UI, private audio: GameAudio, private hooks: PrologueHooks) {
     this.flashMat = blotMaterial({ color: 0xfffaf0, opacity: 0, soft: 0.7, edge: 0.6, billboard: true, white: 0.7 });
@@ -92,10 +101,18 @@ export class Prologue {
       const ringMat = blotMaterial({ color: 0x3f4a66, opacity: 0, soft: 0.25, edge: 0.9 });
       const ring = new THREE.Mesh(new THREE.RingGeometry(0.86, 1, 48).rotateX(-Math.PI / 2), ringMat); ring.renderOrder = 3; ring.visible = false; root.add(ring);
       const home = this.scene.nioHome[i];
-      const d: Deity = { h, st: 'rest', t: 0, active: false, home, homeYaw: i === 0 ? -0.3 : 0.3, move: 'smash', impactIn: 0, struck: false, ring, ringMat, lastCycle: -1 };
+      const d: Deity = { h, st: 'rest', t: 0, active: false, home, homeYaw: i === 0 ? -0.3 : 0.3, move: 'smash', impactIn: 0, struck: false, ring, ringMat, lastCycle: -1, wind: 1, cool: 2, combo: 1, feint: 0, grace: 0, waveR: 0, waveHit: false, pat: 0, spam: 0, push: 0 };
       h.place(home.x, home.z, d.homeYaw); h.target = i === 0 ? NIO_A_STAND : NIO_UN_STAND; h.rate = 5;
       h.onStep = () => { if (d.st === 'approach') this.audio.sfx('stomp', { pos: this.p3(h.pos), gain: 0.35 }); };
       this.nio.push(d);
+    });
+    this.burst = [0x2b3350, 0xb5432e, 0xd9a441].map(col => {
+      const n = 36, mat = blotMaterial({ color: col, opacity: 0.9, soft: 0.45, edge: 0.6, billboard: true });
+      const mesh = new THREE.InstancedMesh(new THREE.PlaneGeometry(2, 2), mat, n);
+      const seed = new Float32Array(n * 4); for (let i = 0; i < n; i++) seed.set([Math.random(), Math.random(), Math.random(), 0], i * 4);
+      mesh.geometry.setAttribute('aSeed', new THREE.InstancedBufferAttribute(seed, 4));
+      mesh.frustumCulled = false; mesh.renderOrder = 21; root.add(mesh);
+      return { mesh, mat, p: new Float32Array(n * 8), seed, n };
     });
     this.monk.place(0.9, 6.5, Math.PI); this.monk.target = MONK_IDLE;
     progress(1, '筆を執ります');
@@ -115,7 +132,20 @@ export class Prologue {
   private setHint(h: string, sec = 7): void { this.hint = h; this.hintT = sec; }
 
   // ───────── 毎フレーム ─────────
-  update(dt: number, inp: InputState): void {
+  update(rdt: number, inp: InputState): void {
+    if (this.bot) inp = this.botInput(inp);
+    // 教える一時停止：求める一手が押されるまで、世界の時間を止める
+    if (this.tut) {
+      const ok = this.tut === 'parry' ? (inp.pressed.guard || inp.held.guard) : (inp.pressed.light || inp.pressed.heavy);
+      if (!ok) { this.updateBursts(rdt); if (!this.hooks.vr()) this.updateCamera(rdt, inp); return; }
+      if (this.tut === 'parry') this.tutParry = true; else this.tutCounter = true;
+      this.tut = null; this.slow = 0.5;
+    }
+    let dt = rdt;
+    if (this.hitstop > 0) { this.hitstop -= rdt; dt = rdt * 0.03; }
+    else if (this.slow > 0) { this.slow -= rdt; dt = rdt * 0.35; }
+    this.updateBursts(dt);
+    this.shake = Math.max(0, this.shake - rdt * 2.2); this.punch = Math.max(0, this.punch - rdt * 3);
     this.time += dt;
     G.uTime.value = this.time;
     // 拍（阿吽の息）：音楽に合わせる
@@ -125,7 +155,6 @@ export class Prologue {
     if (this.beatPhase < this.lastPhase - 0.5) this.cycleN++;
     this.lastPhase = this.beatPhase;
 
-    if (this.bot) inp = this.botInput(inp);
     if (this.mode === 'explore') this.updateExplore(dt, inp);
     if (this.mode !== 'cutscene' || this.ps === 'pray') this.updatePlayer(dt, inp);
     else { this.monk.vel.set(0, 0, 0); this.monk.target = this.ps === 'sit' ? P_SIT : MONK_IDLE; }
@@ -144,8 +173,8 @@ export class Prologue {
     // 受けの閃き（紙の白の染み）
     this.flashT += dt; this.flashMat.uniforms.uOpacity.value = Math.max(0, 0.9 - this.flashT * 3.2);
     this.flash.scale.setScalar(0.5 + this.flashT * 4);
-    if (!this.hooks.vr()) this.updateCamera(dt, inp);
-    this.hintT -= dt;
+    if (!this.hooks.vr()) this.updateCamera(rdt, inp);
+    this.hintT -= rdt;
   }
 
   /** 題字や静止構図のとき：人物と背景だけを生かしておく */
@@ -221,12 +250,12 @@ export class Prologue {
     this.audio.setPhase(n); this.scene.setPhaseLook(n);
     const [a, u] = this.nio;
     a.active = n === 1 || n === 3; u.active = n === 2 || n === 3;
-    for (const d of this.nio) { d.st = d.active ? 'approach' : 'rest'; d.t = 0; d.lastCycle = this.cycleN + 1; }
-    const names = ['', '第一段　阿 ― 開く', '第二段　吽 ― 閉じる', '第三段　阿吽 ― ひとつの息'];
+    for (const d of this.nio) { d.st = d.active ? 'approach' : 'rest'; d.t = 0; d.cool = n === 1 ? 1.6 : 1.2 + (d.h.kind === 'un' && n === 3 ? 1.6 : 0); d.pat = 0; d.spam = 0; }
+    const names = ['', '第一段　阿 ― 受けて、返す', '第二段　吽 ― 間を観る', '第三段　阿吽 ― ひとつの息'];
     this.phaseName = names[n];
-    if (n === 1) this.setHint('中央の文字と、朱く光るボタンに従う', 8);
-    if (n === 2) this.setHint('第二段：吽形。「受ける！」の瞬間に受けると印可が大きく進む', 9);
-    if (n === 3) this.setHint('第三段：二尊が交互に打つ。乱れたら離れて「息」', 9);
+    if (n === 1) this.setHint('輪が縮んで重なった瞬間に「受」→ 隙ができたら「攻」で返す', 9);
+    if (n === 2) this.setHint('吽形は間を外してくる。拍ではなく、輪だけを観る', 9);
+    if (n === 3) this.setHint('二尊が交互に。地を這う波は「躱」でかわす', 9);
   }
   phaseName = '';
 
@@ -348,21 +377,63 @@ export class Prologue {
   }
 
   /** 蓮の一手が届いたか。尊格は傷つかず、金剛杵や腕で受け止める（印可が進む） */
+  private judge(text: string, sub: string, kind: Judge['kind']): void { this.judgeQ.push({ text, sub, kind }); }
+
+  /** 墨しぶき：受け（藍）・返し（朱）・見事（金） */
+  private splash(kind: 0 | 1 | 2, at: THREE.Vector3, n: number, speed: number): void {
+    const b = this.burst[kind];
+    for (let k = 0; k < n; k++) {
+      let i = 0; let best = 9;
+      for (let j = 0; j < b.n; j++) { const life = b.p[j * 8 + 6]; if (life < best) { best = life; i = j; } if (life <= 0) { i = j; break; } }
+      const a = Math.random() * 6.28, e = (Math.random() - 0.3) * 1.4, sp = speed * (0.4 + Math.random() * 0.8);
+      b.p.set([at.x, at.y, at.z, Math.cos(a) * Math.cos(e) * sp, Math.sin(e) * sp + 1.5, Math.sin(a) * Math.cos(e) * sp, 1, 0.12 + Math.random() * 0.3], i * 8);
+    }
+  }
+  private updateBursts(dt: number): void {
+    if (!this.burst) return;
+    const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), sc = new THREE.Vector3(), tr = new THREE.Vector3();
+    for (const b of this.burst) {
+      let any = false;
+      for (let i = 0; i < b.n; i++) {
+        const o = i * 8; let life = b.p[o + 6];
+        if (life > 0) {
+          any = true; life -= dt * 1.6; b.p[o + 6] = life;
+          b.p[o + 4] -= 6 * dt; for (let a = 0; a < 3; a++) { b.p[o + 3 + a] *= Math.exp(-2.5 * dt); b.p[o + a] += b.p[o + 3 + a] * dt; }
+        }
+        const sz = b.p[o + 7] * (1.6 - Math.max(0, life) * 0.6);
+        m4.compose(tr.set(b.p[o], b.p[o + 1], b.p[o + 2]), q, sc.set(sz, sz, 1)); b.mesh.setMatrixAt(i, m4);
+        b.seed[i * 4 + 3] = Math.max(0, life) * 0.5;
+      }
+      b.mesh.visible = any;
+      if (any) { b.mesh.instanceMatrix.needsUpdate = true; (b.mesh.geometry.getAttribute('aSeed') as THREE.BufferAttribute).needsUpdate = true; }
+    }
+  }
+
+  /** 蓮の一手。隙のある尊格には「返し」となり、そうでなければ尊格が受け止める */
   private tryHit(heavy: boolean): void {
     const mk = this.monk, d = this.nearestActive(); if (!d) return;
     const dx = d.h.pos.x - mk.pos.x, dz = d.h.pos.z - mk.pos.z, dist = Math.hypot(dx, dz);
-    if (dist > 4.8 || Math.abs(angDiff(mk.yaw, Math.atan2(dx, dz))) > 1.3) return;
-    const inA = this.beatPhase < 0.5;
+    if (dist > 5.2 || Math.abs(angDiff(mk.yaw, Math.atan2(dx, dz))) > 1.4) return;
     const df = DIFF[this.hooks.difficulty()];
-    let gain = (heavy ? 0.1 : 0.045) * (0.35 + 0.65 * this.mind) * (inA ? 1.7 : 0.6) * df.inka;
-    if (d.st === 'windup' || d.st === 'strike') gain *= 0.4; // 構えの最中は通らない
-    if (this.phase === 2) gain *= 0.6;
-    this.inka = Math.min(1, this.inka + gain); this.stats.hits++;
-    _v.copy(d.h.pos).lerp(mk.pos, 0.35).setY(mk.pos.y + 1.7);
-    this.audio.sfx('hit', { pos: [_v.x, _v.y, _v.z], gain: inA ? 1 : 0.6, pitch: inA ? 1 : 0.85 });
-    this.flash.position.copy(_v); this.flashT = inA ? 0 : 0.12;
+    _v.copy(d.h.pos).lerp(mk.pos, 0.4).setY(mk.pos.y + 1.8);
+    this.stats.hits++;
+    if (d.st === 'open') {
+      // 返し：大きな一手。尊格は傷つかず、金剛杵で受け止めて半歩下がる
+      this.inka = Math.min(1, this.inka + (heavy ? 0.34 : 0.26) * df.inka); this.stats.counter++;
+      this.hitstop = 0.16; this.shake = 0.55; this.punch = 1;
+      this.audio.sfx('hit', { pos: [_v.x, _v.y, _v.z], gain: 1.2 }); this.audio.sfx('bell', { gain: 0.5 });
+      this.splash(1, _v, 22, 7); this.splash(2, _v, 8, 4);
+      this.judge(heavy ? '大返し' : '返し', this.chain > 1 ? `見事 ${this.chain} 連` : '', 'counter');
+      this.flash.position.copy(_v); this.flashT = 0;
+      d.st = 'receive'; d.t = -0.35; d.push = 2.6; d.cool = 1.5;
+      return;
+    }
+    // ふだんの一手：尊格は動じずに受け止める（印可はわずか）
+    this.inka = Math.min(1, this.inka + (heavy ? 0.03 : 0.015) * df.inka);
+    this.audio.sfx('guard', { pos: [_v.x, _v.y, _v.z], gain: 0.7, pitch: 0.8 });
+    this.splash(0, _v, 4, 3); this.flash.position.copy(_v); this.flashT = 0.15;
+    d.spam += 1;
     if (d.st === 'approach' || d.st === 'recover') { d.st = 'receive'; d.t = 0; }
-    if (inA && this.mind > 0.6 && this.hintT <= 0 && this.stats.hits < 4) this.setHint('息が合った', 1.6);
   }
 
   // ───────── 金剛力士 ─────────
@@ -372,71 +443,104 @@ export class Prologue {
     else if (this.body <= 0) void this.sitAgain();
   }
 
+  /** 構えに入る。段と尊格ごとに、攻めの型を順に変える */
+  private startAttack(d: Deity, rebuke = false): void {
+    const df = DIFF[this.hooks.difficulty()], isA = d.h.kind === 'a';
+    const patA: [Deity['move'], number, number][] = [['smash', 1, 0], ['smash', 1, 0], ['smash', 2, 0]];
+    const patU: [Deity['move'], number, number][] = [['palm', 1, 0], ['palm', 1, 0.7], ['stomp', 1, 0], ['palm', 2, 0], ['palm', 1, 0.9], ['stomp', 1, 0]];
+    let [move, combo, feint] = (isA ? patA : patU)[d.pat % (isA ? patA.length : patU.length)];
+    if (this.phase === 1 && d.pat < 2) combo = 1;
+    if (rebuke) { move = isA ? 'smash' : 'palm'; combo = 1; feint = 0; }
+    else d.pat++;
+    const base = rebuke ? 0.85 : this.phase === 1 ? 1.6 : this.phase === 2 ? 1.35 : 1.15;
+    d.move = move; d.combo = combo; d.feint = feint; d.wind = base * df.wind * (move === 'stomp' ? 1.1 : 1);
+    d.impactIn = d.wind; d.st = 'windup'; d.t = 0; d.struck = false; d.grace = 0; d.spam = 0;
+    this.audio.sfx('windup', { pos: this.p3(d.h.pos) });
+    this.audio.sfx(isA ? 'voiceA' : 'voiceUn', { pos: this.p3(d.h.pos), gain: 0.55 });
+    d.h.kick(0, 2.5, 0);
+    if (rebuke) this.setHint('連打すると、戒めの一手が来る。構えを観てから', 4);
+    else if (feint > 0 && !this.tutFeint) { this.tutFeint = true; this.setHint('間を外してくる ― 輪が止まっても、まだ押さない', 5); }
+    else if (move === 'stomp' && !this.tutWave) { this.tutWave = true; this.setHint('地を這う波 ― 届く寸前に「躱」で跳ぶ', 5); }
+  }
+
   private updateDeity(d: Deity, dt: number): void {
     const h = d.h, mk = this.monk, isA = h.kind === 'a';
-    d.t += dt;
+    d.t += dt; d.spam = Math.max(0, d.spam - dt * 0.7);
     const dx = mk.pos.x - h.pos.x, dz = mk.pos.z - h.pos.z, dist = Math.hypot(dx, dz), toP = Math.atan2(dx, dz);
     const turn = (yaw: number, k: number) => { h.yaw += angDiff(h.yaw, yaw) * (1 - Math.exp(-k * dt)); };
-    h.vel.set(0, 0, 0); d.ring.visible = false;
+    h.vel.set(0, 0, 0); d.ring.visible = false; h.hipLean = 0;
     const stand = isA ? NIO_A_STAND : NIO_UN_STAND;
+    const pose = (w: number, s2: number) => d.move === 'smash' ? N_SMASH(w, s2) : d.move === 'palm' ? N_PALM(w, s2) : N_STOMP(w, s2);
     switch (d.st) {
       case 'rest': case 'calm': {
-        // 門の脇へ戻り、構える（calm は構えを解く）
         const hx = d.home.x - h.pos.x, hz = d.home.z - h.pos.z, hd = Math.hypot(hx, hz);
         if (hd > 0.3) { h.vel.set((hx / hd) * 3.2, 0, (hz / hd) * 3.2); turn(Math.atan2(hx, hz), 3); } else turn(d.homeYaw, 2);
         h.target = d.st === 'calm' && hd < 0.5 ? N_CALM : stand; h.rate = 3; h.hipDrop = 0; h.wide = d.st === 'calm' ? 0.1 : 0.5;
         break;
       }
       case 'approach': {
-        turn(toP, 2.2); h.target = stand; h.rate = 4; h.hipDrop = 0.12; h.wide = 0.5;
-        const want = d.h.kind === 'a' ? 4.6 : 5.4;
-        if (dist > want + 0.6) h.vel.set((dx / dist) * 2.6, 0, (dz / dist) * 2.6);
-        else if (dist < want - 1.4) h.vel.set((-dx / dist) * 1.5, 0, (-dz / dist) * 1.5);
-        // 二尊が重ならないように
+        turn(toP, 2.6); h.target = stand; h.rate = 4; h.hipDrop = 0.12; h.wide = 0.5;
+        const want = isA ? 4.0 : 4.5;
+        if (dist > want + 0.5) h.vel.set((dx / dist) * 3.2, 0, (dz / dist) * 3.2);
+        else if (dist < want - 1.2) h.vel.set((-dx / dist) * 1.5, 0, (-dz / dist) * 1.5);
         for (const o of this.nio) if (o !== d && o.active) { const ox = h.pos.x - o.h.pos.x, oz = h.pos.z - o.h.pos.z, od = Math.hypot(ox, oz); if (od < 5.5 && od > 0.01) { h.vel.x += (ox / od) * 1.6; h.vel.z += (oz / od) * 1.6; } }
-        // 拍に合わせて構えに入る：打ち込みは必ず「吽」の拍に届く
-        const every = this.phase === 1 ? 3 : 2;
-        const myTurn = this.phase === 3 ? (this.cycleN % 2 === (isA ? 0 : 1)) : (this.cycleN - d.lastCycle) >= every - 1;
-        if (myTurn && this.cycleN > d.lastCycle && this.beatPhase < 0.12 && dist < 9.5 && !this.busy) {
-          d.st = 'windup'; d.t = 0; d.lastCycle = this.cycleN; d.struck = false;
-          d.move = isA ? 'smash' : (this.phase >= 2 && (this.cycleN % 4 < 2 || dist < 4) ? 'stomp' : 'palm');
-          d.impactIn = (0.5 - this.beatPhase) * this.cycleT + (this.phase === 1 ? this.cycleT : 0);
-          if (this.phase === 1) d.impactIn = (1.5 - this.beatPhase) * this.cycleT;
-          this.audio.sfx('windup', { pos: this.p3(h.pos) });
-          this.audio.sfx(isA ? 'voiceA' : 'voiceUn', { pos: this.p3(h.pos), gain: 0.5 });
-          h.kick(0, 2.5, 0);
-        }
+        d.cool -= dt;
+        const other = this.nio.some(o => o !== d && o.active && (o.st === 'windup' || o.st === 'strike' || o.st === 'wave' || o.st === 'open' || o.st === 'receive'));
+        if (d.spam >= 3 && !this.busy && dist < 8) { this.startAttack(d, true); break; }
+        if (d.cool <= 0 && dist < 6.2 && !other && !this.busy) this.startAttack(d);
         break;
       }
       case 'windup': {
-        d.impactIn -= dt;
-        const total = Math.max(0.5, d.t + d.impactIn), w = sm(d.t / (total * 0.75));
-        if (d.move !== 'stomp') turn(toP, d.impactIn > 0.35 ? 2.5 : 0.3);
-        h.target = d.move === 'smash' ? N_SMASH(w, 0) : d.move === 'palm' ? N_PALM(w, 0) : N_STOMP(w, 0);
-        h.rate = 6; h.hipDrop = 0.1 + 0.15 * w;
-        this.showRing(d, 1 - Math.max(0, d.impactIn) / total);
+        // 間外し：輪が途中で止まり、もう一度縮み始める
+        if (d.feint > 0 && d.impactIn < d.wind * 0.5) d.feint -= dt; else d.impactIn -= dt;
+        const w = sm(1 - d.impactIn / d.wind);
+        if (d.move !== 'stomp') turn(toP, d.impactIn > 0.3 ? 2.8 : 0.4);
+        h.target = pose(w, 0); h.rate = 6; h.hipDrop = 0.1 + 0.15 * w;
+        if (d.move === 'stomp') this.showWave(d, 0.6 + 0.4 * w, 1.2);
+        // 最初の一回は、輪が重なる直前で時間を止めて教える
+        if (this.phase === 1 && !this.tutParry && !this.bot && this.hooks.difficulty() !== 'ascetic' && d.move !== 'stomp' && d.impactIn <= 0.13 && dist < 8) { this.tut = 'parry'; this.ps = 'free'; }
         if (d.impactIn <= 0.11) { d.st = 'strike'; d.t = 0; h.kick(Math.sin(h.yaw) * 4, -1, Math.cos(h.yaw) * 4); }
         break;
       }
       case 'strike': {
         d.impactIn -= dt;
-        const s = sm(d.t / 0.11);
-        h.target = d.move === 'smash' ? N_SMASH(1, s) : d.move === 'palm' ? N_PALM(1, s) : N_STOMP(1, s);
-        h.rate = 30; h.hipDrop = 0.3 * s;
-        this.showRing(d, 1);
-        if (!d.struck && d.impactIn <= 0) { d.struck = true; this.resolveStrike(d, dist, toP); }
-        if (d.t > 0.5) { d.st = 'recover'; d.t = 0; }
+        const s2 = sm(d.t / 0.11);
+        h.target = pose(1, s2); h.rate = 30; h.hipDrop = 0.3 * s2;
+        if (!d.struck && d.impactIn <= 0) { d.struck = true; this.resolveStrike(d, dist); }
+        // 遅れの猶予：打ち込みの直後に受けても「見事」
+        if (d.grace > 0) {
+          d.grace -= dt;
+          if (this.ps === 'guard' && this.time - this.guardPressT < 0.12) { d.grace = 0; this.parried(d, true); }
+          else if (d.grace <= 0) this.struckBy(d);
+        }
+        if (d.t > 0.45 && d.grace <= 0 && d.st === 'strike') this.afterStrike(d);
+        break;
+      }
+      case 'wave': {
+        h.target = pose(1, 1); h.rate = 8;
+        d.waveR += dt * 8.5;
+        this.showWave(d, d.waveR, 0.9);
+        if (!d.waveHit && d.waveR >= dist - 0.3) { d.waveHit = true; this.waveReach(d); }
+        if (d.waveR > 14) this.afterStrike(d);
+        break;
+      }
+      case 'open': {
+        // 隙：受けを崩されてのけぞる（傷つくのではなく、構えが開く）
+        h.target = isA ? N_RECEIVE_A : N_RECEIVE_U; h.rate = 10; h.hipDrop = 0.22; h.hipLean = -0.18; turn(toP, 1);
+        if (this.phase === 1 && !this.tutCounter && !this.bot && this.hooks.difficulty() !== 'ascetic' && d.t > 0.12 && !this.tut) this.tut = 'counter';
+        if (d.t > DIFF[this.hooks.difficulty()].open) { d.st = 'recover'; d.t = 0; d.cool = 0.9; this.chain = 0; }
         break;
       }
       case 'recover': {
         h.target = stand; h.rate = 3; h.hipDrop = 0.1; turn(toP, 1.2);
-        if (d.t > 0.9) { d.st = d.active ? 'approach' : 'rest'; d.t = 0; }
+        if (d.t > 0.7) { d.st = d.active ? 'approach' : 'rest'; d.t = 0; }
         break;
       }
       case 'receive': {
-        // 蓮の一手を、動じずに受け止める
-        h.target = isA ? N_RECEIVE_A : N_RECEIVE_U; h.rate = 16; h.hipDrop = 0.1; turn(toP, 4);
-        if (d.t > 0.45) { d.st = 'approach'; d.t = 0; }
+        // 蓮の一手を受け止める。返しを受けたときは押されて半歩下がる
+        h.target = isA ? N_RECEIVE_A : N_RECEIVE_U; h.rate = 16; h.hipDrop = 0.12; turn(toP, 4);
+        if (d.push > 0) { const k = d.push * dt * 4; h.vel.set((-dx / dist) * k / dt, 0, (-dz / dist) * k / dt); d.push = Math.max(0, d.push - k); }
+        if (d.t > 0.5) { d.st = 'approach'; d.t = 0; }
         break;
       }
     }
@@ -444,50 +548,83 @@ export class Prologue {
     const r = Math.hypot(h.pos.x, h.pos.z); if (d.active && r > COURT_R - 3) { h.pos.x *= (COURT_R - 3) / r; h.pos.z *= (COURT_R - 3) / r; }
   }
 
-  private reach(d: Deity): { r: number; arc: number } { return d.move === 'smash' ? { r: 6.4, arc: 1.0 } : d.move === 'palm' ? { r: 8.2, arc: 0.42 } : { r: 6.2, arc: 4 }; }
-
-  /** 予兆：打ち込みの届く範囲を、地面の墨の輪で示す（よく観れば受けられる） */
-  private showRing(d: Deity, k: number): void {
-    const { r, arc } = this.reach(d), h = d.h;
-    d.ring.visible = true;
-    const fwd = arc < 3 ? r * 0.5 : 0, rad = arc < 3 ? r * 0.5 * (arc < 0.6 ? 0.6 : 1) : r;
-    d.ring.position.set(h.pos.x + Math.sin(h.yaw) * fwd, h.pos.y + 0.06, h.pos.z + Math.cos(h.yaw) * fwd);
-    d.ring.rotation.y = h.yaw; d.ring.scale.set(rad * (arc < 0.6 ? 0.55 : 1) * (0.5 + 0.5 * k), 1, (arc < 3 ? r * 0.5 : r) * (0.5 + 0.5 * k));
-    d.ringMat.uniforms.uOpacity.value = 0.25 + 0.6 * k;
+  /** 地を這う波（墨の輪が広がる） */
+  private showWave(d: Deity, r: number, op: number): void {
+    d.ring.visible = true; d.ring.position.set(d.h.pos.x, d.h.pos.y + 0.06, d.h.pos.z); d.ring.rotation.y = 0;
+    d.ring.scale.set(r, 1, r); d.ringMat.uniforms.uOpacity.value = op;
   }
 
-  private resolveStrike(d: Deity, dist: number, toP: number): void {
-    const { r, arc } = this.reach(d), h = d.h, mk = this.monk;
-    this.audio.sfx('stomp', { pos: this.p3(h.pos), gain: d.move === 'stomp' ? 1 : 0.6 });
-    const inArea = dist < r && Math.abs(angDiff(h.yaw, toP)) < arc;
-    if (!inArea || this.ps === 'sit') return;                 // 間合いの外：当たらない
-    const df = DIFF[this.hooks.difficulty()];
-    _v.copy(mk.pos).setY(mk.pos.y + 1.5);
-    if (this.ps === 'dodge' && this.pt < 0.36) { this.mind = Math.min(1, this.mind + 0.04); return; }
-    if (this.ps === 'guard') {
-      const perfect = this.time - this.guardPressT <= df.perfect;
-      this.flash.position.copy(_v); this.flashT = 0;
-      if (perfect) {
-        this.audio.sfx('perfectGuard', { pos: this.p3(mk.pos) }); this.stats.perfect++;
-        this.mind = Math.min(1, this.mind + 0.14); this.inka = Math.min(1, this.inka + (this.phase === 2 ? 0.14 : 0.08) * df.inka);
-        if (this.stats.perfect <= 2) this.setHint('澄んだ受け ― 吽', 2);
-      } else {
-        this.audio.sfx('guard', { pos: this.p3(mk.pos) }); this.stats.guard++;
-        this.mind = Math.max(0, this.mind - 0.05); this.body = Math.max(0, this.body - 0.035 * df.dmg);
-        this.inka = Math.min(1, this.inka + (this.phase === 2 ? 0.05 : 0.02) * df.inka);
-      }
+  private afterStrike(d: Deity): void {
+    if (d.st === 'open') return;
+    if (d.combo > 1 && d.active && !this.busy) {
+      d.combo--; d.wind = 0.8 * DIFF[this.hooks.difficulty()].wind; d.impactIn = d.wind; d.st = 'windup'; d.t = 0; d.struck = false; d.feint = 0; d.grace = 0;
+      this.audio.sfx('windup', { pos: this.p3(d.h.pos), gain: 0.7 });
       return;
     }
-    // 受け損ねた：傷や血は描かない。体勢が崩れ、心が乱れる
-    this.audio.sfx('hurt', { pos: this.p3(mk.pos) }); this.stats.hurt++;
-    this.body = Math.max(0, this.body - 0.24 * df.dmg); this.mind = Math.max(0, this.mind - 0.22);
-    this.ps = 'hurt'; this.pt = 0;
-    const kx = mk.pos.x - h.pos.x, kz = mk.pos.z - h.pos.z, kl = Math.hypot(kx, kz) || 1; this.dodgeDir.set(kx / kl, 0, kz / kl);
+    d.st = 'recover'; d.t = 0; d.cool = this.phase === 3 ? 1.2 : 1.6;
+  }
+
+  /** 打ち込みの瞬間 */
+  private resolveStrike(d: Deity, dist: number): void {
+    const mk = this.monk, df = DIFF[this.hooks.difficulty()];
+    this.audio.sfx('stomp', { pos: this.p3(d.h.pos), gain: d.move === 'stomp' ? 1 : 0.6 });
+    if (d.move === 'stomp') { d.st = 'wave'; d.t = 0; d.waveR = 1; d.waveHit = false; this.shake = 0.3; return; }
+    if (dist > 7.8 || this.ps === 'sit') return;                       // 間合いの外
+    if (this.ps === 'dodge' && this.pt < 0.4) { this.mind = Math.min(1, this.mind + 0.04); this.stats.evade++; this.judge('見切り', '', 'good'); return; }
+    if (this.ps === 'guard') { this.parried(d, this.time - this.guardPressT <= df.perfect); return; }
+    d.grace = 0.12;                                                   // まだ間に合う
+    void mk;
+  }
+
+  /** 受けた。見事なら尊格に隙が生まれる */
+  private parried(d: Deity, perfect: boolean): void {
+    const mk = this.monk, df = DIFF[this.hooks.difficulty()];
+    _v.copy(mk.pos).lerp(d.h.pos, 0.25).setY(mk.pos.y + 1.6);
+    this.flash.position.copy(_v); this.flashT = 0;
+    if (perfect) {
+      this.stats.perfect++; this.chain++;
+      this.audio.sfx('perfectGuard', { pos: this.p3(mk.pos) });
+      this.mind = Math.min(1, this.mind + 0.15); this.inka = Math.min(1, this.inka + 0.1 * df.inka);
+      this.hitstop = 0.12; this.slow = 0.35; this.shake = 0.3;
+      this.splash(0, _v, 14, 5); this.splash(2, _v, 10, 3);
+      if (d.combo > 1) { this.judge('見事', this.chain > 1 ? `${this.chain} 連` : 'もう一打来る', 'great'); return; }
+      this.judge('見事', this.chain > 1 ? `${this.chain} 連 ― 隙あり` : '隙あり ―「攻」で返す', 'great');
+      d.st = 'open'; d.t = 0;
+    } else {
+      this.stats.guard++; this.chain = 0;
+      this.audio.sfx('guard', { pos: this.p3(mk.pos) });
+      this.mind = Math.max(0, this.mind - 0.04); this.body = Math.max(0, this.body - 0.03 * df.dmg); this.inka = Math.min(1, this.inka + 0.025 * df.inka);
+      this.shake = 0.15; this.splash(0, _v, 5, 3);
+      this.judge('受け', '早すぎた ― 輪が重なる瞬間に', 'good');
+    }
+  }
+
+  /** 受け損ねた：傷や血は描かない。体勢が崩れ、心が乱れる */
+  private struckBy(d: Deity): void {
+    const mk = this.monk, df = DIFF[this.hooks.difficulty()];
+    this.audio.sfx('hurt', { pos: this.p3(mk.pos) }); this.stats.hurt++; this.chain = 0;
+    this.body = Math.max(0, this.body - 0.22 * df.dmg); this.mind = Math.max(0, this.mind - 0.2);
+    this.ps = 'hurt'; this.pt = 0; this.shake = 0.5;
+    const kx = mk.pos.x - d.h.pos.x, kz = mk.pos.z - d.h.pos.z, kl = Math.hypot(kx, kz) || 1; this.dodgeDir.set(kx / kl, 0, kz / kl);
+    this.judge('崩れ', '', 'bad');
+  }
+
+  /** 波が足もとに届いた */
+  private waveReach(d: Deity): void {
+    const df = DIFF[this.hooks.difficulty()];
+    if (this.ps === 'dodge' && this.pt < 0.45) {
+      this.stats.evade++; this.chain++; this.inka = Math.min(1, this.inka + 0.1 * df.inka); this.mind = Math.min(1, this.mind + 0.1);
+      this.audio.sfx('perfectGuard', { pos: this.p3(this.monk.pos), gain: 0.7, pitch: 1.2 }); this.slow = 0.3;
+      _v.copy(this.monk.pos).setY(this.monk.pos.y + 0.3); this.splash(2, _v, 8, 3);
+      this.judge('見切り', '波を跳んだ', 'great');
+    } else if (this.ps === 'guard') this.parried(d, false);
+    else this.struckBy(d);
   }
 
   private async phaseCleared(): Promise<void> {
     this.busy = true;
-    for (const d of this.nio) { if (d.st === 'windup' || d.st === 'strike') d.st = 'recover'; d.t = 0; }
+    this.tut = null;
+    for (const d of this.nio) { if (d.st === 'windup' || d.st === 'strike' || d.st === 'wave' || d.st === 'open') d.st = 'recover'; d.t = 0; d.grace = 0; }
     this.audio.sfx('bell');
     if (this.phase === 1) {
       this.nio[0].active = false; this.nio[0].st = 'rest';
@@ -525,13 +662,14 @@ export class Prologue {
   /** 倒れても罰は軽く：「もう一度、座り直す」。その段の始めから */
   private async sitAgain(): Promise<void> {
     this.busy = true; this.ps = 'sit'; this.stats.sat++;
-    for (const d of this.nio) { if (d.active) { d.st = 'recover'; d.t = -2.5; } }
+    this.tut = null;
+    for (const d of this.nio) { if (d.active) { d.st = 'recover'; d.t = -2.5; d.grace = 0; } }
     await this.wait(0.9);
     await this.ui.wash(true, 900);
     await this.ui.subtitle('もう一度、座り直す。', '', 2200);
     this.monk.place(0, COURT_R - 3, Math.PI);
     this.body = 1; this.mind = 0.8; this.inka = 0; this.ps = 'free';
-    for (const d of this.nio) { d.lastCycle = this.cycleN + 1; }
+    for (const d of this.nio) { d.cool = 2; d.grace = 0; }
     await this.ui.wash(false, 900);
     this.busy = false;
   }
@@ -569,40 +707,63 @@ export class Prologue {
     if (!this.camInit) { this.camPos.copy(_v2); this.camLook.copy(_v); this.camInit = true; }
     const k = 1 - Math.exp(-7 * dt);
     this.camPos.lerp(_v2, k); this.camLook.lerp(_v, k);
-    cam.position.copy(this.camPos); cam.lookAt(this.camLook);
+    cam.position.copy(this.camPos);
+    if (this.shake > 0) { const a = this.shake * this.shake * 0.35; cam.position.x += (Math.random() - 0.5) * a; cam.position.y += (Math.random() - 0.5) * a; }
+    cam.lookAt(this.camLook);
+    fov -= this.punch * 5;
     if (Math.abs(cam.fov - fov) > 0.05) { cam.fov = damp(cam.fov, fov, 2, dt); cam.updateProjectionMatrix(); }
   }
 
-  /** 画面中央の「次の一手」。修行（難）では出さない */
-  cue(): import('../ui/howto').Cue | null {
-    if (this.mode !== 'trial' || this.busy || this.photo || this.hooks.difficulty() === 'ascetic') return null;
-    const mk = this.monk;
+  /** 構えの合図：蓮のまわりに縮む輪（画面上に描く）。k=0→1 で縮み、hot は「今」 */
+  telegraph(): { pos: THREE.Vector3; k: number; hot: boolean } | null {
+    if (this.mode !== 'trial') return null;
+    const df = DIFF[this.hooks.difficulty()];
     for (const d of this.nio) {
-      if (!((d.st === 'windup' || d.st === 'strike') && !d.struck)) continue;
-      const { r, arc } = this.reach(d);
-      const dx = mk.pos.x - d.h.pos.x, dz = mk.pos.z - d.h.pos.z, dist = Math.hypot(dx, dz);
-      if (dist < r + 0.6 && Math.abs(angDiff(d.h.yaw, Math.atan2(dx, dz))) < arc + 0.25) {
-        if (d.impactIn < 0.5) return { text: '受ける！', sub: '今「受」を押す', action: 'guard', urgent: true };
-        return { text: '構えた', sub: '墨の輪が濃くなったら「受」', action: 'guard', urgent: false };
+      if ((d.st === 'windup' || d.st === 'strike') && !d.struck && d.move !== 'stomp' && d.h.pos.distanceTo(this.monk.pos) < 8.5) {
+        const k = Math.min(1, Math.max(0, 1 - d.impactIn / d.wind));
+        return { pos: _v2.copy(this.monk.pos).setY(this.monk.pos.y + 1.0), k, hot: d.impactIn <= df.perfect || !!this.tut };
+      }
+    }
+    return null;
+  }
+
+  /** 画面上部の「次の一手」。修行（難）では、教える一時停止のとき以外は出さない */
+  cue(): import('../ui/howto').Cue | null {
+    if (this.tut === 'parry') return { text: '今！', sub: '輪が重なった ―「受」を押す', action: 'guard', urgent: true };
+    if (this.tut === 'counter') return { text: '返す！', sub: '隙ができた ―「攻」を押す', action: 'light', urgent: true };
+    if (this.mode !== 'trial' || this.busy || this.photo || this.hooks.difficulty() === 'ascetic') return null;
+    const mk = this.monk, df = DIFF[this.hooks.difficulty()];
+    for (const d of this.nio) {
+      if (d.st === 'open') return { text: '返す！', sub: '隙あり ―「攻」', action: 'light', urgent: true };
+      if (d.st === 'wave' && !d.waveHit) {
+        const arrive = (d.h.pos.distanceTo(mk.pos) - d.waveR) / 8.5;
+        return arrive < 0.35 ? { text: '躱す！', sub: '今「躱」で跳ぶ', action: 'dodge', urgent: true } : { text: '波が来る', sub: '届く寸前に「躱」', action: 'dodge', urgent: false };
+      }
+      if (d.st === 'windup' && d.move === 'stomp') return { text: '地を踏む', sub: '波が来る ―「躱」の用意', action: 'dodge', urgent: false };
+      if ((d.st === 'windup' || d.st === 'strike') && !d.struck && d.h.pos.distanceTo(mk.pos) < 8.5) {
+        if (d.impactIn <= df.perfect) return { text: '受ける！', sub: '', action: 'guard', urgent: true };
+        if (d.feint > 0 && d.impactIn < d.wind * 0.5) return { text: '待て', sub: '輪が止まった ― まだ押さない', action: null, urgent: false };
+        return { text: '構えた', sub: '輪が重なる瞬間に「受」', action: 'guard', urgent: false };
       }
     }
     if (this.ps === 'hurt') return { text: '崩された', sub: '離れて「息」で整える', action: 'breathe', urgent: false };
-    if (this.mind < 0.4) return { text: '心が濁った', sub: '離れて「息」を長押し', action: 'breathe', urgent: false };
-    const d = this.nearestActive(); if (!d) return null;
-    const dist = d.h.pos.distanceTo(mk.pos);
-    if (dist > 6.2) return { text: '近づく', sub: '左側を指でなぞって、尊格のそばへ', action: null, urgent: false };
-    if (this.beatPhase < 0.5) return { text: '攻める', sub: '「阿」のうちに「攻」', action: 'light', urgent: false };
-    return { text: '待つ', sub: '「吽」は受けの拍 ― 次の「阿」で攻める', action: null, urgent: false };
+    if (this.mind < 0.35) return { text: '心が濁った', sub: '離れて「息」を長押し', action: 'breathe', urgent: false };
+    const d = this.nearestActive();
+    if (d && d.st === 'approach' && d.h.pos.distanceTo(mk.pos) > 9) return { text: '向き合う', sub: '尊格が近づいてくる ― 構えを観る', action: null, urgent: false };
+    return null;
   }
+
+  /** 判定の文字（「見事」「返し」など）を取り出す */
+  takeJudges(): Judge[] { const j = this.judgeQ; this.judgeQ = []; return j; }
 
   hud(): HudState {
     const trial = this.mode === 'trial';
     const breathing = this.ps === 'breathe';
+    const breath = breathing ? Math.max(0.002, (this.breathHold % 3.2) / 3.2) : 0, label: HudState['breathLabel'] = '';
     return {
       visible: (this.mode === 'explore' || trial) && !this.photo,
       mind: this.mind, body: this.body, inka: trial ? this.inka : 0, phase: trial ? this.phase : 0, phaseName: trial ? this.phaseName : '',
-      breath: trial ? this.beatPhase : breathing ? (this.breathHold % 3.2) / 3.2 : 0,
-      breathLabel: trial ? (this.beatPhase < 0.5 ? '阿' : '吽') : '',
+      breath, breathLabel: label,
       hint: this.hintT > 0 ? this.hint : '',
     };
   }
@@ -618,14 +779,19 @@ export class Prologue {
       else { tz = mk.pos.z - 3; tx = mk.pos.z > STEP_Z0 ? pathX(tz) : 0; }
       this.botDir = _v2.set(tx - mk.pos.x, 0, tz - mk.pos.z).clone();
     } else if (this.mode === 'trial' && !this.busy) {
-      const threat = this.nio.filter(d => (d.st === 'windup' || d.st === 'strike') && !d.struck).sort((a, b) => a.impactIn - b.impactIn)[0];
+      const df = DIFF[this.hooks.difficulty()];
       const d = this.nearestActive();
-      if (threat && threat.impactIn < 0.16) { o.held.guard = true; return o; }
+      if (this.nio.some(x => x.st === 'open') && this.ps === 'free') { o.pressed.light = true; return o; }
+      const wave = this.nio.find(x => x.st === 'wave' && !x.waveHit);
+      if (wave && (wave.h.pos.distanceTo(mk.pos) - wave.waveR) / 8.5 < 0.18) { o.pressed.dodge = true; return o; }
+      const threat = this.nio.filter(x => (x.st === 'windup' || x.st === 'strike') && !x.struck && x.move !== 'stomp').sort((a, b) => a.impactIn - b.impactIn)[0];
+      if (threat && threat.impactIn < Math.min(0.14, df.perfect * 0.6) && !(threat.feint > 0)) { o.held.guard = true; return o; }
+      if (this.ps === 'guard' && threat && threat.impactIn < 0.3) { o.held.guard = true; return o; }
       if (!d) return o;
       const dx = d.h.pos.x - mk.pos.x, dz = d.h.pos.z - mk.pos.z, dist = Math.hypot(dx, dz);
-      if (this.mind < 0.45 && !threat) { o.held.breathe = true; return o; }
-      if (dist > 3.4) this.botDir = new THREE.Vector3(dx, 0, dz);
-      else if (this.beatPhase > 0.04 && this.beatPhase < 0.3 && this.time - this.botAtk > this.cycleT * 0.8 && this.ps === 'free' && !(threat && threat.impactIn < 0.9)) { o.pressed.light = true; this.botAtk = this.time; }
+      if (this.mind < 0.4 && !threat) { o.held.breathe = true; return o; }
+      if (dist > 5.5) this.botDir = new THREE.Vector3(dx, 0, dz);
+      else if (!threat && this.ps === 'free' && this.time - this.botAtk > 2.4) { o.pressed.light = true; this.botAtk = this.time; }
     }
     return o;
   }
