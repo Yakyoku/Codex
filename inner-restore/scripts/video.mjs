@@ -9,7 +9,7 @@ await page.goto(ORIGIN + `/?backend=webgl&sim=${from}`); await waitReady(page, '
 const n = Math.round(+sec * +fps), stepN = Math.round(30 / +fps);
 for (let i = 0; i < n; i++) {
   const f = await page.evaluate((k) => { window.__advance(k); return window.__irFrames; }, stepN);
-  await page.waitForFunction((f0) => window.__irFrames >= f0 + 2, f, { timeout: 120000 });
+  await page.waitForFunction((f0) => window.__irFrames >= f0 + 1, f, { timeout: 120000 });
   await page.screenshot({ path: `${dir}/f${String(i).padStart(4, '0')}.jpg`, type: 'jpeg', quality: 90, timeout: 120000 });
   if (i % 20 === 0) console.log('frame', i, '/', n);
 }
