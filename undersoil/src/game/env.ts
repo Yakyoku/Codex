@@ -20,7 +20,7 @@ export function makeEnvironment(renderer: THREE.WebGPURenderer): THREE.Texture {
 export interface Lights { lamp: THREE.SpotLight; fill: THREE.PointLight; top: THREE.DirectionalLight; hemi: THREE.HemisphereLight; }
 export function addLights(scene: THREE.Scene, camera: THREE.Camera, opts: { shadows: number }): Lights {
   // 主人公のライト：暖色のスポット。影を落とすのはこれだけ
-  const lamp = new THREE.SpotLight(0xffe2bd, 60, 160, 1.0, 0.8, 1.15);
+  const lamp = new THREE.SpotLight(0xffdcb0, 80, 160, 1.0, 0.8, 1.15);
   lamp.position.set(3.2, 2.6, 0.5); lamp.target.position.set(-0.6, -1.2, -14);
   camera.add(lamp); camera.add(lamp.target);
   if (opts.shadows > 0) { lamp.castShadow = true; lamp.shadow.mapSize.set(1024, 1024); lamp.shadow.camera.near = 1; lamp.shadow.camera.far = 90; lamp.shadow.bias = -0.0015; lamp.shadow.normalBias = 0.25; }
