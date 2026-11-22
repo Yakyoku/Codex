@@ -24,8 +24,8 @@ export async function createNio(kind: NioKind): Promise<Humanoid & { vajra?: THR
   const h = new Humanoid(NIO_J, NIO_SCALE) as Humanoid & { vajra?: THREE.Mesh; kind: NioKind };
   h.kind = kind;
   const [body, head, vj] = await Promise.all([loadMesh('nio-body'), loadMesh(kind === 'a' ? 'nio-head-a' : 'nio-head-un'), loadMesh('vajra')]);
-  h.add(body, wcMaterial({ vertexColors: true, noiseScale: 1.9, bands: [0.4, 0.7], dens: [1.85, 1.2, 0.5], mottle: 0.55, grain: 0.45, dry: 0.14, rim: 0.9, sway: 1, wind: 0.22, emph: 1 }));
-  h.add(head, wcMaterial({ vertexColors: true, noiseScale: 1.9, bands: [0.38, 0.68], soft: 0.07, dens: [1.55, 1.15, 0.55], mottle: 0.3, grain: 0.25, dry: 0.05, rim: 0.6, emph: 1 }));
+  h.add(body, wcMaterial({ vertexColors: true, noiseScale: 1.9, bands: [0.4, 0.7], dens: [1.7, 1.1, 0.55], mottle: 0.45, grain: 0.22, dry: 0.14, rim: 0.9, sway: 1, wind: 0.22, emph: 1 }));
+  h.add(head, wcMaterial({ vertexColors: true, noiseScale: 1.9, bands: [0.38, 0.68], soft: 0.07, dens: [1.32, 1.08, 0.6], mottle: 0.25, grain: 0.14, dry: 0.05, rim: 0.6, emph: 1 }));
   if (kind === 'a') {
     h.vajra = new THREE.Mesh(vj, wcMaterial({ vertexColors: true, noiseScale: 4, dens: [1.7, 1.0, 0.3], mottle: 0.5, grain: 0.4, dry: 0.2, emph: 1 }));
     h.vajra.scale.set(1.35, 0.72, 1.35); h.vajra.position.set(-0.1, -0.03, 0); h.vajra.rotation.set(Math.PI / 2, 0, 0);
@@ -42,6 +42,6 @@ export const MONK_IDLE: Pose = { armL: [0.05, 0, -1.3], foreL: [0, -0.25, 0], ar
 /** 金剛力士の構え（阿形：右手の金剛杵を高く振り上げ、左手は開いて下へ張る。腰をひねる） */
 export const NIO_A_STAND: Pose = { hips: [0, 0.3, 0.07], spine: [0.03, -0.12, -0.1], chest: [-0.1, -0.22, -0.05], head: [0.16, 0.2, 0.05],
   armR: [0, 0.3, -0.75], foreR: [0, 0, -1.35], handR: [0, 0, -0.1], armL: [0.3, 0.0, -0.95], foreL: [0, -0.3, 0], handL: [0, 0, 0.9] };
-/** 吽形：左の拳を腰の脇に押し下げ、右手は掌を開いて前へ向ける */
+/** 吽形：左の掌を開いて前へ向け、右の拳を腰の脇に押し下げる */
 export const NIO_UN_STAND: Pose = { hips: [0, -0.3, -0.07], spine: [0.03, 0.12, 0.1], chest: [-0.08, 0.22, 0.05], head: [0.16, -0.2, -0.05],
-  armL: [0.15, 0.15, -1.1], foreL: [0, -0.55, 0], handL: [0, 0, -0.2], armR: [0, 0.5, 0.5], foreR: [0, 0, -1.9], handR: [0, 0, -0.9] };
+  armR: [0.15, -0.15, 1.1], foreR: [0, 0.55, 0], handR: [0, 0, 0.2], armL: [0, -0.5, -0.5], foreL: [0, 0, 1.9], handL: [0, 0, 0.9] };

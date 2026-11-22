@@ -70,22 +70,32 @@ void main(){
   float lc = dot(col, vec3(0.33)), lb = dot(blur, vec3(0.33));
   float poolE = clamp((lb - lc) * 6.0, 0.0, 1.0);
   col *= 1.0 - poolE * 0.22 * uArt.y * fx;
+  // にじみ：水の多い所では色が隣へ染み出す（線の立つ主役は避け、木立・地面・遠景に効かせる）
+  float wet = smoothstep(0.42, 0.75, nz(wp * 0.11 + 0.7).g) * (1.0 - g0.a) * (1.0 - sky);
+  vec3 far4 = (texture(tCol, uv + vec2(5.0, 3.0) * uPx * uScale).rgb + texture(tCol, uv - vec2(5.0, 3.0) * uPx * uScale).rgb
+             + texture(tCol, uv + vec2(-3.0, 5.0) * uPx * uScale).rgb + texture(tCol, uv - vec2(-3.0, 5.0) * uPx * uScale).rgb) * 0.25;
+  col = mix(col, mix(blur, far4, 0.6), wet * 0.75 * uArt.x * fx);
 
-  // 輪郭線：深度と法線の段差。細く、濃淡が揺れ、所々で途切れる。光の当たる側では消える
-  float w = (0.75 + wn.b * 0.9) * uScale;
+  // 墨の線：深度・法線の段差と、塗り分けの境（目・眉・筋）。筆圧で太さと濃さが揺れ、所々でかすれる。
+  float w = (1.0 + wn.b * 1.5) * uScale;
   vec4 gL = texture(tG, uv - vec2(w, 0.0) * uPx), gR = texture(tG, uv + vec2(w, 0.0) * uPx);
   vec4 gD = texture(tG, uv - vec2(0.0, w) * uPx), gU = texture(tG, uv + vec2(0.0, w) * uPx);
   float zc = g0.z;
   float dz = max(max(abs(gL.z - zc), abs(gR.z - zc)), max(abs(gD.z - zc), abs(gU.z - zc))) / max(zc, 0.002);
   float dn = max(max(distance(gL.xy, g0.xy), distance(gR.xy, g0.xy)), max(distance(gD.xy, g0.xy), distance(gU.xy, g0.xy)));
   float lineMask = max(max(gL.a, gR.a), max(max(gD.a, gU.a), g0.a));
-  float e = max(smoothstep(0.035, 0.09, dz), smoothstep(0.32, 0.6, dn) * 0.7);
+  // 塗りの境：元の絵の明るさの段差
+  float l0 = dot(raw, vec3(0.33));
+  float dl = max(max(abs(dot(texture(tCol, uv - vec2(w, 0.0) * uPx).rgb, vec3(0.33)) - l0), abs(dot(texture(tCol, uv + vec2(w, 0.0) * uPx).rgb, vec3(0.33)) - l0)),
+                 max(abs(dot(texture(tCol, uv - vec2(0.0, w) * uPx).rgb, vec3(0.33)) - l0), abs(dot(texture(tCol, uv + vec2(0.0, w) * uPx).rgb, vec3(0.33)) - l0)));
+  float e = max(max(smoothstep(0.03, 0.075, dz), smoothstep(0.2, 0.46, dn) * 0.9), smoothstep(0.13, 0.3, dl) * 0.75 * g0.a);
   vec3 vn = vec3(g0.xy * 2.0 - 1.0, 0.0); vn.z = sqrt(max(1.0 - dot(vn.xy, vn.xy), 0.0));
-  float lit = smoothstep(0.25, 0.85, dot(vn, uLightV));
+  float lit = smoothstep(0.3, 0.9, dot(vn, uLightV));
   vec4 bn = nz(wp * 0.23 + 0.5);
-  float breakup = smoothstep(0.3, 0.62, bn.r * 0.6 + wn.a * 0.4);        // 途切れ
-  float lineA = e * lineMask * breakup * (1.0 - lit * 0.8) * (0.5 + bn.g * 0.6) * uArt2.x;
-  col = mix(col, col * uLineCol * 1.1, clamp(lineA, 0.0, 0.9));
+  float breakup = smoothstep(0.14, 0.42, bn.r * 0.6 + wn.a * 0.4);        // かすれ・途切れ
+  float lineA = e * lineMask * breakup * (1.0 - lit * 0.45) * (0.72 + bn.g * 0.5) * uArt2.x;
+  vec3 ink = mix(col * uLineCol, vec3(0.17, 0.15, 0.24), 0.72);          // 黒ではなく、藍を含んだ墨
+  col = mix(col, ink, clamp(lineA, 0.0, 0.94));
 
   // 紙の端は塗り残す（不定形の白へ溶かす）
   vec2 p = vUv * 2.0 - 1.0;

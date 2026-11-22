@@ -77,7 +77,7 @@ function cedarGeo(seed: number, detail = 1): THREE.BufferGeometry {
   const H = 26;
   const trunk = new THREE.CylinderGeometry(0.2, 0.75, H, 8, 6, true).translate(0, H / 2, 0);
   wobble(trunk, 0.22, 0.35);
-  colorize(trunk, (_x, y) => { const t = y / H; return [0.5 - t * 0.1, 0.42 - t * 0.04, 0.44, 0]; });
+  colorize(trunk, (_x, y) => { const t = y / H; return [0.34 - t * 0.06, 0.29 - t * 0.03, 0.35, 0]; });
   parts.push(trunk);
   // 枝葉は、筆で置いた染みのような丸いかたまりを段に重ねる
   const tiers = 8;
@@ -148,7 +148,7 @@ export async function buildPrologue(): Promise<PrologueScene> {
   { const p = gg.getAttribute('position') as THREE.BufferAttribute; for (let i = 0; i < p.count; i++) p.setY(i, groundY(p.getX(i), p.getZ(i)) - (Math.abs(p.getX(i) - pathX(p.getZ(i))) < 2.6 && p.getZ(i) > STEP_Z0 ? 0.25 : 0)); gg.computeVertexNormals(); }
   colorize(gg, (x, _y, z) => {
     const rr = Math.hypot(x, z), n = fbm(x * 0.09, z * 0.09), court = 1 - Math.min(1, Math.max(0, (rr - COURT_R + 1.5) / 3));
-    const moss: [number, number, number] = [0.44 + n * 0.12, 0.64 + n * 0.06, 0.5], earth: [number, number, number] = [0.72, 0.7, 0.62], stone: [number, number, number] = [0.8, 0.82, 0.8];
+    const moss: [number, number, number] = [0.38 + n * 0.12, 0.6 + n * 0.06, 0.44], earth: [number, number, number] = [0.72, 0.7, 0.62], stone: [number, number, number] = [0.8, 0.82, 0.8];
     const m = Math.min(1, Math.max(0, (n - 0.35) * 3));
     const base = [earth[0] + (moss[0] - earth[0]) * m, earth[1] + (moss[1] - earth[1]) * m, earth[2] + (moss[2] - earth[2]) * m];
     return [base[0] + (stone[0] - base[0]) * court, base[1] + (stone[1] - base[1]) * court, base[2] + (stone[2] - base[2]) * court, 0];
@@ -186,7 +186,7 @@ export async function buildPrologue(): Promise<PrologueScene> {
   group.add(slabI);
 
   // 杉木立
-  const cedarMat = wcMaterial({ vertexColors: true, noiseScale: 0.42, bands: [0.38, 0.7], soft: 0.2, dens: [2.3, 1.45, 0.85], mottle: 1.5, grain: 0.6, dry: 0.45, rim: 0.5, line: 0.35, wind: 0.5, side: THREE.DoubleSide });
+  const cedarMat = wcMaterial({ vertexColors: true, noiseScale: 0.42, bands: [0.38, 0.7], soft: 0.2, dens: [2.3, 1.45, 0.85], mottle: 1.5, grain: 0.6, dry: 0.45, rim: 0.6, line: 0.85, wind: 0.5, side: THREE.DoubleSide });
   const spots: [number, number, number][] = [];
   for (let i = 0; i < 400 && spots.length < 110; i++) {
     const x = (r() - 0.5) * 150, z = -60 + r() * 135;
@@ -197,6 +197,8 @@ export async function buildPrologue(): Promise<PrologueScene> {
     if (spots.some(s => Math.hypot(s[0] - x, s[1] - z) < 5.5)) continue;
     spots.push([x, z, r()]);
   }
+  // 参道の両脇に大杉を並べ、暗い幹で道を縁取る
+  for (let z = STEP_Z0 + 2.5; z < STEP_Z1 + 8; z += 5.2) for (const sg of [1, -1]) { const x = pathX(z) + sg * (4.7 + r() * 2.2); if (Math.hypot(x - (pathX(STEP_Z0 + 13) - 3.1), z - (STEP_Z0 + 13)) > 3) spots.push([x, z + r() * 2, 0.5 + r() * 0.5]); }
   const nearOf = (sp: [number, number, number]) => Math.min(Math.hypot(sp[0], sp[1]), sp[1] > STEP_Z0 ? Math.abs(sp[0] - pathX(sp[1])) + 6 : 99) < 34;
   for (let v = 0; v < 4; v++) {
     const near = v >= 2;
@@ -229,7 +231,7 @@ export async function buildPrologue(): Promise<PrologueScene> {
 
   // 山門
   const gate = new THREE.Group(); gate.position.set(0, 0, GATE_Z);
-  const wood = wcMaterial({ tint: 0xbf8a78, worldAnchor: true, noiseScale: 0.8, bands: [0.42, 0.72], dens: [1.9, 1.05, 0.5], mottle: 1.0, grain: 0.6, dry: 0.3, rim: 0.5, line: 0.9 });
+  const wood = wcMaterial({ tint: 0xbf8a78, worldAnchor: true, noiseScale: 0.8, bands: [0.42, 0.72], dens: [1.9, 1.05, 0.5], mottle: 1.0, grain: 0.32, dry: 0.18, rim: 0.5, line: 0.9 });
   const woodDark = wcMaterial({ tint: 0x7c82a0, worldAnchor: true, noiseScale: 0.8, dens: [1.6, 1.0, 0.6], mottle: 0.9, grain: 0.8, dry: 0.4, line: 0.6 });
   const plaster = wcMaterial({ tint: 0xf3efe6, worldAnchor: true, noiseScale: 0.7, dens: [1.3, 0.7, 0.2], mottle: 0.8, grain: 0.6, dry: 0.3, line: 0.6 });
   const tile = wcMaterial({ vertexColors: true, worldAnchor: true, noiseScale: 0.6, bands: [0.4, 0.74], dens: [1.5, 0.85, 0.35], mottle: 1.1, grain: 0.6, dry: 0.25, rim: 0.7, line: 0.9, side: THREE.DoubleSide });
@@ -255,6 +257,31 @@ export async function buildPrologue(): Promise<PrologueScene> {
   // 石段（門へ上がる三段）
   for (let i = 0; i < 3; i++) add(wobble(new THREE.BoxGeometry(8.5 - i * 0.2, 0.26, 0.7, 8, 1, 1), 0.04, 1.2), stoneM, 0, 0.13 + i * 0.26 - 0.1, 6.2 - i * 0.7);
   group.add(gate);
+
+  // 下草（羊歯）：弧を描く葉を放射状に
+  {
+    const blades: THREE.BufferGeometry[] = [];
+    for (let i = 0; i < 9; i++) {
+      const ang = (i / 9) * 6.28 + r() * 0.5, len = 0.7 + r() * 0.5, seg = 5; const pos: number[] = [], col: number[] = [], idx: number[] = [];
+      for (let k = 0; k <= seg; k++) {
+        const t = k / seg, w = 0.16 * Math.sin(Math.PI * (0.15 + t * 0.85)), rad = len * t, y = Math.sin(t * 2.2) * len * 0.55;
+        const cx = Math.cos(ang), cz = Math.sin(ang);
+        pos.push(cx * rad - cz * w, y, cz * rad + cx * w, cx * rad + cz * w, y, cz * rad - cx * w);
+        const g = 0.52 + t * 0.12 + r() * 0.05; col.push(0.42, g, 0.5, t * 0.6, 0.42, g, 0.5, t * 0.6);
+        if (k < seg) { const o = k * 2; idx.push(o, o + 1, o + 2, o + 1, o + 3, o + 2); }
+      }
+      const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(col, 4)); g.setIndex(idx); g.computeVertexNormals();
+      blades.push(g);
+    }
+    const fern = merge(blades);
+    const fernMat = wcMaterial({ vertexColors: true, noiseScale: 1.2, bands: [0.4, 0.7], soft: 0.12, dens: [2.1, 1.35, 0.7], mottle: 1.3, grain: 0.5, dry: 0.3, rim: 0.3, line: 0.8, wind: 0.25, side: THREE.DoubleSide });
+    const fs: [number, number][] = [];
+    for (let i = 0; i < 150; i++) { const z = STEP_Z0 - 1 + r() * (STEP_Z1 - STEP_Z0 + 6), sg = r() < 0.5 ? -1 : 1; fs.push([pathX(z) + sg * (2.9 + r() * r() * 7), z]); }
+    for (let i = 0; i < 70; i++) { const a2 = r() * 6.28, rad = COURT_R + 0.8 + r() * 6; const x = Math.cos(a2) * rad, z = Math.sin(a2) * rad; if (!(z < GATE_Z + 6 && Math.abs(x) < 12) && !(z > 0 && Math.abs(x) < 3)) fs.push([x, z]); }
+    const fi = new THREE.InstancedMesh(fern, fernMat, fs.length);
+    fs.forEach((f, i) => { const k = 0.45 + r() * 0.6; fi.setMatrixAt(i, m4.compose(tr.set(f[0], groundY(f[0], f[1]) - 0.05, f[1]), q.setFromEuler(new THREE.Euler(0, r() * 6.28, 0)), sc.set(k, k, k))); });
+    fi.frustumCulled = false; group.add(fi);
+  }
 
   // 石灯籠（参道の両脇）
   const lanternParts = [
