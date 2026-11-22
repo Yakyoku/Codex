@@ -56,7 +56,7 @@ export async function buildSurface(renderer: THREE.WebGPURenderer, base: string,
     mesh.castShadow = true; mesh.receiveShadow = true; mesh.computeBoundingSphere(); scene.add(mesh); lifts.push({ mesh, idx, base: bases });
   }
   // 粒の下を埋める土の面（すき間から下が抜けて見えないように）
-  const under = new THREE.Mesh(new THREE.CircleGeometry(220, 48), new THREE.MeshStandardNodeMaterial({ color: 0x1c130c, roughness: 1 })); under.rotation.x = -Math.PI / 2; under.position.y = -1.1; under.receiveShadow = true; scene.add(under);
+  const under = new THREE.Mesh(new THREE.CircleGeometry(220, 48), new THREE.MeshStandardNodeMaterial({ color: 0x2a1c12, roughness: 1, envMapIntensity: 0.15 })); under.rotation.x = -Math.PI / 2; under.position.y = -0.7; under.receiveShadow = true; scene.add(under);
 
   // 芽生え
   const gltf = await loadGLB(base, 'models/plants/clover_seedling.glb');

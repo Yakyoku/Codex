@@ -1,18 +1,25 @@
 {
   "updated": "2026-11-22",
-  "milestone": "第1部 環境と公開経路の確認",
-  "summary": "公開経路（素材づくり → ビルド → Netlify → 各機器のブラウザ）を、土の粒1種類だけの最小構成で最後まで通しました。絵はまだ確認用で、ゲームの見た目ではありません。",
+  "milestone": "M1 見た目の確立（途中）",
+  "summary": "種のまわりの土の一区画で、乾いた土が水を得て目覚めていく様子と、地上でシロツメクサが発芽する様子が動くようになりました。画像はすべてクラウド環境の WebGL 2（互換の画質）で撮ったものです。WebGPU での見た目と、実機での滑らかさは、まだ確かめられていません。コルポダとクマムシのモデルは制作中で、この版には入っていません。",
   "sections": [
-    { "title": "ゲーム画面（この環境の WebGL 2 で撮影）", "note": "クラウド環境には GPU がないため、fps の数字に意味はありません。", "items": [
-      { "src": "./img/part1/part1_screen_webgl2.webp", "caption": "画面版：土の粒（bpy で作成、AO 焼き込み、Draco 圧縮）" },
-      { "src": "./img/part1/part1_vr_webgl2.webp", "caption": "VR 版のページ（VR に入る前の画面）" },
-      { "src": "./img/part1/vr_emul_front.webp", "caption": "VR 版：WebXR エミュレーター（Quest 3 相当）で VR に入った状態" },
-      { "src": "./img/part1/vr_emul_turned.webp", "caption": "VR 版：エミュレーターで頭を左へ向けた状態" },
-      { "src": "./img/part1/part1_diag_webgl2.webp", "caption": "実機診断ページ" } ] },
-    { "title": "モデルの確認用画像（Blender で4方向から描画）", "items": [
-      { "src": "./img/part1/grain_front.webp", "caption": "土の粒（経路確認用）前" },
-      { "src": "./img/part1/grain_right.webp", "caption": "右" },
-      { "src": "./img/part1/grain_back.webp", "caption": "後ろ" },
-      { "src": "./img/part1/grain_top.webp", "caption": "斜め上" } ] }
+    { "title": "プレイ動画（46秒）", "note": "前半：乾いた土に水が広がり、細菌が目覚める。後半：地上で芽が出て、子葉が開く。1コマずつ撮ってつなげたもの（8コマ/秒を補間）。芽生えの色と太さを仕様書に合わせて直す前の版です。", "items": [
+      { "src": "./m1.mp4", "caption": "M1 の流れ（480×270）", "kind": "video" } ] },
+    { "title": "ゲーム画面", "items": [
+      { "src": "./img/m1/s1_dry.webp", "caption": "乾いた土（入口付近）。粉をふいた砂粒と団粒" },
+      { "src": "./img/m1/s2_wet.webp", "caption": "同じ場所の、水を得たあと。水の膜の光沢と、細菌の群れ" },
+      { "src": "./img/m1/s3_wet_pc.webp", "caption": "PC 高画質の密度（WebGL 2 で代用して撮影）" },
+      { "src": "./img/m1/s4_half.webp", "caption": "湿りかけの区画" },
+      { "src": "./img/m1/s5_surface.webp", "caption": "地上：胚軸が伸び、子葉が開きはじめる" },
+      { "src": "./img/m1/s6_surface.webp", "caption": "地上：子葉が開ききる" },
+      { "src": "./img/m1/s7_ui.webp", "caption": "画面版の UI（仮）" },
+      { "src": "./img/m1/vr.webp", "caption": "VR 版：エミュレーター（Quest 3 相当）で、乾いた区画に入った状態" } ] },
+    { "title": "モデルの確認用画像（実物の写真と見比べてください）", "note": "土の粒は Blender で描いた焼き込み元の形。芽生えは、発芽の6段階（種 → 幼根 → かぎ形の胚軸 → 持ち上げ → 子葉が開く → 広がる）。シロツメクサの子葉は「長だ円形、先は丸い、幅は長さの約半分、葉脈は見えない」という仕様（写真4点を見て作成）に合わせています。", "items": [
+      { "src": "./img/m1/grains.webp", "caption": "砂粒（石英）、団粒（初版）、腐植、粘土の薄片" },
+      { "src": "./img/m1/aggregates.webp", "caption": "団粒（作り直した版）" },
+      { "src": "./img/m1/seedling_stages.webp", "caption": "シロツメクサ（Trifolium repens）の発芽の6段階" },
+      { "src": "./img/m1/seedling_close.webp", "caption": "開ききった子葉" } ] },
+    { "title": "第1部（公開経路の確認）", "items": [
+      { "src": "./img/part1/part1_diag_webgl2.webp", "caption": "実機診断ページ" } ] }
   ]
 }

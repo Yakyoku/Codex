@@ -5,7 +5,7 @@ import './diag.css';
 import { createRenderer } from '../core/renderer';
 import { browserName, detectDevice, DEVICE_LABEL, pickTier, rendererPref, TIER_LABEL } from '../core/platform';
 import { FpsMeter } from '../core/fps';
-import { buildMinScene } from './minscene';
+import { createGame } from '../game/game';
 
 const t0 = performance.now();
 const errors: string[] = [];
@@ -33,18 +33,22 @@ async function main() {
   const pref = rendererPref();
   const { renderer, isWebGPU, fallbackReason } = await createRenderer(canvas, pref);
   const tier = pickTier(device, isWebGPU);
-  const dpr = Math.min(devicePixelRatio, 2.5);
+  let dpr = Math.min(devicePixelRatio, 2.5);
   const resize = () => { renderer.setPixelRatio(dpr); renderer.setSize(canvas.clientWidth, canvas.clientHeight, false); camera.aspect = canvas.clientWidth / canvas.clientHeight; camera.updateProjectionMatrix(); };
-  const camera = new THREE.PerspectiveCamera(45, 1, 0.05, 100); camera.position.set(0, 0.5, 5);
-  const { scene, group } = await buildMinScene('../', { count: 300 });
-  resize(); addEventListener('resize', resize);
+  // 実際のゲームの区画（湿った状態）を、その端末の品質段階で描いて測る
+  const game = await createGame(renderer, '../', tier);
+  const { scene, camera, world } = game; game.setWetAll(0.7);
+  renderer.shadowMap.enabled = game.q.shadows > 0;
+  const look = new THREE.Vector3();
+  dpr = Math.min(devicePixelRatio, game.q.maxDpr); resize(); addEventListener('resize', resize);
+  await renderer.compileAsync(scene, camera);
   const loadMs = performance.now() - t0;
   const meter = new FpsMeter(2000);
   let start = 0, done = false;
   $('status').textContent = '計測中…（約' + Math.round(MEASURE_MS / 1000) + '秒）';
   renderer.setAnimationLoop((now: number) => {
-    group.rotation.y = now / 1000 * 0.4;
-    camera.position.x = Math.sin(now / 2500) * 1.5; camera.lookAt(0, 0, 0);
+    const u = 0.15 + 0.6 * (0.5 - 0.5 * Math.cos(now / 4000));
+    world.path.getPointAt(u, camera.position); world.path.getPointAt(u + 0.06, look); camera.position.y += 1; camera.lookAt(look);
     renderer.render(scene, camera);
     if (!start) start = now;
     if (now - start > 800 && !done) meter.tick(now); // 最初の0.8秒は準備として捨てる
@@ -64,6 +68,7 @@ async function main() {
       ブラウザ: browserName(),
       描画方式: (isWebGPU ? 'WebGPU' : 'WebGL 2') + (fallbackReason ? `（${fallbackReason}）` : '') + (pref !== 'auto' ? `［指定:${pref}］` : ''),
       品質段階: TIER_LABEL[tier],
+      場面: `土の区画 ${world.stats.instances} 個 / 三角形 ${Math.round(world.stats.triangles / 1000)}k / 細菌 ${game.swarm.count}`,
       GPU: gpu,
       画面: `${screen.width}×${screen.height} / 表示 ${innerWidth}×${innerHeight} / DPR ${devicePixelRatio}`,
       描画解像度: `${canvas.width}×${canvas.height}`,
@@ -82,8 +87,8 @@ async function main() {
     const tb = $('rows'); tb.innerHTML = '';
     for (const [k, v] of Object.entries(res)) { const tr = document.createElement('tr'); const th = document.createElement('th'); th.textContent = k; const td = document.createElement('td'); td.textContent = v; tr.append(th, td); tb.append(tr); }
     const short = [
-      'UNDERSOIL-DIAG1', DEVICE_LABEL[device], browserName(), isWebGPU ? 'WebGPU' : 'WebGL2' + (fallbackReason ? '(fallback)' : ''),
-      `gpu=${gpu.slice(0, 60)}`, `scr=${screen.width}x${screen.height}@${devicePixelRatio}`, `buf=${canvas.width}x${canvas.height}`,
+      'UNDERSOIL-DIAG2', DEVICE_LABEL[device], browserName(), isWebGPU ? 'WebGPU' : 'WebGL2' + (fallbackReason ? '(fallback)' : ''),
+      `gpu=${gpu.slice(0, 60)}`, `scr=${screen.width}x${screen.height}@${devicePixelRatio}`, `buf=${canvas.width}x${canvas.height}`, `tier=${tier}`, `tri=${Math.round(world.stats.triangles / 1000)}k`,
       `fps=${meter.avg.toFixed(1)}/${meter.low1.toFixed(1)}/${meter.worst.toFixed(1)}`, `load=${(loadMs / 1000).toFixed(2)}s`, `kb=${(bytes / 1024).toFixed(0)}`,
       `mem=${mem ? (mem.usedJSHeapSize / 1048576).toFixed(0) + 'MB' : 'na'}`, `cpu=${navigator.hardwareConcurrency ?? '?'}`, `vr=${vr}`, `err=${errors.length}`,
       new Date().toISOString().slice(0, 16),

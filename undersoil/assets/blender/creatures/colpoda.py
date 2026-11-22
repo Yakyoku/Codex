@@ -30,6 +30,7 @@ VM = math.acos(-YN0) / math.pi     # そのときの v（v: 0=後ろの端、1=�
 V_END = 0.97
 TWIST = 0.3                        # 口より後ろで、列が斜めに回る量（1 あたりの回転数）
 BEND = 0.5                         # そら豆の曲がり
+SHELL_SOFT = 0.5                   # 繊毛の殻のもとにする体の形（口のくぼみを半分ならす）
 CYST_R, CYST_CELL_R = 2.1, 1.78    # シストの外径 42µm（△ 35〜45µm）と、中の細胞
 _n = np.linspace(0, 1, 2001); _k = (np.sin(np.pi * _n) ** 0.8 * (1 + 0.17 * np.cos(np.pi * _n))).max()
 
@@ -92,9 +93,13 @@ def build_shell(nu, nv, name):
     """繊毛の殻。列の番号が不連続になる所（腹側の縫い目と背側）で UV を切る。"""
     U = np.arange(nu) / nu - 0.5; Vv = (np.arange(nv) + 0.5) / nv
     uu, vv = U[None, :], Vv[:, None]
-    P = body(uu, vv, soft=1.0); N = grid_normals(P, axis_pt(Vv)[:, None, :])
-    ow = oral_w(uu, vv); ln = CIL * (1 + 0.35 * ow)          # 口のあたりは、やや長い
-    S = P + N * ln[..., None]
+    P = body(uu, vv, soft=SHELL_SOFT); N = grid_normals(P, axis_pt(Vv)[:, None, :])
+    ow = oral_w(uu, vv); ln = CIL * (1 + 0.15 * ow)          # 口のあたりは、やや長い
+    # くぼみの中では、法線が1点に集まって殻が折れるので、軸から外へ向かう向きを混ぜる
+    R = P - axis_pt(Vv)[:, None, :]; R /= np.maximum(np.linalg.norm(R, axis=2, keepdims=True), 1e-9)
+    wd = np.minimum(1, 1.6 * dent_w(-np.cos(np.pi * vv)) * np.maximum(np.cos(2 * np.pi * uu), 0))[..., None]
+    D = N * (1 - 0.85 * wd) + R * 0.85 * wd; D /= np.linalg.norm(D, axis=2, keepdims=True)
+    S = P + D * ln[..., None]
     p0 = body(0.0, 0.0) + np.array([0, -CIL, 0]); p1 = body(0.0, 1.0) + np.array([0, CIL, 0])
     V = np.concatenate([S.reshape(-1, 3), p0[None], p1[None]])
     F, G = tube_tris(nv, nu); F, G = orient(V, F, G)
@@ -108,7 +113,7 @@ def build_shell(nu, nv, name):
     # 頂点色 = 列の向き（列の番号が一定の線に沿った、前向きの接線）。glTF の座標に直して入れる
     h = 1e-3; sd = np.where(uu >= 0, 1.0, -1.0) + 0 * vv
     uc = np.where(np.abs(uu) < 1e-9, 1e-6, uu) + 0 * vv; vc = vv + 0 * uu
-    Pu = (body(uc + h, vc, 1.0) - body(uc - h, vc, 1.0)) / (2 * h); Pv = (body(uc, vc + h, 1.0) - body(uc, vc - h, 1.0)) / (2 * h)
+    Pu = (body(uc + h, vc, SHELL_SOFT) - body(uc - h, vc, SHELL_SOFT)) / (2 * h); Pv = (body(uc, vc + h, SHELL_SOFT) - body(uc, vc - h, SHELL_SOFT)) / (2 * h)
     ru = (rowcoord(uc + h, vc, sd) - rowcoord(uc - h, vc, sd)) / (2 * h); rv = (rowcoord(uc, vc + h, sd) - rowcoord(uc, vc - h, sd)) / (2 * h)
     t = Pv * ru[..., None] - Pu * rv[..., None]; t /= np.maximum(np.linalg.norm(t, axis=2, keepdims=True), 1e-9)
     t = np.concatenate([t.reshape(-1, 3), [[0, 1, 0]], [[0, 1, 0]]])
