@@ -1,0 +1,132 @@
+"""土の粒一式（石英・団粒・腐植・粘土の薄片）。高解像度の形 → ローポリへ法線と AO を焼き込み、LOD 付きで書き出す。
+実行: python3 assets/blender/soil_grains.py [--only quartz_a] [--size 512]
+出力: assets/out/grains/<name>.glb（LOD0/LOD1）、assets/out/grains/<name>_na.png（RG=法線 xy、B=AO）、assets/preview/grain_<name>_*.png"""
+import bpy, bmesh, sys, os, math, random, time
+import numpy as np
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'lib'))
+from common import *
+from mathutils import Vector, noise
+
+args = sys.argv[1:]
+ONLY = args[args.index('--only') + 1] if '--only' in args else None
+SIZE = int(args[args.index('--size') + 1]) if '--size' in args else 512
+PREVIEW = '--no-preview' not in args
+GOUT = os.path.join(OUT, 'grains'); os.makedirs(GOUT, exist_ok=True)
+
+def ico(sub=6, r=1.0):
+    bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=sub, radius=r)
+    return bpy.context.object
+
+def plane_cuts(obj, n, rng, depth=(0.55, 0.9)):
+    """石英の割れ面：ランダムな平面で切り落として、角ばった面を作る"""
+    bm = bmesh.new(); bm.from_mesh(obj.data)
+    for _ in range(n):
+        d = Vector((rng.uniform(-1, 1), rng.uniform(-1, 1), rng.uniform(-1, 1))).normalized()
+        geom = bm.verts[:] + bm.edges[:] + bm.faces[:]
+        r = bmesh.ops.bisect_plane(bm, geom=geom, plane_co=d * rng.uniform(*depth), plane_no=d, clear_outer=True)
+        edges = [e for e in r['geom_cut'] if isinstance(e, bmesh.types.BMEdge)]
+        if edges: bmesh.ops.contextual_create(bm, geom=edges)
+    bmesh.ops.triangulate(bm, faces=bm.faces[:])
+    bm.to_mesh(obj.data); bm.free()
+
+def remesh(obj, voxel):
+    m = obj.modifiers.new('rm', 'REMESH'); m.mode = 'VOXEL'; m.voxel_size = voxel; m.use_smooth_shade = True
+    bpy.context.view_layer.objects.active = obj; bpy.ops.object.modifier_apply(modifier='rm')
+
+def smooth(obj, it=4, f=0.5):
+    m = obj.modifiers.new('sm', 'SMOOTH'); m.iterations = it; m.factor = f
+    bpy.context.view_layer.objects.active = obj; bpy.ops.object.modifier_apply(modifier='sm')
+
+def join(objs):
+    bpy.ops.object.select_all(action='DESELECT')
+    for o in objs: o.select_set(True)
+    bpy.context.view_layer.objects.active = objs[0]; bpy.ops.object.join(); return bpy.context.object
+
+def make_quartz(seed):
+    rng = random.Random(seed)
+    o = ico(5); o.scale = (1.0, rng.uniform(0.7, 0.9), rng.uniform(0.6, 0.85)); bpy.ops.object.transform_apply(scale=True)
+    plane_cuts(o, 9, rng)
+    remesh(o, 0.022); smooth(o, 3, 0.6)   # 角を少し丸める（風化）
+    displace_noise(o, [(1.3, 0.05, 'n'), (5.0, 0.012, 'n'), (22.0, 0.004, 'ridge'), (60.0, 0.0015, 'n')], seed)
+    return o
+
+def make_aggregate(seed):
+    """団粒：シルトや粘土の細かい粒が、有機物の糊でゆるく固まった塊。大小の粒と、すき間（孔）がある"""
+    rng = random.Random(seed); parts = []
+    core = ico(3, 0.5); core.scale = (1.0, 0.9, 0.8); parts.append(core)
+    for i in range(rng.randint(70, 84)):
+        d = Vector((rng.gauss(0, 1), rng.gauss(0, 1), rng.gauss(0, 0.85))).normalized() * (0.28 + 0.38 * rng.random() ** 0.7)
+        big = rng.random() < 0.18
+        p = ico(2, rng.uniform(0.2, 0.28) if big else rng.uniform(0.09, 0.17)); p.location = d
+        p.scale = (rng.uniform(0.6, 1.3), rng.uniform(0.6, 1.3), rng.uniform(0.5, 1.1))
+        p.rotation_euler = (rng.uniform(0, 3), rng.uniform(0, 3), rng.uniform(0, 3)); parts.append(p)
+    o = join(parts); bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+    remesh(o, 0.02); smooth(o, 1, 0.4)
+    displace_noise(o, [(2.2, 0.07, 'n'), (7.0, 0.035, 'ridge'), (18.0, 0.02, 'n'), (45.0, 0.008, 'ridge'), (90.0, 0.003, 'n')], seed)
+    return o
+
+def make_humus(seed):
+    """腐植：分解の進んだ有機物のかけら。平たく、ぼろぼろで、穴の多い形"""
+    rng = random.Random(seed)
+    o = ico(6); o.scale = (1.0, rng.uniform(0.6, 0.8), rng.uniform(0.3, 0.42)); bpy.ops.object.transform_apply(scale=True)
+    displace_noise(o, [(1.6, 0.22, 'n'), (4.5, 0.1, 'ridge'), (12.0, 0.05, 'ridge'), (34.0, 0.016, 'n'), (80.0, 0.005, 'n')], seed)
+    return o
+
+def make_clay(seed):
+    """粘土鉱物の薄片：六角に近い薄い板が、ずれて重なった束"""
+    rng = random.Random(seed); parts = []
+    for i in range(rng.randint(5, 8)):
+        bpy.ops.mesh.primitive_cylinder_add(vertices=6, radius=rng.uniform(0.6, 1.0), depth=rng.uniform(0.035, 0.06))
+        p = bpy.context.object
+        p.location = (rng.uniform(-0.25, 0.25), rng.uniform(-0.25, 0.25), i * 0.075 - 0.25)
+        p.rotation_euler = (rng.uniform(-0.12, 0.12), rng.uniform(-0.12, 0.12), rng.uniform(0, 3.14))
+        p.scale = (1, rng.uniform(0.7, 1.0), 1); parts.append(p)
+    o = join(parts); bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+    remesh(o, 0.016)
+    displace_noise(o, [(3.0, 0.012, 'n'), (16.0, 0.004, 'n')], seed)
+    return o
+
+SPECS = [  # 名前, 作る関数, 種, LOD0 の面数, LOD1 の面数
+    ('quartz_a', make_quartz, 1, 2200, 420), ('quartz_b', make_quartz, 2, 2200, 420), ('quartz_c', make_quartz, 5, 2200, 420),
+    ('aggregate_a', make_aggregate, 3, 3000, 600), ('aggregate_b', make_aggregate, 8, 3000, 600), ('aggregate_c', make_aggregate, 11, 3000, 600),
+    ('humus_a', make_humus, 4, 2400, 480), ('humus_b', make_humus, 9, 2400, 480),
+    ('clay_a', make_clay, 6, 900, 220),
+]
+
+def lowpoly(high, name, tris):
+    lo = high.copy(); lo.data = high.data.copy(); lo.name = name; bpy.context.scene.collection.objects.link(lo)
+    m = lo.modifiers.new('dec', 'DECIMATE'); m.ratio = min(1.0, tris / max(1, len(lo.data.polygons)))
+    bpy.context.view_layer.objects.active = lo; bpy.ops.object.modifier_apply(modifier='dec')
+    bpy.ops.object.select_all(action='DESELECT'); lo.select_set(True); bpy.ops.object.shade_smooth()
+    return lo
+
+for name, fn, seed, t0n, t1n in SPECS:
+    if ONLY and name != ONLY: continue
+    t = time.time(); reset()
+    high = fn(seed); high.name = name + '_high'
+    bpy.ops.object.select_all(action='DESELECT'); high.select_set(True); bpy.context.view_layer.objects.active = high; bpy.ops.object.shade_smooth()
+    # 大きさをそろえる（最大半径 1）
+    r = max(v.co.length for v in high.data.vertices); high.scale = (1 / r,) * 3; bpy.ops.object.transform_apply(scale=True)
+    mat = bpy.data.materials.new('m'); mat.use_nodes = True; high.data.materials.append(mat)
+    lod0 = lowpoly(high, name + '_LOD0', t0n); lod1 = lowpoly(high, name + '_LOD1', t1n)
+    for lo in (lod0, lod1):
+        lo.data.materials.clear(); m2 = bpy.data.materials.new(lo.name); m2.use_nodes = True; lo.data.materials.append(m2)
+        bpy.ops.object.select_all(action='DESELECT'); smart_uv(lo, 0.03)
+    # LOD0 に高解像度の形から法線と AO を焼く。LOD1 は同じ焼き方で別の画像（小さめ）
+    for lo, size, tag in ((lod0, SIZE, ''), (lod1, SIZE // 2, '_lod1')):
+        nrm = bake(lo, 'NORMAL', size, samples=1, highpoly=high, cage=0.06)
+        ao = bake(lo, 'AO', size, samples=32, highpoly=high, cage=0.06)
+        n = np.array(nrm.pixels[:], dtype=np.float32).reshape(size, size, 4); a = np.array(ao.pixels[:], dtype=np.float32).reshape(size, size, 4)
+        out = np.ones((size, size, 4), dtype=np.float32); out[..., 0] = n[..., 0]; out[..., 1] = n[..., 1]; out[..., 2] = a[..., 0]
+        img = bpy.data.images.new('na', size, size, alpha=False); img.colorspace_settings.name = 'Non-Color'
+        img.pixels = out.ravel().tolist(); save_image(img, os.path.join(GOUT, f'{name}{tag}_na.png'))
+    export_glb(os.path.join(GOUT, name + '.glb'), [lod0, lod1], draco=False)
+    if PREVIEW:
+        # 確認用：高解像度の形を4方向から描く（焼き込み元の形そのもの）
+        b = mat.node_tree.nodes['Principled BSDF']
+        col = {'q': (0.55, 0.52, 0.47, 1), 'a': (0.16, 0.10, 0.06, 1), 'h': (0.035, 0.025, 0.018, 1), 'c': (0.42, 0.36, 0.28, 1)}[name[0]]
+        b.inputs['Base Color'].default_value = col; b.inputs['Roughness'].default_value = 0.35 if name[0] == 'q' else 0.8
+        lod0.hide_render = True; lod1.hide_render = True
+        from common import PREVIEW as PV
+        render_views([high], os.path.join(PV, 'grain_' + name), size=320, samples=12)
+    print(f'[grain] {name} high={len(high.data.polygons)} lod0={len(lod0.data.polygons)} lod1={len(lod1.data.polygons)} {time.time()-t:.1f}s')

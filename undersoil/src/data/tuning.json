@@ -1,0 +1,19 @@
+{
+  "soil": {
+    "_comment": "土の活力システムの調整値。単位は秒と 0〜1。",
+    "vitalityWeights": { "water": 0.4, "microbes": 0.35, "structure": 0.25 },
+    "waterSpreadRate": 0.35,
+    "waterSpreadThreshold": 0.25,
+    "dryRate": 0.004,
+    "microbeWakeWater": 0.3,
+    "microbeGrowRate": 0.22,
+    "microbeDormRate": 0.5,
+    "microbeBase": 0.25,
+    "carbonUseRate": 0.05,
+    "structureGainRate": 0.03,
+    "structureMicrobeMin": 0.4,
+    "nutrientGainRate": 0.04,
+    "awakenThreshold": 0.7,
+    "rootThreshold": 0.55
+  }
+}

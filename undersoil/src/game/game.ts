@@ -1,0 +1,31 @@
+// 画面版と VR 版で共通のゲーム本体。差し替えるのは、カメラ・操作・UI・描画の密度だけ。
+import * as THREE from 'three/webgpu';
+import quality from '../data/quality.json';
+import type { QualityTier } from '../core/platform';
+import { buildWorld, type World } from './world';
+import { addLights, makeEnvironment, type Lights } from './env';
+
+export interface Game { scene: THREE.Scene; camera: THREE.PerspectiveCamera; world: World; lights: Lights; tier: QualityTier; q: (typeof quality)['pc-high']; update(dt: number, t: number): void; setWetAll(v: number): void; }
+
+export async function createGame(renderer: THREE.WebGPURenderer, base: string, tier: QualityTier): Promise<Game> {
+  const q = (quality as Record<string, (typeof quality)['pc-high']>)[tier];
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x020201);
+  scene.fog = new THREE.FogExp2(0x040302, 0.017);
+  const camera = new THREE.PerspectiveCamera(58, 1, 0.08, 400);
+  const world = await buildWorld(base, { grainLod: q.grainLod as 0 | 1, density: q.grainCount, cheap: tier === 'vr' });
+  scene.add(world.group);
+  scene.environment = makeEnvironment(renderer);
+  scene.environmentIntensity = 0.55;
+  const lights = addLights(scene, camera, { shadows: q.shadows });
+  let acc = 0, syncT = 0;
+  return {
+    scene, camera, world, lights, tier, q,
+    update(dt, _t) {
+      acc += Math.min(dt, 0.1);
+      while (acc >= 0.1) { world.grid.step(0.1); acc -= 0.1; }
+      syncT += dt; if (syncT > 0.15) { syncT = 0; world.syncWetness(); }
+    },
+    setWetAll(v) { for (const c of world.grid.cells) { c.water = v; c.structure = 0.15 + 0.85 * v; c.microbes = v; c.carbon = v; } world.syncWetness(); },
+  };
+}

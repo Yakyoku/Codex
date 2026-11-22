@@ -1,0 +1,6 @@
+{
+  "pc-high":     { "maxDpr": 2.0, "drawCalls": 400, "triangles": 1500000, "swarm": 30000, "swarmGpu": true,  "shadows": 2, "post": ["bloom", "dof", "grade", "vignette", "grain"], "refraction": "screen", "grainLod": 0, "grainCount": 1.0, "particles": 1.0 },
+  "mobile-high": { "maxDpr": 2.0, "drawCalls": 250, "triangles": 800000,  "swarm": 15000, "swarmGpu": true,  "shadows": 1, "post": ["bloom", "dof-lite", "grade", "vignette", "grain"], "refraction": "screen-half", "grainLod": 0, "grainCount": 0.8, "particles": 0.7 },
+  "compat":      { "maxDpr": 1.5, "drawCalls": 200, "triangles": 500000,  "swarm": 3000,  "swarmGpu": false, "shadows": 1, "post": ["bloom-lite", "grade", "vignette"], "refraction": "env", "grainLod": 1, "grainCount": 0.7, "particles": 0.5 },
+  "vr":          { "maxDpr": 1.0, "drawCalls": 120, "triangles": 400000,  "swarm": 2000,  "swarmGpu": false, "shadows": 0, "post": [], "refraction": "env", "grainLod": 1, "grainCount": 0.55, "particles": 0.3 }
+}

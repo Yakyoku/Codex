@@ -1,0 +1,16 @@
+{
+  "_comment": "ステージ1 の区画の配置。1 単位 = 10 µm。",
+  "seed": 20261122,
+  "cells": 12,
+  "path": [[0, 0, 0], [16, -2, 7], [33, 1, -5], [50, -3, 5], [66, -6, -4], [82, -8, 3], [96, -9, 0]],
+  "corridor": 6.5,
+  "shell": 44,
+  "box": [-40, 140, -55, 45, -55, 55],
+  "bigTries": 2600,
+  "bigRadius": [10, 24],
+  "midCount": 700, "midRadius": [1.6, 5.5],
+  "smallCount": 2600, "smallRadius": [0.35, 1.5],
+  "clayCount": 1800, "clayRadius": [0.3, 1.1],
+  "seedCenter": [150, -14, 0],
+  "seedRadii": [52, 44, 48]
+}
