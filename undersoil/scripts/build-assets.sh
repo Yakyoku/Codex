@@ -12,3 +12,8 @@ if [ "$what" = all ] || [ "$what" = grains ]; then
   for f in assets/out/grains/*_na.png; do convert "$f" -quality 90 -define webp:method=6 "public/models/grains/$(basename "${f%.png}").webp"; done
   du -sh public/models/grains
 fi
+if [ "$what" = all ] || [ "$what" = plants ]; then
+  python3 assets/blender/clover_seedling.py 2>&1 | grep -E "^\[|Error|Traceback" || true
+  mkdir -p public/models/plants
+  for f in assets/out/plants/*.glb; do opt "$f" "public/models/plants/$(basename "$f")"; done
+fi

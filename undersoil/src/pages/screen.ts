@@ -9,6 +9,7 @@ import { createGame } from '../game/game';
 import { makeFreeControls } from '../game/controls';
 import { makeDemo } from '../game/demo';
 import { makePost } from '../game/post';
+import { buildSurface, type Surface } from '../game/surface';
 import { makeHud } from './hud';
 
 const errors: string[] = [];
@@ -41,7 +42,9 @@ async function main() {
   const resize = () => {
     renderer.setPixelRatio(Math.min(devicePixelRatio, game.q.maxDpr)); renderer.setSize(innerWidth, innerHeight, false);
     camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
+    if (surfaceCam) { surfaceCam.aspect = innerWidth / innerHeight; surfaceCam.updateProjectionMatrix(); }
   };
+  let surfaceCam: THREE.PerspectiveCamera | null = null;
   addEventListener('resize', resize); addEventListener('orientationchange', resize); resize();
   if (device === 'quest') $('toVR').classList.add('primary');
 
@@ -50,6 +53,16 @@ async function main() {
   const freeze = Number(Q.get('freeze') ?? 0);
   const testing = camT !== null || dbg !== null || freeze > 0;
   if (wetQ !== null) game.setWetAll(Number(wetQ));
+  // 地上の場面（?scene=surface&g=0..1 で直接確認できる）
+  const surface: Surface = await buildSurface(renderer, './', { shadows: game.q.shadows > 0, density: game.q.grainCount });
+  const postSurface = post ? makePost(renderer, surface.scene, surface.camera, game.q.post.filter((e) => e !== 'vignette' && e !== 'grain')) : null;
+  let mode: 'soil' | 'surface' = Q.get('scene') === 'surface' ? 'surface' : 'soil';
+  let growT = 0; const GROW_SEC = 26;
+  if (Q.get('g') !== null) surface.setGrowth(Number(Q.get('g')));
+  const fade = document.createElement('div'); fade.className = 'fade'; document.body.append(fade);
+  const switchTo = (m: 'soil' | 'surface') => { fade.classList.add('on'); setTimeout(() => { mode = m; growT = 0; surface.setGrowth(0); document.body.classList.toggle('surface', m === 'surface'); renderer.toneMappingExposure = m === 'surface' ? 0.9 : 1.0; fade.classList.remove('on'); }, 900); };
+  surfaceCam = surface.camera; resize();
+  if (mode === 'surface') { document.body.classList.add('surface'); renderer.toneMappingExposure = 0.9; }
   const demo = makeDemo(world);
   const controls = makeFreeControls(camera, canvas, world.colliders, $('stick'));
   let touring = true; controls.enabled = false;
@@ -65,6 +78,7 @@ async function main() {
 
   $('water').addEventListener('click', () => demo.start());
   $('dry').addEventListener('click', () => demo.dry());
+  $('sprout').addEventListener('click', () => switchTo(mode === 'soil' ? 'surface' : 'soil'));
   $('tour').addEventListener('click', () => {
     touring = !touring; controls.enabled = !touring; $('tour').textContent = touring ? '自分で動く' : '自動で巡る';
     if (!touring) { const e = new THREE.Euler().setFromQuaternion(camera.quaternion, 'YXZ'); controls.yaw = e.y; controls.pitch = e.x; }
@@ -82,9 +96,14 @@ async function main() {
     else if (touring) { tourU = (tourU + dt * 0.012) % 1; placeOnPath(0.02 + 0.9 * (0.5 - 0.5 * Math.cos(tourU * Math.PI * 2))); }
     else controls.update(dt);
     if (wetQ === null) { demo.update(dt); game.update(dt, t); }
-    if (post) post.render(); else renderer.render(scene, camera);
+    if (mode === 'surface') {
+      if (Q.get('g') === null) { growT += dt; surface.setGrowth(Math.min(1, growT / GROW_SEC)); }
+      surface.update(dt, t);
+      if (postSurface) postSurface.render(); else renderer.render(surface.scene, surface.camera);
+    } else if (post) post.render(); else renderer.render(scene, camera);
     hud.tick(now); frames++;
     const vit = Math.round(world.grid.mean() * 100);
+    $('sprout').textContent = mode === 'soil' ? '地上を見る' : '土の中へ戻る';
     if (vit !== vitShown) { vitShown = vit; $('vitNum').textContent = String(vit); ($('vitBar') as HTMLElement).style.width = vit + '%'; }
     const frozen = freeze > 0 && frames >= freeze; if (frozen) renderer.setAnimationLoop(null);
     W.__state = { ready: frames > 3, frozen, frames, isWebGPU, tier, device, errors, stats: world.stats, vitality: vit, bridges: game.bridges.count, swarm: game.swarm.count };

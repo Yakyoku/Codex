@@ -19,7 +19,7 @@ export const soilUniforms = {
   detailStrength: uniform(1),
 };
 
-export function makeSoilMaterial(kind: GrainKind, na: THREE.Texture, detail: THREE.Texture, wetAttr: THREE.InstancedBufferAttribute, seedAttr: THREE.InstancedBufferAttribute, opts: { cheap?: boolean } = {}) {
+export function makeSoilMaterial(kind: GrainKind, na: THREE.Texture, detail: THREE.Texture, wetAttr: THREE.InstancedBufferAttribute, seedAttr: THREE.InstancedBufferAttribute, opts: { cheap?: boolean; mottle?: number } = {}) {
   const L = LOOKS[kind];
   const m = new THREE.MeshPhysicalNodeMaterial();
   type F = ReturnType<typeof float>;
@@ -33,7 +33,7 @@ export function makeSoilMaterial(kind: GrainKind, na: THREE.Texture, detail: THR
   const dB = triplanarTexture(texture(detail), null, null, float(0.47 * L.detail / 3), wp.zxy, normalWorld.zxy);
   const d = vec3(dA.r.mul(0.45).add(dB.r.mul(0.55)), dA.g.mul(0.65).add(dB.g.mul(0.35)), dB.b.mul(dA.g.add(0.35)));
   // 水はくぼみ（AO の暗い所）から先にたまる
-  const wet = saturate(wetI.add(soilUniforms.wetBias).mul(1.35).sub(ao.mul(0.35)).add(d.g.sub(0.5).mul(0.25)));
+  const wet = saturate(wetI.add(soilUniforms.wetBias).mul(1.35).sub(ao.mul(0.35)).add(d.g.sub(0.5).mul(0.25 * (opts.mottle ?? 1))));
   const tint = mix(float(0.86), float(1.14), seed);
   const dryCol = vec3(...L.dry).mul(mix(float(0.78), float(1.2), d.g)).mul(tint);
   // 乾いた粒は、上を向いた面に粉（細かい粘土）が積もって白っぽい

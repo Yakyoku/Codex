@@ -19,3 +19,8 @@
 .vital .bar i { background: var(--leaf); }
 @media (max-width: 720px) { .scale-tag, .vital { bottom: 84px; } .nav .btn { padding: 10px 12px; font-size: 13px; } }
 body.clean .hud, body.clean .nav, body.clean .actions, body.clean .scale-tag, body.clean .vital, body.clean .caption { display: none; }
+
+.fade { position: fixed; inset: 0; background: #000; opacity: 0; pointer-events: none; transition: opacity .85s ease; z-index: 8; }
+.fade.on { opacity: 1; }
+body.surface #water, body.surface #dry, body.surface #tour, body.surface .vital { display: none; }
+body.surface .scale-tag { color: #3a2c1c; } body.surface .scale-tag b { background: #3a2c1c; }
