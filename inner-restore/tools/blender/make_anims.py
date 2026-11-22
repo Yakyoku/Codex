@@ -51,6 +51,30 @@ def mirror(p):
         out[m] = (x, -y, -z)
     return out
 
+
+# ---------------- 周期的な滑らかな曲線で、要所の姿勢を止まらずにつなぐ ----------------
+# Blender の初期設定の曲線は、要所で速さが0になる（動きが一瞬止まる＝カクカク）。
+# そこで、要所の姿勢を通る「周期的な3次スプライン」で毎コマの姿勢を計算し、毎コマにキーを打つ。
+from scipy.interpolate import CubicSpline
+import numpy as np
+def scale(p, f):
+    """動きにメリハリを付ける：関節ごとに角度を拡大する（f: {関節: (x倍, y倍, z倍)}）"""
+    return {n: tuple(v * k for v, k in zip(p[n], f.get(n, (1, 1, 1)))) for n in p}
+def cyclic(name, keys, T):
+    """keys: [(姿勢, 骨盤の移動)] を等間隔に並べた1周期。T: 1周期のコマ数"""
+    new_action(name)
+    n = len(keys); ts = np.linspace(0, T, n + 1)
+    names = sorted({j for p, _ in keys for j in p})
+    def series(get):
+        v = np.array([get(k) for k in keys] + [get(keys[0])], float); return CubicSpline(ts, v, bc_type="periodic", axis=0)
+    rot = {j: series(lambda k, j=j: k[0].get(j, (0, 0, 0))) for j in names}
+    loc = series(lambda k: k[1])
+    for f in range(T + 1):
+        apply({j: tuple(rot[j](f)) for j in names}, tuple(loc(f))); key(1 + f)
+    a = rig.animation_data.action
+    for fc in getattr(a, "fcurves", []):
+        for kp in fc.keyframe_points: kp.interpolation = "LINEAR"
+
 # ---------------- 歩き（1.1 秒＝33 コマで2歩） ----------------
 W_CONTACT = {"pelvis": (0.02, 0.1, 0.0), "chest": (0.04, -0.13, 0.0), "head": (-0.03, 0.04, 0),
              "thighL": (-0.42, 0, -0.02), "shinL": (0.06, 0, 0), "footL": (-0.18, 0, 0),
@@ -68,13 +92,10 @@ W_UP = {"pelvis": (0.02, -0.05, -0.05), "chest": (0.04, 0.06, 0.03), "head": (-0
         "thighL": (0.18, 0, -0.02), "shinL": (0.08, 0, 0), "footL": (0.22, 0, 0),
         "thighR": (-0.45, 0, 0.03), "shinR": (0.4, 0, 0), "footR": (-0.12, 0, 0),
         "upperArmL": (-0.18, 0, 0.03), "foreArmL": (-0.35, 0, 0), "upperArmR": (0.18, 0, -0.03), "foreArmR": (-0.25, 0, 0), "handL": (-0.1, 0, 0), "handR": (-0.15, 0, 0)}
-new_action("walk")
-T = 33
-for i, (p, dz) in enumerate([(W_CONTACT, -0.005), (W_DOWN, -0.03), (W_PASS, 0.0), (W_UP, 0.018)]):
-    for half in (0, 1):
-        f = 1 + half * T / 2 + i * T / 8
-        apply(p if half == 0 else mirror(p), (0.012 * (1 if half == 0 else -1) * (1 if i in (1, 2) else 0.4), 0, dz)); key(f)
-apply(W_CONTACT, (0.005, 0, -0.005)); key(1 + T)
+WF = {"pelvis": (1, 1.5, 1.35), "chest": (1, 1.5, 1.2), "upperArmL": (1.3, 1, 1), "upperArmR": (1.3, 1, 1), "thighL": (1.1, 1, 1), "thighR": (1.1, 1, 1)}
+half = [(W_CONTACT, -0.005, 0.4), (W_DOWN, -0.032, 1.0), (W_PASS, 0.0, 1.0), (W_UP, 0.02, 0.4)]
+keys = [(scale(p, WF), (0.014 * sx, 0, dz)) for p, dz, sx in half] + [(scale(mirror(p), WF), (-0.014 * sx, 0, dz)) for p, dz, sx in half]
+cyclic("walk", keys, 33)
 
 # ---------------- 走り（0.7 秒＝21 コマで2歩） ----------------
 R_CONTACT = {"pelvis": (0.2, 0.16, 0.0), "chest": (0.32, -0.22, 0.0), "head": (-0.18, 0.06, 0),
@@ -93,13 +114,10 @@ R_FLIGHT = {"pelvis": (0.2, -0.12, 0.0), "chest": (0.32, 0.18, 0.0), "head": (-0
             "thighL": (0.55, 0, 0), "shinL": (0.95, 0, 0), "footL": (0.4, 0, 0),
             "thighR": (-1.05, 0, 0), "shinR": (1.0, 0, 0), "footR": (-0.15, 0, 0),
             "upperArmL": (-0.5, 0, 0.12), "foreArmL": (-1.15, 0, 0), "upperArmR": (0.6, 0, -0.12), "foreArmR": (-1.15, 0, 0), "handL": (-0.2, 0, 0), "handR": (-0.2, 0, 0)}
-new_action("run")
-T = 21
-for i, (p, dz) in enumerate([(R_CONTACT, -0.01), (R_DOWN, -0.05), (R_PUSH, 0.0), (R_FLIGHT, 0.045)]):
-    for half in (0, 1):
-        f = 1 + half * T / 2 + i * T / 8
-        apply(p if half == 0 else mirror(p), (0, -0.02, dz)); key(f)
-apply(R_CONTACT, (0, -0.02, -0.01)); key(1 + T)
+RF = {"upperArmL": (1.3, 1, 1), "upperArmR": (1.3, 1, 1), "thighL": (1.08, 1, 1), "thighR": (1.08, 1, 1), "pelvis": (1, 1.25, 1.2), "chest": (1, 1.3, 1)}
+half = [(R_CONTACT, -0.012), (R_DOWN, -0.055), (R_PUSH, 0.0), (R_FLIGHT, 0.05)]
+keys = [(scale(p, RF), (0, -0.02, dz)) for p, dz in half] + [(scale(mirror(p), RF), (0, -0.02, dz)) for p, dz in half]
+cyclic("run", keys, 21)
 
 # ---------------- IK を使う姿勢（立ち・しゃがみ・片ひざ） ----------------
 def world_of(bone_name, tail=True):

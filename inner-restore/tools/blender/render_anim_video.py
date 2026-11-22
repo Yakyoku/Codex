@@ -20,7 +20,7 @@ cd = bpy.data.cameras.new("c"); cd.lens = 45; cam = bpy.data.objects.new("c", cd
 cam.location = (-3.4, -4.4, 1.25); cam.rotation_euler = (Vector((0, 0, 0.85)) - cam.location).to_track_quat("-Z", "Y").to_euler()
 sc.render.resolution_x, sc.render.resolution_y = int(os.environ.get("W", "480")), int(os.environ.get("H", "540"))
 out = os.path.join(L.ROOT, "progress-src", "diver-anim.mp4.frames"); os.makedirs(out, exist_ok=True)
-plan = [("idle", "立ち", 90), ("walk", "歩き", 66), ("run", "走り", 63), ("squat", "しゃがみ", 45), ("crouch", "片ひざ（スキャン）", 45)]
+plan = [("idle", "立ち", 60), ("walk", "歩き", 99), ("run", "走り", 105), ("squat", "しゃがみ", 30), ("crouch", "片ひざ（スキャン）", 30)]
 n = 0
 for act, label, frames in plan:
     a = bpy.data.actions[act]; rig.animation_data.action = a; f0, f1 = int(a.frame_range[0]), int(a.frame_range[1]); span = max(1, f1 - f0)

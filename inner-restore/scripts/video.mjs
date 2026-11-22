@@ -4,7 +4,7 @@ import { launch, ORIGIN, waitReady } from './lib-browser.mjs';
 import fs from 'node:fs'; import { execFileSync } from 'node:child_process';
 const [out, sec = '30', fps = '10', w = '640', h = '360', from = '1'] = process.argv.slice(2);
 const dir = out + '.frames'; fs.mkdirSync(dir, { recursive: true });
-const { browser, page, logs } = await launch({ width: +w, height: +h });
+const { browser, page, logs } = await launch({ width: +w, height: +h, initScripts: [`try { localStorage.setItem('ir.intro', 'off'); } catch (e) {}`] });
 await page.goto(ORIGIN + `/?backend=webgl&sim=${from}`); await waitReady(page, '__irReady', 300000);
 const n = Math.round(+sec * +fps), stepN = Math.round(30 / +fps);
 for (let i = 0; i < n; i++) {

@@ -101,7 +101,7 @@ export class Diver {
   mixer?: THREE.AnimationMixer; private act: Record<string, THREE.AnimationAction> = {};
   private w: Record<string, number> = { idle: 1, walk: 0, run: 0, squat: 0, crouch: 0 };
   static WALK_SPEED = 1.5; static RUN_SPEED = 3.6;   // それぞれの動きが、足が滑らずに見える速さ（µm/s）
-  private still = 0;
+  private still = 0; private gait = 0;
   initAnimations(clips: THREE.AnimationClip[], model: THREE.Object3D) {
     this.mixer = new THREE.AnimationMixer(model);
     for (const c of clips) { const a = this.mixer.clipAction(c); a.play(); a.setEffectiveWeight(c.name === 'idle' ? 1 : 0); this.act[c.name] = a; }
@@ -123,9 +123,14 @@ export class Diver {
       this.w[n] += (target[n] - this.w[n]) * Math.min(1, dt * (n === 'crouch' || n === 'squat' ? 3.5 : 7));
       this.act[n]?.setEffectiveWeight(this.w[n]);
     }
-    // 足が滑って見えないよう、歩き・走りの速さを進む速さに合わせる
-    if (this.act.walk) this.act.walk.timeScale = Math.max(0.6, Math.min(1.6, sp / Diver.WALK_SPEED));
-    if (this.act.run) this.act.run.timeScale = Math.max(0.75, Math.min(1.45, sp / Diver.RUN_SPEED));
+    // 歩きと走りの足運びをそろえる：進んだ距離から「歩の位相」を進め、両方の動きを同じ位相で再生する
+    //（別々の速さで再生すると、混ざる間に足がもつれて見える）
+    const wd = this.act.walk?.getClip().duration ?? 1.1, rd = this.act.run?.getClip().duration ?? 0.7;
+    const stride = (1 - run) * Diver.WALK_SPEED * wd + run * Diver.RUN_SPEED * rd;      // 1周期（2歩）で進む距離
+    const cadence = Math.max(0.55 / wd * 0.0 + 0.4, sp / stride);                       // 1秒あたりの周期
+    if (move > 0.001) this.gait = (this.gait + dt * cadence) % 1;
+    if (this.act.walk) { this.act.walk.timeScale = 0; this.act.walk.time = this.gait * wd; }
+    if (this.act.run) { this.act.run.timeScale = 0; this.act.run.time = this.gait * rd; }
     this.mixer.update(dt);
     // 上乗せ：加速で前に傾き、曲がるときは内側へ傾く
     const accel = (sp - this.lastSpeed) / dt; this.lastSpeed = sp;
