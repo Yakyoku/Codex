@@ -42,8 +42,9 @@
 - 目覚めの引き金は「水が、種からしみ出した養分を運ぶこと」（GDD の 8）。
 
 ## 既知の問題・未確認
-- **実機で未確認**：WebGPU の見た目と fps、iPad・iPhone での動作とメモリ、Quest 3 で VR に入れるか・72 fps が出るか・酔い。
-- この環境の WebGPU でだけ「Instance dropped in popErrorScope」が出る（TECH の 3）。
+- **実機の結果**は `DEVICE_RESULTS.md`。iPad（Safari 27.2、WebGPU）は平均 60 fps・エラー 0 を確認（2026-11-22）。下位1% が 50 fps で、ときどき引っかかる。
+- **実機で未確認**：iPhone、PC とテレビ、長時間のメモリ。**Quest 3 は後日、持ち主が確認する（依頼内容は DEVICE_RESULTS.md の末尾。次の報告でも忘れずに頼む）。**
+- この環境の WebGPU でだけ「Instance dropped in popErrorScope」が出る（TECH の 3）。iPad の実機では出なかった。
 - 三角形数：互換で約 95 万（目標 50 万）、PC 高画質で約 220 万（目標 150 万）。画面外の粒もインスタンスとして数えた値。区画ごとに分けて視錐台カリングを効かせる・遠い粒を LOD2 にする、で減らす。
 - 近くで見ると、LOD1・LOD2 の粒の輪郭が角ばる。
 - 水の橋（`src/game/water.ts`）は、絵としてまだ確認できていない（置かれているが、目立つ見え方になっていない）。
