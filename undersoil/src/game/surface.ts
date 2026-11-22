@@ -135,9 +135,11 @@ export async function buildSurface(renderer: THREE.WebGPURenderer, base: string,
       blend(linfl, ldict, LEAF_STAGES, key(g, [[0, 0], [0.66, 0], [0.76, 1], [0.88, 2], [1, 3]]));
       leaf.visible = g > 0.66;
       uGreen.value = Math.max(0, Math.min(1, (g - 0.30) / 0.36));
-      // 首振り（回旋運動）：伸びている茎の先は、小さく円を描くように揺れながら立ち上がる。伸びが止まると収まる
-      const nut = Math.sin(Math.min(1, Math.max(0, (g - 0.24) / 0.5)) * Math.PI) * 0.055;
-      holder.rotation.x = Math.sin(g * 46) * nut; holder.rotation.z = Math.cos(g * 46) * nut;
+      // 首振り（回旋運動）：早回し動画（CC BY 3.0、Internet Archive の接写映像）で確かめた動き。
+      // 芽が出てから子葉が開くまでの間、かぎ形の先が左右にゆっくり大きく揺れ（約 3 往復）、開ききると収まる
+      const w = Math.max(0, Math.min(1, (g - 0.22) / 0.46)), env = Math.sin(w * Math.PI) ** 0.8;
+      const ph = w * Math.PI * 2 * 3;
+      holder.rotation.z = Math.sin(ph) * 0.12 * env; holder.rotation.x = Math.sin(ph * 0.5 + 0.7) * 0.05 * env;
       // 胚軸が土を押し上げる：芽の出る所の粒が、盛り上がって外へ退く
       const push = Math.max(0, Math.min(1, (g - 0.16) / 0.16));
       for (const L of lifts) { L.idx.forEach((ii, k) => { L.base[k].decompose(tp, tq, ts); const d = Math.hypot(tp.x, tp.z), w = Math.max(0, 1 - d / 3.2) * push; if (d > 1e-3) { tp.x += (tp.x / d) * w * 0.9; tp.z += (tp.z / d) * w * 0.9; } tp.y += w * 0.45; L.mesh.setMatrixAt(ii, tmp.compose(tp, tq, ts)); }); L.mesh.instanceMatrix.needsUpdate = true; }

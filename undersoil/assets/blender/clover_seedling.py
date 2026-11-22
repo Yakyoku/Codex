@@ -148,19 +148,19 @@ def build_leaf(grow, unfold):
     """grow: 0=まだない、1=伸びきった。unfold: 0=中央の葉脈で二つ折り、1=開いた（浅い折れ目は残る）"""
     pts, _, frames = axis(1, HYP_FINAL, 0.0, 1.0); node, (td, tn, tb) = pts[-1], frames[-1]
     V = []
-    pl = LEAF_PET * grow; lean = math.radians(16) * grow
+    pl = LEAF_PET * grow; lean = math.radians(6) * grow
     pd = (td * math.cos(lean) + tb * math.sin(lean)).normalized()                # 葉柄は、2枚の子葉の間から、少し傾いて立つ
     sx = pd.cross(tn).normalized();
     for i in range(LP + 1):
-        s = i / LP; c = node + pd * (pl * s) + tb * (pl * 0.16 * math.sin(s * math.pi * 0.5) ** 2) - td * (pl * 0.10 * s * s)
+        s = i / LP; c = node + pd * (pl * s) + tb * (pl * 0.05 * math.sin(s * math.pi * 0.5) ** 2) - td * (pl * 0.04 * s * s)
         r = 0.085 * (1 - 0.3 * s) * (0.3 + 0.7 * grow)
         for k in range(LSIDES):
             a = 2 * math.pi * k / LSIDES; V.append(c + (tn * math.cos(a) + sx * math.sin(a)) * r)
-    top = node + pd * pl + tb * (pl * 0.16) - td * (pl * 0.10)
+    top = node + pd * pl + tb * (pl * 0.05) - td * (pl * 0.04)
     Ls = LEAF_L * (0.12 + 0.88 * grow) * (0.35 + 0.65 * unfold); Ws = LEAF_W * 0.5 * (0.12 + 0.88 * grow) * (0.4 + 0.6 * unfold)
     tiltb = math.radians(20 + 52 * unfold) * grow                                # 葉身は葉柄の先で外へ倒れ、表が斜め上を向く
     bd = (pd * math.cos(tiltb) + tb * math.sin(tiltb)).normalized(); bn = (pd * math.sin(tiltb) - tb * math.cos(tiltb)).normalized()   # 葉の表の向き。両側は、中央の葉脈から上へ浅く持ち上がる（V 字）
-    fold = math.radians(86 - 58 * unfold)                                        # 片側の持ち上がり角（閉じ 86° → 開き 16°）
+    fold = math.radians(86 - 64 * unfold)                                        # 片側の持ち上がり角（閉じ 86° → 開き 16°）
     for j in range(LV + 1):
         x = j / LV
         outline = (max(0.0, 1 - abs(2 * x - 1) ** 1.8) ** 0.5) * (0.9 + 0.2 * (1 - x))   # 腎臓形（幅が長さより広い）
