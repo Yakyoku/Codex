@@ -7,9 +7,9 @@ const [name = 'm1', fps = '12', w = '640', h = '360'] = process.argv.slice(2);
 const dir = new URL('../build-cache/frames/', import.meta.url).pathname; rmSync(dir, { recursive: true, force: true }); mkdirSync(dir, { recursive: true });
 const browser = await launch('webgl2');
 const { page, logs } = await openPage(browser, { viewport: { width: +w, height: +h } });
-await page.goto(ORIGIN + '/?manual&clean&renderer=webgl2&grow=17');
+await page.goto(ORIGIN + '/?manual&clean&renderer=webgl2&grow=24');
 await waitReady(page, 'ready', 400000);
-const SOIL = 26, SURF = 20, dt = 1000 / +fps; let n = 0, ms = 100;
+const SOIL = 24, SURF = 26, dt = 1000 / +fps; let n = 0, ms = 100;
 const shoot = async () => { await page.screenshot({ path: `${dir}f${String(n++).padStart(5, '0')}.jpg`, type: 'jpeg', quality: 90, timeout: 120000 }); };
 await page.evaluate(() => window.__demo());
 for (let i = 0; i < SOIL * +fps; i++) { ms += dt; await page.evaluate((t) => window.__frame(t), ms); await shoot(); if (i % 10 === 0) console.log('soil', i, new Date().toISOString().slice(11, 19)); }

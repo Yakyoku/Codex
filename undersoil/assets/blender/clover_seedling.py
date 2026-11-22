@@ -1,169 +1,241 @@
-"""シロツメクサ（Trifolium repens）の種と芽生え。
-- seed: 吸水した種（地下の場面で「山」として見える）。高解像度の形 → ローポリへ法線と AO を焼く。
-- seedling: 発芽の各段階を同じ頂点の並びで作り、シェイプキーにする（実行時になめらかにつなぐ）。
-  S0 種の中 → S1 幼根が出る → S2 胚軸がかぎ形に曲がって土を押す → S3 かぎが伸びて子葉を持ち上げる → S4 子葉が開く → S5 子葉が広がる
-単位は mm。寸法は Docs/REFERENCE/species/trifolium-repens.md に合わせる。
-実行: python3 assets/blender/clover_seedling.py"""
-import bpy, bmesh, sys, os, math, time
-import numpy as np
+"""シロツメクサ（Trifolium repens）の芽生え。発芽の各段階を同じ頂点の並びで作り、シェイプキーにする（実行時になめらかにつなぐ）。
+形は Docs/REFERENCE/species/trifolium-repens.md と、実物の写真4点（build-cache/ref/trifolium-repens/）に合わせる：
+  - 子葉は、豆のようにふっくら厚い長だ円形。縁は丸い。短い柄。開くと少し上向きで、左右の角度は同じではない
+  - 胚軸の地上部は短い（2〜4 mm）。子葉は地面のすぐ上に開く
+  - 最初の本葉は、小葉が1枚だけの丸い葉。中央の葉脈で浅く折れ、細い葉柄の先に付く
+物体は2つ：
+  clover_seedling … 根＋胚軸＋子葉2枚。キー：S0_seed → S1_radicle → S2_hook → S3_lift → S4_half → S5_open →（基本形＝開ききった姿）
+  clover_leaf1    … 最初の本葉。キー：L0_none → L1_bud →（基本形＝開いた葉）
+単位は mm。原点＝種の位置、+Z が上。地表は Z = SEED_DEPTH。
+実行: python3 assets/blender/clover_seedling.py [--no-preview]"""
+import bpy, sys, os, math
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'lib'))
 from common import *
-from mathutils import Vector, Matrix
+from mathutils import Vector
 
-# ---- 寸法（mm）。形の仕様書の値をここに写す ----
-SEED_L, SEED_W, SEED_T = 1.2, 1.1, 0.7     # 種：長さ・幅・厚み
-HYP_R = 0.20                                  # 胚軸の半径
-ROOT_R = 0.17                                 # 幼根の半径（根元）
-COT_L, COT_W, COT_T = 4.0, 2.1, 0.3          # 開ききった子葉：長さ・幅・厚み
-PET_L = 1.2                                   # 子葉の柄
-STAGES = [  # name, 幼根の長さ, 胚軸の長さ, かぎの曲がり(0..1), 子葉の大きさ(0..1), 開き(0..1), 柄(0..1)
-    ('S0_seed',   0.05, 0.05, 0.0, 0.22, 0.0, 0.05),
-    ('S1_radicle', 2.2, 0.5, 0.0, 0.24, 0.0, 0.05),
-    ('S2_hook',    5.0, 6.6, 1.0, 0.28, 0.0, 0.1),
-    ('S3_lift',    9.0, 8.5, 0.25, 0.42, 0.06, 0.3),
-    ('S4_open',   13.0, 10.5, 0.0, 0.72, 0.85, 0.7),
-    ('S5_spread', 18.0, 12.0, 0.0, 1.0, 1.0, 1.0),
+SEED_DEPTH = 3.0                               # 種の深さ（シロツメクサは浅くまく。3 mm は目安 △）
+HYP_R, ROOT_R = 0.19, 0.16                     # 胚軸・幼根の半径（太さ 約0.3〜0.4 mm）
+COT_L, COT_W, COT_T = 3.9, 2.55, 0.68           # 子葉：長さ・幅・厚み（写真の目測：長さ3〜5、幅は長さの約半分強、ふっくら厚い）
+PET_L = 0.9                                    # 子葉の柄
+HYP_FINAL = 6.4                                # 胚軸の最終の長さ → 地上部 約3.4 mm
+RISE_A, RISE_B = 14.0, 27.0                    # 開いた子葉が水平より上を向く角度（左右で違う）
+LEAF_PET, LEAF_L, LEAF_W = 4.4, 4.0, 4.3       # 最初の本葉：葉柄、葉身の長さ・幅（丸く、幅のほうが広いこともある）
+STAGES = [  # name, 幼根, 胚軸, かぎ(0..1), 子葉の大きさ, 開きA, 開きB, 柄, 傾き
+    ('S0_seed',    0.05, 0.05, 0.0, 0.26, 0.0, 0.0, 0.05, 0.0),
+    ('S1_radicle', 2.4,  0.5,  0.0, 0.28, 0.0, 0.0, 0.05, 0.0),
+    ('S2_hook',    5.5,  4.4,  1.0, 0.32, 0.0, 0.0, 0.1, 0.0),
+    ('S3_lift',    9.0,  5.6,  0.3, 0.46, 0.05, 0.03, 0.3, 0.5),
+    ('S4_half',   12.0,  6.1,  0.04, 0.70, 0.62, 0.34, 0.65, 0.9),
+    ('S5_open',   15.0,  6.4,  0.0, 0.88, 0.95, 0.9, 0.9, 1.0),
+    ('FINAL',     19.0,  6.4,  0.0, 1.0,  1.0, 1.0, 1.0, 1.0),
 ]
-AX_N, AX_SIDES = 44, 10        # 軸（根＋胚軸）の輪の数と、輪の頂点数
-ROOT_N = 18                    # そのうち根に使う輪の数
-CU, CV = 12, 20                 # 子葉の格子
+AX_N, AX_SIDES, ROOT_N = 46, 10, 18
+CU, CV = 14, 24
 
-def smooth01(a, b, x):
+def sm(a, b, x):
     t = max(0.0, min(1.0, (x - a) / (b - a))); return t * t * (3 - 2 * t)
 
-def build(root_len, hyp_len, hook, cot_s, opening, pet):
-    """1段階ぶんの頂点座標を返す（並びは常に同じ）。原点＝種の位置。+Z が上。"""
-    V = []
-    # 軸：根の先 → 種 → 胚軸の先
-    pts, frames, radii = [], [], []
-    for i in range(ROOT_N):  # 根（下へ。わずかにうねる）
-        s = 1 - i / (ROOT_N - 1)          # 1=先端, 0=種
-        z = -root_len * s
-        pts.append(Vector((0.18 * math.sin(s * 5.0) * min(1, root_len / 4), 0.12 * math.sin(s * 3.3 + 1) * min(1, root_len / 4), z)))
-        radii.append((ROOT_R * (0.25 + 0.75 * (1 - s) ** 0.6) + (HYP_R - ROOT_R) * max(0, 1 - s * 6)) * (0.5 + 0.5 * min(1, root_len / 2)))
-    n_h = AX_N - ROOT_N
-    p = Vector((0, 0, 0)); ang = 0.0; seg = hyp_len / (n_h - 1)
-    for i in range(n_h):  # 胚軸（上へ。先のほうが、かぎ形に曲がる）
+def axis(root_len, hyp_len, hook, lean):
+    pts, radii = [], []
+    for i in range(ROOT_N):
+        s = 1 - i / (ROOT_N - 1); k = min(1, root_len / 4)
+        pts.append(Vector((0.22 * math.sin(s * 5.0) * k, 0.15 * math.sin(s * 3.3 + 1) * k, -root_len * s)))
+        radii.append((ROOT_R * (0.2 + 0.8 * (1 - s) ** 0.55) + (HYP_R - ROOT_R) * max(0, 1 - s * 6)) * (0.5 + 0.5 * min(1, root_len / 2)))
+    n_h = AX_N - ROOT_N; p = Vector((0, 0, 0)); seg = hyp_len / (n_h - 1)
+    for i in range(n_h):
         s = i / (n_h - 1)
         if i > 0:
-            ang = hook * math.radians(175) * smooth01(0.55, 1.0, s)
-            p = p + Vector((math.sin(ang), 0, math.cos(ang))) * seg
-        pts.append(p.copy()); radii.append(HYP_R * (1.0 - 0.18 * s) * (0.55 + 0.45 * min(1, hyp_len / 3)))
+            a = hook * math.radians(172) * sm(0.5, 1.0, s) + lean * math.radians(7) * math.sin(s * math.pi * 0.9)   # かぎ＋ごくゆるい S 字
+            b = lean * math.radians(5) * s
+            p = p + Vector((math.sin(a) * math.cos(b), math.sin(b), math.cos(a) * math.cos(b))) * seg
+        pts.append(p.copy()); radii.append(HYP_R * (1.0 - 0.22 * s) * (0.55 + 0.45 * min(1, hyp_len / 3)))
+    frames = []
     for i, c in enumerate(pts):
-        t = (pts[min(i + 1, len(pts) - 1)] - pts[max(i - 1, 0)]).normalized()
-        if t.length < 1e-6: t = Vector((0, 0, 1))
-        bx = Vector((0, 1, 0)); nx = bx.cross(t).normalized(); by = t.cross(nx)
-        frames.append((t, nx, by))
+        t = (pts[min(i + 1, len(pts) - 1)] - pts[max(i - 1, 0)])
+        t = t.normalized() if t.length > 1e-6 else Vector((0, 0, 1))
+        nx = Vector((0, 1, 0)).cross(t).normalized(); frames.append((t, nx, t.cross(nx)))
+    return pts, radii, frames
+
+def build(root_len, hyp_len, hook, cot_s, open_a, open_b, pet, lean):
+    V = []
+    pts, radii, frames = axis(root_len, hyp_len, hook, lean)
+    for c, r, (t, nx, by) in zip(pts, radii, frames):
         for k in range(AX_SIDES):
-            a = 2 * math.pi * k / AX_SIDES
-            V.append(c + (nx * math.cos(a) + by * math.sin(a)) * radii[i])
-    V.append(pts[0] - Vector((0, 0, radii[0])))            # 根の先のふた
+            a = 2 * math.pi * k / AX_SIDES; V.append(c + (nx * math.cos(a) + by * math.sin(a)) * r)
+    V.append(pts[0] - Vector((0, 0, radii[0])))
     tip, (td, tn, tb) = pts[-1], frames[-1]
-    V.append(tip + td * radii[-1] * 0.6)                    # 胚軸の先のふた（子葉の付け根＝節）
-    # 子葉 2枚：節から、軸の向き td に対して ±（開き × 80°）で倒れる。閉じているときは、面を合わせて重なる
-    for side in (1, -1):
-        tilt = math.radians(4 + 80 * opening) * side
-        d = (td * math.cos(tilt) + tn * math.sin(tilt)).normalized()       # 子葉の伸びる向き
-        up = (tn * math.cos(tilt) - td * math.sin(tilt)).normalized() * side  # 子葉の表（向かい合う側）
-        w = tb
-        L = COT_L * cot_s; W2 = COT_W * cot_s * 0.5; T2 = COT_T * (0.6 + 0.4 * cot_s) * 0.5; PL = PET_L * pet
-        base = tip + up * (0.02 + T2 * 1.05) * (1 - opening) * side * 0 + d * 0.0
-        for layer in (1, -1):               # 表の面、裏の面
+    V.append(tip + td * radii[-1] * 0.7)
+    for side, opening, rise in ((1, open_a, RISE_A), (-1, open_b, RISE_B)):
+        tilt = math.radians(3 + (87 - rise) * opening)
+        d = (td * math.cos(tilt) + tn * math.sin(tilt) * side).normalized()        # 子葉の伸びる向き
+        up = (td * math.sin(tilt) - tn * math.cos(tilt) * side).normalized()       # 表（向かい合う側。開くと上を向く）
+        w = tb * side
+        L = COT_L * cot_s; W2 = COT_W * cot_s * 0.5; T2 = COT_T * (0.55 + 0.45 * cot_s) * 0.5; PL = PET_L * pet
+        base = tip - up * (T2 * 0.95) * (1 - opening)                              # 閉じているとき、2枚の表が合わさる
+        for layer in (1, -1):
             for j in range(CV + 1):
-                v = j / CV
+                v = j / CV; x = max(0.0, min(1.0, (v - 0.12) / 0.88)); blade = sm(0.10, 0.22, v)
+                along = PL * sm(0, 0.14, v) + L * x
+                oval = max(0.0, 1 - abs(2 * x - 1) ** 2.05) ** 0.5                  # 両端が丸い長だ円
+                half = 0.075 + (W2 - 0.075) * blade * oval
+                lenprof = max(0.0, 1 - abs(2 * x - 1) ** 4.0) ** 0.4               # 長さ方向の厚みの変化
                 for i in range(CU + 1):
                     u = i / CU * 2 - 1
-                    # 輪郭：柄の細い部分から、卵形の葉身へ
-                    along = PL * smooth01(0, 0.18, v) + L * smooth01(0.1, 1.0, v) * (v ** 0.9)
-                    blade = smooth01(0.12, 0.3, v)
-                    xb = max(0.0, min(1.0, (v - 0.13) / 0.87))                 # 葉身の中での位置
-                    half = 0.06 + (W2 - 0.06) * blade * max(0.0, 1 - (2 * xb - 1) ** 2) ** 0.42   # 長円形で、先は丸い
-                    edge = math.sqrt(max(0.0, 1 - u * u))                 # ふちに向かって薄くなる（レンズ形）
-                    cup = -0.10 * W2 * (u * u) * blade * opening             # 開くと、わずかに舟形に反る
-                    th = T2 * (0.25 + 0.75 * edge) * (0.5 + 0.5 * blade)
-                    closed_gap = (T2 * 1.02) * (1 - opening)                  # 閉じているとき、2枚が合わさる
-                    pos = base + d * along + w * (u * half) + up * (cup + layer * th + closed_gap * 0.0)
-                    pos = pos + up * (-closed_gap * 0 + 0)                    
-                    V.append(pos + (up * side) * (T2 * (1 - opening)) * 0 )
+                    rim = max(0.0, 1 - abs(u) ** 2.6) ** 0.5                        # 縁は丸く薄くなる（豆のような断面）
+                    th = 0.07 + (T2 - 0.07) * blade * rim * lenprof
+                    groove = 0.16 * T2 * math.exp(-(u / 0.13) ** 2) * blade * lenprof if layer > 0 else 0.0   # 表の中央の浅い溝
+                    dome = (1.0 if layer > 0 else 0.72)                              # 表はふくらみ、裏はやや平ら
+                    droop = -0.05 * W2 * (u * u) * blade * opening - 0.10 * L * (x ** 2) * opening * 0.25      # 縁と先がわずかに下がる
+                    V.append(base + d * along + w * (u * half) + up * (layer * th * dome - groove + droop))
     return V
 
 def faces():
     F = []
     for i in range(AX_N - 1):
         for k in range(AX_SIDES):
-            a = i * AX_SIDES + k; b = i * AX_SIDES + (k + 1) % AX_SIDES
-            F.append((a, b, b + AX_SIDES, a + AX_SIDES))
+            a = i * AX_SIDES + k; b = i * AX_SIDES + (k + 1) % AX_SIDES; F.append((a, b, b + AX_SIDES, a + AX_SIDES))
     cap0 = AX_N * AX_SIDES; cap1 = cap0 + 1
     for k in range(AX_SIDES):
-        F.append((cap0, (k + 1) % AX_SIDES, k))
-        o = (AX_N - 1) * AX_SIDES; F.append((cap1, o + k, o + (k + 1) % AX_SIDES))
+        F.append((cap0, (k + 1) % AX_SIDES, k)); o = (AX_N - 1) * AX_SIDES; F.append((cap1, o + k, o + (k + 1) % AX_SIDES))
     base = cap1 + 1; per = (CU + 1) * (CV + 1)
     for c in range(2):
         top = base + c * 2 * per; bot = top + per
         for j in range(CV):
             for i in range(CU):
                 a = j * (CU + 1) + i
-                F.append((top + a, top + a + 1, top + a + CU + 2, top + a + CU + 1))
-                F.append((bot + a + 1, bot + a, bot + a + CU + 1, bot + a + CU + 2))
+                F.append((top + a, top + a + 1, top + a + CU + 2, top + a + CU + 1)); F.append((bot + a + 1, bot + a, bot + a + CU + 1, bot + a + CU + 2))
         rim = [(0, i) for i in range(CU + 1)] + [(j, CU) for j in range(1, CV + 1)] + [(CV, i) for i in range(CU - 1, -1, -1)] + [(j, 0) for j in range(CV - 1, 0, -1)]
         for r in range(len(rim)):
             (j0, i0), (j1, i1) = rim[r], rim[(r + 1) % len(rim)]
-            a = j0 * (CU + 1) + i0; b = j1 * (CU + 1) + i1
-            F.append((top + b, top + a, bot + a, bot + b))
+            a = j0 * (CU + 1) + i0; b = j1 * (CU + 1) + i1; F.append((top + b, top + a, bot + a, bot + b))
     return F
 
-def make_seedling():
-    reset()
-    coords = [build(*s[1:]) for s in STAGES]
-    me = bpy.data.meshes.new('seedling'); me.from_pydata([tuple(v) for v in coords[-1]], [], faces()); me.update()
-    ob = bpy.data.objects.new('clover_seedling', me); bpy.context.scene.collection.objects.link(ob)
-    bpy.context.view_layer.objects.active = ob; ob.select_set(True)
+def finish(ob):
+    bpy.context.view_layer.objects.active = ob; bpy.ops.object.select_all(action='DESELECT'); ob.select_set(True)
     bpy.ops.object.mode_set(mode='EDIT'); bpy.ops.mesh.select_all(action='SELECT'); bpy.ops.mesh.normals_make_consistent(inside=False); bpy.ops.object.mode_set(mode='OBJECT')
     bpy.ops.object.shade_smooth()
-    # 頂点色：R=子葉（緑になる部分）、G=根（地下。白いまま）、B=子葉の中での根元→先（0..1）
+
+def make_seedling():
+    coords = [build(*s[1:]) for s in STAGES]
+    me = bpy.data.meshes.new('seedling'); me.from_pydata([tuple(v) for v in coords[-1]], [], faces()); me.update()
+    ob = bpy.data.objects.new('clover_seedling', me); bpy.context.scene.collection.objects.link(ob); finish(ob)
+    # 頂点色：R=子葉、G=根、B=子葉では表(1)/裏(0)、胚軸では根元(0)→先(1)。A=子葉の中での位置（根元0→先1）
     col = me.color_attributes.new('Color', 'FLOAT_COLOR', 'POINT')
     n_ax = AX_N * AX_SIDES + 2; per = (CU + 1) * (CV + 1)
     for i in range(len(me.vertices)):
-        if i < ROOT_N * AX_SIDES or i == AX_N * AX_SIDES: col.data[i].color = (0, 1, 0, 1)
-        elif i < n_ax: col.data[i].color = (0, 0, (i // AX_SIDES - ROOT_N) / (AX_N - ROOT_N), 1)
+        if i < ROOT_N * AX_SIDES or i == AX_N * AX_SIDES: col.data[i].color = (0, 1, 0, 0)
+        elif i < n_ax: col.data[i].color = (0, 0, (min(i, AX_N * AX_SIDES - 1) // AX_SIDES - ROOT_N) / (AX_N - ROOT_N - 1), 0)
         else:
-            k = (i - n_ax) % per; col.data[i].color = (1, 0, (k // (CU + 1)) / CV, 1)
-    # UV：子葉は格子そのまま（葉脈をシェーダーで描くため）。軸は (角度, 長さ)
-    uvl = me.uv_layers.new(name='UVMap')
+            k = (i - n_ax); layer_top = ((k // per) % 2 == 0); kk = k % per
+            col.data[i].color = (1, 0, 1.0 if layer_top else 0.0, (kk // (CU + 1)) / CV)
+    uvl = me.uv_layers.new(name='UVMap')   # 子葉：u=幅(0..1)、v=長さ(0..1)。軸：u=まわり、v=長さ
     for poly in me.polygons:
         for li in poly.loop_indices:
             vi = me.loops[li].vertex_index
-            if vi < AX_N * AX_SIDES: uvl.data[li].uv = ((vi % AX_SIDES) / AX_SIDES * 0.2, (vi // AX_SIDES) / (AX_N - 1))
-            elif vi < n_ax: uvl.data[li].uv = (0.1, 0.0 if vi == AX_N * AX_SIDES else 1.0)
+            if vi < AX_N * AX_SIDES: uvl.data[li].uv = ((vi % AX_SIDES) / AX_SIDES, (vi // AX_SIDES) / (AX_N - 1))
+            elif vi < n_ax: uvl.data[li].uv = (0.5, 0.0 if vi == AX_N * AX_SIDES else 1.0)
             else:
-                k = (vi - n_ax) % per; uvl.data[li].uv = (0.25 + 0.75 * (k % (CU + 1)) / CU, (k // (CU + 1)) / CV)
+                kk = (vi - n_ax) % per; uvl.data[li].uv = ((kk % (CU + 1)) / CU, (kk // (CU + 1)) / CV)
     ob.shape_key_add(name='Basis')
     for (name, *_), cs in zip(STAGES[:-1], coords[:-1]):
         sk = ob.shape_key_add(name=name)
         for i, v in enumerate(cs): sk.data[i].co = v
-    return ob, coords
+    return ob
 
-ob, coords = make_seedling()
+# ---- 最初の本葉 ----
+LU, LV, LP, LSIDES = 16, 18, 10, 6
+def build_leaf(grow, unfold):
+    """grow: 0=まだない、1=伸びきった。unfold: 0=中央の葉脈で二つ折り、1=開いた（浅い折れ目は残る）"""
+    pts, _, frames = axis(1, HYP_FINAL, 0.0, 1.0); node, (td, tn, tb) = pts[-1], frames[-1]
+    V = []
+    pl = LEAF_PET * grow; lean = math.radians(16) * grow
+    pd = (td * math.cos(lean) + tb * math.sin(lean)).normalized()                # 葉柄は、2枚の子葉の間から、少し傾いて立つ
+    sx = pd.cross(tn).normalized();
+    for i in range(LP + 1):
+        s = i / LP; c = node + pd * (pl * s) + tb * (pl * 0.16 * math.sin(s * math.pi * 0.5) ** 2) - td * (pl * 0.10 * s * s)
+        r = 0.085 * (1 - 0.3 * s) * (0.3 + 0.7 * grow)
+        for k in range(LSIDES):
+            a = 2 * math.pi * k / LSIDES; V.append(c + (tn * math.cos(a) + sx * math.sin(a)) * r)
+    top = node + pd * pl + tb * (pl * 0.16) - td * (pl * 0.10)
+    Ls = LEAF_L * (0.12 + 0.88 * grow) * (0.35 + 0.65 * unfold); Ws = LEAF_W * 0.5 * (0.12 + 0.88 * grow) * (0.4 + 0.6 * unfold)
+    tiltb = math.radians(25 + 40 * unfold) * grow                                # 葉身は葉柄の先で外へ倒れ、表が斜め上を向く
+    bd = (pd * math.cos(tiltb) + tb * math.sin(tiltb)).normalized(); bn = (pd * math.sin(tiltb) - tb * math.cos(tiltb)).normalized() * -1
+    fold = math.radians(86 - 77 * unfold)                                        # 片側の持ち上がり角（閉じ 86° → 開き 16°）
+    for j in range(LV + 1):
+        x = j / LV
+        outline = (max(0.0, 1 - abs(2 * x - 1) ** 2.2) ** 0.5) * (0.82 + 0.3 * (1 - x))   # 丸く、つけ根側がやや広い
+        notch = 0.10 * Ls
+        for i in range(LU + 1):
+            u = i / LU * 2 - 1
+            a_long = Ls * x - notch * (1 - abs(u)) ** 2 * (1 - x) ** 3 * 4 * 0 + notch * (abs(u) ** 1.5) * (1 - x) ** 2 * 1.2 * -1  # つけ根はまっすぐ〜浅いハート形
+            lat = u * Ws * outline
+            V.append(top + bd * a_long + tn * (lat * math.cos(fold)) + bn * (abs(lat) * math.sin(fold) + 0.03 * math.sin(x * 9 + u * 4) * grow))
+    return V
+
+def leaf_faces():
+    F = []
+    for i in range(LP):
+        for k in range(LSIDES):
+            a = i * LSIDES + k; b = i * LSIDES + (k + 1) % LSIDES; F.append((a, b, b + LSIDES, a + LSIDES))
+    o = (LP + 1) * LSIDES
+    for j in range(LV):
+        for i in range(LU):
+            a = o + j * (LU + 1) + i; F.append((a, a + 1, a + LU + 2, a + LU + 1))
+    return F
+
+def make_leaf():
+    final = build_leaf(1, 1)
+    me = bpy.data.meshes.new('leaf1'); me.from_pydata([tuple(v) for v in final], [], leaf_faces()); me.update()
+    ob = bpy.data.objects.new('clover_leaf1', me); bpy.context.scene.collection.objects.link(ob); finish(ob)
+    col = me.color_attributes.new('Color', 'FLOAT_COLOR', 'POINT'); o = (LP + 1) * LSIDES   # R=葉身(1)/葉柄(0)、G=中央の葉脈からの距離、B=長さ方向
+    for i in range(len(me.vertices)):
+        if i < o: col.data[i].color = (0, 0, (i // LSIDES) / LP, 1)
+        else: k = i - o; col.data[i].color = (1, abs((k % (LU + 1)) / LU * 2 - 1), (k // (LU + 1)) / LV, 1)
+    uvl = me.uv_layers.new(name='UVMap')
+    for poly in me.polygons:
+        for li in poly.loop_indices:
+            vi = me.loops[li].vertex_index
+            if vi < o: uvl.data[li].uv = ((vi % LSIDES) / LSIDES, (vi // LSIDES) / LP)
+            else: k = vi - o; uvl.data[li].uv = ((k % (LU + 1)) / LU, (k // (LU + 1)) / LV)
+    ob.shape_key_add(name='Basis')
+    for name, g, un in (('L0_none', 0.0, 0.0), ('L1_bud', 0.3, 0.0), ('L2_rise', 0.75, 0.25)):
+        sk = ob.shape_key_add(name=name)
+        for i, v in enumerate(build_leaf(g, un)): sk.data[i].co = v
+    return ob
+
+reset()
+ob = make_seedling(); leaf = make_leaf()
 os.makedirs(os.path.join(OUT, 'plants'), exist_ok=True)
-bpy.ops.object.select_all(action='DESELECT'); ob.select_set(True)
-bpy.ops.export_scene.gltf(filepath=os.path.join(OUT, 'plants', 'clover_seedling.glb'), export_format='GLB', use_selection=True, export_yup=True,
-    export_morph=True, export_morph_normal=True, export_apply=False, export_vertex_color='ACTIVE', export_all_vertex_colors=True, export_active_vertex_color_when_no_material=True, export_materials='NONE')
-print('[seedling] verts', len(ob.data.vertices), 'faces', len(ob.data.polygons), 'kb', os.path.getsize(os.path.join(OUT, 'plants', 'clover_seedling.glb')) // 1024)
-# 確認用：各段階を横から描く
-mat = bpy.data.materials.new('g'); mat.use_nodes = True; mat.node_tree.nodes['Principled BSDF'].inputs['Base Color'].default_value = (0.25, 0.5, 0.12, 1); ob.data.materials.append(mat)
-for i, (name, *_ ) in enumerate(STAGES):
-    for k in ob.data.shape_keys.key_blocks[1:]: k.value = 0
-    if i < len(STAGES) - 1: ob.data.shape_keys.key_blocks[name].value = 1
-    sc = bpy.context.scene; sc.render.resolution_x = 300; sc.render.resolution_y = 560; sc.cycles.samples = 12; sc.cycles.use_denoising = True
-    if not sc.world: sc.world = bpy.data.worlds.new('w'); sc.world.use_nodes = True; sc.world.node_tree.nodes['Background'].inputs[0].default_value = (0.35, 0.38, 0.42, 1)
-    if 'cam' not in bpy.data.objects:
-        cam = bpy.data.objects.new('cam', bpy.data.cameras.new('cam')); sc.collection.objects.link(cam); sc.camera = cam; cam.data.type = 'ORTHO'; cam.data.ortho_scale = 36
-        cam.location = (4, -40, -3); cam.rotation_euler = (math.radians(90), 0, math.radians(5.7))
-        sun = bpy.data.objects.new('sun', bpy.data.lights.new('sun', 'SUN')); sc.collection.objects.link(sun); sun.data.energy = 3; sun.rotation_euler = (0.9, 0.2, 0.5)
-    sc.render.filepath = os.path.join(PREVIEW, f'seedling_{i}.png'); bpy.ops.render.render(write_still=True)
-# 確認用：子葉を斜め上から寄って描く（S5 と S2）
-cam = bpy.data.objects['cam']; cam.data.ortho_scale = 10; sc = bpy.context.scene; sc.render.resolution_x = 480; sc.render.resolution_y = 400
-for name, target in (('S5', (0, 0, 12)), ('S2', (1.2, 0, 3.4))):
-    for k in ob.data.shape_keys.key_blocks[1:]: k.value = 1 if (name == 'S2' and k.name == 'S2_hook') else 0
-    t = Vector(target); cam.location = t + Vector((9, -22, 14)); cam.rotation_euler = (t - cam.location).to_track_quat('-Z', 'Y').to_euler()
-    sc.render.filepath = os.path.join(PREVIEW, f'seedling_close_{name}.png'); bpy.ops.render.render(write_still=True)
+bpy.ops.object.select_all(action='DESELECT'); ob.select_set(True); leaf.select_set(True)
+path = os.path.join(OUT, 'plants', 'clover_seedling.glb')
+bpy.ops.export_scene.gltf(filepath=path, export_format='GLB', use_selection=True, export_yup=True, export_morph=True, export_morph_normal=True, export_apply=False,
+    export_vertex_color='ACTIVE', export_all_vertex_colors=True, export_active_vertex_color_when_no_material=True, export_materials='NONE')
+print('[seedling] verts', len(ob.data.vertices), '+', len(leaf.data.vertices), 'kb', os.path.getsize(path) // 1024)
+
+if '--no-preview' not in sys.argv:
+    def mat(name, c, rough=0.45, sss=0.35):
+        m = bpy.data.materials.new(name); m.use_nodes = True; b = m.node_tree.nodes['Principled BSDF']
+        b.inputs['Base Color'].default_value = (*c, 1); b.inputs['Roughness'].default_value = rough
+        try: b.inputs['Subsurface Weight'].default_value = sss; b.inputs['Subsurface Radius'].default_value = (0.4, 0.8, 0.2); b.inputs['Subsurface Scale'].default_value = 0.6
+        except Exception: pass
+        return m
+    ob.data.materials.append(mat('cot', (0.19, 0.50, 0.065))); leaf.data.materials.append(mat('leaf', (0.10, 0.30, 0.10), 0.7))
+    bpy.ops.mesh.primitive_plane_add(size=60, location=(0, 0, SEED_DEPTH)); g = bpy.context.object; g.data.materials.append(mat('soil', (0.09, 0.06, 0.04), 0.95, 0))
+    sc = bpy.context.scene; sc.cycles.samples = 24; sc.cycles.use_denoising = True
+    sc.world = bpy.data.worlds.new('w'); sc.world.use_nodes = True; sc.world.node_tree.nodes['Background'].inputs[0].default_value = (0.5, 0.55, 0.62, 1)
+    cam = bpy.data.objects.new('cam', bpy.data.cameras.new('cam')); sc.collection.objects.link(cam); sc.camera = cam; cam.data.lens = 70
+    sun = bpy.data.objects.new('sun', bpy.data.lights.new('sun', 'SUN')); sc.collection.objects.link(sun); sun.data.energy = 4; sun.data.angle = 0.2; sun.rotation_euler = (math.radians(55), 0, math.radians(120))
+    def setkeys(o, name):
+        for k in o.data.shape_keys.key_blocks[1:]: k.value = 1 if k.name == name else 0
+    def shot(tag, target, off, w=480, h=400):
+        t = Vector(target); cam.location = t + Vector(off); cam.rotation_euler = (t - cam.location).to_track_quat('-Z', 'Y').to_euler()
+        sc.render.resolution_x = w; sc.render.resolution_y = h; sc.render.filepath = os.path.join(PREVIEW, f'seedling_{tag}.png'); bpy.ops.render.render(write_still=True)
+    top = (0, 0, HYP_FINAL)
+    for name, lk in (('S2_hook', 'L0_none'), ('S3_lift', 'L0_none'), ('S4_half', 'L0_none'), ('S5_open', 'L0_none'), ('FINAL', 'L1_bud'), ('FINAL', None)):
+        setkeys(ob, name); setkeys(leaf, lk)
+        tag = name + ('_leaf' if lk is None else '')
+        shot('q_' + tag, (0, 0, 5.2), (10, -15, 10))        # 斜め上から
+    setkeys(ob, 'FINAL'); setkeys(leaf, None)
+    shot('top_FINAL', top, (0.5, -0.5, 26))                  # 真上から（写真 kz01 と同じ向き）
+    shot('side_FINAL', (0, 0, 5), (0, -24, 3.5))             # ほぼ真横から
+    setkeys(leaf, 'L0_none'); shot('close_cot', top, (5, -7, 4.5), 560, 420)   # 子葉の寄り（厚みと縁の丸み）

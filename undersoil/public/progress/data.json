@@ -1,16 +1,42 @@
 {
  "updated": "2026-11-22",
- "milestone": "M1 見た目の確立（途中）",
- "summary": "種のまわりの土の一区画で、乾いた土が水を得て目覚めていく様子と、地上でシロツメクサが発芽する様子が動くようになりました。画像はすべてクラウド環境の WebGL 2（互換の画質）で撮ったものです。WebGPU での見た目と、実機での滑らかさは、まだ確かめられていません。コルポダは区画に入りました（動画には未収録）。クマムシはモデルまでで、区画にはまだ置いていません。",
+ "milestone": "M1 見た目の確立（途中）― 発芽の作り直し",
+ "summary": "ご指摘を受けて、シロツメクサの発芽を、実物の写真4点と見比べて作り直しました（子葉の厚みと丸み、地面からの高さ、左右の角度の違い、色の塗り分け、首を振りながら立ち上がる動き、最初の本葉）。画像はクラウド環境の WebGL 2（互換の画質）で撮ったものです。",
  "sections": [
   {
    "title": "プレイ動画（46秒）",
-   "note": "前半：乾いた土に水が広がり、細菌が目覚める。後半：地上で芽が出て、子葉が開く。1コマずつ撮ってつなげたもの（8コマ/秒を補間）。芽生えの色と太さを仕様書に合わせて直す前の版です。",
+   "note": "前半：乾いた土に水が広がり、細菌が目覚める。後半：作り直した発芽（土を割って出る → 子葉が開く → 最初の本葉が伸びる）。1コマずつ撮ってつなげたもの（8コマ/秒を補間）。",
    "items": [
     {
      "src": "./m1.mp4",
      "caption": "M1 の流れ（480×270）",
      "kind": "video"
+    }
+   ]
+  },
+  {
+   "title": "作り直した発芽（実物の写真と見比べてください）",
+   "note": "参考にした写真（Wikimedia Commons。写真そのものは載せず、出所だけを示します）： https://commons.wikimedia.org/wiki/File:Trifolium_repens_2020-05-20_8615.jpg ／ https://commons.wikimedia.org/wiki/File:Trifolium_repens_kz01.jpg ／ https://commons.wikimedia.org/wiki/File:Trifolium_repens_2018-04-27_9523.jpg ／ https://commons.wikimedia.org/wiki/File:Trifolium_repens_2020-05-22_9003.jpg 　残っている違い：本葉が傘のように折れすぎ、朝露なし、種皮をかぶった姿なし。",
+   "items": [
+    {
+     "src": "./img/m1/sprout_0.45.webp",
+     "caption": "土を割って出たところ。まだ光に当たっておらず、淡い黄白色"
+    },
+    {
+     "src": "./img/m1/sprout_0.72.webp",
+     "caption": "子葉が開き、緑になる。間から最初の本葉の芽"
+    },
+    {
+     "src": "./img/m1/sprout_1.webp",
+     "caption": "最初の本葉（小葉が1枚だけの丸い葉）が伸びる"
+    },
+    {
+     "src": "./img/m1/seedling_top.webp",
+     "caption": "モデルを真上から（写真 kz01 と同じ向き）"
+    },
+    {
+     "src": "./img/m1/seedling_v2.webp",
+     "caption": "モデルの確認用画像：真上・真横・子葉の寄り・斜め"
     }
    ]
   },
@@ -38,14 +64,6 @@
      "caption": "湿りかけの区画"
     },
     {
-     "src": "./img/m1/s5_surface.webp",
-     "caption": "地上：胚軸が伸び、子葉が開きはじめる"
-    },
-    {
-     "src": "./img/m1/s6_surface.webp",
-     "caption": "地上：子葉が開ききる"
-    },
-    {
      "src": "./img/m1/s7_ui.webp",
      "caption": "画面版の UI（仮）"
     },
@@ -66,14 +84,6 @@
     {
      "src": "./img/m1/aggregates.webp",
      "caption": "団粒（作り直した版）"
-    },
-    {
-     "src": "./img/m1/seedling_stages.webp",
-     "caption": "シロツメクサ（Trifolium repens）の発芽の6段階"
-    },
-    {
-     "src": "./img/m1/seedling_close.webp",
-     "caption": "開ききった子葉"
     },
     {
      "src": "./img/m1/creatures.webp",
