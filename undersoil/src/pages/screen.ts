@@ -12,6 +12,7 @@ import { makePost } from '../game/post';
 import { buildSurface, type Surface } from '../game/surface';
 import { makeEncounters } from '../game/encounters';
 import { mountSettings, savedTier } from '../ui/settings';
+import { createAudio } from '../audio/engine';
 import { makeHud } from './hud';
 
 const errors: string[] = [];
@@ -58,7 +59,7 @@ async function main() {
   if (wetQ !== null) game.setWetAll(Number(wetQ));
   // 地上の場面（?scene=surface&g=0..1 で直接確認できる）
   const surface: Surface = await buildSurface(renderer, './', { shadows: game.q.shadows > 0, density: game.q.grainCount });
-  const postSurface = post ? makePost(renderer, surface.scene, surface.camera, game.q.post.filter((e) => e !== 'grain'), { distance: surface.focusDistance as never, range: 9, bokeh: 3.5 }) : null;
+  const postSurface = post ? makePost(renderer, surface.scene, surface.camera, game.q.post, { distance: surface.focusDistance as never, range: 9, bokeh: 3.5 }) : null;
   let mode: 'soil' | 'surface' = Q.get('scene') === 'surface' ? 'surface' : 'soil';
   let growT = 0; const GROW_SEC = Number(Q.get('grow') ?? 26);
   if (Q.get('g') !== null) surface.setGrowth(Number(Q.get('g')));
@@ -67,6 +68,8 @@ async function main() {
   surfaceCam = surface.camera; resize();
   if (mode === 'surface') { document.body.classList.add('surface'); renderer.toneMappingExposure = 0.9; }
   let started = false;
+  const audio = createAudio();
+  try { audio.muted = localStorage.getItem('undersoil.muted') === '1'; } catch { /* noop */ }
   const demo = makeDemo(world);
   const controls = makeFreeControls(camera, canvas, world.colliders, $('stick'));
   let touring = true; controls.enabled = false;
@@ -77,7 +80,7 @@ async function main() {
   // シェーダーの初回コンパイルの引っかかりを避けるため、読み込み中に準備しておく
   await renderer.compileAsync(scene, camera);
   ($('loadBar') as HTMLElement).style.width = '100%';
-  const begin = () => { started = true; $('loading').classList.add('hide'); stopFacts(); if (wetQ === null && !testing) setTimeout(() => demo.start(), 2500); };
+  const begin = () => { started = true; audio.start(); $('loading').classList.add('hide'); stopFacts(); if (wetQ === null && !testing) setTimeout(() => demo.start(), 2500); };
   if (testing) begin(); else { const b = $('start') as HTMLButtonElement; b.hidden = false; b.addEventListener('click', begin, { once: true }); }
 
   // 出会いの順番（M1 の自動の流れ用。M3 で、プレイヤーの位置と行動に結び付ける）
@@ -92,10 +95,14 @@ async function main() {
     { id: 'colpoda', when: () => mode === 'soil' && game.creatures.anyActive() },
     { id: 'clay', when: () => mode === 'soil' && cellW(8) > 0.4 },
     { id: 'trifolium-repens', when: () => mode === 'surface' && surface.growth > 0.75 },
-  ], { gapSec: 4 });
+  ], { gapSec: 4, onShow: () => audio.chime() });
   $('water').addEventListener('click', () => demo.start());
   $('dry').addEventListener('click', () => demo.dry());
   $('sprout').addEventListener('click', () => switchTo(mode === 'soil' ? 'surface' : 'soil'));
+  const muteBtn = $('mute'); const showMute = () => { muteBtn.textContent = audio.muted ? '音：切' : '音：入'; }; showMute();
+  muteBtn.addEventListener('click', () => { audio.start(); audio.setMuted(!audio.muted); showMute(); try { localStorage.setItem('undersoil.muted', audio.muted ? '1' : '0'); } catch { /* noop */ } });
+  // タブを切り替えて戻ったとき、音が壊れないように止めて再開する
+  document.addEventListener('visibilitychange', () => audio.pause(document.hidden));
   $('tour').addEventListener('click', () => {
     touring = !touring; controls.enabled = !touring; $('tour').textContent = touring ? '自分で動く' : '自動で巡る';
     if (!touring) { const e = new THREE.Euler().setFromQuaternion(camera.quaternion, 'YXZ'); controls.yaw = e.y; controls.pitch = e.x; }
@@ -119,6 +126,7 @@ async function main() {
       if (postSurface) postSurface.render(); else renderer.render(surface.scene, surface.camera);
     } else if (post) post.render(); else renderer.render(scene, camera);
     if (!testing) enc.update(dt);
+    audio.setMode(mode); audio.setVitality(world.grid.mean()); audio.setGrowth(surface.growth); audio.update(dt);
     hud.tick(now); frames++;
     const vit = Math.round(world.grid.mean() * 100);
     $('sprout').textContent = mode === 'soil' ? '地上を見る' : '土の中へ戻る';

@@ -5,7 +5,7 @@ import { join, extname, normalize } from 'node:path';
 const require = createRequire(import.meta.url);
 let pw; try { pw = require('playwright'); } catch { pw = require('/opt/node-tools/node_modules/playwright'); }
 export const ORIGIN = 'https://undersoil.test';
-export const DIST = new URL('../../dist/', import.meta.url).pathname;
+export const DIST = process.env.DIST_DIR ?? new URL('../../dist/', import.meta.url).pathname;
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.json': 'application/json',
   '.wasm': 'application/wasm', '.glb': 'model/gltf-binary', '.png': 'image/png', '.webp': 'image/webp', '.jpg': 'image/jpeg', '.svg': 'image/svg+xml',
   '.ogg': 'audio/ogg', '.mp3': 'audio/mpeg', '.m4a': 'audio/mp4', '.woff2': 'font/woff2', '.mp4': 'video/mp4', '.bin': 'application/octet-stream', '.ktx2': 'image/ktx2' };

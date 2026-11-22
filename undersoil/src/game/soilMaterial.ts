@@ -19,7 +19,7 @@ export const soilUniforms = {
   detailStrength: uniform(1),
 };
 
-export function makeSoilMaterial(kind: GrainKind, na: THREE.Texture, detail: THREE.Texture, wetAttr: THREE.InstancedBufferAttribute, seedAttr: THREE.InstancedBufferAttribute, opts: { cheap?: boolean; mottle?: number } = {}) {
+export function makeSoilMaterial(kind: GrainKind, na: THREE.Texture, detail: THREE.Texture, wetAttr: THREE.InstancedBufferAttribute, seedAttr: THREE.InstancedBufferAttribute, opts: { cheap?: boolean; mottle?: number; tint?: [number, number, number] } = {}) {
   const L = LOOKS[kind];
   const m = new THREE.MeshPhysicalNodeMaterial();
   type F = ReturnType<typeof float>;
@@ -41,7 +41,7 @@ export function makeSoilMaterial(kind: GrainKind, na: THREE.Texture, detail: THR
   const dusty = mix(dryCol, vec3(0.40, 0.35, 0.29), dust.mul(kind === 'quartz' ? 0.3 : 0.55));
   const wetCol = vec3(...L.wet).mul(mix(float(0.7), float(1.25), d.g)).mul(tint);
   const col = mix(dusty, wetCol, wet).mul(mix(float(1), float(0.55), d.b.mul(kind === 'quartz' ? 0.2 : 1)));
-  m.colorNode = col;
+  m.colorNode = opts.tint ? col.mul(vec3(...opts.tint)) : col;
   m.roughnessNode = saturate(mix(float(L.roughDry), float(L.roughWet), wet).add(d.r.sub(0.5).mul(0.25)));
   m.metalnessNode = float(0);
   m.aoNode = mix(ao, float(1), 0.15);

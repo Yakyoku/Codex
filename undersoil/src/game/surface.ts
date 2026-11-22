@@ -1,10 +1,11 @@
 // 地上の変化：シロツメクサの発芽を、実写の早回しのように、その場で描いて見せる。単位は mm。
 // 地下の暗さとの対比のため、ここは朝の斜めの光で、明るく色彩豊かに。
 import * as THREE from 'three/webgpu';
-import { attribute, float, vec2, vec3, mix, uniform, saturate, smoothstep, normalWorld, positionWorld, cameraPosition, dot, pow, texture, uv, abs, oneMinus, fract } from 'three/tsl';
+import { attribute, float, vec2, vec3, mix, uniform, saturate, smoothstep, normalWorld, positionWorld, positionLocal, cameraPosition, dot, pow, texture, uv, abs, oneMinus, fract, mx_noise_float } from 'three/tsl';
 import { loadGLB, loadTexture } from '../core/assets';
 import { makeRng } from './rng';
 import { makeSoilMaterial } from './soilMaterial';
+import { buildLitter } from './litter';
 
 export interface Surface { scene: THREE.Scene; camera: THREE.PerspectiveCamera; focusDistance: { value: number }; setGrowth(g: number): void; update(dt: number, t: number): void; growth: number; }
 const STAGES = ['S0_seed', 'S1_radicle', 'S2_hook', 'S3_lift', 'S4_half', 'S5_open'];
@@ -28,7 +29,7 @@ export async function buildSurface(renderer: THREE.WebGPURenderer, base: string,
   const scene = new THREE.Scene();
   const sunDir = new THREE.Vector3(-0.72, 0.36, 0.48).normalize();
   scene.environment = skyEnvironment(renderer, sunDir); scene.environmentIntensity = 0.9;
-  scene.background = scene.environment; scene.backgroundBlurriness = 0.3; scene.backgroundIntensity = 1.25; scene.fog = new THREE.Fog(0xd9c4a0, 38, 120);
+  scene.background = new THREE.Color(0xd8c3a0); scene.fog = new THREE.Fog(0xd9c4a0, 38, 120);
   const camera = new THREE.PerspectiveCamera(30, 1, 0.3, 600);
   const sun = new THREE.DirectionalLight(0xffdfb4, 4.2); sun.position.copy(sunDir).multiplyScalar(80); scene.add(sun);
   if (opts.shadows) { sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048); const c = sun.shadow.camera; c.left = -26; c.right = 26; c.top = 26; c.bottom = -26; c.near = 10; c.far = 160; sun.shadow.bias = -0.0008; sun.shadow.normalBias = 0.12; }
@@ -44,20 +45,24 @@ export async function buildSurface(renderer: THREE.WebGPURenderer, base: string,
     const [g, na] = await Promise.all([loadGLB(base, `models/grains/${nm}.glb`), loadTexture(base, `models/grains/${nm}_lod2_na.webp`)]);
     const geo = (g.scene.getObjectByName(`${nm}_LOD2`) as THREE.Mesh).geometry;
     const wet = new THREE.InstancedBufferAttribute(new Float32Array(n), 1), seed = new THREE.InstancedBufferAttribute(new Float32Array(n), 1);
-    const mesh = new THREE.InstancedMesh(geo, makeSoilMaterial(kind, na, detail, wet, seed, { mottle: 0.08 }), n);
+    const mesh = new THREE.InstancedMesh(geo, makeSoilMaterial(kind, na, detail, wet, seed, { mottle: 0.08, tint: kind === 'quartz' ? [0.9, 0.88, 0.84] : [0.95, 0.80, 0.66] }), n);
     const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), p = new THREE.Vector3(), s = new THREE.Vector3(); const idx: number[] = [], bases: THREE.Matrix4[] = [];
     for (let i = 0; i < n; i++) {
-      const a = rng.range(0, Math.PI * 2), rad = 34 * rng.next() ** 0.8, r = (r0 + (r1 - r0) * rng.next() ** 2.2) * (1 + rad * 0.035);
+      const a = rng.range(0, Math.PI * 2), rad = 36 * rng.next() ** 0.62, r = (r0 + (r1 - r0) * rng.next() ** 2.2) * (1 + rad * 0.035);
       p.set(Math.cos(a) * rad, 0, Math.sin(a) * rad); p.y = height(p.x, p.z) + rng.range(-0.6, 0.25) * r;
       q.setFromEuler(e.set(rng.range(0, 6.28), rng.range(0, 6.28), rng.range(0, 6.28))); s.set(r, r * rng.range(0.7, 1), r * rng.range(0.85, 1.1));
       mesh.setMatrixAt(i, m4.compose(p, q, s));
-      (wet.array as Float32Array)[i] = Math.max(0.16, 0.3 - rad * 0.004) * rng.range(0.85, 1); (seed.array as Float32Array)[i] = rng.next();
+      { const patch = 0.5 + 0.5 * Math.sin(p.x * 0.31 + Math.sin(p.z * 0.23) * 2.0) * Math.sin(p.z * 0.27 + 0.7); (wet.array as Float32Array)[i] = (0.1 + 0.3 * patch * patch) * rng.range(0.8, 1); } (seed.array as Float32Array)[i] = rng.next();
       if (rad < 3.2) { idx.push(i); bases.push(m4.clone()); }
     }
     mesh.castShadow = true; mesh.receiveShadow = true; mesh.computeBoundingSphere(); scene.add(mesh); lifts.push({ mesh, idx, base: bases });
   }
   // 粒の下を埋める土の面（すき間から下が抜けて見えないように）
-  const under = new THREE.Mesh(new THREE.CircleGeometry(220, 48), new THREE.MeshStandardNodeMaterial({ color: 0x4a3a2a, roughness: 1, envMapIntensity: 0.1 })); under.rotation.x = -Math.PI / 2; under.position.y = -0.12; under.receiveShadow = true; scene.add(under);
+  const underMat = new THREE.MeshStandardNodeMaterial({ roughness: 1 });
+  { const t1 = texture(detail, positionWorld.xz.mul(0.9)), t2 = texture(detail, positionWorld.xz.mul(0.21));
+    underMat.colorNode = mix(vec3(0.045, 0.032, 0.022), vec3(0.10, 0.072, 0.048), t1.r.mul(0.6).add(t2.g.mul(0.4))).mul(oneMinus(t1.b.mul(0.5))); }
+  const under = new THREE.Mesh(new THREE.CircleGeometry(220, 48), underMat); under.rotation.x = -Math.PI / 2; under.position.y = -0.12; under.receiveShadow = true; scene.add(under);
+  scene.add(buildLitter(height, { density: opts.density, keepOut: 1.6, radius: 30, sunDir }));
 
   // 芽生え（子葉・胚軸・根）と、最初の本葉
   const gltf = await loadGLB(base, 'models/plants/clover_seedling.glb');
@@ -72,26 +77,29 @@ export async function buildSurface(renderer: THREE.WebGPURenderer, base: string,
     const pm = new THREE.MeshPhysicalNodeMaterial();
     const u2 = uv();
     // 表面の細かい粒状感（表皮の細胞の凹凸が、光を受けて細かくきらめく）。写真で確認した特徴
-    const st = texture(detail, u2.mul(vec2(5.0, 8.0)));
-    const stipple = st.r.mul(0.6).add(st.b.mul(0.4));
+    // 表皮の細胞のきらめき：形の座標（mm）からの3次元ノイズ。UV の伸びに左右されない
+    const pl = positionLocal;
+    const stipple = saturate(mx_noise_float(pl.mul(9.0)).mul(0.45).add(mx_noise_float(pl.mul(22.0)).mul(0.45)).add(0.5));
     // 色：土の中では淡い黄白色。地上で光に当たると、子葉から先に緑になる。写真の目測 RGB(120,190,70) 前後を線形に直した値
     const pale = vec3(0.80, 0.76, 0.48), rootCol = vec3(0.88, 0.86, 0.78);
-    const cotTop = mix(vec3(0.15, 0.40, 0.045), vec3(0.24, 0.52, 0.08), stipple);
-    const cotGreen = mix(vec3(0.30, 0.52, 0.16), cotTop, topSide);            // 裏は淡い
+    // 縁はわずかに黄色みを帯び、厚みのせいで少し暗く見える（写真 8615）
+    const edge = smoothstep(0.32, 0.5, abs(u2.x.sub(0.5))).add(smoothstep(0.85, 1.0, alongCot)).min(1.0);
+    const cotTop = mix(mix(vec3(0.085, 0.19, 0.035), vec3(0.17, 0.30, 0.075), stipple), vec3(0.15, 0.21, 0.045), edge.mul(0.5));
+    const cotGreen = mix(vec3(0.26, 0.42, 0.14), cotTop, topSide);            // 裏は淡い
     const midline = oneMinus(smoothstep(0.0, 0.10, abs(u2.x.sub(0.5)))).mul(topSide).mul(smoothstep(0.15, 0.4, alongCot));
     // 胚軸：淡い緑。地ぎわはわずかに赤みを帯びる個体がある（写真1点で確認。弱く入れる）
-    const stemGreen = mix(vec3(0.36, 0.30, 0.17), vec3(0.30, 0.46, 0.13), smoothstep(0.3, 0.75, vc.b));
+    const stemGreen = mix(vec3(0.30, 0.25, 0.14), vec3(0.22, 0.36, 0.10), smoothstep(0.3, 0.75, vc.b));
     const green = mix(stemGreen, cotGreen.mul(mix(float(1), float(1.12), midline)), isCot);
     const greening = uGreen.mul(mix(float(0.9), float(1), isCot)).mul(aboveGround);
     const col = mix(mix(pale, green, greening), rootCol, isRoot);
     pm.colorNode = col;
-    pm.roughnessNode = mix(float(0.5), mix(float(0.62), float(0.34), stipple), isCot);   // 鈍いつや＋細かいきらめき
+    pm.roughnessNode = mix(float(0.5), mix(float(0.82), float(0.22), pow(stipple, float(4.0))), isCot);   // 鈍いつや＋細かいきらめき
     pm.metalnessNode = float(0);
-    pm.clearcoatNode = isCot.mul(0.18); pm.clearcoatRoughnessNode = float(0.4);
+    pm.clearcoatNode = isCot.mul(0.06); pm.clearcoatRoughnessNode = float(0.4);
     pm.sheen = 0.4; pm.sheenRoughness = 0.5; pm.sheenColor = new THREE.Color(0.55, 0.7, 0.3);
     // 透け：子葉は厚いので、逆光では縁だけが明るい黄緑に光る。胚軸は細いので全体が透ける
     const rimThin = pow(oneMinus(saturate(dot(normalWorld, viewDir))), 2.0);
-    pm.emissiveNode = col.mul(vec3(1.25, 1.2, 0.45)).mul(back).mul(mix(float(0.22), rimThin.mul(1.3).add(0.12), isCot)).mul(aboveGround).mul(oneMinus(isRoot));
+    pm.emissiveNode = col.mul(vec3(1.2, 1.15, 0.45)).mul(back).mul(mix(float(0.22), rimThin.mul(0.9), isCot)).mul(aboveGround).mul(oneMinus(isRoot));
     plant.material = pm; plant.castShadow = true; plant.receiveShadow = true; plant.frustumCulled = false;
   }
   {
@@ -103,7 +111,7 @@ export async function buildSurface(renderer: THREE.WebGPURenderer, base: string,
     const bladeCol = mix(vec3(0.085, 0.27, 0.085), vec3(0.14, 0.34, 0.11), veins.add(mid).min(1.0));
     const colL = mix(vec3(0.42, 0.56, 0.26), bladeCol, isBlade);
     lm.colorNode = colL; lm.roughnessNode = mix(float(0.5), float(0.78), isBlade); lm.metalnessNode = float(0);
-    lm.emissiveNode = colL.mul(vec3(1.3, 1.5, 0.5)).mul(back.mul(0.9).add(facing.mul(0.0))).mul(mix(float(1), float(0.55), veins.add(mid).min(1.0)));
+    lm.emissiveNode = colL.mul(vec3(1.2, 1.35, 0.5)).mul(back.mul(0.5).add(facing.mul(0.0))).mul(mix(float(1), float(0.55), veins.add(mid).min(1.0)));
     leaf.material = lm; leaf.castShadow = true; leaf.receiveShadow = true; leaf.frustumCulled = false;
   }
   const holder = new THREE.Group(); holder.position.y = -SEED_DEPTH; holder.rotation.y = 0.6; holder.add(gltf.scene); scene.add(holder);
