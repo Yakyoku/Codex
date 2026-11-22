@@ -63,3 +63,8 @@ body:has(#ui) .ir-hud { left:auto; right:max(12px,env(safe-area-inset-right)); b
   #topbtns { top:max(6px,env(safe-area-inset-top)); }
   #card { bottom:auto; top:max(10px,env(safe-area-inset-top)); width:min(46vw,22em); font-size:.88em; }
 }
+
+/* 患者の視界：目が開く演出（まぶしい光が引いていく） */
+#patient.waking::after { content:''; position:absolute; inset:0; pointer-events:none; background:radial-gradient(ellipse at 50% 45%, rgba(255,250,240,.9), rgba(255,250,240,0) 70%); animation:wake 5.5s ease-out forwards; }
+@keyframes wake { from { opacity:1; } to { opacity:0; } }
+#patient.full img { object-fit:cover; }

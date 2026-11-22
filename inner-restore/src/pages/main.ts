@@ -9,6 +9,7 @@ import { Input } from '../core/input';
 import { GameAudio, speak } from '../core/audio';
 import { buildRetina } from '../stages/eye/retina';
 import { Diver } from '../game/diver';
+import { PurifyBeam } from '../game/beam';
 import { buildUI, renderAtlas, ATLAS, TIPS } from '../game/ui';
 import tuning from '../data/tuning.json';
 
@@ -49,18 +50,17 @@ async function main() {
   progress(0.3);
   const stage = await buildRetina(renderer, tier);
   progress(0.7);
-  const diver = await Diver.load();
+  const diver = await Diver.load(tier === 'pc-high' || tier === 'mobile-high');
   stage.scene.add(diver.root);
   const audio = new GameAudio();
   const input = new Input(canvas);
   input.sens = { mouse: tuning.camera.mouseSens, pad: tuning.camera.padSens, touch: tuning.camera.touchSens };
 
   // 浄化ビーム（治療の光）。原色を避け、淡い白にわずかな青緑
-  const beamMat = new THREE.MeshBasicNodeMaterial({ transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, color: 0xb98cff });
-  beamMat.opacity = 0.0;
-  const beamGeo = new THREE.CylinderGeometry(0.035, 0.11, 1, 10, 1, true); beamGeo.translate(0, 0.5, 0); beamGeo.rotateX(Math.PI / 2);
-  const beam = new THREE.Mesh(beamGeo, beamMat); beam.renderOrder = 50; beam.frustumCulled = false; stage.scene.add(beam);
-  const beamLight = new THREE.PointLight(0xece4ff, 0, 22, 1.6); stage.scene.add(beamLight);
+  const noiseTex = new THREE.TextureLoader().load('/static/img/noise.png'); noiseTex.wrapS = noiseTex.wrapT = THREE.RepeatWrapping;
+  const purify = new PurifyBeam(noiseTex); stage.scene.add(purify.group);
+  const beamFrom = new THREE.Vector3(), beamTo = new THREE.Vector3();
+
 
   if (Q.has('h')) stage.health.setAll(Number(Q.get('h')));
   if (Q.has('heal')) { const [x, z, r] = Q.get('heal')!.split(',').map(Number); for (let i = 0; i < 40; i++) stage.health.heal(x, z, r, 0.1); }
@@ -71,7 +71,7 @@ async function main() {
   let yaw = -1.15, pitch = 0.22, facing = yaw, firstPerson = false, paused = false, started = false, finished = false, t = 0, walked = 0;
   const known = new Set<string>((store.get('ir.known') ?? '').split(',').filter(Boolean));
   const camTarget = new THREE.Vector3(), camPos = new THREE.Vector3(), tmp = new THREE.Vector3(), dir = new THREE.Vector3(), hit = new THREE.Vector3(), focus = new THREE.Vector3();
-  let focusAmt = 0; let focusOn = false;
+  let focusAmt = 0; let focusOn = false; let scanT = 0;
   const hud = new Hud(`${backendLabel} · ${TIER_LABEL[tier]} · ${DEVICE_LABEL[device]}`, () => dyn ? `解像度 ×${dyn.scale.toFixed(2)}` : '');
   $('pf').textContent = String(tuning.flow.perceptionFactor);
 
@@ -123,6 +123,7 @@ async function main() {
   // ---- 患者の視界 ----
   const pImg = $('patient').querySelector('img') as HTMLImageElement, pSpot = $('patient').querySelector('.spot') as HTMLElement;
   function patientView(m: number) {
+    if ($('patient').classList.contains('waking')) return;
     const k = 1 - m;
     pImg.style.filter = `blur(${(k * 0.9).toFixed(2)}em) brightness(${(0.4 + 0.6 * m).toFixed(2)}) saturate(${(0.35 + 0.65 * m).toFixed(2)}) contrast(${(0.75 + 0.25 * m).toFixed(2)})`;
     pSpot.style.background = `radial-gradient(ellipse 38% 42% at 46% 52%, rgba(20,16,14,${(0.85 * k).toFixed(2)}) 0%, rgba(20,16,14,0) 100%), radial-gradient(ellipse 22% 26% at 72% 36%, rgba(20,16,14,${(0.6 * k).toFixed(2)}) 0%, rgba(20,16,14,0) 100%)`;
@@ -150,9 +151,9 @@ async function main() {
     pos.y = stage.floorHeight(pos.x, pos.z);
     const speed = vel.length();
     const wantFace = input.fire ? yaw : speed > 0.3 ? Math.atan2(vel.x, vel.z) : facing;
-    let df = wantFace - facing; df = Math.atan2(Math.sin(df), Math.cos(df)); facing += df * Math.min(1, dt * P.turnLerp);
+    let df = wantFace - facing; df = Math.atan2(Math.sin(df), Math.cos(df)); const dFace = df * Math.min(1, dt * P.turnLerp); facing += dFace; const turnRate = dt > 0 ? dFace / dt : 0;
     diver.root.position.copy(pos); diver.root.rotation.y = facing; diver.root.visible = !firstPerson;
-    diver.update(dt, speed, input.fire, pitch);
+    diver.update(dt, speed, input.fire, pitch, turnRate);
     // カメラ：肩ごしの三人称。対象の紹介中は、ゆっくり対象のほうへ寄る
     dir.set(Math.sin(yaw) * Math.cos(pitch), -Math.sin(pitch), Math.cos(yaw) * Math.cos(pitch));
     focusAmt += ((focusOn ? 1 : 0) - focusAmt) * Math.min(1, dt * 1.6);
@@ -170,12 +171,16 @@ async function main() {
       for (let s = 2; s < tuning.beam.range + tuning.camera.distance; s += 0.4) { hit.copy(camera.position).addScaledVector(dir, s); if (hit.y <= stage.floorHeight(hit.x, hit.z)) { found = true; break; } }
       if (!found) { hit.set(pos.x + fx * 9, 0, pos.z + fz * 9); hit.y = stage.floorHeight(hit.x, hit.z); }
       stage.heal(hit.x, hit.z, dt); firing = true;
-      diver.hand.getWorldPosition(tmp); beam.position.copy(tmp); beam.lookAt(hit); beam.scale.set(1, 1, tmp.distanceTo(hit));
-      stage.u.beamPos.value.copy(hit); beamLight.position.copy(hit).y += 1.2;
+      diver.hand.getWorldPosition(beamFrom); beamTo.copy(hit);
+      stage.u.beamPos.value.copy(hit);
     }
     const bo = stage.u.beamOn.value as number; stage.u.beamOn.value = bo + ((firing ? 1 : 0) - bo) * Math.min(1, dt * 10);
-    beamMat.opacity = 0.5 * (stage.u.beamOn.value as number) * (0.85 + 0.15 * Math.sin(t * 31)); beam.visible = beamMat.opacity > 0.01; beamLight.intensity = 26 * (stage.u.beamOn.value as number);
+    if (!firing) diver.hand.getWorldPosition(beamFrom);
+    purify.update(dt, beamFrom, beamTo, firing, camera);
     const sc = stage.u.scan.value as number; stage.u.scan.value = sc + ((input.scan ? 1 : 0) - sc) * Math.min(1, dt * (input.scan ? tuning.scan.fadeIn : tuning.scan.fadeOut));
+    // スキャンの波紋：押している間、主人公から 1.4 秒ごとに輪が広がる
+    if (input.scan) { scanT += dt; if (scanT > 1.4) scanT = 0; } else if (scanT > 0) scanT = Math.min(1.4, scanT + dt);
+    stage.u.scanR.value = scanT * 48; stage.u.scanOrigin.value.copy(pos); stage.u.scanPulse.value = scanT > 0 && scanT < 1.4 ? 1 - scanT / 1.4 : 0;
     diver.lamp.intensity = tier === 'pc-high' ? 16 : 0;
     stage.update(dt, t, camera);
     // 出会い（落ち着いている時だけ出す）
@@ -202,8 +207,17 @@ async function main() {
     finished = true; audio.resolve(); stage.health.setAll(1); hideCard(); queue.length = 0;
     say('血流が戻りました。網膜が、透明さを取り戻していきます。', 5);
     if (sim !== null) return;
-    setTimeout(() => { $('patient').classList.add('full'); say('患者の視界です。ぼやけていた光が、形を結びはじめました。', 7); }, 4500);
-    setTimeout(() => { $('patient').classList.remove('full'); $('done').classList.remove('hide'); $('donetext').textContent = 'ここは、ステージ1「目」の最初の一区画です。'; document.exitPointerLock?.(); }, 13000);
+    setTimeout(() => {
+      // 目が開くように：まぶしい光でにじんだ状態から、ゆっくりピントが合っていく
+      const pv = $('patient'); pv.classList.add('full', 'waking');
+      pImg.style.transition = 'none'; pImg.style.filter = 'blur(28px) brightness(2.1) saturate(0.4)'; pImg.style.transform = 'scale(1.06)';
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        pImg.style.transition = 'filter 6s cubic-bezier(.2,.6,.2,1), transform 9s ease-out';
+        pImg.style.filter = 'blur(0px) brightness(1) saturate(1)'; pImg.style.transform = 'scale(1)';
+      }));
+      say('患者の視界です。ぼやけていた光が、形を結びはじめました。', 7);
+    }, 4500);
+    setTimeout(() => { $('patient').classList.remove('full', 'waking'); pImg.style.transition = ''; pImg.style.transform = ''; $('done').classList.remove('hide'); $('donetext').textContent = 'ここは、ステージ1「目」の最初の一区画です。'; document.exitPointerLock?.(); }, 13000);
   }
   $('b-cont').onclick = () => { $('done').classList.add('hide'); finished = true; };
 

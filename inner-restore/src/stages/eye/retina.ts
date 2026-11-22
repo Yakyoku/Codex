@@ -15,7 +15,7 @@ interface RetinaData { size: [number, number]; rOuter: number; rLumen: number; e
 
 export interface RetinaStage {
   scene: THREE.Scene; health: HealthField; size: [number, number];
-  u: { time: N; scan: N; lightIn: N; beamPos: N; beamOn: N; heartPhase: N };
+  u: { time: N; scan: N; lightIn: N; beamPos: N; beamOn: N; heartPhase: N; scanR: N; scanOrigin: N; scanPulse: N };
   floorHeight(x: number, z: number): number;
   update(dt: number, t: number, camera: THREE.Camera): void;
   heal(x: number, z: number, dt: number): number;
@@ -53,6 +53,7 @@ export async function buildRetina(renderer: THREE.WebGPURenderer, tier: Tier): P
   const u = {
     time: uniform(0), scan: uniform(0), lightIn: uniform(0.35), heartPhase: uniform(0),
     beamPos: uniform(new THREE.Vector3(0, -999, 0)), beamOn: uniform(0),
+    scanR: uniform(0), scanOrigin: uniform(new THREE.Vector3()), scanPulse: uniform(0),
   };
   const hUV = vec2(positionWorld.x.div(W).add(0.5), positionWorld.z.div(D).add(0.5));
   const H: N = texture(hTex, hUV).r;                                  // その場所の健康度
@@ -62,6 +63,8 @@ export async function buildRetina(renderer: THREE.WebGPURenderer, tier: Tier): P
   const beamGlow = exp(length(positionWorld.xz.sub(u.beamPos.xz)).div(tuning.beam.radius * 0.55).pow(2).negate()).mul(u.beamOn);
   // スキャン表示（スーツの画面表示。健康度を色で示す。細胞そのものの性質ではない）
   const scanCol = mix(color(0xffa040), color(0x5fe8d0), H);
+  // スキャンの波紋（スーツの走査表示）：主人公から広がる細い輪。健康度に応じて色が変わる
+  const scanRing = exp(length(positionWorld.xz.sub(u.scanOrigin.xz)).sub(u.scanR).div(0.9).pow(2).negate()).mul(u.scanPulse);
   const pulse = sin(u.heartPhase.sub(positionWorld.x.mul(0.05))).mul(0.5).add(0.5).pow(3.0);   // 心拍に同期した脈動
 
   // ---- 内境界膜（透明な床）----
@@ -82,7 +85,7 @@ export async function buildRetina(renderer: THREE.WebGPURenderer, tier: Tier): P
     if (rich) { const pm = ilmMat as THREE.MeshPhysicalNodeMaterial; pm.clearcoatNode = mix(float(0.35), float(0.05), sick); pm.clearcoatRoughnessNode = float(0.12); pm.specularIntensityNode = float(0.45); }
     const op = haze.add(fres.mul(0.3)).add(border.mul(0.035)).add(0.045);
     ilmMat.opacityNode = saturate(op.mul(float(1).sub(u.scan.mul(0.6)))).mul(edgeFade);
-    ilmMat.emissiveNode = color(0xd9d2c8).mul(haze.mul(0.1)).mul(u.lightIn.add(0.25)).add(color(0xffe9c8).mul(beamGlow.mul(0.5))).add(scanCol.mul(u.scan).mul(border.mul(0.25).add(0.03)));
+    ilmMat.emissiveNode = color(0xd9d2c8).mul(haze.mul(0.1)).mul(u.lightIn.add(0.25)).add(color(0xffe9c8).mul(beamGlow.mul(0.5))).add(scanCol.mul(u.scan).mul(border.mul(0.25).add(0.03))).add(scanCol.mul(scanRing.mul(0.9)));
     const ilm = meshes.ilm; ilm.material = ilmMat; ilm.renderOrder = 30; scene.add(ilm);
   }
 
@@ -110,7 +113,7 @@ export async function buildRetina(renderer: THREE.WebGPURenderer, tier: Tier): P
     vesselMat.roughnessNode = mix(float(0.55), float(0.3), H);
     if (rich) { const pm = vesselMat as THREE.MeshPhysicalNodeMaterial; pm.clearcoatNode = mix(float(0.1), float(0.5), H); pm.clearcoatRoughnessNode = float(0.2); }
     vesselMat.opacityNode = saturate(float(0.07).add(sick.mul(0.14)).add(nucleus.mul(0.4)).add(fres.mul(0.26)).add(edgeLine.mul(0.05))).mul(edgeFade);
-    vesselMat.emissiveNode = color(0xff5a3a).mul(H.mul(0.05)).add(color(0xffe9c8).mul(beamGlow.mul(0.35))).add(scanCol.mul(u.scan).mul(fres.mul(0.9).add(0.15)));
+    vesselMat.emissiveNode = color(0xff5a3a).mul(H.mul(0.05)).add(color(0xffe9c8).mul(beamGlow.mul(0.35))).add(scanCol.mul(u.scan).mul(fres.mul(0.9).add(0.15))).add(scanCol.mul(scanRing.mul(0.7)));
     const v = meshes.vessel; v.material = vesselMat; v.renderOrder = 20; scene.add(v);
   }
   // ---- 周皮細胞（血管の外に巻き付く）----
