@@ -58,7 +58,7 @@ async function main() {
   if (wetQ !== null) game.setWetAll(Number(wetQ));
   // 地上の場面（?scene=surface&g=0..1 で直接確認できる）
   const surface: Surface = await buildSurface(renderer, './', { shadows: game.q.shadows > 0, density: game.q.grainCount });
-  const postSurface = post ? makePost(renderer, surface.scene, surface.camera, game.q.post.filter((e) => e !== 'vignette' && e !== 'grain')) : null;
+  const postSurface = post ? makePost(renderer, surface.scene, surface.camera, game.q.post.filter((e) => e !== 'grain'), { distance: surface.focusDistance as never, range: 9, bokeh: 3.5 }) : null;
   let mode: 'soil' | 'surface' = Q.get('scene') === 'surface' ? 'surface' : 'soil';
   let growT = 0; const GROW_SEC = Number(Q.get('grow') ?? 26);
   if (Q.get('g') !== null) surface.setGrowth(Number(Q.get('g')));

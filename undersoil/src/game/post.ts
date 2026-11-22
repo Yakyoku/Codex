@@ -2,15 +2,19 @@
 import * as THREE from 'three/webgpu';
 import { pass, screenUV, smoothstep, mix, float, vec3, time, fract, sin, dot, vec2 } from 'three/tsl';
 import { bloom } from 'three/addons/tsl/display/BloomNode.js';
+import { dof } from 'three/addons/tsl/display/DepthOfFieldNode.js';
 
-export function makePost(renderer: THREE.WebGPURenderer, scene: THREE.Scene, camera: THREE.Camera, effects: string[]) {
+export function makePost(renderer: THREE.WebGPURenderer, scene: THREE.Scene, camera: THREE.Camera, effects: string[], focus?: { distance: ReturnType<typeof float>; range: number; bokeh: number }) {
   const pipe = new THREE.RenderPipeline(renderer);
   const scenePass = pass(scene, camera);
   const color = scenePass.getTextureNode('output');
-  let out = color.rgb;
+  let base = color;
+  // 被写界深度：接写のように、ピントの合った芽のまわりだけがくっきりし、手前と奥がぼける
+  if (focus && effects.some((e) => e.startsWith('dof'))) base = dof(color, scenePass.getViewZNode(), focus.distance, float(focus.range), float(effects.includes('dof-lite') ? focus.bokeh * 0.6 : focus.bokeh)) as unknown as typeof color;
+  let out = base.rgb;
   if (effects.some((e) => e.startsWith('bloom'))) {
     const lite = effects.includes('bloom-lite');
-    out = out.add(bloom(color, lite ? 0.22 : 0.3, lite ? 0.4 : 0.65, 0.9).rgb);
+    out = out.add(bloom(base, lite ? 0.22 : 0.3, lite ? 0.4 : 0.65, 0.9).rgb);
   }
   if (effects.includes('grade')) {
     // 暗部をわずかに寒色へ、明部を暖色へ（映画的な分離）。彩度は上げない

@@ -6,7 +6,7 @@ import { loadGLB, loadTexture } from '../core/assets';
 import { makeRng } from './rng';
 import { makeSoilMaterial } from './soilMaterial';
 
-export interface Surface { scene: THREE.Scene; camera: THREE.PerspectiveCamera; setGrowth(g: number): void; update(dt: number, t: number): void; growth: number; }
+export interface Surface { scene: THREE.Scene; camera: THREE.PerspectiveCamera; focusDistance: { value: number }; setGrowth(g: number): void; update(dt: number, t: number): void; growth: number; }
 const STAGES = ['S0_seed', 'S1_radicle', 'S2_hook', 'S3_lift', 'S4_half', 'S5_open'];
 const LEAF_STAGES = ['L0_none', 'L1_bud', 'L2_rise'];
 /** 種は地表から 3 mm 下（シロツメクサは浅くまく） */
@@ -113,8 +113,9 @@ export async function buildSurface(renderer: THREE.WebGPURenderer, base: string,
   const blend = (inf: number[], d: Record<string, number>, names: string[], x: number) => { const i = Math.min(names.length - 1, Math.floor(x)); const f = ease(Math.min(1, x - i)); inf.fill(0); inf[d[names[i]]] = 1 - f; if (i + 1 < names.length) inf[d[names[i + 1]]] = f; };
 
   const tmp = new THREE.Matrix4(), tp = new THREE.Vector3(), tq = new THREE.Quaternion(), ts = new THREE.Vector3();
+  const focusDistance = uniform(16);
   const surf: Surface = {
-    scene, camera, growth: 0,
+    scene, camera, growth: 0, focusDistance,
     setGrowth(g) {
       surf.growth = g = Math.max(0, Math.min(1, g));
       // 時間配分：土の中（種〜かぎ）はゆっくり、地上に出てからの「持ち上げ〜開く」をたっぷり見せ、最後に本葉が伸びる
@@ -135,6 +136,7 @@ export async function buildSurface(renderer: THREE.WebGPURenderer, base: string,
       const g = surf.growth, az = 2.35 - g * 1.05, el = 0.50 + 0.10 * Math.sin(g * Math.PI), dist = 13.5 + g * 4 + Math.max(0, g - 0.7) * 16;
       camera.position.set(Math.cos(az) * Math.cos(el) * dist, Math.sin(el) * dist + 1.0, Math.sin(az) * Math.cos(el) * dist);
       camera.lookAt(0.4, 0.4 + Math.max(0, g - 0.2) * 3.4 + Math.max(0, g - 0.7) * 5, 0); void t;
+      focusDistance.value = camera.position.length() - 0.5; // ピントは芽に合わせ続ける
     },
   };
   surf.setGrowth(0);

@@ -158,8 +158,8 @@ def build_leaf(grow, unfold):
             a = 2 * math.pi * k / LSIDES; V.append(c + (tn * math.cos(a) + sx * math.sin(a)) * r)
     top = node + pd * pl + tb * (pl * 0.16) - td * (pl * 0.10)
     Ls = LEAF_L * (0.12 + 0.88 * grow) * (0.35 + 0.65 * unfold); Ws = LEAF_W * 0.5 * (0.12 + 0.88 * grow) * (0.4 + 0.6 * unfold)
-    tiltb = math.radians(25 + 40 * unfold) * grow                                # 葉身は葉柄の先で外へ倒れ、表が斜め上を向く
-    bd = (pd * math.cos(tiltb) + tb * math.sin(tiltb)).normalized(); bn = (pd * math.sin(tiltb) - tb * math.cos(tiltb)).normalized() * -1
+    tiltb = math.radians(20 + 52 * unfold) * grow                                # 葉身は葉柄の先で外へ倒れ、表が斜め上を向く
+    bd = (pd * math.cos(tiltb) + tb * math.sin(tiltb)).normalized(); bn = (pd * math.sin(tiltb) - tb * math.cos(tiltb)).normalized()   # 葉の表の向き。両側は、中央の葉脈から上へ浅く持ち上がる（V 字）
     fold = math.radians(86 - 77 * unfold)                                        # 片側の持ち上がり角（閉じ 86° → 開き 16°）
     for j in range(LV + 1):
         x = j / LV
