@@ -3,8 +3,9 @@
 // ORM テクスチャ: R=AO（occlusionTexture）, G=厚み（KHR_materials_volume.thicknessTexture）
 import { NodeIO } from '@gltf-transform/core';
 import { ALL_EXTENSIONS, KHRMaterialsVolume } from '@gltf-transform/extensions';
-import { dedup, prune, weld, reorder, quantize, meshopt, textureCompress } from '@gltf-transform/functions';
-import { MeshoptEncoder, MeshoptDecoder } from 'meshoptimizer';
+import { dedup, prune, weld, reorder, quantize, meshopt, textureCompress, simplify } from '@gltf-transform/functions';
+import { MeshoptEncoder, MeshoptDecoder, MeshoptSimplifier } from 'meshoptimizer';
+import { EXTMeshoptCompression } from '@gltf-transform/extensions';
 import sharp from 'sharp';
 import fs from 'node:fs';
 
@@ -15,6 +16,10 @@ await MeshoptEncoder.ready;
 const io = new NodeIO().registerExtensions(ALL_EXTENSIONS)
   .registerDependencies({ 'meshopt.encoder': MeshoptEncoder, 'meshopt.decoder': MeshoptDecoder });
 const doc = await io.read(inp);
+if (opt.ao) {   // AO だけを付ける（R チャンネル）
+  const tex = doc.createTexture('ao').setImage(fs.readFileSync(opt.ao)).setMimeType('image/png');
+  for (const m of doc.getRoot().listMaterials()) m.setOcclusionTexture(tex);
+}
 if (opt.orm) {
   const tex = doc.createTexture('orm').setImage(fs.readFileSync(opt.orm)).setMimeType('image/png');
   const vol = doc.createExtension(KHRMaterialsVolume);
@@ -27,7 +32,14 @@ if (opt.orm) {
 }
 const size = Number(opt.texsize || 1024);
 const plain = 'plain' in opt || rest.includes('--plain');
-if (plain) await doc.transform(dedup(), prune({ keepAttributes: true }), weld());
+if (plain) {
+  // 関節の親子関係と原点（回転の中心）を保つ：頂点は量子化せず、ポリゴン削減と meshopt の圧縮だけを掛ける
+  await MeshoptSimplifier.ready;
+  await doc.transform(dedup(), prune({ keepAttributes: true }), weld(),
+    simplify({ simplifier: MeshoptSimplifier, ratio: Number(opt.ratio || 0.5), error: Number(opt.error || 0.003) }),
+    reorder({ encoder: MeshoptEncoder }), textureCompress({ encoder: sharp, targetFormat: 'webp', quality: 88, resize: [size, size] }));
+  doc.createExtension(EXTMeshoptCompression).setRequired(true).setEncoderOptions({ method: EXTMeshoptCompression.EncoderMethod.FILTER });
+}
 else await doc.transform(
   dedup(), prune({ keepAttributes: true }), weld(),
   reorder({ encoder: MeshoptEncoder }), quantize(),

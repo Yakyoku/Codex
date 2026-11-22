@@ -50,11 +50,23 @@
     },
     {
      "src": "progress-src/diver-front.jpg",
-     "caption": "主人公（ナノスーツの潜行士・第1版）前ななめ。作り事の存在。まだ人形のように見え、バイザーの縁が乱れている。M2 で作り直す。"
+     "caption": "主人公（ナノスーツの潜行士・第2版）前ななめ。黒いインナースーツと蛇腹の関節の上に、白い陶器質の装甲板を重ねた潜水服。作り事の存在。"
     },
     {
      "src": "progress-src/diver-back.jpg",
-     "caption": "主人公・後ろななめ。"
+     "caption": "主人公・後ろななめ。背中に生命維持・推進ユニット。"
+    },
+    {
+     "src": "progress-src/diver-bust.jpg",
+     "caption": "主人公・上半身。ドーム型のバイザー（顔は描かない）、胸の状態表示。"
+    },
+    {
+     "src": "progress-src/diver-ingame.png",
+     "caption": "ゲーム画面の中の主人公（右前腕の発振器から浄化の光）。"
+    },
+    {
+     "src": "assets/preview/diver.jpg",
+     "caption": "主人公・4方向（前・横・後ろ・上）。約4万頂点、AO を1枚に焼き込み。"
     },
     {
      "src": "public/static/img/patient_view.jpg",
