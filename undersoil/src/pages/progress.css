@@ -1,0 +1,10 @@
+body { overflow: auto; }
+.wrap { max-width: 1200px; margin: 0 auto; padding: 24px 16px 80px; line-height: 1.8; }
+.wrap h1 { letter-spacing: .12em; font-size: 26px; margin: 0; }
+.wrap h2 { margin: 40px 0 6px; font-size: 19px; border-left: 3px solid var(--accent); padding-left: 10px; }
+.meta, .note { color: var(--dim); font-size: 14px; margin: 4px 0; }
+.links { display: flex; gap: 8px; flex-wrap: wrap; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; margin-top: 12px; }
+figure { margin: 0; background: #15100b; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+figure img, figure video { width: 100%; display: block; background: #000; }
+figcaption { padding: 8px 12px; font-size: 13px; color: var(--dim); }

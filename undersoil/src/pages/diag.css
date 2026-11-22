@@ -1,0 +1,11 @@
+body.diag { overflow: auto; }
+.wrap { max-width: 860px; margin: 0 auto; padding: 20px 16px 60px; }
+.wrap h1 { font-size: 22px; letter-spacing: .1em; margin: 6px 0 4px; }
+.wrap p { color: var(--dim); line-height: 1.8; margin: 6px 0 14px; font-size: 15px; }
+canvas#view { position: static; width: 100%; height: auto; aspect-ratio: 16 / 9; border-radius: 12px; border: 1px solid var(--line); }
+#status { color: var(--accent); font-weight: 600; margin: 14px 0; font-size: 16px; }
+table { width: 100%; border-collapse: collapse; font-size: 15px; }
+th, td { text-align: left; padding: 9px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { color: var(--dim); font-weight: 500; white-space: nowrap; width: 11em; }
+textarea { width: 100%; min-height: 96px; background: #15100b; color: var(--ink); border: 1px solid var(--line); border-radius: 10px; padding: 10px; font: 13px/1.5 ui-monospace, Menlo, monospace; margin-top: 16px; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
