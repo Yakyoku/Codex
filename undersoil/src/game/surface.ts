@@ -85,11 +85,12 @@ export async function buildSurface(renderer: THREE.WebGPURenderer, base: string,
     const pale = vec3(0.80, 0.76, 0.48), rootCol = vec3(0.88, 0.86, 0.78);
     // 縁はわずかに黄色みを帯び、厚みのせいで少し暗く見える（写真 8615）
     const edge = smoothstep(0.32, 0.5, abs(u2.x.sub(0.5))).add(smoothstep(0.85, 1.0, alongCot)).min(1.0);
-    const cotTop = mix(mix(vec3(0.085, 0.19, 0.035), vec3(0.17, 0.30, 0.075), stipple), vec3(0.15, 0.21, 0.045), edge.mul(0.5));
-    const cotGreen = mix(vec3(0.26, 0.42, 0.14), cotTop, topSide);            // 裏は淡い
+    // 写真から測った色（sRGB #838945・#909E3C・#9BA566）を線形に直した値。緑より黄色みの強い、くすんだオリーブ色
+    const cotTop = mix(mix(vec3(0.15, 0.18, 0.035), vec3(0.24, 0.29, 0.06), stipple), vec3(0.26, 0.28, 0.07), edge.mul(0.55));
+    const cotGreen = mix(vec3(0.30, 0.36, 0.12), cotTop, topSide);            // 裏は淡い
     const midline = oneMinus(smoothstep(0.0, 0.10, abs(u2.x.sub(0.5)))).mul(topSide).mul(smoothstep(0.15, 0.4, alongCot));
     // 胚軸：淡い緑。地ぎわはわずかに赤みを帯びる個体がある（写真1点で確認。弱く入れる）
-    const stemGreen = mix(vec3(0.30, 0.25, 0.14), vec3(0.22, 0.36, 0.10), smoothstep(0.3, 0.75, vc.b));
+    const stemGreen = mix(vec3(0.15, 0.12, 0.03), vec3(0.20, 0.25, 0.07), smoothstep(0.3, 0.75, vc.b));   // 写真の茎 #6B6429 前後
     const green = mix(stemGreen, cotGreen.mul(mix(float(1), float(1.12), midline)), isCot);
     const greening = uGreen.mul(mix(float(0.9), float(1), isCot)).mul(aboveGround);
     const col = mix(mix(pale, green, greening), rootCol, isRoot);
