@@ -148,6 +148,15 @@ export class Prologue {
     this.hintT -= dt;
   }
 
+  /** 題字や静止構図のとき：人物と背景だけを生かしておく */
+  idle(dt: number): void {
+    G.uTime.value += dt; this.time = G.uTime.value;
+    this.monk.target = MONK_IDLE; this.staffEuler.set(0.06, 0, 0);
+    this.monk.update(dt); this.updateStaff(dt);
+    for (const d of this.nio) d.h.update(dt);
+    this.scene.update(dt, this.time, this.stage.camera);
+  }
+
   private focusPoint(out: THREE.Vector3): THREE.Vector3 {
     const act = this.nio.filter(d => d.active);
     if (!act.length) return out.copy(this.monk.pos).setY(this.monk.pos.y + 1.2);
@@ -544,8 +553,11 @@ export class Prologue {
       this.camOff = damp(this.camOff + inp.lookX * -1, 0, 0.6, dt); this.camOff = Math.max(-1.3, Math.min(1.3, this.camOff));
       this.camYaw += angDiff(this.camYaw, want + this.camOff) * (1 - Math.exp(-2.6 * dt));
       const sep = Math.hypot(mk.pos.x - cx, mk.pos.z - cz);
-      dist = 6.2 + sep * 0.22 + (act.length > 1 ? 2.2 : 0); fov = 54;
-      _v.lerp(f, 0.42); _v.y = 2.5 + Math.min(1.6, 8 / Math.max(sep, 3));
+      dist = 7.6 + sep * 0.3 + (act.length > 1 ? 2.0 : 0); fov = 52;
+      _v.lerp(f, 0.4); _v.y = 2.3 + Math.min(1.2, 6 / Math.max(sep, 3));
+      // 蓮を画面の左下三分の一に置く（中央下の呼吸の輪と重ねない）
+      _v.x += Math.cos(this.camYaw) * 1.6; _v.z -= Math.sin(this.camYaw) * 1.6;
+      this.camPitch = damp(this.camPitch, 0.3, 1.5, dt);
     } else this.camYaw -= inp.lookX;
     const cp = Math.cos(this.camPitch), sp = Math.sin(this.camPitch);
     _v2.set(mk.pos.x + Math.sin(this.camYaw) * cp * dist, mk.pos.y + 1.5 + sp * dist + (this.mode === 'trial' ? 0.6 : 0), mk.pos.z + Math.cos(this.camYaw) * cp * dist);

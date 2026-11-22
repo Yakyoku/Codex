@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { G, wcMaterial, makeSky, blotMaterial } from '../engine/watercolor';
 import { loadMesh } from '../engine/model';
 
-export const PALETTE = { name: '序章　山門', colors: ['#f4efe4', '#b9cbc8', '#7f9d98', '#56706f', '#9aa3a8', '#3f4a66', '#c8694f'], names: ['紙の白', '霧の青緑', '杉の緑青', '深い苔', '石の灰', '藍（締め色）', '丹（差し色）'] };
+export { PALETTE } from './palette';
 
 // 決定的な乱数
 function rng(seed: number): () => number { let s = seed >>> 0; return () => ((s = (Math.imul(s, 1664525) + 1013904223) >>> 0) / 4294967296); }
@@ -72,7 +72,7 @@ function merge(list: THREE.BufferGeometry[]): THREE.BufferGeometry {
 }
 
 /** 杉：まっすぐな幹と、垂れ下がる枝葉の層。一本を作って多数に写す */
-function cedarGeo(seed: number): THREE.BufferGeometry {
+function cedarGeo(seed: number, detail = 1): THREE.BufferGeometry {
   const r = rng(seed); const parts: THREE.BufferGeometry[] = [];
   const H = 26;
   const trunk = new THREE.CylinderGeometry(0.2, 0.75, H, 8, 6, true).translate(0, H / 2, 0);
@@ -86,7 +86,7 @@ function cedarGeo(seed: number): THREE.BufferGeometry {
     const y = 9 + t * (H - 9.5), rad = 4.6 * (1 - t * 0.76) * (0.85 + r() * 0.3);
     const n = i < 5 ? 2 : 1, a0 = r() * 6.28;
     for (let k = 0; k < n; k++) {
-      const blob = new THREE.IcosahedronGeometry(1, 1);
+      const blob = new THREE.IcosahedronGeometry(1, detail);
       const p = blob.getAttribute('position') as THREE.BufferAttribute;
       const sx = rad * (0.75 + r() * 0.3), sy = rad * 0.42 + 0.9, sz = rad * (0.75 + r() * 0.3), ph = r() * 9;
       for (let v = 0; v < p.count; v++) {
@@ -140,7 +140,7 @@ export async function buildPrologue(): Promise<PrologueScene> {
   G.uShadowTint.value.setRGB(0.62, 0.7, 0.86);
   G.uAerial.value.setRGB(0.87, 0.915, 0.92);
   G.uAerialK.value = 0.0085;
-  const sky = makeSky({ top: 0x9db9c0, mid: 0xc9dbdb, low: 0xeef1ea, cloud: 0xfbf9f2, cloudAmt: 0.75, sun: 0xfffdf4, sunDir: new THREE.Vector3(-0.35, 0.42, -0.84) });
+  const sky = makeSky({ top: 0xa3c3d0, mid: 0xcfe2e5, low: 0xf0f4f1, cloud: 0xfbf9f2, cloudAmt: 0.75, sun: 0xfffdf4, sunDir: new THREE.Vector3(-0.35, 0.42, -0.84) });
   group.add(sky);
 
   // 地面
@@ -148,7 +148,7 @@ export async function buildPrologue(): Promise<PrologueScene> {
   { const p = gg.getAttribute('position') as THREE.BufferAttribute; for (let i = 0; i < p.count; i++) p.setY(i, groundY(p.getX(i), p.getZ(i)) - (Math.abs(p.getX(i) - pathX(p.getZ(i))) < 2.6 && p.getZ(i) > STEP_Z0 ? 0.25 : 0)); gg.computeVertexNormals(); }
   colorize(gg, (x, _y, z) => {
     const rr = Math.hypot(x, z), n = fbm(x * 0.09, z * 0.09), court = 1 - Math.min(1, Math.max(0, (rr - COURT_R + 1.5) / 3));
-    const moss: [number, number, number] = [0.56 + n * 0.12, 0.7 + n * 0.06, 0.58], earth: [number, number, number] = [0.72, 0.7, 0.62], stone: [number, number, number] = [0.8, 0.82, 0.8];
+    const moss: [number, number, number] = [0.44 + n * 0.12, 0.64 + n * 0.06, 0.5], earth: [number, number, number] = [0.72, 0.7, 0.62], stone: [number, number, number] = [0.8, 0.82, 0.8];
     const m = Math.min(1, Math.max(0, (n - 0.35) * 3));
     const base = [earth[0] + (moss[0] - earth[0]) * m, earth[1] + (moss[1] - earth[1]) * m, earth[2] + (moss[2] - earth[2]) * m];
     return [base[0] + (stone[0] - base[0]) * court, base[1] + (stone[1] - base[1]) * court, base[2] + (stone[2] - base[2]) * court, 0];
@@ -197,13 +197,16 @@ export async function buildPrologue(): Promise<PrologueScene> {
     if (spots.some(s => Math.hypot(s[0] - x, s[1] - z) < 5.5)) continue;
     spots.push([x, z, r()]);
   }
-  for (let v = 0; v < 2; v++) {
-    const list = spots.filter((_, i) => i % 2 === v);
-    const im = new THREE.InstancedMesh(cedarGeo(31 + v * 17), cedarMat, list.length);
-    list.forEach((s, i) => {
-      const k = 0.8 + s[2] * 0.7;
+  const nearOf = (sp: [number, number, number]) => Math.min(Math.hypot(sp[0], sp[1]), sp[1] > STEP_Z0 ? Math.abs(sp[0] - pathX(sp[1])) + 6 : 99) < 34;
+  for (let v = 0; v < 4; v++) {
+    const near = v >= 2;
+    const list = spots.filter((sp, i) => i % 2 === v % 2 && nearOf(sp) === near);
+    if (!list.length) continue;
+    const im = new THREE.InstancedMesh(cedarGeo(31 + v * 17, near ? 2 : 1), cedarMat, list.length);
+    list.forEach((sp, i) => {
+      const k = 0.8 + sp[2] * 0.7;
       q.setFromEuler(new THREE.Euler((r() - 0.5) * 0.05, r() * 6.28, (r() - 0.5) * 0.05));
-      im.setMatrixAt(i, m4.compose(tr.set(s[0], groundY(s[0], s[1]) - 0.4, s[1]), q, sc.set(k, k * (0.9 + r() * 0.3), k)));
+      im.setMatrixAt(i, m4.compose(tr.set(sp[0], groundY(sp[0], sp[1]) - 0.4, sp[1]), q, sc.set(k, k * (0.9 + r() * 0.3), k)));
     });
     im.frustumCulled = false;
     group.add(im);
@@ -226,10 +229,10 @@ export async function buildPrologue(): Promise<PrologueScene> {
 
   // 山門
   const gate = new THREE.Group(); gate.position.set(0, 0, GATE_Z);
-  const wood = wcMaterial({ tint: 0xbf8a78, worldAnchor: true, noiseScale: 0.8, bands: [0.42, 0.72], dens: [1.9, 1.05, 0.45], mottle: 1.0, grain: 0.9, dry: 0.75, rim: 0.5, line: 0.9 });
-  const woodDark = wcMaterial({ tint: 0x6f7391, worldAnchor: true, noiseScale: 0.8, dens: [2.0, 1.3, 0.8], mottle: 0.9, grain: 0.8, dry: 0.4, line: 0.6 });
+  const wood = wcMaterial({ tint: 0xbf8a78, worldAnchor: true, noiseScale: 0.8, bands: [0.42, 0.72], dens: [1.9, 1.05, 0.5], mottle: 1.0, grain: 0.6, dry: 0.3, rim: 0.5, line: 0.9 });
+  const woodDark = wcMaterial({ tint: 0x7c82a0, worldAnchor: true, noiseScale: 0.8, dens: [1.6, 1.0, 0.6], mottle: 0.9, grain: 0.8, dry: 0.4, line: 0.6 });
   const plaster = wcMaterial({ tint: 0xf3efe6, worldAnchor: true, noiseScale: 0.7, dens: [1.3, 0.7, 0.2], mottle: 0.8, grain: 0.6, dry: 0.3, line: 0.6 });
-  const tile = wcMaterial({ vertexColors: true, worldAnchor: true, noiseScale: 0.6, bands: [0.4, 0.74], dens: [1.9, 1.1, 0.5], mottle: 1.1, grain: 0.9, dry: 0.6, rim: 0.7, line: 0.9, side: THREE.DoubleSide });
+  const tile = wcMaterial({ vertexColors: true, worldAnchor: true, noiseScale: 0.6, bands: [0.4, 0.74], dens: [1.5, 0.85, 0.35], mottle: 1.1, grain: 0.6, dry: 0.25, rim: 0.7, line: 0.9, side: THREE.DoubleSide });
   const stoneM = wcMaterial({ tint: 0xcdd1cc, worldAnchor: true, noiseScale: 0.9, dens: [1.6, 1.0, 0.5], mottle: 1.0, grain: 0.7, dry: 0.3, line: 0.7 });
   const add = (g: THREE.BufferGeometry, m: THREE.Material, x: number, y: number, z: number) => { const o = new THREE.Mesh(g, m); o.position.set(x, y, z); gate.add(o); return o; };
   add(wobble(new THREE.BoxGeometry(21, 0.9, 9.5, 12, 1, 6), 0.08, 0.9), stoneM, 0, 0.3, 0);
@@ -281,11 +284,19 @@ export async function buildPrologue(): Promise<PrologueScene> {
     if (i < 12) { z = STEP_Z0 + 2 + r() * 30; x = pathX(z) + (r() < 0.5 ? -1 : 1) * (6 + r() * 12); }
     const w = 14 + r() * 22;
     mist.setMatrixAt(i, m4.compose(tr.set(x, groundY(x, z) + 2 + r() * 7, z), q.identity(), sc.set(w, w * (0.22 + r() * 0.2), 1)));
-    seeds.set([r(), r(), r(), 0.3 + r() * 0.2], i * 4);
+    seeds.set([r(), r(), r(), i < 12 ? 0.14 + r() * 0.1 : 0.3 + r() * 0.2], i * 4);
   }
   mist.geometry.setAttribute('aSeed', new THREE.InstancedBufferAttribute(seeds, 4));
   mist.frustumCulled = false; mist.renderOrder = 5; group.add(mist);
 
+  {
+    const backMat = blotMaterial({ color: 0xfaf8f1, opacity: 0.85, soft: 0.8, edge: 0, white: 0.8 });
+    const back = new THREE.InstancedMesh(new THREE.PlaneGeometry(2, 2), backMat, 3);
+    const bs = new Float32Array(12);
+    [[0, 5.2, GATE_Z - 6, 17, 7.5], [-9, 4.5, GATE_Z - 1, 9, 6], [9, 4.5, GATE_Z - 1, 9, 6]].forEach((b, i) => { back.setMatrixAt(i, m4.compose(tr.set(b[0], b[1], b[2]), q.identity(), sc.set(b[3], b[4], 1))); bs.set([r(), r(), r(), 0.5], i * 4); });
+    back.geometry.setAttribute('aSeed', new THREE.InstancedBufferAttribute(bs, 4));
+    back.frustumCulled = false; back.renderOrder = 4; group.add(back);
+  }
   // 木漏れ日の筋：塗り残しの白い筋
   const rayMat = blotMaterial({ color: 0xfffcf0, opacity: 0.2, soft: 0.9, edge: 0, streak: 0, white: 1 });
   const rays = new THREE.InstancedMesh(new THREE.PlaneGeometry(2, 2), rayMat, 7);

@@ -33,7 +33,7 @@ export async function enterVR(stage: Stage, game: Prologue, _audio: GameAudio, s
   vig.position.z = -0.5; vig.renderOrder = 99; stage.camera.add(vig);
 
   const prev = { trig: [false, false], grip: [false, false], a: false, b: false, snap: false };
-  const lastHand = [new THREE.Vector3(), new THREE.Vector3()], handV = [0, 0];
+  const lastHand = [new THREE.Vector3(), new THREE.Vector3()], handV = [0, 0], seen = [false, false];
   const st: InputState = { moveX: 0, moveY: 0, lookX: 0, lookY: 0, held: blank(), pressed: blank(), usingTouch: false };
   const head = new THREE.Vector3(), hq = new THREE.Quaternion(), e = new THREE.Euler(), v = new THREE.Vector3(), v2 = new THREE.Vector3();
   let yaw = Math.PI, subT = 0, subText = '', hudT = 0, moving = 0;
@@ -62,9 +62,10 @@ export async function enterVR(stage: Stage, game: Prologue, _audio: GameAudio, s
         if (trig && !prev.trig[i]) st.pressed[i === 1 ? 'light' : 'heavy'] = true;
         prev.trig[i] = trig;
         if (gr) st.held.guard = true;
-        ctrl[i].getWorldPosition(v);
-        const sp = v.distanceTo(lastHand[i]) / Math.max(dt, 0.001); lastHand[i].copy(v);
-        if (sp > 3.2 && handV[i] <= 3.2 && i === 1) st.pressed.light = true;
+        // 腕の振り：体（リグ）に対する手の速さで測る（移動や旋回では反応しない）
+        v.copy(ctrl[i].position);
+        const sp = seen[i] && dt < 0.05 ? v.distanceTo(lastHand[i]) / Math.max(dt, 0.008) : 0; lastHand[i].copy(v); seen[i] = true;
+        if (sp > 3.4 && handV[i] <= 3.4 && i === 1) st.pressed.light = true;
         handV[i] = sp;
       }
       // 両手を胸の前で合わせる＝調息

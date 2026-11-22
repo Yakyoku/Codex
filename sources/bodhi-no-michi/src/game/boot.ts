@@ -146,9 +146,7 @@ export async function boot(canvas: HTMLCanvasElement, q: URLSearchParams): Promi
       input.showContext(game.nearJizo && game.mode === 'explore' ? '手を合わせる' : null, 'interact');
       if (inp.pressed.pause) pause();
     } else if (scr === 'title') {
-      G.uTime.value += dt; G.uClarity.value = 1;
-      game.monk.update(dt); for (const d of game.nio) d.h.update(dt);
-      game.scene.update(dt, G.uTime.value, stage.camera);
+      G.uClarity.value = 1; game.idle(dt);
       titleCam(G.uTime.value);
     } else if (scr === 'photo') {
       ph.yaw -= inp.lookX; ph.pitch = Math.min(1.3, Math.max(-0.2, ph.pitch + inp.lookY));
@@ -173,6 +171,7 @@ export async function boot(canvas: HTMLCanvasElement, q: URLSearchParams): Promi
   if (q.get('bot') === '1') game.bot = true;
   if (q.get('auto')) { ui.hideTitle(); await begin(q.get('auto') as 'begin' | 'jizo' | 'court'); }
   if (q.get('ui') === '0') uiRoot.style.display = 'none';
+  if (q.get('cam')) { const c = q.get('cam')!.split(',').map(Number); ui.hideTitle(); scr = 'photo'; const d = new THREE.Vector3(c[0] - c[3], c[1] - c[4], c[2] - c[5]); ph.tgt.set(c[3], c[4], c[5]); ph.dist = d.length(); ph.yaw = Math.atan2(d.x, d.z); ph.pitch = Math.asin(d.y / ph.dist); stage.camera.fov = +(q.get('fov') ?? 50); stage.camera.updateProjectionMatrix(); G.uFocus.value.set(0, 3, -8, 14); for (let i = 0; i < 150; i++) game.idle(0.03); setInterval(() => game.idle(0.016), 16); }
 }
 
 /** 絵づくりの調整パネル：つまみで強さを変え、設定値を文字で書き出す */
