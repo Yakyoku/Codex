@@ -49,6 +49,8 @@ export class Diver {
     this.qa.setFromAxisAngle(r.ax, x); this.qb.setFromAxisAngle(r.ay, y); this.qc.setFromAxisAngle(r.az, z);
     r.bone.quaternion.copy(this.qa).multiply(this.qb).multiply(this.qc).multiply(r.rest);
   }
+  // 安静の姿勢（MakeHuman の標準の姿勢）は腕を斜め下に開き、脚も少し開いている。立つときの補正
+  static ARM_DOWN = 0.62; static LEG_IN = 0.09;
   /** speed: 歩く速さ（µm/s）, aiming: 道具を構えているか, pitch: 視点の上下 */
   update(dt: number, speed: number, aiming: boolean, pitch: number) {
     this.t += dt; this.phase += dt * (2.2 + speed * 0.95);
@@ -58,18 +60,18 @@ export class Diver {
     // 脚：前後の振り、ひざの曲げ、足裏を地面に沿わせる。立ち止まると片足に重心をのせる
     const tL = -s * 0.55 * amp, tR = s * 0.55 * amp;
     const kL = Math.max(0, c) * 0.9 * amp + 0.06 + 0.12 * idle, kR = Math.max(0, -c) * 0.9 * amp + 0.03;
-    this.set('thighL', tL - 0.08 * idle, 0, -0.03 * idle); this.set('thighR', tR + 0.03 * idle, 0, 0.05 * idle);
+    this.set('thighL', tL - 0.08 * idle, 0, -Diver.LEG_IN - 0.03 * idle); this.set('thighR', tR + 0.03 * idle, 0, Diver.LEG_IN + 0.05 * idle);
     this.set('shinL', kL); this.set('shinR', kR);
     this.set('footL', -(tL + kL) * 0.65); this.set('footR', -(tR + kR) * 0.65);
     this.set('pelvis', 0, s * 0.07 * amp, 0.05 * idle);
     this.set('chest', 0.04 * amp - 0.015 * br, -s * 0.1 * amp + 0.2 * A, -0.06 * idle);
     this.set('head', -pitch * 0.4 * A + 0.05 * idle, s * 0.04 * amp - 0.15 * A, 0.04 * idle);
     // 腕：歩く振り。構えると右腕を前へ伸ばす
-    this.set('upperArmL', s * 0.42 * amp + 0.04 * idle, 0, 0.06);
-    this.set('foreArmL', -(0.18 + 0.22 * amp));
+    this.set('upperArmL', s * 0.42 * amp + 0.04 * idle, 0, -Diver.ARM_DOWN + 0.06);
+    this.set('foreArmL', -(0.05 + 0.2 * amp));
     this.set('handL', -0.1);
-    this.set('upperArmR', (-s * 0.42 * amp - 0.03 * idle) * (1 - A) + (-1.38 + pitch * 0.85) * A, 0, -0.06 * (1 - A) + 0.12 * A);
-    this.set('foreArmR', -(0.22 + 0.22 * amp) * (1 - A) - 0.08 * A);
+    this.set('upperArmR', (-s * 0.42 * amp - 0.03 * idle) * (1 - A) + (-1.42 + pitch * 0.85) * A, 0, Diver.ARM_DOWN - 0.06 * (1 - A) + 0.05 * A);
+    this.set('foreArmR', -(0.12 + 0.2 * amp) * (1 - A) + 0.3 * A);
     this.set('handR', -0.08 * (1 - A));
     this.root.position.y += Math.abs(c) * 0.03 * amp;
   }

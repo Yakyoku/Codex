@@ -17,7 +17,7 @@ export function buildUI() {
   <div id="card"><div class="k">初めて出会ったもの</div><div class="n"></div><div class="e"></div><div class="s"></div><div class="d"></div><div class="p"><i></i></div><div class="h"></div></div>
   <div id="touch" class="hide"><div id="stick" class="hide"><i></i></div><button class="tb" id="tb-fire">浄化</button><button class="tb" id="tb-scan">スキャン</button></div>
   <div id="topbtns" class="hide"><button id="b-atlas">図鑑</button><button id="b-pause">一時停止</button><button id="b-full">全画面</button></div>
-  <div id="fade"></div>
+  <div id="fade"></div><div id="toast"></div>
   <div id="done" class="hide"><h2>区域の血流が戻りました</h2><p id="donetext"></p><button class="btn" id="b-cont">探索を続ける</button></div>
   <div id="pause" class="sheet hide"><h2 style="font-weight:300;letter-spacing:.3em">一時停止</h2><button class="btn" id="p-resume">再開する</button><button class="btn" id="p-atlas">図鑑</button><button class="btn" id="p-full">全画面表示</button>
     <div style="font-size:.88em;color:#b7c6cc;max-width:34em;line-height:1.8;text-align:center">セーブはこのブラウザの中に保存され、別のブラウザや端末には引き継がれません。</div><a class="btn" href="/vr/" style="text-decoration:none">VR 版へ</a></div>

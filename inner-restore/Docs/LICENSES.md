@@ -3,11 +3,17 @@
 ## 素材（すべてこのリポジトリの中で生成。外部の写真・テクスチャ・音・フォントは使っていない）
 | 素材 | 作り方 |
 |---|---|
-| 3D モデル（赤血球、網膜の区画、潜行士） | `tools/blender/*.py`（bpy）で生成 |
+| 3D モデル（赤血球、網膜の区画） | `tools/blender/*.py`（bpy）で生成 |
+| 主人公 | 体の土台は MakeHuman（CC0、下記）。スーツ・装甲・ヘルメット・道具・骨は `tools/blender/make_hero.py` で生成 |
 | 患者の視界の絵 | `tools/blender/make_patient_view.py`（Cycles で描画。実在の場所・人物ではない） |
 | 音 | 実行時に Web Audio API で合成（`src/core/audio.ts`） |
 | ナレーション（仮） | 端末の読み上げ機能（音声データは同梱していない） |
 | フォント | 端末に入っているフォントを使用（同梱なし） |
+
+## 外部の素材
+| 素材 | 出所 | ライセンス | 使い方 |
+|---|---|---|---|
+| 人体のベース形状と体型の調整データ | MakeHuman（https://github.com/makehumancommunity/makehuman の makehuman/data/3dobjs/base.obj と targets の一部。版は assets/makehuman/SOURCE.txt） | CC0 1.0（assets/makehuman/LICENSE-CC0.md） | 主人公の体の土台。`tools/mh_body.py` で体型を調整し、`tools/blender/make_hero.py` でスーツ・装甲・骨を付ける |
 
 ## ライブラリ
 | 名前 | 版 | ライセンス | 用途 |

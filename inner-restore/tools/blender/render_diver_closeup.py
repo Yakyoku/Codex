@@ -28,12 +28,13 @@ def pose(p, drop=0.0):
         q = Quaternion(inv @ Vector((1, 0, 0)), x) @ Quaternion(inv @ Vector((0, 0, 1)), y) @ Quaternion(inv @ Vector((0, -1, 0)), z)
         pb.rotation_quaternion = q
     bpy.context.view_layer.update()
+# 安静の姿勢は腕を斜め下に開き、脚も少し開いている（MakeHuman の標準の姿勢）。立ち姿では腕を下ろし、脚を寄せる
 STAND = {"pelvis": (0, 0.08, 0.07), "chest": (-0.03, -0.06, -0.09), "head": (0.04, -0.1, 0.06),
-         "thighL": (-0.1, 0.05, -0.06), "shinL": (0.2, 0, 0), "footL": (-0.1, 0, 0), "thighR": (0.02, 0, 0.0), "shinR": (0.02, 0, 0),
-         "upperArmL": (0.06, 0, 0.1), "foreArmL": (-0.25, 0, 0), "handL": (-0.1, 0, 0), "upperArmR": (-0.05, 0, -0.12), "foreArmR": (-0.4, 0, 0), "handR": (-0.15, 0, 0)}
+         "thighL": (-0.1, 0.05, -0.12), "shinL": (0.2, 0, 0), "footL": (-0.1, 0, 0), "thighR": (0.02, 0, 0.06), "shinR": (0.02, 0, 0),
+         "upperArmL": (0.05, 0, -0.62), "foreArmL": (-0.1, 0, 0), "handL": (-0.1, 0, 0), "upperArmR": (-0.05, 0, 0.6), "foreArmR": (-0.2, 0, 0), "handR": (-0.1, 0, 0)}
 ACTION = {"pelvis": (0.08, 0.35, 0.0), "chest": (0.18, -0.3, 0.05), "head": (-0.12, -0.15, 0.0),
-          "thighL": (-1.15, 0, -0.1), "shinL": (1.05, 0, 0), "footL": (0.12, 0, 0), "thighR": (0.6, 0, 0.12), "shinR": (0.7, 0, 0), "footR": (-0.45, 0, 0),
-          "upperArmR": (-1.75, 0, -0.35), "foreArmR": (-0.35, 0, 0), "handR": (0.25, 0, 0), "upperArmL": (0.35, 0, 0.55), "foreArmL": (-0.7, 0, 0)}
+          "thighL": (-1.15, 0, -0.18), "shinL": (1.05, 0, 0), "footL": (0.12, 0, 0), "thighR": (0.6, 0, 0.1), "shinR": (0.7, 0, 0), "footR": (-0.45, 0, 0),
+          "upperArmR": (-1.6, 0, 0.25), "foreArmR": (0.1, 0, 0), "handR": (0.25, 0, 0), "upperArmL": (0.35, 0, -0.1), "foreArmL": (-0.5, 0, 0)}
 cd = bpy.data.cameras.new("c"); cam = bpy.data.objects.new("c", cd); sc.collection.objects.link(cam); sc.camera = cam
 def shot(p, look, lens, res):
     cd.lens = lens; cam.location = p; cam.rotation_euler = (Vector(look) - Vector(p)).to_track_quat("-Z", "Y").to_euler()

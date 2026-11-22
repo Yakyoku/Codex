@@ -100,7 +100,7 @@ async function main() {
   const hints: Record<string, string> = {
     kbm: 'WASD：移動　マウス：視点　左クリック長押し：浄化　右クリック／Q：スキャン　Tab：図鑑　V：視点切替　Esc：一時停止',
     pad: '左スティック：移動　右スティック：視点　RT：浄化　LT：スキャン　Select：図鑑　Start：一時停止',
-    touch: '左側：移動　右側をドラッグ：視点　浄化ボタンを長押し',
+    touch: '左側：移動　右側をドラッグ：視点　浄化ボタンを長押し（コントローラーはボタンを1回押すと使えます）',
   };
   const setKind = (k: string) => { $('hint').textContent = hints[k]; $('touch').classList.toggle('hide', k !== 'touch' || !started); $('reticle').classList.toggle('hide', !started); };
   input.onKind = setKind;
@@ -220,6 +220,11 @@ async function main() {
     say('こちらオペレーター。網膜の内側の面に着きました。足もとの白い濁りは、血流が止まった組織です。浄化で、流れを取り戻してください。', 9);
   };
   $('start').classList.remove('hide'); $('load').classList.add('hide'); $('start').addEventListener('click', begin);
+  // ゲームパッド：認識したら知らせる（Safari は、ボタンを1回押すまで認識しない）。タイトルでは A／× ボタンでも開始できる
+  const toast = (m: string) => { const t = $('toast'); t.textContent = m; t.classList.add('on'); setTimeout(() => t.classList.remove('on'), 2600); };
+  addEventListener('gamepadconnected', (e) => { toast(`コントローラーを認識しました（${(e as GamepadEvent).gamepad.id.slice(0, 28)}）`); input.kind = 'pad'; setKind('pad'); });
+  const padStart = () => { if (started) return; const pad = Array.from(navigator.getGamepads?.() ?? []).find((p) => p && p.connected); if (pad && pad.buttons.some((b) => b.pressed)) begin(); else requestAnimationFrame(padStart); };
+  requestAnimationFrame(padStart);
   if (device !== 'pc') input.kind = 'touch';
 
   if (debugCam || sim !== null) {
@@ -236,7 +241,7 @@ async function main() {
     W.__irFrames = ((W.__irFrames as number) || 0) + 1;
     if (Q.has('frames') && (W.__irFrames as number) >= Number(Q.get('frames'))) { renderer.setAnimationLoop(null); W.__irDone = true; }
   });
-  W.__stage = stage; W.__begin = begin; W.__advance = (n: number) => { for (let i = 0; i < n; i++) step(1 / 30); };
+  W.__pos = pos; W.__input = input; W.__stage = stage; W.__begin = begin; W.__advance = (n: number) => { for (let i = 0; i < n; i++) step(1 / 30); };
   W.__irReady = { backend: backendLabel, tier, device };
 }
 main().catch((e) => { errors.push(String(e)); console.error(e); const el = document.querySelector('#load .tip'); if (el) el.textContent = '読み込みに失敗しました：' + String(e); });
