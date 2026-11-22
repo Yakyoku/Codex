@@ -49,7 +49,7 @@ async function main() {
   const audio = new GameAudio();
 
   // 手：硬質なスーツの前腕（右＝浄化の道具、左＝手首の端末）
-  const shell = new THREE.MeshStandardMaterial({ color: 0x6f7376, roughness: 0.35 }), dark = new THREE.MeshStandardMaterial({ color: 0x0c0e10, roughness: 0.7 });
+  const shell = new THREE.MeshStandardMaterial({ color: 0x7c66c4, roughness: 0.28 }), dark = new THREE.MeshStandardMaterial({ color: 0x1c1236, roughness: 0.45 });
   const hands = [0, 1].map((i) => {
     const grip = renderer.xr.getControllerGrip(i), ray = renderer.xr.getController(i);
     const g = new THREE.Group();
@@ -58,12 +58,12 @@ async function main() {
     g.add(arm, fist); grip.add(g); rig.add(grip, ray);
     return { grip, ray, on: false };
   });
-  const emitter = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.012, 0.09, 10), new THREE.MeshBasicMaterial({ color: 0xbfeee4 })); emitter.rotation.x = Math.PI / 2; emitter.position.set(0, 0, -0.07);
+  const emitter = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.012, 0.09, 10), new THREE.MeshBasicMaterial({ color: 0xc9a8ff })); emitter.rotation.x = Math.PI / 2; emitter.position.set(0, 0, -0.07);
   const wrist = new Panel(512, 384, 0.11); wrist.mesh.visible = true; wrist.mesh.rotation.x = -Math.PI / 2; wrist.mesh.position.set(0, 0.046, 0.09);
-  const beamMat = new THREE.MeshBasicMaterial({ color: 0xcfeee6, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, fog: false });
+  const beamMat = new THREE.MeshBasicMaterial({ color: 0xe2d8ff, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, fog: false });
   const beamGeo = new THREE.CylinderGeometry(0.03, 0.09, 1, 8, 1, true); beamGeo.translate(0, 0.5, 0); beamGeo.rotateX(Math.PI / 2);
   const beam = new THREE.Mesh(beamGeo, beamMat); beam.frustumCulled = false; beam.renderOrder = 50; stage.scene.add(beam);
-  const beamLight = new THREE.PointLight(0xdff5ee, 0, 22, 1.6); stage.scene.add(beamLight);
+  const beamLight = new THREE.PointLight(0xece4ff, 0, 22, 1.6); stage.scene.add(beamLight);
 
   // 視界の基準になる動かない枠（バイザーの縁）と、移動中に視野の周辺を暗くする幕
   const rim = new THREE.Mesh(new THREE.RingGeometry(0.62, 0.9, 48), new THREE.MeshBasicMaterial({ color: 0x0a0c0e, fog: false, side: THREE.DoubleSide })); rim.position.z = -0.42; rim.renderOrder = 90; camera.add(rim);

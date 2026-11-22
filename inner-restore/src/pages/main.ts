@@ -51,11 +51,11 @@ async function main() {
   input.sens = { mouse: tuning.camera.mouseSens, pad: tuning.camera.padSens, touch: tuning.camera.touchSens };
 
   // 浄化ビーム（治療の光）。原色を避け、淡い白にわずかな青緑
-  const beamMat = new THREE.MeshBasicNodeMaterial({ transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, color: 0xcfeee6 });
+  const beamMat = new THREE.MeshBasicNodeMaterial({ transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, color: 0xe2d8ff });
   beamMat.opacity = 0.0;
   const beamGeo = new THREE.CylinderGeometry(0.035, 0.11, 1, 10, 1, true); beamGeo.translate(0, 0.5, 0); beamGeo.rotateX(Math.PI / 2);
   const beam = new THREE.Mesh(beamGeo, beamMat); beam.renderOrder = 50; beam.frustumCulled = false; stage.scene.add(beam);
-  const beamLight = new THREE.PointLight(0xdff5ee, 0, 22, 1.6); stage.scene.add(beamLight);
+  const beamLight = new THREE.PointLight(0xece4ff, 0, 22, 1.6); stage.scene.add(beamLight);
 
   if (Q.has('h')) stage.health.setAll(Number(Q.get('h')));
   if (Q.has('heal')) { const [x, z, r] = Q.get('heal')!.split(',').map(Number); for (let i = 0; i < 40; i++) stage.health.heal(x, z, r, 0.1); }

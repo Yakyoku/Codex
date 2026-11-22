@@ -32,7 +32,7 @@
 1. **WebGPU はこの環境で絵を確認できず、`popErrorScope` の失敗（Instance dropped）が2件出る**。実機の /diag/ の `err=` で確認が必要。
 2. 毛細血管の網目の間隔が実際（約100µm）より狭い（約40〜50µm）。区画を広げて直す。
 3. 内皮細胞の核は「内腔側へ盛り上がる」。いまは色の濃さだけで示している（内側の面のメッシュがない）。
-4. 潜行士は第2版（断面を連ねた曲面＋装甲板の重ね、AO 焼き込み、関節15個：pelvis/chest/head/pack/upperArm/foreArm/hand/thigh/shin/foot）。持ち主の感想待ち。残り：泳ぎのアニメーション、細部（継ぎ目・標識）、GLB 1.1MB の軽量化。`tools/blender/make_diver.py` → `render_diver_closeup.py`（確認用画像）→ `node tools/pack-glb.mjs assets/models/diver.raw.glb public/static/models/diver.glb --plain 1 --ao assets/textures/diver_ao.png --texsize 1024 --ratio 0.4`。
+4. 潜行士は第3版（持ち主の参考画像 `Docs/REFERENCE/hero/reference-v3.jpg` に基づく細身のスーツ。ラベンダーの装甲板・濃い紫のインナー・黒い楕円バイザー・小さな背中のユニット。関節15個）。参考画像との差：装甲が横帯状で硬く、パネルの曲線的な切り分けが足りない／肩が球の関節に見える／立ち姿が直立のまま。手順：`tools/blender/make_diver.py` → `render_diver_closeup.py` → `node tools/pack-glb.mjs assets/models/diver.raw.glb public/static/models/diver.glb --plain 1 --ao assets/textures/diver_ao.png --texsize 1024 --ratio 0.6`（0.86MB）。
 5. 後処理（ブルーム、被写界深度、粒状感）は未実装。WebGPU 上乗せ（GPU 計算の群れ）も未実装。
 6. 音は実行時合成の仮のもの。Python 合成＋ffmpeg の素材化、出力先（テレビ／ヘッドホン／VR）の切り替え、立体音響は未実装。
 7. 図鑑の3Dビューア、セーブの書き出し・読み込み、設定画面（M4）、同梱フォントは未実装。

@@ -16,11 +16,11 @@ export class Diver {
     model.traverse((o) => { d.j[o.name] = o; const m = o as THREE.Mesh; m.frustumCulled = false;
       if (m.isMesh) for (const mt of (Array.isArray(m.material) ? m.material : [m.material]) as THREE.MeshPhysicalMaterial[]) {
         mt.envMapIntensity = 1.8; if (mt.aoMap) mt.aoMapIntensity = 1.0;
-        if (mt.name === 'glass') { mt.transparent = true; mt.opacity = 0.34; mt.roughness = 0.03; mt.depthWrite = false; mt.envMapIntensity = 3.2; m.renderOrder = 45; }
+        if (mt.name === 'glass') { mt.roughness = 0.03; mt.envMapIntensity = 3.0; }
       } });
     const head = d.j.head ?? model;
-    d.lamp.position.set(0.17, 0.3, 0.11); head.add(d.lamp); d.lamp.target.position.set(0.17, -0.5, 6); head.add(d.lamp.target);
-    (d.j.foreArmR ?? model).add(d.hand); d.hand.position.set(-0.07, -0.29, 0.015);
+    d.lamp.position.set(0.1, 0.27, 0.15); head.add(d.lamp); d.lamp.target.position.set(0.1, -0.5, 6); head.add(d.lamp.target);
+    (d.j.foreArmR ?? model).add(d.hand); d.hand.position.set(-0.086, -0.251, 0.027);
     d.fill.position.set(0.4, 2.3, -1.6); d.root.add(d.fill);   // スーツの輪郭を拾う、ごく弱い補助光
     return d;
   }

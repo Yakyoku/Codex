@@ -9,9 +9,6 @@ from PIL import Image
 bpy.ops.wm.open_mainfile(filepath=os.path.join(L.OUT_MODELS, "diver.blend"))
 sc = bpy.context.scene; sc.render.engine = "CYCLES"; sc.cycles.device = "CPU"
 w = bpy.data.worlds.new("w"); w.use_nodes = True; w.node_tree.nodes["Background"].inputs[0].default_value = (0.03, 0.02, 0.02, 1); sc.world = w
-for m in bpy.data.materials:
-    if m.name == "glass":
-        b = m.node_tree.nodes["Principled BSDF"]; b.inputs["Alpha"].default_value = 1.0; b.inputs["Transmission Weight"].default_value = 1.0; b.inputs["Base Color"].default_value = (0.75, 0.9, 0.88, 1)
 # 体内を思わせる光：上からの白い主光、下と後ろからの赤みのある回り込み
 for pos, e, size, col in [((2.0, -3.2, 3.6), 520, 3, (1, 0.96, 0.9)), ((-3.6, -0.5, 1.2), 180, 4, (0.7, 0.86, 1)), ((0.8, 3.6, 2.4), 520, 3, (1, 0.62, 0.48)), ((0, -1, -2.5), 160, 5, (1, 0.45, 0.3))]:
     ld = bpy.data.lights.new("L", "AREA"); ld.energy = e; ld.size = size; ld.color = col
@@ -25,7 +22,7 @@ def shot(name, p, look, lens, res):
     im = Image.open(tmp).convert("RGB"); os.remove(tmp); return im
 out = os.path.join(L.ROOT, "progress-src")
 only = os.environ.get("ONLY", "")
-views = {"front": ((2.4, -4.9, 1.6), (0, 0, 1.0), 70, (720, 1080)), "back": ((-2.6, 4.7, 1.8), (0, 0, 1.0), 70, (720, 1080)), "bust": ((1.0, -2.3, 1.75), (0, 0, 1.55), 75, (960, 960))}
+views = {"front": ((2.4, -4.9, 1.6), (0, 0, 1.0), 70, (720, 1080)), "back": ((-2.6, 4.7, 1.8), (0, 0, 1.0), 70, (720, 1080)), "bust": ((0.9, -2.2, 1.75), (0, 0, 1.6), 80, (960, 960))}
 for k, v in views.items():
     if only and k not in only: continue
     shot(k, *v).save(os.path.join(out, f"diver-{k}.jpg"), quality=90)
