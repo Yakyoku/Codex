@@ -28,9 +28,9 @@ def pose(p, drop=0.0):
         q = Quaternion(inv @ Vector((1, 0, 0)), x) @ Quaternion(inv @ Vector((0, 0, 1)), y) @ Quaternion(inv @ Vector((0, -1, 0)), z)
         pb.rotation_quaternion = q
     bpy.context.view_layer.update()
-STAND = {"pelvis": (0, 0.06, 0.04), "chest": (0.0, -0.04, -0.05), "head": (0.05, -0.08, 0.04),
-         "thighL": (-0.08, 0, -0.035), "shinL": (0.16, 0, 0), "footL": (-0.08, 0, 0), "thighR": (0.03, 0, 0.05), "shinR": (0.03, 0, 0),
-         "upperArmL": (0.06, 0, 0.1), "foreArmL": (-0.2, 0, 0), "handL": (-0.1, 0, 0), "upperArmR": (-0.05, 0, -0.1), "foreArmR": (-0.35, 0, 0), "handR": (-0.15, 0, 0)}
+STAND = {"pelvis": (0, 0.08, 0.07), "chest": (-0.03, -0.06, -0.09), "head": (0.04, -0.1, 0.06),
+         "thighL": (-0.1, 0.05, -0.06), "shinL": (0.2, 0, 0), "footL": (-0.1, 0, 0), "thighR": (0.02, 0, 0.0), "shinR": (0.02, 0, 0),
+         "upperArmL": (0.06, 0, 0.1), "foreArmL": (-0.25, 0, 0), "handL": (-0.1, 0, 0), "upperArmR": (-0.05, 0, -0.12), "foreArmR": (-0.4, 0, 0), "handR": (-0.15, 0, 0)}
 ACTION = {"pelvis": (0.08, 0.35, 0.0), "chest": (0.18, -0.3, 0.05), "head": (-0.12, -0.15, 0.0),
           "thighL": (-1.15, 0, -0.1), "shinL": (1.05, 0, 0), "footL": (0.12, 0, 0), "thighR": (0.6, 0, 0.12), "shinR": (0.7, 0, 0), "footR": (-0.45, 0, 0),
           "upperArmR": (-1.75, 0, -0.35), "foreArmR": (-0.35, 0, 0), "handR": (0.25, 0, 0), "upperArmL": (0.35, 0, 0.55), "foreArmL": (-0.7, 0, 0)}

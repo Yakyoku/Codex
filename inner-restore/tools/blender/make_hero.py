@@ -1,4 +1,4 @@
-"""主人公（第5版）：持ち主の参考画像 Docs/REFERENCE/hero/reference-v3.jpg に沿った潜行士。作り事の存在。
+"""主人公（第6版：曲線を強調。第5版は角張っていたため作り直し）：持ち主の参考画像 Docs/REFERENCE/hero/reference-v3.jpg に沿った潜行士。作り事の存在。
    参考画像の要点：中くらいの紫のボディスーツの上に、淡いラベンダーの「厚みのある装甲の板」を重ねる。
      胸当て／腹の段／背中／腰の板／お尻の板／肩当て／上腕の板／籠手／太ももの板／ひざ当て／すね当て／装甲ブーツ。
      丸いヘルメットと黒い大きなバイザー、背中の小さなユニット。運動選手のような、しっかりした体つき。
@@ -42,39 +42,56 @@ def half(P, n, d):   # n·P < d の側が内側
     return (P @ np.asarray(n, np.float32)) - d
 def lerp(a, b, t): return tuple(np.asarray(a) * (1 - t) + np.asarray(b) * t)
 
-# ---------------- 体つき（運動選手のような、しっかりした体） ----------------
+# ---------------- 体つき（第6版：曲線を強調した、しなやかな体。砂時計形と、背中から腰へのゆるい S 字） ----------------
+from scipy.interpolate import PchipInterpolator
+# 胴の断面の輪郭：高さ z ごとの 横の半幅 a、前後の半幅 b、前後の中心 y0（S 字）
+TZ = np.array([0.93, 0.975, 1.025, 1.085, 1.15, 1.215, 1.255, 1.3, 1.37, 1.44, 1.5, 1.555, 1.59, 1.615])
+TA = np.array([0.125, 0.168, 0.182, 0.17, 0.132, 0.1, 0.094, 0.102, 0.126, 0.138, 0.142, 0.146, 0.105, 0.062])
+TB = np.array([0.088, 0.108, 0.116, 0.108, 0.088, 0.077, 0.075, 0.079, 0.09, 0.096, 0.09, 0.076, 0.062, 0.05])
+TY = np.array([0.006, 0.014, 0.018, 0.014, 0.004, -0.004, -0.007, -0.008, -0.006, -0.002, 0.004, 0.012, 0.012, 0.008])
+fa, fb, fy = PchipInterpolator(TZ, TA), PchipInterpolator(TZ, TB), PchipInterpolator(TZ, TY)
+def prof(z):
+    zc = np.clip(z, TZ[0], TZ[-1]); return fa(zc).astype(np.float32), fb(zc).astype(np.float32), fy(zc).astype(np.float32)
+def torso_sdf(P):
+    a, b, y0 = prof(P[:, 2]); k = np.sqrt((P[:, 0] / a) ** 2 + ((P[:, 1] - y0) / b) ** 2)
+    d = (k - 1) * np.minimum(a, b) * 0.95
+    return smax(smax(d, TZ[0] - P[:, 2], 0.02), P[:, 2] - TZ[-1], 0.02)
 S = {}
 for side, sx in (("L", 1), ("R", -1)):
-    S[side] = dict(sh=(sx * 0.196, 0.006, 1.545), el=(sx * 0.258, 0.016, 1.29), wr=(sx * 0.296, -0.004, 1.05), hd=(sx * 0.306, -0.018, 0.9),
-                   hip=(sx * 0.092, 0.0, 0.975), kn=(sx * 0.104, -0.006, 0.53), an=(sx * 0.108, 0.016, 0.118), toe=(sx * 0.112, -0.17, 0.034))
+    S[side] = dict(sh=(sx * 0.182, 0.008, 1.545), el=(sx * 0.236, 0.02, 1.29), wr=(sx * 0.27, 0.0, 1.06), hd=(sx * 0.28, -0.014, 0.92),
+                   hip=(sx * 0.086, 0.004, 0.985), kn=(sx * 0.098, -0.008, 0.545), an=(sx * 0.1, 0.022, 0.158), toe=(sx * 0.103, -0.135, 0.022))
 PARTS = []
 def part(name, f): PARTS.append((name, f))
-part("torso", lambda P: smin(smin(smin(ellipsoid(P, (0, 0.004, 1.035), (0.172, 0.118, 0.12)), ellipsoid(P, (0, 0.006, 1.245), (0.106, 0.08, 0.13)), 0.055),
-                                   ellipsoid(P, (0, 0.002, 1.415), (0.15, 0.105, 0.165)), 0.05), ellipsoid(P, (0, 0.012, 1.56), (0.178, 0.084, 0.06)), 0.04))
-part("glute", lambda P: np.minimum(ellipsoid(P, (0.074, 0.046, 0.995), (0.088, 0.084, 0.096)), ellipsoid(P, (-0.074, 0.046, 0.995), (0.088, 0.084, 0.096))))
-part("bust", lambda P: np.minimum(ellipsoid(P, (0.066, -0.068, 1.458), (0.062, 0.052, 0.058)), ellipsoid(P, (-0.066, -0.068, 1.458), (0.062, 0.052, 0.058))))
-part("neck", lambda P: np.minimum(round_cone(P, (0, 0.01, 1.58), (0, 0.004, 1.71), 0.058, 0.052), ellipsoid(P, (0, 0.0, 1.79), (0.085, 0.095, 0.1))))
+part("torso", torso_sdf)
+part("glute", lambda P: np.minimum(ellipsoid(P, (0.074, 0.05, 1.005), (0.084, 0.088, 0.1)), ellipsoid(P, (-0.074, 0.05, 1.005), (0.084, 0.088, 0.1))))
+part("bust", lambda P: np.minimum(ellipsoid(P, (0.062, -0.07, 1.458), (0.064, 0.058, 0.06)), ellipsoid(P, (-0.062, -0.07, 1.458), (0.064, 0.058, 0.06))))
+part("neck", lambda P: np.minimum(round_cone(P, (0, 0.012, 1.58), (0, 0.006, 1.72), 0.05, 0.043), ellipsoid(P, (0, 0.004, 1.79), (0.078, 0.088, 0.094))))
 for side, sx in (("L", 1), ("R", -1)):
     J = S[side]
-    part("delt" + side, lambda P, sx=sx: ellipsoid(P, (sx * 0.196, 0.004, 1.545), (0.068, 0.072, 0.076)))
-    part("uarm" + side, lambda P, J=J: round_cone(P, J["sh"], J["el"], 0.054, 0.043))
-    part("farm" + side, lambda P, J=J, sx=sx: smin(round_cone(P, J["el"], J["wr"], 0.045, 0.031), ellipsoid(P, (sx * 0.27, 0.008, 1.212), (0.047, 0.049, 0.08)), 0.02))
-    part("hand" + side, lambda P, J=J, sx=sx: smin(smin(ellipsoid(P, (sx * 0.304, -0.014, 0.988), (0.021, 0.043, 0.056)),
-                                                         round_cone(P, (sx * 0.306, -0.018, 0.95), (sx * 0.309, -0.024, 0.878), 0.018, 0.012), 0.012),
-                                                    round_cone(P, (sx * 0.294, -0.044, 1.0), (sx * 0.288, -0.068, 0.96), 0.012, 0.009), 0.01))
-    part("thigh" + side, lambda P, J=J, sx=sx: smin(round_cone(P, J["hip"], J["kn"], 0.098, 0.058), ellipsoid(P, (sx * 0.11, -0.006, 0.83), (0.082, 0.09, 0.14)), 0.03))
-    part("knee" + side, lambda P, J=J: ellipsoid(P, (J["kn"][0], J["kn"][1] - 0.008, J["kn"][2]), (0.055, 0.056, 0.062)))
-    part("shin" + side, lambda P, J=J, sx=sx: smin(round_cone(P, J["kn"], J["an"], 0.053, 0.035), ellipsoid(P, (sx * 0.105, 0.03, 0.4), (0.057, 0.061, 0.118)), 0.025))
-    part("foot" + side, lambda P, J=J, sx=sx: np.maximum(smin(smin(ellipsoid(P, (sx * 0.11, -0.065, 0.044), (0.05, 0.12, 0.044)), ellipsoid(P, (sx * 0.108, 0.034, 0.052), (0.046, 0.054, 0.052)), 0.02),
-                                                              ellipsoid(P, (sx * 0.108, 0.016, 0.112), (0.042, 0.044, 0.066)), 0.02), -P[:, 2] + 0.002))
+    part("delt" + side, lambda P, sx=sx: ellipsoid(P, (sx * 0.18, 0.006, 1.542), (0.056, 0.06, 0.064)))
+    part("uarm" + side, lambda P, J=J: round_cone(P, J["sh"], J["el"], 0.046, 0.036))
+    part("farm" + side, lambda P, J=J, sx=sx: smin(round_cone(P, J["el"], J["wr"], 0.037, 0.026), ellipsoid(P, (sx * 0.246, 0.012, 1.215), (0.04, 0.042, 0.075)), 0.02))
+    part("hand" + side, lambda P, J=J, sx=sx: smin(smin(ellipsoid(P, (sx * 0.278, -0.01, 0.998), (0.018, 0.038, 0.05)),
+                                                         round_cone(P, (sx * 0.28, -0.014, 0.962), (sx * 0.283, -0.02, 0.9), 0.015, 0.01), 0.012),
+                                                    round_cone(P, (sx * 0.268, -0.038, 1.01), (sx * 0.262, -0.058, 0.975), 0.01, 0.0075), 0.01))
+    # 太もも：付け根が豊かで、ひざへ向かって細くなる。外側と内側にふくらみ
+    part("thigh" + side, lambda P, J=J, sx=sx: smin(smin(round_cone(P, J["hip"], J["kn"], 0.098, 0.052), ellipsoid(P, (sx * 0.108, -0.004, 0.86), (0.086, 0.094, 0.15)), 0.035),
+                                                    ellipsoid(P, (sx * 0.07, 0.0, 0.84), (0.06, 0.08, 0.12)), 0.03))
+    part("knee" + side, lambda P, J=J: ellipsoid(P, (J["kn"][0], J["kn"][1] - 0.006, J["kn"][2]), (0.048, 0.05, 0.058)))
+    # すね：ふくらはぎの曲線をはっきり、足首は細く
+    part("shin" + side, lambda P, J=J, sx=sx: smin(round_cone(P, J["kn"], J["an"], 0.048, 0.029), ellipsoid(P, (sx * 0.1, 0.034, 0.415), (0.054, 0.06, 0.12)), 0.03))
+    # かかとの少し高い靴（足の甲が斜めになる）
+    part("foot" + side, lambda P, J=J, sx=sx: np.maximum(smin(smin(round_cone(P, (sx * 0.1, 0.03, 0.115), (sx * 0.103, -0.1, 0.035), 0.036, 0.03),
+                                                                   ellipsoid(P, (sx * 0.103, -0.12, 0.026), (0.036, 0.045, 0.026)), 0.02),
+                                                              round_cone(P, (sx * 0.1, 0.05, 0.1), (sx * 0.1, 0.05, 0.012), 0.022, 0.016), 0.01), -P[:, 2] + 0.002))
 names = [n for n, _ in PARTS]
-BLEND = {"torso": 0.0, "glute": 0.035, "bust": 0.03, "neck": 0.03}
+BLEND = {"torso": 0.0, "glute": 0.04, "bust": 0.035, "neck": 0.03}
 def sdf(P, labels=False):
     vals = np.stack([f(P) for _, f in PARTS], 1)
     if labels: return vals.argmin(1)
     d = vals[:, 0]
     for i, (n, _) in enumerate(PARTS[1:], start=1):
-        d = smin(d, vals[:, i], BLEND.get(n, 0.022 if n.startswith(("delt", "uarm", "thigh")) else 0.016))
+        d = smin(d, vals[:, i], BLEND.get(n, 0.024 if n.startswith(("delt", "uarm", "thigh")) else 0.016))
     return d
 
 def grid_field(fn, lo, hi, vox):
@@ -85,35 +102,74 @@ def grid_field(fn, lo, hi, vox):
     for k in range(n[2]):
         P = np.stack([X.ravel(), Y.ravel(), np.full(X.size, zs[k], np.float32)], 1); vol[:, :, k] = fn(P).reshape(n[0], n[1])
     return vol, lo
-BLO, BHI = (-0.42, -0.24, -0.01), (0.42, 0.22, 1.86)
+BLO, BHI = (-0.4, -0.24, -0.01), (0.4, 0.22, 1.86)
 vol, lo = grid_field(sdf, BLO, BHI, 0.0042)
 verts, faces, _, _ = marching_cubes(vol, 0.0, spacing=(0.0042,) * 3); verts += lo
 print("BODY_MC", len(faces), round(time.time() - T0, 1))
 
-# ---------------- 装甲の板の設計図 ----------------
-# 各板：(名前, 板の形の式, 体からの浮き, 厚み, 材質, 目標の三角形数)
+# ---------------- 装甲の板の設計図（第6版：体の曲線に沿って流れる形。四角い板は使わない） ----------------
 PL = []
-def plate(name, region, off=0.005, th=0.0045, mat="armor", tris=1400): PL.append((name, region, off, th, mat, tris))
-plate("breast", lambda P: smax(smax(box(P, (0, -0.05, 1.45), (0.135, 0.09, 0.098), 0.012), half(P, (0, 1, 0), 0.01), 0.01), -half(P, (0, 0, 1), 1.375), 0.008), 0.0055, 0.005, tris=2400)
-plate("abs1", lambda P: smax(box(P, (0, -0.07, 1.31), (0.058, 0.07, 0.03), 0.008), half(P, (0, 1, 0), -0.02), 0.006), 0.0045, 0.0045, tris=500)
-plate("abs2", lambda P: smax(box(P, (0, -0.07, 1.236), (0.054, 0.07, 0.028), 0.008), half(P, (0, 1, 0), -0.02), 0.006), 0.0045, 0.0045, tris=500)
-plate("abs3", lambda P: smax(box(P, (0, -0.07, 1.168), (0.05, 0.07, 0.024), 0.008), half(P, (0, 1, 0), -0.02), 0.006), 0.0045, 0.0045, tris=400)
-plate("back", lambda P: smax(box(P, (0, 0.06, 1.445), (0.128, 0.08, 0.1), 0.012), -half(P, (0, 1, 0), 0.012), 0.01), 0.0055, 0.005, tris=1600)
-plate("lback", lambda P: smax(box(P, (0, 0.06, 1.25), (0.075, 0.07, 0.07), 0.01), -half(P, (0, 1, 0), 0.03), 0.01), 0.0045, 0.0045, tris=700)
-plate("belt", lambda P: zband(P, 1.112, 1.138), 0.004, 0.006, "accent", tris=900)
+def plate(name, region, off=0.0038, th=0.0036, mat="armor", tris=1400): PL.append((name, region, off, th, mat, tris))
+def limb_frame(P, a, b):
+    """手足の軸に沿った座標：t（a=0 → b=1）、軸からの角度 φ（0=外側, -π/2=前）"""
+    a = np.asarray(a, np.float32); b = np.asarray(b, np.float32); ab = b - a; L2 = float(ab @ ab)
+    t = ((P - a) @ ab) / L2; c = a + t[:, None] * ab; r = P - c
+    sx = 1.0 if a[0] > 0 else -1.0
+    limb_frame.r = np.linalg.norm(r, axis=1)      # 軸からの距離（同じ高さの胴体を板に含めないため）
+    return t, np.arctan2(r[:, 1], r[:, 0] * sx)
+def window(phi, c, w, scale=0.06):     # 角度の窓（内側が負）を、およそ距離に直す
+    d = np.abs(np.angle(np.exp(1j * (phi - c)))) - w; return d * scale
+# 胸：胸の下の縁は弧（両わきへ上がる）、上の縁は鎖骨の少し下
+def breast(P):
+    a, b, y0 = prof(P[:, 2]); x, y, z = P[:, 0], P[:, 1], P[:, 2]
+    return smax(smax(smax(1.395 + 1.6 * x * x - z, z - 1.548, 0.008), np.abs(x) - a * 0.86, 0.01), y - y0 + 0.01, 0.01)
+plate("breast", breast, 0.0042, 0.004, tris=2400)
+# 腹：くびれに沿って細くなる「コルセット」の板。下の端は骨盤の前で V 字に
+def corset(P):
+    a, b, y0 = prof(P[:, 2]); x, y, z = P[:, 0], P[:, 1], P[:, 2]
+    return smax(smax(smax(np.abs(x) - a * (0.42 + 0.9 * np.maximum(0, z - 1.3)), z - 1.375, 0.008), 1.02 + 2.2 * np.abs(x) - z, 0.01), y - y0 + 0.02, 0.01)
+plate("corset", corset, 0.0036, 0.0036, tris=1600)
+# 背中：背骨に沿って上へ広がる流線形
+def backp(P):
+    a, b, y0 = prof(P[:, 2]); x, y, z = P[:, 0], P[:, 1], P[:, 2]
+    return smax(smax(np.abs(x) - (0.03 + 0.42 * np.maximum(0, z - 1.2) + 1.2 * np.maximum(0, z - 1.43) ** 1.5), zband(P, 1.18, 1.545), 0.01), -(y - y0) + 0.02, 0.01)
+plate("back", backp, 0.0038, 0.0036, tris=1600)
 for side, sx in (("L", 1), ("R", -1)):
     J = S[side]
-    plate("hip" + side, lambda P, sx=sx: smax(box(P, (sx * 0.16, 0.0, 1.055), (0.04, 0.075, 0.042), 0.014), -half(P, (sx, 0, 0), 0.115), 0.01), 0.005, 0.005, tris=600)
-    plate("glute" + side, lambda P, sx=sx: smax(box(P, (sx * 0.078, 0.1, 1.0), (0.055, 0.06, 0.06), 0.016), -half(P, (0, 1, 0), 0.06), 0.01), 0.0045, 0.004, tris=700)
-    plate("pauld" + side, lambda P, J=J, sx=sx: smax(sph(P, (J["sh"][0] + sx * 0.012, J["sh"][1], J["sh"][2] + 0.012), 0.088), half(P, (0, 0, -1), -(J["sh"][2] - 0.04)), 0.01), 0.007, 0.006, tris=1000)
-    plate("uarm" + side, lambda P, J=J, sx=sx: smax(smax(round_cone(P, J["sh"], J["el"], 0.09, 0.09), zband(P, J["el"][2] + 0.05, J["sh"][2] - 0.085), 0.008), -half(P, (sx, 0, 0), abs(J["sh"][0]) - 0.0), 0.012), 0.005, 0.0045, tris=700)
-    plate("gaunt" + side, lambda P, J=J: smax(round_cone(P, J["el"], J["wr"], 0.09, 0.09), zband(P, J["wr"][2] + 0.012, J["el"][2] - 0.045), 0.008), 0.0065, 0.006, tris=1200)
-    plate("thigh" + side, lambda P, J=J, sx=sx: smax(smax(round_cone(P, J["hip"], J["kn"], 0.15, 0.15), zband(P, J["kn"][2] + 0.075, J["hip"][2] - 0.05), 0.01),
-                                                      np.minimum(half(P, (0, 1, 0), 0.02), -half(P, (sx, 0, 0), abs(J["hip"][0]) + 0.035)), 0.012), 0.0055, 0.005, tris=1400)
-    plate("knee" + side, lambda P, J=J: smax(sph(P, (J["kn"][0], J["kn"][1] - 0.035, J["kn"][2]), 0.068), half(P, (0, 1, 0), J["kn"][1] - 0.008), 0.01), 0.008, 0.008, tris=900)
-    plate("shin" + side, lambda P, J=J: smax(smax(round_cone(P, J["kn"], J["an"], 0.12, 0.12), zband(P, J["an"][2] + 0.085, J["kn"][2] - 0.065), 0.01), half(P, (0, 1, 0), 0.03), 0.012), 0.0055, 0.005, tris=1000)
-    plate("boot" + side, lambda P, J=J: smax(sph(P, (J["an"][0], -0.05, 0.08), 0.24), zband(P, -0.05, 0.205), 0.01), 0.006, 0.0075, tris=1800)
-    plate("glove" + side, lambda P, J=J: smax(round_cone(P, J["wr"], J["hd"], 0.08, 0.08), zband(P, J["hd"][2] - 0.05, J["wr"][2] - 0.012), 0.006), 0.003, 0.004, tris=900)
+    # 腰：腰の張りに沿う側面の板（くびれから腰骨の曲線をなぞる）
+    def hipp(P, sx=sx):
+        a, b, y0 = prof(P[:, 2]); x, y, z = P[:, 0], P[:, 1], P[:, 2]
+        zc = 1.07; hz = 0.075 * np.clip(1 - ((y - y0) / (b * 0.55)) ** 2, 0, 1)   # 前後の端で細くなる、木の葉形の側面の板
+        return smax(smax(a * 0.72 - x * sx, np.abs(z - zc) - hz, 0.01), np.abs(y - y0) - b * 0.55, 0.01)
+    plate("hip" + side, hipp, 0.0036, 0.0034, tris=700)
+    # お尻：丸みに沿った板
+    # 肩：小さく丸い肩当て
+    plate("pauld" + side, lambda P, J=J, sx=sx: smax(sph(P, (J["sh"][0] + sx * 0.01, J["sh"][1], J["sh"][2] + 0.01), 0.072), half(P, (0, 0, -1), -(J["sh"][2] - 0.025)), 0.012), 0.0045, 0.0045, tris=900)
+    # 上腕：外側の流線形の板
+    def uarm(P, J=J):
+        t, phi = limb_frame(P, J["el"], J["sh"]); r = limb_frame.r
+        return smax(smax(window(phi, 0.0, 0.9 + 0.3 * t, 0.05), np.maximum(0.18 - t, t - 0.72) * 0.25, 0.006), r - 0.075, 0.004)
+    plate("uarm" + side, uarm, 0.0036, 0.0034, tris=700)
+    # 籠手：手首へ細くなる。ひじ側の縁は斜め
+    def gaunt(P, J=J):
+        t, phi = limb_frame(P, J["wr"], J["el"]); top = 0.72 + 0.12 * np.cos(phi); r = limb_frame.r
+        return smax(smax(-(t - 0.05) * 0.25, (t - top) * 0.25, 0.006), r - 0.065, 0.004)
+    plate("gaunt" + side, gaunt, 0.0042, 0.0042, tris=1100)
+    # 太もも：前から外側へ、らせん状に流れる長い板
+    def thigh(P, J=J):
+        t, phi = limb_frame(P, J["kn"], J["hip"]); c = -1.05 + 0.85 * t; r = limb_frame.r
+        return smax(smax(window(phi, c, 0.85 + 0.25 * np.sin(np.pi * t), 0.08), np.maximum(0.16 - t, t - (0.86 - 0.12 * np.cos(phi))) * 0.4, 0.008), r - 0.13, 0.004)
+    plate("thigh" + side, thigh, 0.0038, 0.0036, tris=1500)
+    # ひざ：しずく形
+    plate("knee" + side, lambda P, J=J: smax(ellipsoid(P, (J["kn"][0], J["kn"][1] - 0.04, J["kn"][2] + 0.008), (0.046, 0.05, 0.072)), P[:, 1] - J["kn"][1] + 0.01, 0.01), 0.0055, 0.0055, tris=800)
+    # すね：前の細長い板。上で広く、足首へ細く
+    def shin(P, J=J):
+        t, phi = limb_frame(P, J["an"], J["kn"]); r = limb_frame.r
+        return smax(smax(window(phi, -np.pi / 2, 0.45 + 0.5 * t, 0.06), np.maximum(0.2 - t, t - 0.84) * 0.4, 0.008), r - 0.085, 0.004)
+    plate("shin" + side, shin, 0.0038, 0.0036, tris=900)
+    # ブーツ：足を包み、上の縁は前で高く後ろで低い曲線
+    plate("boot" + side, lambda P, J=J: smax(sph(P, (J["an"][0], -0.04, 0.09), 0.22), P[:, 2] - (0.205 - 0.45 * np.maximum(0, P[:, 1] - 0.0)), 0.01), 0.0045, 0.0055, tris=1600)
+    plate("glove" + side, lambda P, J=J: smax(round_cone(P, J["wr"], J["hd"], 0.07, 0.07), zband(P, J["hd"][2] - 0.04, J["wr"][2] - 0.01), 0.006), 0.0028, 0.0034, tris=800)
 
 def build_plate(name, region, off, th, tris, vox=0.0026):
     # 大まかな格子で、板のある範囲を探す
@@ -125,14 +181,14 @@ def build_plate(name, region, off, th, tris, vox=0.0026):
     inside = region(P) < 0.01
     if not inside.any(): return None
     q = P[inside]; blo = q.min(0) - 0.015; bhi = q.max(0) + 0.015
-    f = lambda Q: smax(np.abs(sdf(Q) - off) - th / 2, region(Q), 0.0022)
+    f = lambda Q: smax(np.abs(sdf(Q) - off) - th / 2, region(Q), 0.0035)
     pv, plo = grid_field(f, blo, bhi, vox)
     if pv.min() >= 0: return None
     v, fc, _, _ = marching_cubes(pv, 0.0, spacing=(vox,) * 3); v += plo
     ob = L.mesh_object(name, v, [tuple(x[::-1]) for x in fc], smooth=True)
     L.select_only(ob)
     bpy.ops.object.mode_set(mode="EDIT"); bpy.ops.mesh.select_all(action="SELECT"); bpy.ops.mesh.remove_doubles(threshold=1e-5); bpy.ops.mesh.normals_make_consistent(inside=False); bpy.ops.object.mode_set(mode="OBJECT")
-    md = ob.modifiers.new("sm", "SMOOTH"); md.factor = 0.5; md.iterations = 3
+    md = ob.modifiers.new("sm", "SMOOTH"); md.factor = 0.6; md.iterations = 8
     md = ob.modifiers.new("dec", "DECIMATE"); md.ratio = min(1.0, tris / max(1, len(fc)))
     for m in list(ob.modifiers): bpy.ops.object.modifier_apply(modifier=m.name)
     return ob
@@ -158,7 +214,7 @@ body = L.mesh_object("body", verts, [tuple(f[::-1]) for f in faces], smooth=True
 L.select_only(body)
 bpy.ops.object.mode_set(mode="EDIT"); bpy.ops.mesh.select_all(action="SELECT"); bpy.ops.mesh.remove_doubles(threshold=1e-5); bpy.ops.mesh.normals_make_consistent(inside=False); bpy.ops.object.mode_set(mode="OBJECT")
 md = body.modifiers.new("sm", "SMOOTH"); md.factor = 0.6; md.iterations = 6
-md = body.modifiers.new("dec", "DECIMATE"); md.ratio = 17000 / max(1, len(faces))
+md = body.modifiers.new("dec", "DECIMATE"); md.ratio = 19000 / max(1, len(faces))
 for m in list(body.modifiers): bpy.ops.object.modifier_apply(modifier=m.name)
 body.data.materials.append(M["suit"]); body.data.materials.append(M["accent"])
 # 体の首まわりは濃いめの紫に（ヘルメットの下からのぞく部分）
@@ -263,23 +319,22 @@ def oval_patch(name, m, ax, az, R, cz, sy=1.06, sz=1.04, lift=0.0, r0=0.0, rings
     ob = L.mesh_object(name, np.array(Vv), F); ob.data.materials.append(M[m])
     L.select_only(ob); bpy.ops.object.mode_set(mode="EDIT"); bpy.ops.mesh.select_all(action="SELECT"); bpy.ops.mesh.remove_doubles(threshold=1e-5); bpy.ops.mesh.normals_make_consistent(inside=False); bpy.ops.object.mode_set(mode="OBJECT")
     return ob
-HCZ = 1.81; HR = 0.146
-rimv = oval_patch("vrimO", "armor", 0.13, 0.106, HR, HCZ - 0.004, lift=0.0055, r0=0.88, rings=3)
+HCZ = 1.8; HR = 0.136
+rimv = oval_patch("vrimO", "armor", 0.121, 0.099, HR, HCZ - 0.004, lift=0.0055, r0=0.88, rings=3)
 md = rimv.modifiers.new("so", "SOLIDIFY"); md.thickness = 0.006; md.offset = 1
 helmet = join("helmet", [
     usph("hs", "armor", HR, (0, 0, HCZ), (1, 1.06, 1.04), 44),
-    oval_patch("visor", "visor", 0.12, 0.097, HR, HCZ - 0.004, lift=0.0045),
+    oval_patch("visor", "visor", 0.111, 0.09, HR, HCZ - 0.004, lift=0.0045),
     rimv,
     cyl("earL", "accent", 0.034, 0.018, (HR * 0.99, 0.014, HCZ - 0.01), (1, 0, 0)), cyl("earR", "accent", 0.034, 0.018, (-HR * 0.99, 0.014, HCZ - 0.01), (1, 0, 0)),
-    torus("neckRing", "armor", (0, 0.006, 1.672), 0.07, 0.017, (1.06, 1.0, 1)),
-    torus("neckRing2", "accent", (0, 0.006, 1.648), 0.066, 0.011, (1.06, 1.0, 1)),
+    torus("neckRing", "armor", (0, 0.008, 1.668), 0.06, 0.014, (1.06, 1.0, 1)),
+    torus("neckRing2", "accent", (0, 0.008, 1.648), 0.056, 0.009, (1.06, 1.0, 1)),
 ])
 pack = join("pack", [
-    rbox("pk", "armor", (0.16, 0.08, 0.2), (0, 0.128, 1.445)),
-    rbox("pkS", "accent", (0.09, 0.014, 0.13), (0, 0.168, 1.445), 1),
-    cyl("pkL", "armor", 0.026, 0.19, (0.098, 0.128, 1.44)), cyl("pkR", "armor", 0.026, 0.19, (-0.098, 0.128, 1.44)),
-    cyl("pkLb", "accent", 0.022, 0.02, (0.098, 0.128, 1.338)), cyl("pkRb", "accent", 0.022, 0.02, (-0.098, 0.128, 1.338)),
-    rbox("pkG", "glow", (0.05, 0.006, 0.008), (0, 0.176, 1.49), 1),
+    usph("pk", "armor", 0.06, (0, 0.105, 1.46), (0.85, 0.5, 1.55), 32),
+    usph("pkS", "accent", 0.02, (0, 0.134, 1.46), (0.6, 0.35, 3.2), 20),
+    usph("pkL", "armor", 0.024, (0.058, 0.102, 1.42), (0.7, 0.7, 2.6), 20), usph("pkR", "armor", 0.024, (-0.058, 0.102, 1.42), (0.7, 0.7, 2.6), 20),
+    rbox("pkG", "glow", (0.006, 0.004, 0.06), (0, 0.139, 1.46), 1),
 ])
 # 右手に握る浄化の道具：柄＋紫に光る短い刃（浄化の光の出口）
 HD = S["R"]["hd"]; WR = S["R"]["wr"]
