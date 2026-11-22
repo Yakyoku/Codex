@@ -36,12 +36,14 @@ async function main() {
     const t = fixedT !== null ? Number(fixedT) : now / 1000; const dt = last ? Math.min(0.1, (now - last) / 1000) : 0; last = now;
     const u = camT !== null ? Number(camT) : (Math.sin(t * 0.05 - 1.5) * 0.5 + 0.5) * 0.9;
     world.path.getPointAt(Math.min(0.985, u), camera.position); world.path.getPointAt(Math.min(1, u + 0.06), look);
-    camera.position.y += 1.0; camera.lookAt(look);
+    camera.position.y += 1.0;
+    const dbg = Q.get('pos'); if (dbg) { const v = dbg.split(',').map(Number); camera.position.set(v[0], v[1], v[2]); look.set(v[3], v[4], v[5]); }
+    camera.lookAt(look);
     if (wetQ === null) game.update(dt, t);
     renderer.render(scene, camera);
     hud.tick(now); frames++;
     const frozen = freeze > 0 && frames >= freeze; if (frozen) renderer.setAnimationLoop(null);
-    W.__state = { ready: frames > 3, frozen, frames, isWebGPU, tier, device, errors, stats: world.stats };
+    W.__state = { ready: frames > 3, frozen, frames, isWebGPU, tier, device, errors, stats: world.stats, bridges: game.bridges.count, swarm: game.swarm.count, b0: game.bridges.centers.slice(0, 40).map((c) => [Math.round(c.x), Math.round(c.y), Math.round(c.z), Math.round(world.distToPath(c))]) };
   });
 }
 main().catch((e) => { errors.push(String(e)); console.error(e); W.__state = { ready: false, failed: true, errors }; });

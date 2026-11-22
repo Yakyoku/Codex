@@ -87,10 +87,10 @@ def make_clay(seed):
     return o
 
 SPECS = [  # 名前, 作る関数, 種, LOD0 の面数, LOD1 の面数
-    ('quartz_a', make_quartz, 1, 2200, 420), ('quartz_b', make_quartz, 2, 2200, 420), ('quartz_c', make_quartz, 5, 2200, 420),
-    ('aggregate_a', make_aggregate, 3, 3000, 600), ('aggregate_b', make_aggregate, 8, 3000, 600), ('aggregate_c', make_aggregate, 11, 3000, 600),
-    ('humus_a', make_humus, 4, 2400, 480), ('humus_b', make_humus, 9, 2400, 480),
-    ('clay_a', make_clay, 6, 900, 220),
+    ('quartz_a', make_quartz, 1, 2200, 420, 110), ('quartz_b', make_quartz, 2, 2200, 420, 110), ('quartz_c', make_quartz, 5, 2200, 420, 110),
+    ('aggregate_a', make_aggregate, 3, 3000, 600, 150), ('aggregate_b', make_aggregate, 8, 3000, 600, 150), ('aggregate_c', make_aggregate, 11, 3000, 600, 150),
+    ('humus_a', make_humus, 4, 2400, 480, 130), ('humus_b', make_humus, 9, 2400, 480, 130),
+    ('clay_a', make_clay, 6, 900, 220, 48),
 ]
 
 def lowpoly(high, name, tris):
@@ -100,7 +100,7 @@ def lowpoly(high, name, tris):
     bpy.ops.object.select_all(action='DESELECT'); lo.select_set(True); bpy.ops.object.shade_smooth()
     return lo
 
-for name, fn, seed, t0n, t1n in SPECS:
+for name, fn, seed, t0n, t1n, t2n in SPECS:
     if ONLY and name != ONLY: continue
     t = time.time(); reset()
     high = fn(seed); high.name = name + '_high'
@@ -108,25 +108,25 @@ for name, fn, seed, t0n, t1n in SPECS:
     # 大きさをそろえる（最大半径 1）
     r = max(v.co.length for v in high.data.vertices); high.scale = (1 / r,) * 3; bpy.ops.object.transform_apply(scale=True)
     mat = bpy.data.materials.new('m'); mat.use_nodes = True; high.data.materials.append(mat)
-    lod0 = lowpoly(high, name + '_LOD0', t0n); lod1 = lowpoly(high, name + '_LOD1', t1n)
-    for lo in (lod0, lod1):
+    lod0 = lowpoly(high, name + '_LOD0', t0n); lod1 = lowpoly(high, name + '_LOD1', t1n); lod2 = lowpoly(high, name + '_LOD2', t2n)
+    for lo in (lod0, lod1, lod2):
         lo.data.materials.clear(); m2 = bpy.data.materials.new(lo.name); m2.use_nodes = True; lo.data.materials.append(m2)
-        bpy.ops.object.select_all(action='DESELECT'); smart_uv(lo, 0.03)
+        cube_uv(lo)
     # LOD0 に高解像度の形から法線と AO を焼く。LOD1 は同じ焼き方で別の画像（小さめ）
-    for lo, size, tag in ((lod0, SIZE, ''), (lod1, SIZE // 2, '_lod1')):
-        nrm = bake(lo, 'NORMAL', size, samples=1, highpoly=high, cage=0.06)
-        ao = bake(lo, 'AO', size, samples=32, highpoly=high, cage=0.06)
+    for lo, size, tag in ((lod0, SIZE, ''), (lod1, SIZE // 2, '_lod1'), (lod2, SIZE // 4, '_lod2')):
+        nrm = bake(lo, 'NORMAL', size, samples=1, highpoly=high, cage=0.06 if lo is not lod2 else 0.2)
+        ao = bake(lo, 'AO', size, samples=32, highpoly=high, cage=0.06 if lo is not lod2 else 0.2)
         n = np.array(nrm.pixels[:], dtype=np.float32).reshape(size, size, 4); a = np.array(ao.pixels[:], dtype=np.float32).reshape(size, size, 4)
         out = np.ones((size, size, 4), dtype=np.float32); out[..., 0] = n[..., 0]; out[..., 1] = n[..., 1]; out[..., 2] = a[..., 0]
         img = bpy.data.images.new('na', size, size, alpha=False); img.colorspace_settings.name = 'Non-Color'
         img.pixels = out.ravel().tolist(); save_image(img, os.path.join(GOUT, f'{name}{tag}_na.png'))
-    export_glb(os.path.join(GOUT, name + '.glb'), [lod0, lod1], draco=False)
+    export_glb(os.path.join(GOUT, name + '.glb'), [lod0, lod1, lod2], draco=False, tangents=True)
     if PREVIEW:
         # 確認用：高解像度の形を4方向から描く（焼き込み元の形そのもの）
         b = mat.node_tree.nodes['Principled BSDF']
         col = {'q': (0.55, 0.52, 0.47, 1), 'a': (0.16, 0.10, 0.06, 1), 'h': (0.035, 0.025, 0.018, 1), 'c': (0.42, 0.36, 0.28, 1)}[name[0]]
         b.inputs['Base Color'].default_value = col; b.inputs['Roughness'].default_value = 0.35 if name[0] == 'q' else 0.8
-        lod0.hide_render = True; lod1.hide_render = True
+        lod0.hide_render = True; lod1.hide_render = True; lod2.hide_render = True
         from common import PREVIEW as PV
         render_views([high], os.path.join(PV, 'grain_' + name), size=320, samples=12)
     print(f'[grain] {name} high={len(high.data.polygons)} lod0={len(lod0.data.polygons)} lod1={len(lod1.data.polygons)} {time.time()-t:.1f}s')

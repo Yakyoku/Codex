@@ -67,12 +67,12 @@ def bake(obj, kind, size, samples=16, name=None, margin=8, highpoly=None, cage=0
 def save_image(img, path):
     img.filepath_raw = path; img.file_format = 'PNG'; img.save()
 
-def export_glb(path, objs, draco=True, anim=False):
+def export_glb(path, objs, draco=True, anim=False, tangents=False):
     bpy.ops.object.select_all(action='DESELECT')
     for o in objs: o.select_set(True)
     bpy.ops.export_scene.gltf(filepath=path, export_format='GLB', use_selection=True,
         export_draco_mesh_compression_enable=draco, export_apply=not anim,
-        export_animations=anim, export_yup=True, export_image_format='AUTO')
+        export_animations=anim, export_yup=True, export_tangents=tangents, export_image_format='AUTO')
     print(f'[glb] {path} {os.path.getsize(path)/1024:.1f}KB')
 
 def render_views(objs, path_prefix, size=512, samples=24, dist=None, world=0.05):
@@ -111,3 +111,24 @@ def render_views(objs, path_prefix, size=512, samples=24, dist=None, world=0.05)
         bpy.ops.render.render(write_still=True); outs.append(sc.render.filepath)
     for o in (cam, key, rim): bpy.data.objects.remove(o)
     return outs
+
+def cube_uv(obj, margin=0.03):
+    """塊状の形のための UV 展開：重心から見た向きで6面に分け、面ごとに中心投影して 3×2 に並べる。
+    smart_project は、でこぼこの塊を数千の小さな島に割ってしまい、法線の焼き込みが壊れるので使わない。"""
+    me = obj.data
+    bm = bmesh.new(); bm.from_mesh(me)
+    uvl = bm.loops.layers.uv.verify()
+    c = Vector((0, 0, 0))
+    for v in bm.verts: c += v.co
+    c /= max(1, len(bm.verts))
+    for f in bm.faces:
+        d = f.calc_center_median() - c
+        ax = max(range(3), key=lambda i: abs(d[i])); sg = 1 if d[ax] >= 0 else -1
+        k = ax * 2 + (0 if sg > 0 else 1); col, row = k % 3, k // 3
+        ua, va = [i for i in range(3) if i != ax]
+        for l in f.loops:
+            p = l.vert.co - c; m = max(abs(p[ax]), 1e-4)
+            # 面の外へ少しはみ出す頂点があるので、1.35 で割って枠に収める
+            u = max(-1, min(1, p[ua] / m / 1.35)); v = max(-1, min(1, p[va] / m / 1.35))
+            l[uvl].uv = ((col + margin + (u * 0.5 + 0.5) * (1 - 2 * margin)) / 3, (row + margin + (v * 0.5 + 0.5) * (1 - 2 * margin)) / 2)
+    bm.to_mesh(me); bm.free(); me.update()

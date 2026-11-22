@@ -7,12 +7,12 @@ import { SoilGrid } from '../sim/soil';
 import layout from '../data/stage1.layout.json';
 
 export interface Collider { x: number; y: number; z: number; r: number; }
-interface Placement { variant: string; lod: 0 | 1; pos: THREE.Vector3; quat: THREE.Quaternion; scale: THREE.Vector3; cell: number; seed: number; }
+interface Placement { variant: string; lod: 0 | 1 | 2; pos: THREE.Vector3; quat: THREE.Quaternion; scale: THREE.Vector3; cell: number; seed: number; }
 const VARIANTS: Record<GrainKind, string[]> = { quartz: ['quartz_a', 'quartz_b', 'quartz_c'], aggregate: ['aggregate_a', 'aggregate_b', 'aggregate_c'], humus: ['humus_a', 'humus_b'], clay: ['clay_a'] };
 const kindOf = (v: string) => v.split('_')[0] as GrainKind;
 
 export interface World {
-  group: THREE.Group; path: THREE.CatmullRomCurve3; colliders: Collider[]; grid: SoilGrid; cellCount: number;
+  group: THREE.Group; samples: THREE.Vector3[]; distToPath(p: THREE.Vector3): number; path: THREE.CatmullRomCurve3; colliders: Collider[]; grid: SoilGrid; cellCount: number;
   cellAt(p: THREE.Vector3): number; cellCenter(i: number): THREE.Vector3;
   /** 区画の状態（水・活力）を粒の見た目に反映する */
   syncWetness(): void;
@@ -62,7 +62,7 @@ export async function buildWorld(base: string, opts: { grainLod: 0 | 1; density:
       let x = rng.next(), kind: GrainKind = kinds[0][0]; for (const [kd, w] of kinds) { if (x < w) { kind = kd; break; } x -= w; }
       const nrm = new THREE.Vector3(pos.x - hit.o.x, pos.y - hit.o.y, pos.z - hit.o.z).normalize();
       const quat = flat ? new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), nrm).multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), rng.range(0, 6.28))) : rq();
-      placements.push({ variant: rng.pick(VARIANTS[kind]), lod: r > 3.2 ? opts.grainLod : 1, pos, quat, scale: new THREE.Vector3(r * rng.range(0.85, 1.15), r * rng.range(0.8, 1.1), r * rng.range(0.85, 1.15)), cell: cellOfSample(si), seed: rng.next() });
+      placements.push({ variant: rng.pick(VARIANTS[kind]), lod: (() => { const dp = nearest(pos).d; return r > 2.6 ? (dp < 12 ? opts.grainLod : 1) : dp < 9 ? (r > 0.9 && opts.grainLod === 0 ? 0 : 1) : 2; })(), pos, quat, scale: new THREE.Vector3(r * rng.range(0.85, 1.15), r * rng.range(0.8, 1.1), r * rng.range(0.85, 1.15)), cell: cellOfSample(si), seed: rng.next() });
       if (collide && r > 1.6) colliders.push({ x: pos.x, y: pos.y, z: pos.z, r: r * 0.85 });
     }
   };
@@ -73,18 +73,18 @@ export async function buildWorld(base: string, opts: { grainLod: 0 | 1; density:
   // 3) 素材を読み、種類×LOD ごとにインスタンス描画にまとめる
   const names = [...new Set(placements.map((p) => p.variant))];
   const detail = await loadTexture(base, 'tex/soil_detail.webp', { repeat: true });
-  const loaded = new Map<string, { geo: [THREE.BufferGeometry, THREE.BufferGeometry]; na: [THREE.Texture, THREE.Texture] }>();
+  const loaded = new Map<string, { geo: THREE.BufferGeometry[]; na: THREE.Texture[] }>();
   await Promise.all(names.map(async (nm) => {
-    const [g, na0, na1] = await Promise.all([loadGLB(base, `models/grains/${nm}.glb`), loadTexture(base, `models/grains/${nm}_na.webp`), loadTexture(base, `models/grains/${nm}_lod1_na.webp`)]);
+    const [g, na0, na1, na2] = await Promise.all([loadGLB(base, `models/grains/${nm}.glb`), loadTexture(base, `models/grains/${nm}_na.webp`), loadTexture(base, `models/grains/${nm}_lod1_na.webp`), loadTexture(base, `models/grains/${nm}_lod2_na.webp`)]);
     const geo: THREE.BufferGeometry[] = [];
-    for (const l of [0, 1]) { const o = g.scene.getObjectByName(`${nm}_LOD${l}`) as THREE.Mesh; geo[l] = o.geometry; }
-    loaded.set(nm, { geo: geo as [THREE.BufferGeometry, THREE.BufferGeometry], na: [na0, na1] });
+    for (const l of [0, 1, 2]) { const o = g.scene.getObjectByName(`${nm}_LOD${l}`) as THREE.Mesh; geo[l] = o.geometry; }
+    loaded.set(nm, { geo, na: [na0, na1, na2] });
   }));
   const group = new THREE.Group(); group.name = 'soil';
   const batches: { wet: THREE.InstancedBufferAttribute; cells: Uint16Array }[] = [];
   const stats = { instances: placements.length, triangles: 0, drawCalls: 0 };
   const m4 = new THREE.Matrix4();
-  for (const nm of names) for (const lod of [0, 1] as const) {
+  for (const nm of names) for (const lod of [0, 1, 2] as const) {
     const list = placements.filter((p) => p.variant === nm && p.lod === lod); if (!list.length) continue;
     const L = loaded.get(nm)!;
     const wet = new THREE.InstancedBufferAttribute(new Float32Array(list.length), 1); wet.setUsage(THREE.DynamicDrawUsage);
@@ -100,7 +100,7 @@ export async function buildWorld(base: string, opts: { grainLod: 0 | 1; density:
   const grid = new SoilGrid(N);
   const centers = Array.from({ length: N }, (_, i) => path.getPointAt((i + 0.5) / N));
   const world: World = {
-    group, path, colliders, grid, cellCount: N, stats,
+    group, samples, distToPath: (p) => nearest(p).d, path, colliders, grid, cellCount: N, stats,
     cellAt: (p) => cellOfSample(nearest(p).i), cellCenter: (i) => centers[i],
     syncWetness() {
       for (const b of batches) {
