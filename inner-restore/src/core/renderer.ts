@@ -35,6 +35,15 @@ export async function createRenderer(canvas: HTMLCanvasElement, opts: { pref?: B
   }
   const isWebGPU = (renderer.backend as { isWebGPUBackend?: boolean }).isWebGPUBackend === true;
   if (!wantGL && !isWebGPU) fellBack = true;
+  // WebGPU のデバイスが失われたら（表示の停止）、次回から WebGL 2 にして読み込み直す（1回だけ）
+  if (isWebGPU) {
+    const dev = (renderer.backend as unknown as { device?: GPUDeviceLike }).device;
+    void dev?.lost?.then((info) => {
+      if (info?.reason === 'destroyed') return;
+      try { if (sessionStorage.getItem('ir.fellback')) return; sessionStorage.setItem('ir.fellback', '1'); localStorage.setItem('ir.backend', 'webgl'); } catch { return; }
+      location.reload();
+    });
+  }
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.0;
@@ -57,3 +66,5 @@ export function fitRenderer(renderer: THREE.WebGPURenderer, camera: THREE.Perspe
   apply();
   return apply;
 }
+
+interface GPUDeviceLike { lost?: Promise<{ reason?: string }>; }

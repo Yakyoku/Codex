@@ -3,6 +3,7 @@
 ## 公開 URL
 - 本番：https://inner-restore-web-20261122.netlify.app/ （VR：/vr/、進捗：/progress/、診断：/diag/）
 - 下書き：https://inner-restore-web-20261122-draft.netlify.app/ （まだ一度も公開していない）
+- 本番への公開は 2 回（第1部、M1 第1版）。Netlify のクレジット消費は計 約30 の見込み。
 - Netlify サイト ID：本番 `df57e5ce-3511-45aa-854e-a1198fe2ce16`、下書き `9da4a676-781d-48cc-8114-d8a3ae8a1735`（チーム slug `fujita-takashi`）
 
 ## 環境の準備手順（新しいセッションの最初に）

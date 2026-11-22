@@ -1,24 +1,76 @@
 {
-  "updated": "2026-11-22",
-  "sections": [
-    { "title": "M1：網膜の一区画（この環境の Chrome・WebGL 2 で撮影）", "note": "WebGPU の絵はこの環境では撮れません（真っ黒に写る）。実機での見え方は未確認です。解像度が低いのは、GPU のない環境で撮っているためです。",
-      "items": [
-        { "src": "progress-src/m1-play.mp4", "caption": "自動操作による約30秒のプレイ（時間を刻んで1コマずつ撮影し、つないだもの。毎秒6コマ）。白く濁った網膜を浄化すると、透明になって毛細血管と血流が現れる。", "wide": true },
-        { "src": "progress-src/m1-01-title.png", "caption": "タイトル画面。「クリックして開始」で音が始まる。描画方式・紹介の出し方・読み上げを選べる。" },
-        { "src": "progress-src/m1-02-sick.png", "caption": "病んだ状態：血流が止まり、白く濁って不透明になった網膜の内側の面。右上は患者の視界（ぼやけて暗い）。" },
-        { "src": "progress-src/m1-03-heal.png", "caption": "浄化の途中：濁りが晴れた所から、毛細血管と、椀形に変形して一列で通る赤血球が見えてくる。" },
-        { "src": "progress-src/m1-04-half.png", "caption": "回復 50% 前後。患者の視界も少しずつ形を結ぶ。" },
-        { "src": "progress-src/m1-05-healthy.png", "caption": "健康な状態（接写）：透明な網膜、毛細血管の壁（内皮細胞）、外から巻き付く周皮細胞、赤血球。奥の橙赤色は脈絡膜からの光。" },
-        { "src": "progress-src/m1-06-vr.png", "caption": "VR 版（WebXR エミュレーター iwer で Quest 3 を模擬）：VR に入る→見回す→歩く→右手で浄化、まで自動で確認。手首の端末に回復率。" }
-      ] },
-    { "title": "モデルの確認用画像（Blender・4方向）", "note": "形の仕様書（Docs/REFERENCE/atlas/）と照らして作ったもの。実物の写真との見比べは、赤血球・内皮細胞・周皮細胞については未実施です（文章の記述と数式から作成）。写真と見比べて、違う点を教えてください。",
-      "items": [
-        { "src": "assets/preview/rbc.jpg", "caption": "赤血球：Evans & Fung (1972) の実測式による両凹円盤。直径 7.82µm、中央の厚み 0.81µm、最も厚い所 2.57µm。" },
-        { "src": "assets/preview/retina.jpg", "caption": "網膜の毛細血管（内径 5.2µm）と周皮細胞。細胞体は血管の外のこぶ、一次突起が長さ方向、細い二次突起が周方向に巻き付く。既知のずれ：網目の間隔が実際（約100µm）より狭い（約40〜50µm）。次回に直す。" },
-        { "src": "assets/preview/diver.jpg", "caption": "主人公（ナノスーツの潜行士・第1版）。作り事の存在。関節ごとの硬い部品を動かす方式。作り込みは M2。" },
-        { "src": "public/static/img/patient_view.jpg", "caption": "患者の視界の絵（Blender で描画した架空の病室）。回復に応じて、ぼかし・暗さ・暗い斑を取り除いて見せる。" }
-      ] },
-    { "title": "第1部：公開経路の確認", "note": "",
-      "items": [ { "src": "progress-src/p1-main-webgl2.png", "caption": "最初に公開経路を通したときの最小ページ（赤血球の表示）。" } ] }
-  ]
+ "updated": "2026-11-22",
+ "sections": [
+  {
+   "title": "M1：網膜の一区画（この環境の Chrome・WebGL 2 で撮影）",
+   "note": "WebGPU の絵はこの環境では撮れません（真っ黒に写る）。実機での見え方は未確認です。解像度が低いのは、GPU のない環境で撮っているためです。",
+   "items": [
+    {
+     "src": "progress-src/m1-play.mp4",
+     "caption": "自動操作による約30秒のプレイ（時間を刻んで1コマずつ撮影し、つないだもの。毎秒6コマ）。白く濁った網膜を浄化すると、透明になって毛細血管と血流が現れる。（撮影の画面が 480×270 と小さいため、紹介カードが画面の大半を覆って見えます。実際の画面ではカードは右下の一部です）",
+     "wide": true
+    },
+    {
+     "src": "progress-src/m1-01-title.png",
+     "caption": "タイトル画面。「クリックして開始」で音が始まる。描画方式・紹介の出し方・読み上げを選べる。"
+    },
+    {
+     "src": "progress-src/m1-02-sick.png",
+     "caption": "病んだ状態：血流が止まり、白く濁って不透明になった網膜の内側の面。右上は患者の視界（ぼやけて暗い）。"
+    },
+    {
+     "src": "progress-src/m1-03-heal.png",
+     "caption": "浄化の途中：濁りが晴れた所から、毛細血管と、椀形に変形して一列で通る赤血球が見えてくる。"
+    },
+    {
+     "src": "progress-src/m1-04-half.png",
+     "caption": "回復 50% 前後。患者の視界も少しずつ形を結ぶ。"
+    },
+    {
+     "src": "progress-src/m1-05-healthy.png",
+     "caption": "健康な状態（接写）：透明な網膜、毛細血管の壁（内皮細胞）、外から巻き付く周皮細胞、赤血球。奥の橙赤色は脈絡膜からの光。"
+    },
+    {
+     "src": "progress-src/m1-06-vr.png",
+     "caption": "VR 版（WebXR エミュレーター iwer で Quest 3 を模擬）：VR に入る→見回す→歩く→右手で浄化、まで自動で確認。手首の端末に回復率。"
+    }
+   ]
+  },
+  {
+   "title": "モデルの確認用画像（Blender・4方向）",
+   "note": "形の仕様書（Docs/REFERENCE/atlas/）と照らして作ったもの。実物の写真との見比べは、赤血球・内皮細胞・周皮細胞については未実施です（文章の記述と数式から作成）。写真と見比べて、違う点を教えてください。",
+   "items": [
+    {
+     "src": "assets/preview/rbc.jpg",
+     "caption": "赤血球：Evans & Fung (1972) の実測式による両凹円盤。直径 7.82µm、中央の厚み 0.81µm、最も厚い所 2.57µm。"
+    },
+    {
+     "src": "assets/preview/retina.jpg",
+     "caption": "網膜の毛細血管（内径 5.2µm）と周皮細胞。細胞体は血管の外のこぶ、一次突起が長さ方向、細い二次突起が周方向に巻き付く。既知のずれ：網目の間隔が実際（約100µm）より狭い（約40〜50µm）。次回に直す。"
+    },
+    {
+     "src": "progress-src/diver-front.jpg",
+     "caption": "主人公（ナノスーツの潜行士・第1版）前ななめ。作り事の存在。まだ人形のように見え、バイザーの縁が乱れている。M2 で作り直す。"
+    },
+    {
+     "src": "progress-src/diver-back.jpg",
+     "caption": "主人公・後ろななめ。"
+    },
+    {
+     "src": "public/static/img/patient_view.jpg",
+     "caption": "患者の視界の絵（Blender で描画した架空の病室）。回復に応じて、ぼかし・暗さ・暗い斑を取り除いて見せる。"
+    }
+   ]
+  },
+  {
+   "title": "第1部：公開経路の確認",
+   "note": "",
+   "items": [
+    {
+     "src": "progress-src/p1-main-webgl2.png",
+     "caption": "最初に公開経路を通したときの最小ページ（赤血球の表示）。"
+    }
+   ]
+  }
+ ]
 }

@@ -86,7 +86,8 @@ async function main() {
     if (mode === 'all') speak(`${e.ja}。${e.intro}`, ttsSel.value === 'on' && sim === null);
     if (at) { focus.copy(at); focusOn = true; } else focusOn = false;
   }
-  const hideCard = () => { card.classList.remove('on'); cardCur = null; focusOn = false; try { speechSynthesis.cancel(); } catch { /* 読み上げのない機器 */ } };
+  let cardGap = 0;
+  const hideCard = () => { card.classList.remove('on'); cardCur = null; cardGap = 6; focusOn = false; try { speechSynthesis.cancel(); } catch { /* 読み上げのない機器 */ } };
   card.addEventListener('click', hideCard);
   const enqueue = (id: string, at: THREE.Vector3 | null) => { if (!known.has(id) && !queue.some((q) => q.id === id) && cardCur !== id) queue.push({ id, at }); };
 
@@ -182,14 +183,14 @@ async function main() {
       if (near(stage.points.pericyte, 20)) enqueue('pericyte', stage.points.pericyte);
       if (stage.flowing() > 0.12) enqueue('rbc', stage.points.rbc().clone());
       if (cardCur) { cardT += dt; (card.querySelector('.p i') as HTMLElement).style.width = `${Math.min(100, (cardT / cardDur) * 100)}%`; if (cardCur === 'rbc') focus.copy(stage.points.rbc()); if (cardT > cardDur) hideCard(); }
-      else if (queue.length && !firing && subT <= 0 && t > 1.5) { const q = queue.shift()!; showCard(q.id, q.at); }
+      else if ((cardGap -= dt) <= 0 && queue.length && !firing && subT <= 0 && t > 1.5) { const q = queue.shift()!; showCard(q.id, q.at); }
     }
     if (subT > 0) { subT -= dt; if (subT <= 0) subs.classList.remove('on'); }
     const prog = Math.min(1, mean / tuning.health.doneAt);
     $('hv').textContent = String(Math.round(prog * 100)); $('hm').style.width = `${prog * 100}%`;
     patientView(prog); $('reticle').classList.toggle('on', firing);
     audio.update(mean, stage.flowing(), firing, stage.u.heartPhase.value as number);
-    if (!finished && prog >= 1) finish();
+    if (!finished && prog >= 1 && !debugCam) finish();
   }
   // ---- 区域の回復 → 患者の変化 ----
   function finish() {
