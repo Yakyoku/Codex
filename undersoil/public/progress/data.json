@@ -1,1 +1,18 @@
-{"updated":"2026-11-22","milestone":"第1部 公開経路の確認","summary":"公開経路を確かめるための最小構成です。","sections":[]}
+{
+  "updated": "2026-11-22",
+  "milestone": "第1部 環境と公開経路の確認",
+  "summary": "公開経路（素材づくり → ビルド → Netlify → 各機器のブラウザ）を、土の粒1種類だけの最小構成で最後まで通しました。絵はまだ確認用で、ゲームの見た目ではありません。",
+  "sections": [
+    { "title": "ゲーム画面（この環境の WebGL 2 で撮影）", "note": "クラウド環境には GPU がないため、fps の数字に意味はありません。", "items": [
+      { "src": "./img/part1/part1_screen_webgl2.webp", "caption": "画面版：土の粒（bpy で作成、AO 焼き込み、Draco 圧縮）" },
+      { "src": "./img/part1/part1_vr_webgl2.webp", "caption": "VR 版のページ（VR に入る前の画面）" },
+      { "src": "./img/part1/vr_emul_front.webp", "caption": "VR 版：WebXR エミュレーター（Quest 3 相当）で VR に入った状態" },
+      { "src": "./img/part1/vr_emul_turned.webp", "caption": "VR 版：エミュレーターで頭を左へ向けた状態" },
+      { "src": "./img/part1/part1_diag_webgl2.webp", "caption": "実機診断ページ" } ] },
+    { "title": "モデルの確認用画像（Blender で4方向から描画）", "items": [
+      { "src": "./img/part1/grain_front.webp", "caption": "土の粒（経路確認用）前" },
+      { "src": "./img/part1/grain_right.webp", "caption": "右" },
+      { "src": "./img/part1/grain_back.webp", "caption": "後ろ" },
+      { "src": "./img/part1/grain_top.webp", "caption": "斜め上" } ] }
+  ]
+}

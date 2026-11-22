@@ -1,0 +1,3 @@
+# Netlify 側ではビルドしない。dist/ をそのまま公開する（scripts/deploy.sh）。
+[build]
+  publish = "dist"
