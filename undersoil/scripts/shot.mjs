@@ -8,5 +8,5 @@ const st = await waitReady(page, path.includes('freeze=') ? 'frozen' : 'ready', 
 await page.waitForTimeout(+(process.env.WAIT ?? 1500));
 await page.evaluate(() => { for (const id of ['hud']) { const e = document.getElementById(id); if (e && new URLSearchParams(location.search).has('clean')) e.style.display = 'none'; } document.querySelectorAll('.nav,.caption').forEach((e) => { if (new URLSearchParams(location.search).has('clean')) e.style.display = 'none'; }); });
 await page.screenshot({ timeout: 120000, path: new URL(`../shots/${name}.png`, import.meta.url).pathname });
-console.log(name, JSON.stringify(st.stats ?? st), 'vit', st.vitality, 'err=', JSON.stringify(logs.errors.slice(0, 3)), '404=', JSON.stringify(logs.notFound));
+console.log(name, JSON.stringify(st.stats ?? st), 'vit', st.vitality, 'col', JSON.stringify(st.col), 'err=', JSON.stringify(logs.errors.slice(0, 3)), '404=', JSON.stringify(logs.notFound));
 await browser.close();

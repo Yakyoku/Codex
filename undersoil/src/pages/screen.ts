@@ -89,6 +89,7 @@ async function main() {
     { id: 'bacillus-subtilis', when: () => mode === 'soil' && cellM(2) > 0.3 },
     { id: 'humus', when: () => mode === 'soil' && cellW(4) > 0.4 },
     { id: 'pseudomonas-fluorescens', when: () => mode === 'soil' && cellM(6) > 0.3 },
+    { id: 'colpoda', when: () => mode === 'soil' && game.creatures.anyActive() },
     { id: 'clay', when: () => mode === 'soil' && cellW(8) > 0.4 },
     { id: 'trifolium-repens', when: () => mode === 'surface' && surface.growth > 0.75 },
   ], { gapSec: 4 });
@@ -123,7 +124,8 @@ async function main() {
     $('sprout').textContent = mode === 'soil' ? '地上を見る' : '土の中へ戻る';
     if (vit !== vitShown) { vitShown = vit; $('vitNum').textContent = String(vit); ($('vitBar') as HTMLElement).style.width = vit + '%'; }
     const frozen = freeze > 0 && frames >= freeze; if (frozen) renderer.setAnimationLoop(null);
-    W.__state = { ready: frames > 3, frozen, frames, isWebGPU, tier, device, errors, stats: world.stats, vitality: vit, bridges: game.bridges.count, swarm: game.swarm.count, mode };
+    W.__col = game.creatures.nearest(camera.position)?.toArray().map((v) => Math.round(v * 10) / 10);
+    W.__state = { col: W.__col, ready: frames > 3, frozen, frames, isWebGPU, tier, device, errors, stats: world.stats, vitality: vit, bridges: game.bridges.count, swarm: game.swarm.count, mode };
   };
   // 動画づくり用：?manual を付けると、外から時間を1コマずつ進められる（この環境の描画は遅いので、そのまま録画しても滑らかにならない）
   if (Q.has('manual')) { W.__frame = (ms: number) => frame(ms); W.__switch = (m: 'soil' | 'surface') => { mode = m; growT = 0; surface.setGrowth(0); document.body.classList.toggle('surface', m === 'surface'); renderer.toneMappingExposure = m === 'surface' ? 0.9 : 1.0; }; W.__demo = () => demo.start(); frame(0); frame(16); frame(32); frame(48); frame(64); }
