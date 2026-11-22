@@ -111,8 +111,18 @@ async function main() {
     touring = !touring; controls.enabled = !touring; $('tour').textContent = touring ? '自分で動く' : '自動で巡る';
     if (!touring) { const e = new THREE.Euler().setFromQuaternion(camera.quaternion, 'YXZ'); controls.yaw = e.y; controls.pitch = e.x; }
   });
-  $('fs').addEventListener('click', () => { if (document.fullscreenElement) void document.exitFullscreen(); else void document.documentElement.requestFullscreen?.().catch(() => {}); });
-  if (!document.documentElement.requestFullscreen) $('fs').style.display = 'none';
+  // 全画面：iPhone の Safari にはページの全画面がないので、ホーム画面に追加する方法を案内する
+  const standalone = matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches || (navigator as unknown as { standalone?: boolean }).standalone === true;
+  const canFs = !!document.documentElement.requestFullscreen && document.fullscreenEnabled !== false;
+  if (standalone) $('fs').style.display = 'none';
+  $('fs').addEventListener('click', () => {
+    if (canFs) { if (document.fullscreenElement) void document.exitFullscreen(); else void document.documentElement.requestFullscreen().catch(() => ($('fsHelp') as HTMLDialogElement).showModal()); }
+    else ($('fsHelp') as HTMLDialogElement).showModal();
+  });
+  $('fsHelpClose').addEventListener('click', () => ($('fsHelp') as HTMLDialogElement).close());
+  // 操作パネルは、数秒さわらないと薄くなる（映像を広く見せる）。どこかに触れると戻る
+  let idleT = 0; const wake = () => { document.body.classList.remove('idle'); clearTimeout(idleT); idleT = window.setTimeout(() => document.body.classList.add('idle'), 4500); };
+  for (const ev of ['pointerdown', 'pointermove', 'keydown', 'touchstart']) addEventListener(ev, wake, { passive: true }); wake();
   let hidden = false; document.addEventListener('visibilitychange', () => { hidden = document.hidden; last = 0; });
 
   let frames = 0, last = 0, tourU = 0.02, vitShown = -1;

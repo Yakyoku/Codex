@@ -5,6 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <title>UNDERSOIL</title>
 <meta name="theme-color" content="#0b0907">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="apple-touch-icon" href="./apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="UNDERSOIL">
 </head>
 <body class="stage">
 <canvas id="view"></canvas>
@@ -26,6 +32,17 @@
   <button class="btn" id="sprout">地上を見る</button>
 </div>
 <div class="stick" id="stick"><i></i></div>
+<dialog class="settings" id="fsHelp">
+  <h2>全画面で遊ぶには</h2>
+  <p class="note">iPhone の Safari には、ページを全画面にする機能がありません。代わりに、次の方法で大きく表示できます。</p>
+  <ol class="steps">
+    <li>画面の<b>共有ボタン</b>（四角から矢印が出たマーク）を押す</li>
+    <li><b>「ホーム画面に追加」</b>を選ぶ</li>
+    <li>ホーム画面にできた <b>UNDERSOIL</b> のアイコンから開くと、アドレスバーのない全画面で遊べます</li>
+  </ol>
+  <p class="note">横向きにすると、さらに大きく見えます。操作パネルは、数秒さわらないと自動で薄くなります（画面をタップすると戻ります）。</p>
+  <div class="row"><button class="btn primary" id="fsHelpClose">閉じる</button></div>
+</dialog>
 <div class="loading" id="loading">
   <h1>UNDERSOIL</h1>
   <div class="sub">土の下の、小さな春</div>
