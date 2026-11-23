@@ -14,12 +14,13 @@ export function createPost(renderer: THREE.WebGPURenderer, scene: THREE.Scene, c
   const sp = pass(scene, camera);
   let col = sp.getTextureNode('output');
   const focus = uniform(5.5);
+  const exposure = uniform(1);   // 露出のゆらぎ（顕微鏡のカメラが明るさを追いかける感じ）
   const useDof = tier === 'pc-high';
   const useBloom = tier === 'pc-high' || tier === 'mobile-high';
   if (useDof) col = dof(col, sp.getViewZNode(), focus, float(12), float(0.55));
   if (useBloom) col = col.add(bloom(col, 0.32, 0.7, 0.55));
   // 色調：黒を暖かく持ち上げ、彩度とコントラストを少し下げる（顕微鏡の映像は、暗部も光に満ちている）
-  const c = col.rgb;
+  const c = col.rgb.mul(exposure);
   const lum = dot(c, vec3(0.2126, 0.7152, 0.0722));
   let g = mix(vec3(lum, lum, lum), c, float(1.04));
   g = g.mul(0.96).add(vec3(0.018, 0.01, 0.006));
@@ -31,7 +32,7 @@ export function createPost(renderer: THREE.WebGPURenderer, scene: THREE.Scene, c
   g = g.add(n.sub(0.5).mul(0.022));
   pipe.outputNode = vec4(g, 1);
   return {
-    pipe, focus, useDof,
+    pipe, focus, exposure, useDof,
     render() { pipe.render(); },
   };
 }

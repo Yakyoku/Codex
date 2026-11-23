@@ -260,11 +260,21 @@ async function main() {
     else { const c = debugCam!.split(',').map(Number); diver.root.visible = false; for (let i = 0; i < 40; i++) stage.update(0.1, i * 0.1, camera); camera.position.set(c[0], c[1], c[2]); camera.lookAt(c[3], c[4], c[5]); camera.updateMatrixWorld(); stage.update(0, 4, camera); }
   }
   const dbgTarget = new THREE.Vector3(...(debugCam ? debugCam.split(',').map(Number).slice(3, 6) : [0, 0, 0]));
+  const sway = new THREE.Vector3();
   let last = performance.now();
   renderer.setAnimationLoop(() => {
     const now = performance.now(); const dt = Math.min(0.05, (now - last) / 1000); last = now;
     if (!debugCam && sim === null && !paused) { if (started) step(dt); else { t += dt; stage.update(dt, t, camera); } dyn?.tick(dt); }
-    if (post) { if (post.useDof) post.focus.value += (camera.position.distanceTo(debugCam ? dbgTarget : diver.root.position) + 0.3 - post.focus.value) * (debugCam ? 1 : 0.2); post.render(); } else renderer.render(stage.scene, camera);
+    // 顕微鏡の映像らしさ：手持ちでない機材でもわずかに揺れ、ピントがかすかに前後し、明るさが心拍に合わせて息づく（確認用の固定撮影では止める）
+    const live = !debugCam && sim === null && !Q.has('frames') && !Q.has('still');
+    const tt = now / 1000;
+    if (live) { sway.set(Math.sin(tt * 0.73) + 0.5 * Math.sin(tt * 1.91 + 1), Math.sin(tt * 0.61 + 2) + 0.4 * Math.sin(tt * 1.37), Math.sin(tt * 0.53 + 4)).multiplyScalar(0.012 * camera.position.distanceTo(diver.root.position)); camera.position.add(sway); }
+    if (post) {
+      if (post.useDof) post.focus.value += (camera.position.distanceTo(debugCam ? dbgTarget : diver.root.position) + 0.3 + (live ? 0.35 * Math.sin(tt * 0.45) : 0) - post.focus.value) * (debugCam ? 1 : 0.2);
+      post.exposure.value = live ? 1 + 0.022 * Math.pow(0.5 + 0.5 * Math.sin(stage.u.heartPhase.value), 3) + 0.015 * Math.sin(tt * 0.21) : 1;
+      post.render();
+    } else renderer.render(stage.scene, camera);
+    if (live) camera.position.sub(sway);
     hud.tick();
     W.__irFrames = ((W.__irFrames as number) || 0) + 1;
     if (Q.has('frames') && (W.__irFrames as number) >= Number(Q.get('frames'))) { renderer.setAnimationLoop(null); W.__irDone = true; }

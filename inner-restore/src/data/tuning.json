@@ -4,7 +4,7 @@
   "beam": { "range": 26, "radius": 13, "rate": 0.95, "atpPerSec": 0 },
   "scan": { "fadeIn": 5.0, "fadeOut": 2.2 },
   "health": { "gridW": 60, "gridH": 44, "flowStart": 0.35, "flowFull": 0.8, "regrow": 0.5, "doneAt": 0.8 },
-  "flow": { "speed": 8.5, "spacing": 16.0, "perceptionFactor": 200 },
+  "flow": { "speed": 8.5, "spacing": 9.0, "perceptionFactor": 200 },
   "heart": { "bpmSick": 96, "bpmHealthy": 62 },
   "vr": { "worldScale": 0.85, "moveSpeed": 1.6, "snapDeg": 30, "vignette": 0.6 }
 }

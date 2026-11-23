@@ -68,6 +68,27 @@ export async function buildRetina(renderer: THREE.WebGPURenderer, tier: Tier): P
   // スキャンの波紋（スーツの走査表示）：主人公から広がる細い輪。健康度に応じて色が変わる
   const scanRing = exp(length(positionWorld.xz.sub(u.scanOrigin.xz)).sub(u.scanR).div(0.9).pow(2).negate()).mul(u.scanPulse);
   const pulse = sin(u.heartPhase.sub(positionWorld.x.mul(0.05))).mul(0.5).add(0.5).pow(3.0);   // 心拍に同期した脈動
+  // 光の散乱の焼き込み：組織の中で光は数十µm 散ってから戻るため、血管のまわりは血液を通った赤い光でほのかに染まる。
+  //   読み込み時に1回だけ、血管の中心線からの距離で「にじみの強さ」を計算してテクスチャにする（毎コマの計算はしない）
+  const scatterTex = (() => {
+    const gw = 128, gh = Math.round(128 * D / W), out = new Uint8Array(gw * gh * 4);
+    const pts: number[] = []; for (const e of data.edges) for (let i = 0; i < e.length; i += 1) pts.push(e[i][0], e[i][2]);
+    for (let j = 0; j < gh; j++) for (let i = 0; i < gw; i++) {
+      const x = (i / (gw - 1) - 0.5) * W, z = (j / (gh - 1) - 0.5) * D;
+      let near = 1e9, sum = 0;
+      for (let k = 0; k < pts.length; k += 2) { const dx = pts[k] - x, dz = pts[k + 1] - z, d2 = dx * dx + dz * dz; if (d2 < near) near = d2; if (d2 < 400) sum += Math.exp(-d2 / 90); }
+      const o = (j * gw + i) * 4;
+      out[o] = Math.min(255, Math.exp(-near / 30) * 255);        // R：血管のすぐそば（強いにじみ）
+      out[o + 1] = Math.min(255, Math.exp(-near / 260) * 255);   // G：広い範囲のにじみ
+      out[o + 2] = Math.min(255, sum * 18);                        // B：血管の密度
+      out[o + 3] = 255;
+    }
+    const t = new THREE.DataTexture(out, gw, gh, THREE.RGBAFormat, THREE.UnsignedByteType);
+    t.magFilter = t.minFilter = THREE.LinearFilter; t.needsUpdate = true; return t;
+  })();
+  const scatter: N = texture(scatterTex, hUV);
+  // 血が流れているほど赤く光がにじむ（止まった血は暗く沈む）
+  const bloodGlow: N = color(0xd8341c).mul(scatter.r.mul(0.55).add(scatter.g.mul(0.35))).mul(H.mul(H)).mul(u.lightIn.mul(0.7).add(0.3));
 
   // ---- 内境界膜（透明な床）----
   const meshes: Record<string, THREE.Mesh> = {};
@@ -89,7 +110,7 @@ export async function buildRetina(renderer: THREE.WebGPURenderer, tier: Tier): P
     const op = haze.add(fres.mul(mix(float(0.12), float(0.25), sick))).add(border.mul(0.02)).add(fibers.mul(0.03)).add(0.03);
     ilmMat.opacityNode = saturate(op.mul(float(1).sub(u.scan.mul(0.6)))).mul(edgeFade);
     // 濁りは光を散らして、ほのかに明るく光る（生体の映像の乳白色の光）
-    ilmMat.emissiveNode = color(0xf2d9c4).mul(haze.mul(0.16)).mul(u.lightIn.mul(0.8).add(0.35)).add(color(0xffe9c8).mul(beamGlow.mul(0.5))).add(scanCol.mul(u.scan).mul(border.mul(0.25).add(0.03))).add(scanCol.mul(scanRing.mul(0.9)));
+    ilmMat.emissiveNode = bloodGlow.mul(0.16).add(color(0xf2d9c4).mul(haze.mul(0.16))).mul(u.lightIn.mul(0.8).add(0.35)).add(color(0xffe9c8).mul(beamGlow.mul(0.5))).add(scanCol.mul(u.scan).mul(border.mul(0.25).add(0.03))).add(scanCol.mul(scanRing.mul(0.9)));
     const ilm = meshes.ilm; ilm.material = ilmMat; ilm.renderOrder = 30; scene.add(ilm);
   }
 
@@ -100,7 +121,7 @@ export async function buildRetina(renderer: THREE.WebGPURenderer, tier: Tier): P
     const mott = nz(0.35).b, mott2 = nz(1.4, vec2(0.2, 0.6)).a;
     const healthy = mix(color(0x9a1c08), color(0xe8541e), mott.mul(0.6).add(mott2.mul(0.4)));
     const ill = mix(color(0x4a3a36), color(0x7c6a62), mott);
-    m.colorNode = mix(ill, healthy, smoothstep(0.1, 0.8, H)).mul(u.lightIn.mul(0.75).add(0.3));
+    m.colorNode = mix(ill, healthy, smoothstep(0.1, 0.8, H)).mul(u.lightIn.mul(0.75).add(0.3)).add(bloodGlow.mul(0.6));
     const deep = new THREE.Mesh(g, m); deep.position.y = -16; scene.add(deep);
     // 網膜の厚み（約 0.2mm）の中の、光を散らす層。薄い半透明の層を重ねて、奥行きと「中から光る」感じを出す（病むと濁る）
     for (const [yy, k] of [[-6, 0.12], [-11, 0.16]] as [number, number][]) {
@@ -150,11 +171,16 @@ export async function buildRetina(renderer: THREE.WebGPURenderer, tier: Tier): P
   const allPts: THREE.Vector3[] = edges.flatMap((e) => e.P.filter((_, i) => i % 2 === 0));
   const src = (() => { const out: THREE.Mesh[] = []; rbcGltf.scene.traverse((o) => { if ((o as THREE.Mesh).isMesh) out.push(o as THREE.Mesh); }); return out.sort((a, b) => a.name.localeCompare(b.name)); })();
   const rbcGeo = src[vr ? 1 : tier === 'compat' ? 1 : 0].geometry.clone();
-  { // 形を CPU 側で変形しておく（縁が後ろへなびく椀形。幅は内腔に収まる約 4.7µm）
+  { // 形を CPU 側で変形しておく：細い毛細血管の中の「パラシュート形」。進む向き（+y）は丸い弾頭、後ろは浅いくぼみ。
+    // 直径 7.8µm の円盤が内径 5µm ほどの管に入るため、幅は約 4.7µm に縮み、そのぶん流れの向きに伸びる（体積はほぼ保つ）
     const pa = rbcGeo.attributes.position as THREE.BufferAttribute;
     for (let i = 0; i < pa.count; i++) {
-      const x = pa.getX(i), y = pa.getY(i), z = pa.getZ(i), r2 = (x * x + z * z) / (3.91 * 3.91);
-      pa.setXYZ(i, x * 0.6, y * 1.35 - r2 * 2.7 + 1.35, z * 0.6);
+      const x = pa.getX(i), y = pa.getY(i), z = pa.getZ(i);
+      const r2 = Math.min(1, (x * x + z * z) / (3.91 * 3.91)), k = 1 - r2;
+      const dome = 1.7 * Math.pow(k, 0.85);                // 前の面
+      const th = 2.0 * Math.pow(k, 0.6);                   // 厚み（中心が厚く、縁で0）
+      const ny = (y >= 0 ? dome : dome - th) - r2 * 1.25;   // 縁は後ろへなびく
+      pa.setXYZ(i, x * 0.6, ny + 0.6, z * 0.6);
     }
     rbcGeo.computeVertexNormals(); rbcGeo.computeBoundingSphere();
   }
@@ -175,44 +201,63 @@ export async function buildRetina(renderer: THREE.WebGPURenderer, tier: Tier): P
   const count = Math.floor(totalLen / tuning.flow.spacing);
   const rbc = new THREE.InstancedMesh(rbcGeo, rbcMat, count);
   rbc.frustumCulled = false; rbc.renderOrder = 10; scene.add(rbc);
-  const cells: { e: number; s: number; roll: number; wob: number }[] = [];
+  const cells: { e: number; s: number; roll: number; wob: number; pref: number; vel: number }[] = [];
   { // 病んだ状態では、止まった赤血球が不ぞろいに詰まっている
     let seed = 5; const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
     let k = 0;
     for (let ei = 0; ei < edges.length && k < count; ei++) {
       const n = Math.round((edges[ei].len / totalLen) * count);
-      for (let i = 0; i < n && k < count; i++, k++) cells.push({ e: ei, s: ((i + 0.2 + rnd() * 0.6) / n) * edges[ei].len, roll: rnd() * 6.28, wob: rnd() * 6.28 });
+      for (let i = 0; i < n && k < count; i++, k++) cells.push({ e: ei, s: ((i + 0.2 + rnd() * 0.6) / n) * edges[ei].len, roll: rnd() * 6.28, wob: rnd() * 6.28, pref: rnd(), vel: 0 });
     }
-    while (cells.length < count) cells.push({ e: 0, s: rnd() * edges[0].len, roll: 0, wob: 0 });
+    while (cells.length < count) cells.push({ e: 0, s: rnd() * edges[0].len, roll: 0, wob: 0, pref: 0.5, vel: 0 });
   }
-  const tmpP = new THREE.Vector3(), tmpT = new THREE.Vector3(), q = new THREE.Quaternion(), q2 = new THREE.Quaternion(), m4 = new THREE.Matrix4(), one = new THREE.Vector3(1, 1, 1), up = new THREE.Vector3(0, 1, 0);
+  const tmpP = new THREE.Vector3(), tmpT = new THREE.Vector3(), q = new THREE.Quaternion(), q2 = new THREE.Quaternion(), m4 = new THREE.Matrix4(), one = new THREE.Vector3(1, 1, 1), sc = new THREE.Vector3(1, 1, 1), up = new THREE.Vector3(0, 1, 0);
   function pathAt(ei: number, s: number, outP: THREE.Vector3, outT: THREE.Vector3) {
     const e = edges[ei]; const f = Math.min(e.P.length - 1.001, Math.max(0, (s / e.len) * (e.P.length - 1)));
     const i = Math.floor(f), t = f - i;
     outP.lerpVectors(e.P[i], e.P[i + 1], t); outT.subVectors(e.P[i + 1], e.P[i]).normalize();
   }
   let flowSum = 0;
+  // 区間ごとの速さのゆらぎ（数秒で変わる）。速い所で間が空き、遅い所で詰まって列になる
+  const edgePhase = edges.map((_, i) => i * 2.399);
+  const byEdge: number[][] = edges.map(() => []);
+  const minGap = 4.4;   // 前の赤血球との最小の間（µm）。これより近づくと追いつけない
   function updateFlow(dt: number, t: number) {
     flowSum = 0;
-    for (let i = 0; i < count; i++) {
-      const c = cells[i];
-      pathAt(c.e, c.s, tmpP, tmpT);
-      const h = health.sample(tmpP.x, tmpP.z);
-      const f = flowFactor(h, hc.flowStart, hc.flowFull);
-      flowSum += f;
-      // 心拍に合わせて、わずかに速くなったり遅くなったりする
-      const beat = 0.75 + 0.5 * Math.pow(0.5 + 0.5 * Math.sin(u.heartPhase.value - tmpP.x * 0.05), 3);
-      c.s += tuning.flow.speed * f * beat * dt;
-      if (c.s >= edges[c.e].len) {
-        const nx = edges[c.e].next;
-        if (nx.length) { c.e = nx[(i + Math.floor(t)) % nx.length]; c.s = 0; } else { c.e = 0; c.s = 0; }
+    for (const l of byEdge) l.length = 0;
+    for (let i = 0; i < count; i++) byEdge[cells[i].e].push(i);
+    for (const l of byEdge) l.sort((a, b) => cells[b].s - cells[a].s);   // 先頭から順に
+    for (let ei = 0; ei < edges.length; ei++) {
+      const list = byEdge[ei], e = edges[ei];
+      const wave = 0.55 + 0.45 * Math.sin(t * 0.35 + edgePhase[ei]) + 0.25 * Math.sin(t * 0.9 + edgePhase[ei] * 1.7);
+      let ahead = Infinity;   // 前の赤血球の位置
+      for (const i of list) {
+        const c = cells[i];
         pathAt(c.e, c.s, tmpP, tmpT);
+        const h = health.sample(tmpP.x, tmpP.z);
+        const f = flowFactor(h, hc.flowStart, hc.flowFull);
+        flowSum += f;
+        // 心拍に合わせた速さの変化＋区間のゆらぎ＋1個ずつの癖
+        const beat = 0.75 + 0.5 * Math.pow(0.5 + 0.5 * Math.sin(u.heartPhase.value - tmpP.x * 0.05), 3);
+        let v = tuning.flow.speed * f * beat * Math.max(0.15, wave) * (0.85 + 0.3 * c.pref);
+        let ns = c.s + v * dt;
+        if (ns > ahead - minGap) { ns = Math.max(c.s, ahead - minGap); v = (ns - c.s) / Math.max(dt, 1e-4); }
+        c.vel += (v - c.vel) * Math.min(1, dt * 6);
+        c.s = ns; ahead = c.s;
+        if (c.s >= e.len) {
+          const nx = e.next;
+          c.e = nx.length ? nx[(i + Math.floor(t)) % nx.length] : 0; c.s = 0; ahead = Infinity;
+          pathAt(c.e, c.s, tmpP, tmpT);
+        }
+        q.setFromUnitVectors(up, tmpT);
+        q2.setFromAxisAngle(up, c.roll + t * 0.25 * f);
+        q.multiply(q2);
+        tmpP.y += Math.sin(t * 1.3 + c.wob) * 0.06 * f;
+        // 速いほど流れの向きに伸び、詰まると縮んで丸くなる（赤血球はやわらかい）
+        const sp = Math.min(1, c.vel / Math.max(1e-3, tuning.flow.speed));
+        sc.set(1 - 0.06 * sp, 0.92 + 0.16 * sp, 1 - 0.06 * sp);
+        rbc.setMatrixAt(i, m4.compose(tmpP, q, sc));
       }
-      q.setFromUnitVectors(up, tmpT);
-      q2.setFromAxisAngle(up, c.roll + t * 0.25 * f);
-      q.multiply(q2);
-      tmpP.y += Math.sin(t * 1.3 + c.wob) * 0.08 * f;
-      rbc.setMatrixAt(i, m4.compose(tmpP, q, one));
     }
     rbc.instanceMatrix.needsUpdate = true;
   }
