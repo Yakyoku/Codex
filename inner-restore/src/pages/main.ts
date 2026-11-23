@@ -9,11 +9,13 @@ import { createPost } from '../core/post';
 import { rumble, buzz } from '../core/feel';
 import { Input } from '../core/input';
 import { GameAudio, speak } from '../core/audio';
-import { buildRetina } from '../stages/eye/retina';
+import { ZONES } from '../stages/zone';
+import { loadSave, writeSave } from '../core/save';
 import { Diver } from '../game/diver';
 import { PurifyBeam } from '../game/beam';
 import { Diagnosis } from '../game/diagnosis';
 import { tunePanel } from '../game/tune';
+import { AtlasViewer, hasModel } from '../game/viewer';
 import { buildUI, renderAtlas, ATLAS, TIPS } from '../game/ui';
 import tuning from '../data/tuning.json';
 
@@ -52,11 +54,16 @@ async function main() {
   const dyn = Q.has('frames') || Q.has('sim') ? null : new DynamicResolution(renderer, 0.6, dprMax, tier === 'mobile-high' ? Math.min(1.1, dprMax) : dprMax);
   W.__dyn = dyn;
   progress(0.3);
-  const stage = await buildRetina(renderer, tier);
+  // 区域：URL の ?zone= か、保存した続きから。区域ごとに別のファイルを後から読み込む
+  const save = loadSave();
+  let zi = ZONES.findIndex((z) => z.id === (Q.get('zone') ?? save.zone ?? 'retina')); if (zi < 0) zi = 0;
+  const entrance = zi === 0 && !save.arrived && !Q.has('h') && !Q.has('noentry') && !debugCam && sim === null;
+  const stage = await (await ZONES[zi].load()).build(renderer, tier, { entrance });
+  const M = stage.meta;
   progress(0.7);
   const diver = await Diver.load(tier === 'pc-high' || tier === 'mobile-high');
   stage.scene.add(diver.root);
-  const diag = new Diagnosis(stage.health, stage.size as [number, number], stage.floorHeight, stage.vesselDist, 1, stage.plugs); stage.scene.add(diag.group);
+  const diag = new Diagnosis(stage.health, stage.size as [number, number], stage.floorHeight, (x: number, z: number) => stage.causeAt(x, z), 1, stage.plugs, M.plugDiag); stage.scene.add(diag.group);
   // 仕上げ（浅いピント・光のにじみ・色調）。?post=off で切れる
   const post = Q.get('post') === 'off' ? null : createPost(renderer, stage.scene, camera, Q.get('post') === 'full' ? 'pc-high' : tier);
   const audio = new GameAudio();
@@ -74,11 +81,11 @@ async function main() {
 
   // ---- 状態 ----
   const [SX, SZ] = stage.size;
-  const pos = new THREE.Vector3(-58, 0, 6), vel = new THREE.Vector3();
-  let yaw = -1.15, pitch = 0.22, facing = yaw, firstPerson = false, paused = false, started = false, finished = false, t = 0, walked = 0;
+  const pos = stage.start.pos.clone(), vel = new THREE.Vector3();
+  let yaw = stage.start.yaw, pitch = 0.22, facing = yaw, firstPerson = false, paused = false, started = false, finished = false, t = 0, walked = 0;
   const known = new Set<string>((store.get('ir.known') ?? '').split(',').filter(Boolean));
   const camTarget = new THREE.Vector3(), camPos = new THREE.Vector3(), tmp = new THREE.Vector3(), dir = new THREE.Vector3(), hit = new THREE.Vector3(), focus = new THREE.Vector3();
-  let swimming = false; const swimVel = new THREE.Vector3(); let scanWas = false, diagT = 0;
+  let patientDone = false; let swimming = stage.start.swimming, arrived = !stage.start.swimming; const swimVel = new THREE.Vector3(); let scanWas = false, diagT = 0;
   const F = tuning.feel; let hitStop = 0, shake = 0, rumbleT = 0, wasHitting = false, lastStep = -1;
   let focusAmt = 0; let focusOn = false; let scanT = 0; let curSpeed = 0;
   const hud = new Hud(`${backendLabel} · ${TIER_LABEL[tier]} · ${DEVICE_LABEL[device]}`, () => dyn ? `解像度 ×${dyn.scale.toFixed(2)}` : '');
@@ -118,7 +125,7 @@ async function main() {
     b.addEventListener('touchstart', on, { passive: false }); b.addEventListener('touchend', off); b.addEventListener('touchcancel', off); b.addEventListener('mousedown', on); b.addEventListener('mouseup', off); };
   hold('tb-fire', (v) => (input.touchFire = v)); hold('tb-scan', (v) => (input.touchScan = v)); hold('tb-up', (v) => (input.touchUp = v)); hold('tb-down', (v) => (input.touchDown = v));
   const setPause = (p: boolean) => { if (!started || finished) return; paused = p; $('pause').classList.toggle('hide', !p); audio.suspend(p); if (p) document.exitPointerLock?.(); };
-  const openAtlas = (o: boolean) => { if (o) renderAtlas($('atlas').querySelector('.grid') as HTMLElement, known); $('atlas').classList.toggle('hide', !o); if (o) { paused = true; document.exitPointerLock?.(); } else if ($('pause').classList.contains('hide')) paused = false; };
+  const openAtlas = (o: boolean) => { if (o) renderAtlas($('atlas').querySelector('.grid') as HTMLElement, known, openViewer, hasModel); $('atlas').classList.toggle('hide', !o); if (o) { paused = true; document.exitPointerLock?.(); } else if ($('pause').classList.contains('hide')) paused = false; };
   const full = () => { const d = document as Document & { webkitFullscreenElement?: Element }; const el = document.documentElement as HTMLElement & { webkitRequestFullscreen?: () => void };
     if (document.fullscreenElement || d.webkitFullscreenElement) void document.exitFullscreen?.(); else (el.requestFullscreen?.() ?? el.webkitRequestFullscreen?.()); };
   input.onAction = (a) => {
@@ -129,6 +136,11 @@ async function main() {
   $('p-full').onclick = full; $('b-full').onclick = full; $('b-atlas').onclick = () => openAtlas(true); $('b-pause').onclick = () => setPause(true);
   document.addEventListener('visibilitychange', () => { if (document.hidden) setPause(true); });
 
+  // ---- 図鑑の3Dビューア ----
+  const viewer = new AtlasViewer(renderer, canvas);
+  const openViewer = (id: string) => { const e = ATLAS.find((x) => x.id === id)!; $('viewer').classList.remove('hide'); $('atlas').classList.add('hide'); input.blocked = true; document.body.classList.add('viewing');
+    ($('viewer').querySelector('.vt b') as HTMLElement).textContent = e.ja; ($('viewer').querySelector('.vt span') as HTMLElement).textContent = `${e.en}　${e.size}（${e.compare}）`; void viewer.show(id); };
+  $('v-close').onclick = () => { viewer.hide(); input.blocked = false; document.body.classList.remove('viewing'); $('viewer').classList.add('hide'); openAtlas(true); };
   // ---- 患者の視界 ----
   const pImg = $('patient').querySelector('img') as HTMLImageElement, pSpot = $('patient').querySelector('.spot') as HTMLElement;
   function patientView(m: number) {
@@ -149,7 +161,7 @@ async function main() {
       const key = diag.findings.map((f) => `${f.short}${Math.round(f.health * 20)}${Math.round(f.dist / 5)}`).join('|') + Math.round(fl * 20);
       if (key !== dxKey) { dxKey = key;
         dxList.innerHTML = (diag.findings.length ? diag.findings.map((f, i) => `<div><b>病巣${i + 1}</b>　${f.short}　${f.health < 0 ? '' : `健康度 ${Math.round(f.health * 100)}%・`}${Math.round(f.dist)}µm<small>${f.cause}</small></div>`).join('') : '<div>この近くに大きな病巣はありません</div>')
-          + `<div><small>区域の血流 ${Math.round(fl * 100)}%　／　主な原因：毛細血管の血流停止（虚血）</small></div>`; }
+          + `<div><small>区域の回復 ${Math.round(fl * 100)}%　／　主な原因：${M.causeMain}</small></div>`; }
     }
     for (let i = 0; i < 3; i++) {
       const f = diag.findings[i], el = tags[i];
@@ -188,8 +200,8 @@ async function main() {
       swimVel.lerp(tmp, Math.min(1, dt * (wantMove ? P.swimAccel : P.swimDrag)));
       pos.addScaledVector(swimVel, dt);
       const fy = stage.floorHeight(pos.x, pos.z);
-      if (pos.y > fy + P.swimCeil) { pos.y = fy + P.swimCeil; swimVel.y = Math.min(0, swimVel.y); }
-      if (pos.y <= fy + 0.02 && swimVel.y <= 0.05 && !input.swimUp) { pos.y = fy; swimming = false; curSpeed = Math.hypot(swimVel.x, swimVel.z); }
+      if (pos.y > fy + (M.swimCeil ?? P.swimCeil)) { pos.y = fy + (M.swimCeil ?? P.swimCeil); swimVel.y = Math.min(0, swimVel.y); }
+      if (pos.y <= fy + 0.02 && swimVel.y <= 0.05 && !input.swimUp) { pos.y = fy; swimming = false; curSpeed = Math.hypot(swimVel.x, swimVel.z); if (!arrived) { arrived = true; writeSave({ arrived: true }); if (started) say(M.arrive, 10); } }
       else pos.y = Math.max(pos.y, fy);
       const hs = Math.hypot(swimVel.x, swimVel.z), vs = swimVel.length();
       const wantFace = hs > 0.35 ? Math.atan2(swimVel.x, swimVel.z) : input.fire ? yaw : facing;
@@ -218,6 +230,7 @@ async function main() {
     pos.y = stage.floorHeight(pos.x, pos.z);
     diver.setSwim(false, 0, 0);
     }
+    stage.collide?.(pos, 0.45);
     pos.x = Math.max(-SX / 2 + 14, Math.min(SX / 2 - 14, pos.x)); pos.z = Math.max(-SZ / 2 + 12, Math.min(SZ / 2 - 12, pos.z));
     const speed = curSpeed;
     // 構えて動くとき：脚は進む方向、上半身は狙う方向へひねる
@@ -265,13 +278,8 @@ async function main() {
     // 出会い（落ち着いている時だけ出す）
     const mean = stage.health.mean();
     if (started || sim !== null) {
-      if (t > 2.5) enqueue('vitreous', null);
-      if (walked > 9) enqueue('muller', null);
-      const near = (p: THREE.Vector3, r: number) => Math.hypot(p.x - pos.x, p.z - pos.z) < r && stage.health.sample(p.x, p.z) > 0.55;
-      if (near(stage.points.nucleus, 20)) enqueue('endothelial', stage.points.nucleus);
-      if (near(stage.points.pericyte, 20)) enqueue('pericyte', stage.points.pericyte);
-      if (stage.flowing() > 0.12) enqueue('rbc', stage.points.rbc().clone());
-      if (cardCur) { cardT += dt; (card.querySelector('.p i') as HTMLElement).style.width = `${Math.min(100, (cardT / cardDur) * 100)}%`; if (cardCur === 'rbc') focus.copy(stage.points.rbc()); if (cardT > cardDur) hideCard(); }
+      for (const e of stage.encounters(pos, t, walked)) enqueue(e.id, e.at);
+      if (cardCur) { cardT += dt; (card.querySelector('.p i') as HTMLElement).style.width = `${Math.min(100, (cardT / cardDur) * 100)}%`; { const tp = stage.track?.(cardCur); if (tp) focus.copy(tp); } if (cardT > cardDur) hideCard(); }
       else if ((cardGap -= dt) <= 0 && queue.length && !firing && subT <= 0 && t > 1.5) { const q = queue.shift()!; showCard(q.id, q.at); }
     }
     if (subT > 0) { subT -= dt; if (subT <= 0) subs.classList.remove('on'); }
@@ -281,27 +289,37 @@ async function main() {
     if (stepNow > lastStep && lastStep >= 0 && !finished) { audio.restored(stepNow); rumble(0.5 * F.rumble, 0.5 * F.rumble, 180); buzz(30); purify.burst(); shake = Math.max(shake, 0.6); }
     lastStep = Math.max(lastStep, stepNow);
     $('hv').textContent = String(Math.round(prog * 100)); $('hm').style.width = `${prog * 100}%`;
-    patientView(prog); $('reticle').classList.toggle('on', firing);
+    if (!patientDone) patientView((zi + prog) / ZONES.length); $('reticle').classList.toggle('on', firing);
     audio.update(mean, stage.flowing(), firing, stage.u.heartPhase.value as number);
     if (!finished && prog >= 1 && !debugCam) finish();
   }
   // ---- 区域の回復 → 患者の変化 ----
   function finish() {
     finished = true; audio.resolve(); stage.health.setAll(1); hideCard(); queue.length = 0;
-    say('血流が戻りました。網膜が、透明さを取り戻していきます。', 5);
+    say(M.done, 5);
+    const done = [...new Set([...(loadSave().done ?? []), M.id])]; const next = ZONES[zi + 1];
+    writeSave({ done, zone: next ? next.id : M.id });
     if (sim !== null) return;
+    const last = !next;
     setTimeout(() => {
-      // 目が開くように：まぶしい光でにじんだ状態から、ゆっくりピントが合っていく
+      // 目が開くように：まぶしい光でにじんだ状態から、ゆっくりピントが合っていく（途中の区域では、少しずつ晴れる）
       const pv = $('patient'); pv.classList.add('full', 'waking');
+      const m = (zi + 1) / ZONES.length, blur = (1 - m) * 22;
       pImg.style.transition = 'none'; pImg.style.filter = 'blur(28px) brightness(2.1) saturate(0.4)'; pImg.style.transform = 'scale(1.06)';
       requestAnimationFrame(() => requestAnimationFrame(() => {
         pImg.style.transition = 'filter 6s cubic-bezier(.2,.6,.2,1), transform 9s ease-out';
-        pImg.style.filter = 'blur(0px) brightness(1) saturate(1)'; pImg.style.transform = 'scale(1)';
+        pImg.style.filter = `blur(${blur.toFixed(1)}px) brightness(${(0.55 + 0.45 * m).toFixed(2)}) saturate(${(0.45 + 0.55 * m).toFixed(2)})`; pImg.style.transform = 'scale(1)';
       }));
-      say('患者の視界です。ぼやけていた光が、形を結びはじめました。', 7);
+      say(last ? '患者の視界です。ぼやけていた光が、くっきりと形を結びました。' : '患者の視界です。ぼやけていた光が、少しずつ形を結びはじめました。', 7);
     }, 4500);
-    setTimeout(() => { $('patient').classList.remove('full', 'waking'); pImg.style.transition = ''; pImg.style.transform = ''; $('done').classList.remove('hide'); $('donetext').textContent = 'ここは、ステージ1「目」の最初の一区画です。'; document.exitPointerLock?.(); }, 13000);
+    setTimeout(() => {
+      $('patient').classList.remove('full', 'waking'); pImg.style.transition = ''; pImg.style.transform = ''; patientDone = true;
+      $('done').classList.remove('hide'); $('done').querySelector('h2')!.textContent = M.doneTitle;
+      $('donetext').textContent = next ? `次は ${next.name} です。` : 'ステージ1「目」の治療が終わりました。';
+      $('b-next').classList.toggle('hide', !next); document.exitPointerLock?.();
+    }, 13000);
   }
+  $('b-next').onclick = () => { const next = ZONES[zi + 1]; if (next) location.href = `${location.pathname}?zone=${next.id}`; };
   $('b-cont').onclick = () => { $('done').classList.add('hide'); finished = true; };
 
   // ---- 開始 ----
@@ -310,11 +328,12 @@ async function main() {
   try { await renderer.compileAsync(stage.scene, camera); } catch { /* 事前準備に失敗しても、そのまま描く */ }
   progress(1); clearInterval(tipTimer);
   const begin = () => {
-    if (started) return; started = true; audio.start();
+    if (started) return; started = true; audio.start(); void audio.bed(`/static/audio/${M.id}.m4a`);
     $('title').style.opacity = '0'; setTimeout(() => $('title').classList.add('hide'), 900);
     for (const id of ['hud', 'patient', 'hint', 'topbtns']) $(id).classList.remove('hide');
     setKind(input.kind); if (device === 'pc') canvas.requestPointerLock?.();
-    say('こちらオペレーター。網膜の内側の面に着きました。足もとの白い濁りは、血流が止まった組織です。浄化で、流れを取り戻してください。', 9);
+    say(stage.start.swimming && M.enter ? M.enter : M.arrive, 10);
+    $('hud').querySelector('.lab')!.textContent = M.hud;
   };
   $('start').classList.remove('hide'); $('load').classList.add('hide'); $('start').addEventListener('click', begin);
   // ゲームパッド：認識したら知らせる（Safari は、ボタンを1回押すまで認識しない）。タイトルでは A／× ボタンでも開始できる
@@ -339,7 +358,7 @@ async function main() {
     const live = !debugCam && sim === null && !Q.has('frames') && !Q.has('still');
     const tt = now / 1000;
     if (live) { sway.set(Math.sin(tt * 0.73) + 0.5 * Math.sin(tt * 1.91 + 1), Math.sin(tt * 0.61 + 2) + 0.4 * Math.sin(tt * 1.37), Math.sin(tt * 0.53 + 4)).multiplyScalar(0.012 * camera.position.distanceTo(diver.root.position)); camera.position.add(sway); }
-    if (post) {
+    if (viewer.active) { viewer.render(renderer, dt); } else if (post) {
       if (post.useDof) post.focus.value += (camera.position.distanceTo(debugCam ? dbgTarget : diver.root.position) + 0.3 + (live ? 0.35 * Math.sin(tt * 0.45) : 0) - post.focus.value) * (debugCam ? 1 : 0.2);
       post.exposure.value = live ? 1 + 0.022 * Math.pow(0.5 + 0.5 * Math.sin(stage.u.heartPhase.value), 3) + 0.015 * Math.sin(tt * 0.21) : 1;
       post.render();
@@ -352,10 +371,11 @@ async function main() {
   // 閉塞点：初めて光が当たったとき・ほぐれたときの手応えと案内
   let plugHelp = false;
   stage.setOnPlug((i, kind) => {
-    if (kind === 'hit') { if (!plugHelp) { plugHelp = true; say('塊に当たっています。止まった赤血球の塊です。そのまま当て続けて、ほぐしてください。', 6); } return; }
+    if (kind === 'hit') { if (!plugHelp) { plugHelp = true; say(M.plugHit, 8); } return; }
+    if (kind === 'pulse') { shake = Math.max(shake, 0.7); rumble(0.6 * F.rumble, 0.3 * F.rumble, 260); audio.hit(); return; }
     const left = stage.plugs.filter((p) => !p.cleared).length;
     hitStop = 0.16; shake = 1; rumble(0.9 * F.rumble, 0.9 * F.rumble, 320); buzz(60); audio.resolve(); purify.burst();
-    say(left ? `塊がほぐれ、血が流れはじめました。残りの閉塞点は ${left} か所です。スキャンで探してください。` : 'すべての閉塞点がほぐれました。網膜の血流が戻りつつあります。', 7);
+    say(M.plugCleared(left), 7);
   });
   if (Q.has('tune')) tunePanel(tuning as unknown as Record<string, unknown>);
   W.__pos = pos; W.__diver = diver; W.__input = input; W.__stage = stage; W.__begin = begin; W.__advance = (n: number) => { for (let i = 0; i < n; i++) step(1 / 30); };

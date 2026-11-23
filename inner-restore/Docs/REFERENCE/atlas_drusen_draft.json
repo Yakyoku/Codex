@@ -1,0 +1,39 @@
+{
+ "entry": {
+  "id": "drusen",
+  "ja": "ドルーゼン",
+  "en": "Drusen",
+  "kind": "沈着物",
+  "stage": "目",
+  "size": "直径で分けて、小（63µm未満）・中（63〜125µm未満）・大（125µm以上）",
+  "compare": "小さいものは髪の毛の太さより細く、大きいものは髪の毛の約1.5〜2本分",
+  "intro": "網膜色素上皮（視細胞を支える一層の細胞）と、その下のブルッフ膜（脈絡膜との境の薄い膜）のあいだにたまる、細胞の外の小さな沈着物です。タンパク質や脂質などでできています。",
+  "look": "眼底では、黄色がかった白い小さな点として見えます。輪郭のはっきりした小さいもの（硬性）と、境のぼやけた大きめのもの（軟性）があります。",
+  "move": "自分では動きません。年月とともに数や大きさが増えたり、近くどうしがつながったりします。",
+  "role": "小さなものが少しあるのは、年齢による普通の変化です。黄斑（視力の中心）に大きなものや多くのものがあると、加齢黄斑変性の初期のしるしとされ、進行の危険が高まります。",
+  "relation": "網膜色素上皮をブルッフ膜から押し上げます。下の脈絡膜から色素上皮や視細胞へ届く酸素や栄養をさまたげる可能性が考えられています。",
+  "image": "drusen.jpg"
+ },
+ "sources": [
+  {
+   "title": "Drusen - Wikipedia",
+   "url": "https://en.wikipedia.org/wiki/Drusen",
+   "used_for": "定義（RPEとブルッフ膜の間の黄白色の細胞外沈着物）、成分、加齢で少数はふつう、AMDとの関連、酸素・栄養をさまたげる可能性"
+  },
+  {
+   "title": "Age-Related Macular Degeneration - EyeWiki (AAO)",
+   "url": "https://eyewiki.org/Age-Related_Macular_Degeneration",
+   "used_for": "位置、大きさの区分（<63 / 63–<125 / ≥125µm）、硬性・軟性、大きさと密度が進行に関わる"
+  },
+  {
+   "title": "Ferris FL et al. Clinical classification of age-related macular degeneration (Beckman Initiative), Ophthalmology 2013",
+   "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3342791",
+   "used_for": "小（<63µm）は正常な加齢変化、中は早期AMD、大（≥125µm）は中期AMD"
+  },
+  {
+   "title": "AREDS drusen grading (PMC figure)",
+   "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC11551519",
+   "used_for": "125µmは視神経乳頭縁の網膜静脈の太さにほぼ相当する基準"
+  }
+ ]
+}

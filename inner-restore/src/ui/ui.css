@@ -81,3 +81,12 @@ body:has(#ui) .ir-hud { left:auto; right:max(12px,env(safe-area-inset-right)); b
 #tags { position:fixed; inset:0; pointer-events:none; }
 #tags .tag { position:absolute; transform:translate(-50%,-110%); padding:.3em .6em; background:rgba(20,12,6,.66); border:1px solid #ffb06088; border-radius:.4em; color:#ffe2bc; font-size:clamp(13px,1.35vw,16px); white-space:nowrap; opacity:0; transition:opacity .3s; }
 #tags .tag b { color:#ffbe70; }
+
+/* 図鑑の3Dビューア：模型はうしろのキャンバスに描く。ここは文字とボタンだけ */
+#viewer { position:fixed; inset:0; z-index:30; pointer-events:none; }
+#viewer .vt { position:absolute; left:max(18px,env(safe-area-inset-left)); top:max(16px,env(safe-area-inset-top)); color:#e9eef2; font-size:clamp(16px,2vw,22px); max-width:60vw; }
+#viewer .vt b { display:block; font-size:1.5em; font-weight:500; } #viewer .vt span { color:#9fb3bc; font-size:.8em; }
+#viewer #v-close { position:absolute; right:max(18px,env(safe-area-inset-right)); top:max(16px,env(safe-area-inset-top)); pointer-events:auto; }
+#viewer .vh { position:absolute; left:0; right:0; bottom:max(18px,env(safe-area-inset-bottom)); text-align:center; color:#9fb3bc; font-size:clamp(13px,1.4vw,16px); }
+#atlas .v3d { margin:.4em 0 .6em; font-size:.85em; padding:.45em .9em; }
+body.viewing #hud, body.viewing #subs, body.viewing #hint, body.viewing #topbtns, body.viewing #patient, body.viewing #dx, body.viewing #tags, body.viewing #reticle, body.viewing #card, body.viewing #touch { visibility:hidden; }

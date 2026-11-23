@@ -95,3 +95,15 @@
 - 診断は閉塞点を最優先で示す。
 - 通しプレイの自動確認：`node scripts/playthrough.mjs`（成功で終了コード 0）。
 - M3 の残り：入口（硝子体を泳いで降りる）、区域B（水晶体）、区域C（視細胞の森）、病巣の核（黄斑の中心）、器官の再起動演出、音の素材化、図鑑の3Dビューア。区域B・C は調査と台帳への追加・事実確認から（PROMPTS の「ステージ追加」と同じ手順）。
+
+## 2026-11-23 M3：ステージ1の道のりを通しで
+- 区域の仕組み：`src/stages/zone.ts`（共通の形 ZoneStage・ZoneMeta、並び ZONES）。`?zone=retina|lens|photo`、続きは `src/core/save.ts`（localStorage `ir.save`）。区域を治しきると「次の区域へ」。VR も同じ。
+- 入口：網膜の区域で、まだ着いていなければ硝子体の高さ 34µm から泳いで降りる（`?noentry` で省略）。
+- 区域B `src/stages/eye/lens.ts`＋`tools/blender/make_lens.py`（六角形の帯＋ボール・ソケット、粒）。光の届く所 `reach` を中央の帯の健康度から求める。
+- 区域C `src/stages/eye/photo.ts`＋`tools/blender/make_photo.py`（桿体・錐体・中心窩の錐体・色素上皮・ドルーゼン）。`collide` で柱に入れない（伸びた柱だけ）。ドルーゼンに当てると対決（7秒ごとの弱らせる波、`setOnPlug` の 'pulse'）。治しきると `bootR` の光の波。
+- 音：`tools/make_audio.py` → `public/static/audio/<区域>.m4a`（各 約125KB、AAC 40kbps）。`audio.bed(url)`、健康度で高音を開く。
+- 図鑑の3D：`src/game/viewer.ts`（模型のある9項目。物差し＝2µm）。
+- 台帳：14項目。新しい9項目は別のサブエージェントで事実確認（`Docs/REFERENCE/atlas_new_checked.json`, `atlas_drusen_checked.json`）。
+- 通しプレイ：`node scripts/playthrough.mjs`（3区域、成功で終了コード 0）。
+- 未確認：実機の見た目・速さ（区域Bは透明な層の重なりが多く、iPhone で重い可能性）、VR の区域B・Cでの酔いやすさ、環境音の聞こえ方。
+- 残り（M3 の仕上げ）：映像を本物の写真と見比べて詰める（区域B・C）、区域B の「光を導く」を VR でも手で導く形に、細胞の確認用の絵（図鑑の画像）、動画。その後 M4。

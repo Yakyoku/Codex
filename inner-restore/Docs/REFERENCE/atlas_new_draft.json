@@ -1,0 +1,196 @@
+{
+ "entries": [
+  {
+   "id": "lens_fiber",
+   "ja": "水晶体線維細胞",
+   "en": "Lens fiber cell",
+   "kind": "細胞",
+   "size": "断面 約2×10µmの平たい六角形（幅 5〜15µm、短い辺 1〜5µm）。長さはもとの上皮細胞の100倍以上",
+   "compare": "幅は髪の毛の約7分の1、厚みは約35〜40分の1",
+   "intro": "水晶体のほとんどを占める、帯のように細長い細胞です。光を散らさないよう核や小器官（細胞の中の部品）を手放し、クリスタリン（透明なタンパク質）の濃い液で満たされています。",
+   "look": "無色透明。断面が六角形の帯が、玉ねぎの皮のように同心の層を作り、赤道で切ると蜂の巣のような模様になります。",
+   "move": "自分では動きません。ピント合わせで水晶体が厚くなったり薄くなったりすると、一緒にたわみます。",
+   "role": "光を曲げて、網膜に像を結ばせます。そのために一生、透明であり続けます。",
+   "relation": "前面の水晶体上皮（線維のもとになる細胞）が赤道で伸びて、新しい線維が外側に足され続けます。隣の線維とはギャップ結合（細胞どうしをつなぐ小さな通路）でつながり、血管のない水晶体の内側へ栄養を受け渡します。",
+   "stage": "目",
+   "image": "lens_fiber.jpg"
+  },
+  {
+   "id": "crystallin_aggregate",
+   "ja": "クリスタリンのかたまり",
+   "en": "Crystallin aggregate",
+   "kind": "タンパクのかたまり",
+   "size": "光を散らすかたまりは直径 およそ50〜500nm（0.05〜0.5µm）。もとのクリスタリンの粒は十数nm",
+   "compare": "髪の毛の太さの数百分の1〜千分の1ほど。血小板よりずっと小さい",
+   "intro": "水晶体のクリスタリン（透明なタンパク質）が長年の傷みで形を崩し、くっつき合ってできた、水に溶けないかたまりです。このかたまりが光を散らすことが、白内障（水晶体の濁り）のもとになります。",
+   "look": "1つずつはとても小さく、見分けられません。たくさん集まると、本来は透明な水晶体が灰白色〜乳白色に濁って見えます。",
+   "move": "自分では動かず、線維細胞の中にとどまります。年齢とともに傷みが積もり、増えていきます。",
+   "role": "体の中での役目はありません。光の通り道で光を散らし、見え方をかすませます。",
+   "relation": "線維細胞は核を持たず、傷んだタンパク質を作り直せません。αクリスタリンは、ほかのタンパク質がかたまるのを防ぐ見張り役（分子シャペロン）として働きますが、年齢とともにその働きが落ちていきます。紫外線や酸化ストレス（酸素による傷み）が主な要因とされます。",
+   "stage": "目",
+   "image": "crystallin_aggregate.jpg"
+  },
+  {
+   "id": "rod",
+   "ja": "桿体",
+   "en": "Rod photoreceptor cell",
+   "kind": "細胞",
+   "size": "外節（光を受ける部分）の直径 約2µm、長さ 約20〜25µm",
+   "compare": "太さは髪の毛の約35〜40分の1",
+   "intro": "暗い所で光を感じる、細長い視細胞（光を受け取る神経細胞）です。外節には、光を捉える膜の円板が千枚前後も積み重なっています。",
+   "look": "細胞そのものは透明に近い色です。外節にあるロドプシン（光を感じるタンパク質）のため、暗い所では淡い赤紫を帯び、光を受けると色が抜けます。",
+   "move": "その場にとどまります。外節は根元で新しい円板が足され、古い先端は朝にちぎれて捨てられ、絶えず作り直されます。",
+   "role": "薄明かりや夜の視覚を担います。光の粒1個にも反応できますが、色は区別しません。",
+   "relation": "外節の先端は網膜色素上皮に包まれ、ちぎれた古い先端はそこで片づけられます。中心窩にはなく、そのまわりで最も密に並びます。",
+   "stage": "目",
+   "image": "rod.jpg"
+  },
+  {
+   "id": "cone",
+   "ja": "錐体",
+   "en": "Cone photoreceptor cell",
+   "kind": "細胞",
+   "size": "内節の直径 中心窩で約1.5〜2.5µm、周辺で約6µm。中心窩の外節の長さ 約30〜40µm",
+   "compare": "中心窩では髪の毛の約30〜50分の1、周辺では約12〜13分の1の太さ",
+   "intro": "明るい所で、色と細かな形を見分ける視細胞（光を受け取る神経細胞）です。よく感じる光の色が違う3種類（L・M・S）があり、その反応の比べ合いで色を区別します。",
+   "look": "細胞そのものは透明に近い色です。赤・緑・青に色づいているわけではありません。周辺ではずんぐりした太い柱、中心窩では細長い柱の形になります。",
+   "move": "その場にとどまります。外節の古い先端は、暗くなったときにちぎれて捨てられます。",
+   "role": "明るい所での視覚、細かいものを見分ける力（視力）、色覚を担います。",
+   "relation": "中心窩では錐体だけが蜂の巣のようにすき間なく並びます。周辺では1個ずつ細い桿体に囲まれます。外節の先端は網膜色素上皮に包まれます。",
+   "stage": "目",
+   "image": "cone.jpg"
+  },
+  {
+   "id": "rpe",
+   "ja": "網膜色素上皮細胞",
+   "en": "Retinal pigment epithelium (RPE) cell",
+   "kind": "細胞",
+   "size": "黄斑で幅 約10〜17µm、高さ 約12〜18µm。周辺では広く平たくなる",
+   "compare": "幅は赤血球の約2倍、髪の毛の約5分の1",
+   "intro": "メラニン（黒い色素）を蓄えた六角形の細胞が、網膜のいちばん奥に敷石のように1層に並んでいます。光を受ける細胞を養い、その古くなった先端を毎日片づける世話役です。",
+   "look": "メラニンの粒のため暗い褐色で、ほとんど光を通しません。網膜側の面は細い突起（微絨毛）で毛羽立っています。",
+   "move": "細胞そのものは動きません。突起で視細胞の外節の先端を包み、ちぎれた古い部分を取り込んで分解します。",
+   "role": "余分な光を吸い取り、脈絡膜（網膜の外側の血管の層）の血液から栄養を運び、視物質（光を感じる物質）の部品を作り直して返します。",
+   "relation": "隣どうしが固く結びつき、外側の血液網膜関門（血液の成分を網膜へ勝手に通さない仕切り）を作ります。桿体・錐体は、この細胞なしでは生きられません。",
+   "stage": "目",
+   "image": "rpe.jpg"
+  },
+  {
+   "id": "mitochondrion",
+   "ja": "ミトコンドリア",
+   "en": "Mitochondrion",
+   "kind": "小器官",
+   "size": "ふつう断面積 0.75〜3µm²（太さ 約1〜2µm）。視細胞の内節では直径2µmほどの筒の中に収まる細長い粒",
+   "compare": "髪の毛の太さの約40分の1以下。赤血球の数分の1",
+   "intro": "細胞の中で酸素を使い、ATP（細胞が使うエネルギーのもと）を作る小器官（細胞の中の部品）です。光を受け取る細胞では、光を捉える外節のすぐ手前に、ぎっしり詰まっています。",
+   "look": "色はほとんどなく、透明に近い細長い粒です。周りより光を少し強く曲げます。2重の膜に包まれ、内側の膜はひだ（クリステ）になっています。",
+   "move": "視細胞の内節では、長い軸に沿って束になって並んでいます。",
+   "role": "細胞が働くためのエネルギーを作ります。視細胞では、光を外節へ導く助けもしていると考えられています。",
+   "relation": "視細胞の内節の、外節寄りの部分（エリプソイド）の大半を占めます。酸素は、網膜色素上皮の向こうの脈絡膜の血管から届きます。成熟した赤血球や水晶体線維細胞にはありません。",
+   "stage": "目",
+   "image": "mitochondrion.jpg"
+  },
+  {
+   "id": "fovea",
+   "ja": "中心窩",
+   "en": "Fovea centralis",
+   "kind": "組織",
+   "size": "直径 約1.2〜1.5mm。中央の窪み（中心小窩）は直径 約0.2mm、網膜の厚みは底で約0.1〜0.2mm",
+   "compare": "幅は髪の毛の太さの約15〜20本ぶん",
+   "intro": "網膜の中心にある、小さな窪みです。手前の神経の層が脇へよけられ、光がほぼ直接、すき間なく並んだ錐体に届くので、視力が最も高い場所です。",
+   "look": "網膜の面がなだらかにへこんだ形です。網膜そのものは透明に近く、まわりの黄斑はルテインなどの色素（黄斑色素）で淡い黄色を帯びます。",
+   "move": "自分では動きません。",
+   "role": "ものをまっすぐ見るとき、細かい形や色を見分ける中心の視覚を担います。",
+   "relation": "中央の直径 約0.25〜0.75mmには桿体がなく、錐体だけが並びます（最も密な所で1mm²あたり約10万〜32万個）。網膜の血管がない領域（直径 約0.45〜0.6mm）があり、酸素と栄養は脈絡膜の側から届きます。",
+   "stage": "目",
+   "image": "fovea.jpg"
+  },
+  {
+   "id": "platelet",
+   "ja": "血小板",
+   "en": "Platelet (Thrombocyte)",
+   "kind": "細胞",
+   "size": "直径 約2〜4µm",
+   "compare": "赤血球の約3分の1。髪の毛の約20〜40分の1",
+   "intro": "骨髄の巨核球（大きな細胞）の一部がちぎれてできた、核を持たない小さな円盤です。血管の壁に傷ができると、すぐに集まって貼りつき、血を止める栓のもとになります。",
+   "look": "両面がふくらんだ平たい円盤（レンズ形）です。赤血球と違い、中央はくぼんでいません。色素を持たないので、色はほとんどありません。",
+   "move": "自分では動かず、血流に運ばれます。働き出すと球に近づき、細い突起を伸ばして、平たく広がります。",
+   "role": "傷口に貼りつき、互いにくっつき合って、出血を止めます。",
+   "relation": "健康な血管内皮細胞の上ではくっつきません。流れの中では、大きな赤血球に押されて血管の壁ぎわへ寄せられます。",
+   "stage": "目",
+   "image": "platelet.jpg"
+  }
+ ],
+ "sources": {
+  "lens_fiber": [
+   "Docs/REFERENCE/atlas/lens_fiber.md",
+   "Costello MJ et al. Exp Eye Res 2013 https://pmc.ncbi.nlm.nih.gov/articles/PMC3887450/",
+   "Audette DS et al. Exp Eye Res 2016 https://pmc.ncbi.nlm.nih.gov/articles/PMC5035171/",
+   "Bassnett S et al. Phil Trans R Soc B 2011 https://pmc.ncbi.nlm.nih.gov/articles/PMC3061108/",
+   "https://en.wikipedia.org/wiki/Lens_(vertebrate_anatomy)",
+   "https://webvision.med.utah.edu/book/part-xiii-facts-and-figures-concerning-the-human-retina/"
+  ],
+  "crystallin_aggregate": [
+   "Docs/REFERENCE/eye.md 7.1",
+   "Lampi KJ et al. Prog Biophys Mol Biol 2014 https://pmc.ncbi.nlm.nih.gov/articles/PMC4374893/",
+   "https://en.wikipedia.org/wiki/Cataract",
+   "Costello MJ et al. Electron tomography of fiber cell cytoplasm ... human age-related nuclear cataracts. Exp Eye Res 2012;101:72-81 https://pmc.ncbi.nlm.nih.gov/articles/PMC3722609 (HMW aggregates 100-500 nm; density fluctuations 50-200 nm; alpha-crystallin ~12-18 nm, avg ~16 nm)",
+   "Andley UP et al. Biochemistry 2008 https://pmc.ncbi.nlm.nih.gov/articles/PMC2642957 (alpha-crystallin oligomers 600 kDa-1.2 MDa)",
+   "Wikimedia Commons: Cataract in human eye (slit-lamp appearance)"
+  ],
+  "rod": [
+   "Docs/REFERENCE/atlas/rod.md",
+   "Kolb H. Photoreceptors. Webvision https://webvision.med.utah.edu/book/part-ii-anatomy-and-physiology-of-the-retina/photoreceptors/",
+   "Curcio CA et al. J Comp Neurol 1990 https://pubmed.ncbi.nlm.nih.gov/2324310/",
+   "Nickell S et al. J Cell Biol 2007 https://pmc.ncbi.nlm.nih.gov/articles/PMC2064290/",
+   "https://en.wikipedia.org/wiki/Rhodopsin",
+   "https://en.wikipedia.org/wiki/Rod_cell"
+  ],
+  "cone": [
+   "Docs/REFERENCE/atlas/cone.md",
+   "Kolb H. Photoreceptors. Webvision (as above)",
+   "Curcio CA et al. 1990 https://pubmed.ncbi.nlm.nih.gov/2324310/",
+   "Domdei N et al. IOVS 2023 https://pmc.ncbi.nlm.nih.gov/articles/PMC10709802/",
+   "Webvision Simple Anatomy of the Retina https://webvision.med.utah.edu/book/part-i-foundations/simple-anatomy-of-the-retina/"
+  ],
+  "rpe": [
+   "Docs/REFERENCE/atlas/rpe.md",
+   "Strauss O. The Retinal Pigment Epithelium. Webvision https://webvision.med.utah.edu/book/part-ii-anatomy-and-physiology-of-the-retina/the-retinal-pigment-epithelium/",
+   "Bhatia SK et al. Mol Vis 2016 https://pmc.ncbi.nlm.nih.gov/articles/PMC4968610/",
+   "Granger CE et al. IOVS 2018 https://pmc.ncbi.nlm.nih.gov/articles/PMC6280915/",
+   "https://en.wikipedia.org/wiki/Retinal_pigment_epithelium"
+  ],
+  "mitochondrion": [
+   "Docs/REFERENCE/atlas/mitochondrion.md",
+   "https://en.wikipedia.org/wiki/Mitochondrion",
+   "Hoang QV et al. Vis Neurosci 2002 https://pubmed.ncbi.nlm.nih.gov/12511073/",
+   "Ozaki T et al. Data Brief 2020 https://pmc.ncbi.nlm.nih.gov/articles/PMC7186507/",
+   "Webvision Photoreceptors (inner segment diameters)"
+  ],
+  "fovea": [
+   "Docs/REFERENCE/eye.md 5.1, 5.3, 5.5",
+   "Webvision Facts and Figures https://webvision.med.utah.edu/book/part-xiii-facts-and-figures-concerning-the-human-retina/",
+   "Webvision Simple Anatomy of the Retina https://webvision.med.utah.edu/book/part-i-foundations/simple-anatomy-of-the-retina/",
+   "Curcio CA et al. 1990 https://pubmed.ncbi.nlm.nih.gov/2324310/",
+   "OpenStax Anatomy & Physiology 2e 14.1 https://openstax.org/books/anatomy-and-physiology-2e/pages/14-1-sensory-perception"
+  ],
+  "platelet": [
+   "Docs/REFERENCE/atlas/platelet.md",
+   "https://en.wikipedia.org/wiki/Platelet",
+   "Frojmovic MM, Panjwani R. Biophys J 1976 https://pmc.ncbi.nlm.nih.gov/articles/PMC1334946/ (abstract: oblate spheroid)",
+   "Pokrovskaya ID et al. RPTH 2020 https://pmc.ncbi.nlm.nih.gov/articles/PMC6971324/"
+  ]
+ },
+ "uncertain": [
+  "crystallin_aggregate: 直径 50〜500nm は、ヒトの核白内障の電子線トモグラフィー（Costello 2012）の記述（HMW 凝集体 100〜500nm、密度のゆらぎ 50〜200nm）を合わせた幅。理論上の閾値の値は検索の要約でしか見ておらず不採用。『もとの粒は十数nm』はαクリスタリンの平均 約16nm（同論文）による。β・γクリスタリンはもっと小さいが数値は入れていない。核白内障の黄色〜褐色の着色は未確認なので書いていない。",
+  "crystallin_aggregate: 'en' 名と 'ja' 名（クリスタリンのかたまり）は仮。kind は指定どおり「タンパクのかたまり」。",
+  "lens_fiber: ヒトの線維の長さの実測値は未確認のため、mm 単位の長さは書かず『上皮細胞の100倍以上』（Audette 2016、種を問わない記述）にとどめた。仕様書の案にあった『長さは髪の毛の太さの千倍ほど』は根拠が計算のみなので不採用。",
+  "rod: 円板の枚数『千枚前後』は、ヒトの実測なし（1,000枚超という抜粋と、外節長÷間隔の計算 約900枚）による丸め。総数（0.9〜1.25億）は資料で食い違うため本文に入れていない。暗所での淡い赤紫は Wikipedia のロドプシンの色による。1本での色の濃さは未確認。",
+  "cone: 中心窩の内節径は 1.5µm（Webvision）と 2.5µm（抜粋）で食い違うため範囲表記。周辺の外節長は未確認で省略。",
+  "rpe: 幅は Wikipedia の 約10µm と密度からの計算 14〜17µm が食い違うため『約10〜17µm』の範囲にした。『1日に外節の約10%を貪食』は未確認で不使用。",
+  "mitochondrion: kind を『小器官』とした（既存の種類にない語。必要なら『細胞の中の部品』等に統一を）。ヒトの視細胞のミトコンドリア1個の寸法は未確認。太さ 約1〜2µm は断面積からの計算。『周りより光を少し強く曲げる』は Hoang 2002 の要旨（屈折率が高い）による。詰まり具合の数値（74〜85% 等）はサル1頭の値なので本文に入れていない。分裂・融合などの動きは未確認なので move は並び方だけにした。",
+  "platelet: 厚み 約0.5µm・体積 約7fL は検索の抜粋でしか確かめていないので省略。直径は 2〜3µm（Wikipedia）と 2〜4µm の食い違いから 2〜4µm。『色はほとんどない』は色素を持たないことからの整理で、色を直接述べた資料は読めていない。辺縁化（壁ぎわへの寄せ）は抜粋のみの根拠。",
+  "fovea: 中心小窩の直径は eye.md の 約200µm を使用（他資料ではより大きい値もありうるが未確認）。底の厚み 0.10mm（標本）〜0.15〜0.20mm（縮みの少ない標本）を 0.1〜0.2mm とした。compare は髪の毛 70〜80µm として 1.2〜1.5mm を割った計算。生体で中心窩そのものの色を述べた資料はなく、黄斑の淡い黄色だけを書いた。",
+  "compare の値はすべて髪の毛 70〜80µm を使った計算（仕様書は 70〜100µm で計算しているため、仕様書の比と少しずれる）。"
+ ]
+}

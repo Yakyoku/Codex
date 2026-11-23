@@ -1,0 +1,38 @@
+{
+ "entry": {
+  "id": "drusen",
+  "ja": "ドルーゼン",
+  "en": "Drusen",
+  "kind": "沈着物",
+  "stage": "目",
+  "size": "直径で分けて、小（63µm未満）・中（63〜125µm未満）・大（125µm以上）",
+  "compare": "小さいものは髪の毛1本（約70〜80µm）より細く、大きいものは髪の毛約1.5〜2本分か、それ以上",
+  "intro": "網膜色素上皮（視細胞を支える一層の細胞）と、その下のブルッフ膜（脈絡膜との境の薄い膜）のあいだにたまる、細胞の外の小さな沈着物です。タンパク質や脂質などでできています。",
+  "look": "眼底では、黄色がかった白い小さな点として見えます。輪郭のはっきりした小さいもの（硬性）と、境のぼやけた大きめのもの（軟性）があります。",
+  "move": "自分では動きません。年月とともに数や大きさが増えたり、近くどうしがつながって大きくなったりすることがあります。",
+  "role": "小さなものが少しあるのは、年齢による普通の変化です。黄斑（視力の中心）に中くらいのものがあると加齢黄斑変性の初期、大きなものがあると中期のしるしとされ、大きく数が多いほど進行の危険が高まります。",
+  "relation": "網膜色素上皮をブルッフ膜から押し上げます。下の脈絡膜から色素上皮や視細胞へ届く酸素や栄養をさまたげる可能性が考えられています。",
+  "image": "drusen.jpg"
+ },
+ "sources": [
+  {"title": "Drusen - Wikipedia", "url": "https://en.wikipedia.org/wiki/Drusen", "used_for": "定義（RPEとブルッフ膜の間の黄白色の細胞外沈着物）、成分、少数の硬性はふつうの加齢変化、硬性がつながって軟性に、AMDとの関連、酸素・栄養をさまたげる可能性"},
+  {"title": "Age-Related Macular Degeneration - EyeWiki (AAO)", "url": "https://eyewiki.org/Age-Related_Macular_Degeneration", "used_for": "位置（ブルッフ膜と押し上げられたRPEの間）、大きさの区分（<63 / 63–<125 / ≥125µm）、大きさと密度が進行に関わる"},
+  {"title": "Ferris FL et al. Clinical classification of age-related macular degeneration (Beckman Initiative), Ophthalmology 2013", "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC11551519", "used_for": "小（drupelets）は正常な加齢変化、中は早期AMD、大は中期AMD、125µmは視神経乳頭縁の太い静脈の幅にほぼ相当"},
+  {"title": "Hard Drusen - Columbia Ophthalmology Digital Reference", "url": "https://www.vagelos.columbia.edu/departments-centers/ophthalmology/education/digital-reference-ophthalmology/vitreous-and-retina/macular-diseases/hard-drusen", "used_for": "硬性は小さく黄白色で輪郭がはっきり"},
+  {"title": "What is the difference between hard and soft drusen? - BrightFocus", "url": "https://www.brightfocus.org/resource/what-is-the-difference-between-hard-and-soft-drusen/", "used_for": "軟性は大きめで輪郭がはっきりしない"}
+ ],
+ "report": {
+  "wrong": 2,
+  "removed": 0,
+  "reworded": 2,
+  "notes": [
+   "誤り(compare): 大ドルーゼン(125µm以上)には上限がないため『髪の毛約1.5〜2本分』は不正確。125÷80≈1.56、125÷70≈1.79本なので『約1.5〜2本分か、それ以上』に修正。小(63µm未満)は63<70なので髪の毛より細いで正しい。",
+   "誤り(sources): 下書きのPMC3342791はFriberg 2012 (IOVS) で Beckman分類の論文ではない。Beckman (Ferris 2013) は PMC11551519 側にあり、125µm≒乳頭縁の静脈の太さもこの論文の記述。出典を付け替え、Columbia・BrightFocusを硬性/軟性の根拠として追加。",
+   "言い換え(role): Beckman分類では中ドルーゼン=早期AMD、大ドルーゼン=中期AMD。『大きなものが初期のしるし』を区別して書き直した。",
+   "言い換え(move): 増加・融合は必ず起こるわけではないので『〜ことがあります』に。",
+   "確認済み: 位置（RPEの基底膜とブルッフ膜内側膠原層の間。ブルッフ膜を一枚の膜として『RPEとブルッフ膜の間』と書くのは標準的な簡略化）、黄白色の見た目（染色の色は使っていない）、タンパク質・脂質の成分、RPEの押し上げ、酸素・栄養の可能性（推定として表現済み）。",
+   "区分の境界: EyeWiki/AREDSは<63・63〜<125・≥125、Beckmanは≤63・>63〜≤125・>125と境界の含め方が違う。本文はEyeWiki式で問題なし。Beckmanは、昔の63/125µmの円は現在の換算では約75/150µmに当たるとも注記している。",
+   "ゲーム表示の約15µm（中心窩）: 63µm未満なので『小ドルーゼン（drupelets、硬性）』の区分に十分入る。区分の中でもかなり小さい側で、Beckman分類では正常な加齢変化に当たる。"
+  ]
+ }
+}

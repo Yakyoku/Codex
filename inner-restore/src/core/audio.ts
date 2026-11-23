@@ -1,4 +1,4 @@
-// 音：Web Audio API を直接使い、その場で合成する（M1 の仮の音。素材ファイルは使わない）。
+// 音：Web Audio API。持続音・心拍・効果音はその場で合成し、区域の環境音は素材ファイル（tools/make_audio.py で作る）を重ねる。
 // ユーザーの操作のあとで start() を呼ぶこと。
 export class GameAudio {
   ctx: AudioContext | null = null;
@@ -40,8 +40,21 @@ export class GameAudio {
     for (let i = 0; i < d.length; i++) { last = (last + 0.02 * (Math.random() * 2 - 1)) / 1.02; d[i] = last * 3.5; }
     return b;
   }
+  // 区域の環境音（素材ファイル）：病んでいる間は高い音を削ってくぐもらせ、治るほど澄ませる
+  private bedLP?: BiquadFilterNode; private bedG?: GainNode;
+  async bed(url: string) {
+    const c = this.ctx; if (!c || this.bedG) return;
+    try {
+      const buf = await c.decodeAudioData(await (await fetch(url)).arrayBuffer());
+      const src = c.createBufferSource(); src.buffer = buf; src.loop = true;
+      this.bedLP = c.createBiquadFilter(); this.bedLP.type = 'lowpass'; this.bedLP.frequency.value = 500;
+      this.bedG = c.createGain(); this.bedG.gain.value = 0; src.connect(this.bedLP); this.bedLP.connect(this.bedG); this.bedG.connect(this.master); src.start();
+      this.bedG.gain.setTargetAtTime(0.32, c.currentTime, 2);
+    } catch { /* 読み込めなくても、合成の音だけで続ける */ }
+  }
   /** 毎フレーム：健康度・流れ・ビームの状態を音に反映する */
   update(mean: number, flow: number, beam: boolean, heartPhase: number) {
+    if (this.bedLP && this.ctx) this.bedLP.frequency.setTargetAtTime(400 + 5200 * mean * mean, this.ctx.currentTime, 0.8);
     const c = this.ctx; if (!c) return; const t = c.currentTime;
     this.master.gain.setTargetAtTime(this.volume, t, 0.1);
     this.muffle.frequency.setTargetAtTime(700 + 5200 * mean * mean, t, 0.4);

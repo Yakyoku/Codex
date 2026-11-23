@@ -4,6 +4,7 @@ import * as THREE from 'three/webgpu';
 import { tsl, type N } from '../../core/tsl';
 import { loadGLB, makeEnvironment } from '../../core/assets';
 import { HealthField, flowFactor } from '../../core/health';
+import type { ZoneStage, ZoneMeta } from '../zone';
 import { makeCellMaterial, keyLightDirView } from '../../materials/cell';
 import type { Tier } from '../../core/device';
 import tuning from '../../data/tuning.json';
@@ -11,25 +12,23 @@ import tuning from '../../data/tuning.json';
 const { uniform, texture, positionWorld, positionLocal, normalLocal, normalView, positionViewDirection, vec2, vec3, vec4, float, color, mix, smoothstep,
   sin, cos, exp, pow, dot, saturate, abs, vertexColor, mx_worley_noise_float, mx_fractal_noise_float, uv, length, max, min, Fn } = tsl;
 
+const RETINA_META: ZoneMeta = {
+  id: 'retina', hud: '網膜・内側の面　血流の回復', swimCeil: 50,
+  enter: 'こちらオペレーター。硝子体の中に入りました。ほとんどが水の、透明なゼリーの中です。上から差す瞳の光の柱をたどって、網膜まで泳いで降りてください。',
+  arrive: 'こちらオペレーター。網膜の内側の面に着きました。足もとの白い濁りは、血流が止まった組織です。スキャンで閉塞点を探し、浄化で流れを取り戻してください。',
+  plugName: '閉塞点', plugHit: '塊に当たっています。止まった赤血球の塊です。そのまま当て続けて、ほぐしてください。',
+  plugCleared: (left) => (left ? `塊がほぐれ、血が流れはじめました。残りの閉塞点は ${left} か所です。スキャンで探してください。` : 'すべての閉塞点がほぐれました。網膜の血流が戻りつつあります。'),
+  done: '血流が戻りました。網膜が、透明さを取り戻していきます。', doneTitle: '区域の血流が戻りました', causeMain: '毛細血管の血流停止（虚血）',
+};
 interface RetinaData { size: [number, number]; rOuter: number; rLumen: number; edges: number[][][]; nuclei: { edge: number; s: number; p: number[] }[]; pericytes: { edge: number; s: number; p: number[] }[]; floor: { bulge: number; sigma: number }; }
 
-export interface RetinaStage {
-  scene: THREE.Scene; health: HealthField; size: [number, number];
-  u: { time: N; scan: N; lightIn: N; beamPos: N; beamOn: N; heartPhase: N; scanR: N; scanOrigin: N; scanPulse: N };
-  floorHeight(x: number, z: number): number;
+export interface RetinaStage extends ZoneStage {
   vesselDist(x: number, z: number): number;
   cores: THREE.Vector3[];
-  progress(): number;
-  plugs: { p: THREE.Vector3; hp: number; cleared: boolean }[];
-  setOnPlug(f: (i: number, kind: 'hit' | 'cleared') => void): void;
-  update(dt: number, t: number, camera: THREE.Camera): void;
-  heal(x: number, z: number, dt: number): number;
   points: { rbc: () => THREE.Vector3; nucleus: THREE.Vector3; pericyte: THREE.Vector3 };
-  flowing(): number;
-  sun: THREE.DirectionalLight;
 }
 
-export async function buildRetina(renderer: THREE.WebGPURenderer, tier: Tier): Promise<RetinaStage> {
+export async function buildRetina(renderer: THREE.WebGPURenderer, tier: Tier, opts: { entrance?: boolean } = {}): Promise<RetinaStage> {
   const noiseTex = new THREE.TextureLoader().load('/static/img/noise.png');
   noiseTex.wrapS = noiseTex.wrapT = THREE.RepeatWrapping; noiseTex.colorSpace = THREE.NoColorSpace; noiseTex.anisotropy = 4;
   const [gltf, rbcGltf, data] = await Promise.all([
@@ -373,11 +372,27 @@ export async function buildRetina(renderer: THREE.WebGPURenderer, tier: Tier): P
   const nearest = (list: { p: number[] }[], x: number, z: number) => list.map((n) => v3(n.p)).sort((a, b) => a.distanceToSquared(new THREE.Vector3(x, a.y, z)) - b.distanceToSquared(new THREE.Vector3(x, b.y, z)))[0];
   const rbcPoint = new THREE.Vector3();
   let heart = 0;
+  const vDist = (x: number, z: number) => { let d2 = 1e9; for (let i = 0; i < allPts.length; i++) { const p = allPts[i]; const dx = p.x - x, dz = p.z - z; const d = dx * dx + dz * dz; if (d < d2) d2 = d; } return Math.sqrt(d2); };
+  const pts = { rbc: () => { rbc.getMatrixAt(Math.floor(count * 0.18), m4); return rbcPoint.setFromMatrixPosition(m4); }, nucleus: nearest(data.nuclei, -40, -6), pericyte: nearest(data.pericytes, -30, -10) };
   return {
-    scene, health, size: [W, D], u, floorHeight, sun, cores, progress,
+    meta: RETINA_META, scene, health, size: [W, D], u, floorHeight, sun, cores, progress,
+    // 入口：硝子体の高い所から、瞳の光の柱をたどって泳いで降りる
+    start: { pos: new THREE.Vector3(-58, opts.entrance ? floorHeight(-58, 6) + 34 : 0, 6), yaw: -1.15, swimming: !!opts.entrance },
+    causeAt(x, z) { const near = vDist(x, z) < 9; return near ? { short: '毛細血管の閉塞', cause: '赤血球が止まって詰まり、この先へ血が届いていません' } : { short: '虚血（血が届かない）', cause: '近くの血管が止まり、酸素が届かず濁っています' }; },
+    encounters(pos, t, walked) {
+      const out: { id: string; at: THREE.Vector3 | null }[] = [];
+      const near = (p: THREE.Vector3, r: number) => Math.hypot(p.x - pos.x, p.z - pos.z) < r && health.sample(p.x, p.z) > 0.55;
+      if (t > 2.5) out.push({ id: 'vitreous', at: null });
+      if (walked > 9 && pos.y - floorHeight(pos.x, pos.z) < 1) out.push({ id: 'muller', at: null });
+      if (near(pts.nucleus, 20)) out.push({ id: 'endothelial', at: pts.nucleus });
+      if (near(pts.pericyte, 20)) out.push({ id: 'pericyte', at: pts.pericyte });
+      if (flowSum / count > 0.12) out.push({ id: 'rbc', at: pts.rbc().clone() });
+      return out;
+    },
     /** いちばん近い毛細血管の中心線までの水平距離（µm） */
-    vesselDist(x: number, z: number) { let d2 = 1e9; for (let i = 0; i < allPts.length; i++) { const p = allPts[i]; const dx = p.x - x, dz = p.z - z; const d = dx * dx + dz * dz; if (d < d2) d2 = d; } return Math.sqrt(d2); },
-    points: { rbc: () => { rbc.getMatrixAt(Math.floor(count * 0.18), m4); return rbcPoint.setFromMatrixPosition(m4); }, nucleus: nearest(data.nuclei, -40, -6), pericyte: nearest(data.pericytes, -30, -10) },
+    vesselDist: vDist,
+    track(id) { return id === 'rbc' ? pts.rbc() : null; },
+    points: pts,
     flowing: () => flowSum / count,
     heal(x, z, dt) {
       // 閉塞点に光が当たっていれば、塊をほぐす

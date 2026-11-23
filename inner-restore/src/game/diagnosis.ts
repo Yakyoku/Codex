@@ -14,7 +14,7 @@ export class Diagnosis {
   private uShow = uniform(0); private uTime = uniform(0);
   show = 0; private hold = 0;
   constructor(private health: HealthField, private size: [number, number], private floorAt: (x: number, z: number) => number,
-              private vesselDist: (x: number, z: number) => number, scale = 1, private plugs: { p: THREE.Vector3; cleared: boolean }[] = []) {
+              private causeAt: (x: number, z: number) => { short: string; cause: string }, scale = 1, private plugs: { p: THREE.Vector3; cleared: boolean }[] = [], private plugInfo = { short: '閉塞点（赤血球の塊）', cause: 'ここで赤血球が止まって塊になっています。光を当て続けてほぐすと、流れが戻ります' }) {
     // 光の柱：下ほど濃く、上へ消える。病巣の上に立つ目印
     const cm = new THREE.MeshBasicNodeMaterial({ transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, fog: false });
     const v = uv().y, edge = abs(uv().x.sub(0.5)).mul(2);
@@ -40,15 +40,12 @@ export class Diagnosis {
         const h = this.health.sample(x, z); sum += h; if (h < worst) { worst = h; wx = x; wz = z; }
       }
       const mean = sum / 16; if (mean > 0.5) continue;
-      const vd = this.vesselDist(wx, wz);
-      const near = vd < 9;
-      cells.push({ x: wx, z: wz, y: this.floorAt(wx, wz), health: mean,
-        short: near ? '毛細血管の閉塞' : '虚血（血が届かない）',
-        cause: near ? '赤血球が止まって詰まり、この先へ血が届いていません' : '近くの血管が止まり、酸素が届かず濁っています', dist: Math.hypot(wx - px, wz - pz) });
+      const c = this.causeAt(wx, wz);
+      cells.push({ x: wx, z: wz, y: this.floorAt(wx, wz), health: mean, short: c.short, cause: c.cause, dist: Math.hypot(wx - px, wz - pz) });
     }
     // 閉塞点（止まった赤血球の塊）は、いちばん大事な手がかりとして必ず示す
-    for (const pl of this.plugs) if (!pl.cleared) cells.push({ x: pl.p.x, z: pl.p.z, y: this.floorAt(pl.p.x, pl.p.z), health: -1, short: '閉塞点（赤血球の塊）',
-      cause: 'ここで赤血球が止まって塊になっています。光を当て続けてほぐすと、流れが戻ります', dist: Math.hypot(pl.p.x - px, pl.p.z - pz) });
+    for (const pl of this.plugs) if (!pl.cleared) cells.push({ x: pl.p.x, z: pl.p.z, y: this.floorAt(pl.p.x, pl.p.z), health: -1, short: this.plugInfo.short,
+      cause: this.plugInfo.cause, dist: Math.hypot(pl.p.x - px, pl.p.z - pz) });
     cells.sort((a, b) => a.health - b.health);
     const out: Finding[] = [];
     for (const c of cells) { if (out.every((o) => Math.hypot(o.x - c.x, o.z - c.z) > 30)) out.push(c); if (out.length === 3) break; }

@@ -4,7 +4,8 @@ import { createRenderer, fitRenderer } from '../core/renderer';
 import { detectDevice, DEVICE_LABEL } from '../core/device';
 import { Hud } from '../core/hud';
 import { GameAudio } from '../core/audio';
-import { buildRetina } from '../stages/eye/retina';
+import { ZONES } from '../stages/zone';
+import { loadSave, writeSave } from '../core/save';
 import { ATLAS } from '../game/ui';
 import { PurifyBeam } from '../game/beam';
 import tuning from '../data/tuning.json';
@@ -45,10 +46,14 @@ async function main() {
   const K = tuning.player.height / 1.7;
   const rig = new THREE.Group(); rig.scale.setScalar(K); rig.add(camera); camera.position.set(0, 1.25, 0);
   fitRenderer(renderer, camera, 1.5);
-  const stage = await buildRetina(renderer, 'vr');
+  // 区域：URL の ?zone= か、保存した続きから（画面版と同じ並び）
+  const save = loadSave(), Qv = new URLSearchParams(location.search);
+  let zi = ZONES.findIndex((z) => z.id === (Qv.get('zone') ?? save.zone ?? 'retina')); if (zi < 0) zi = 0;
+  const stage = await (await ZONES[zi].load()).build(renderer, 'vr');
+  const M = stage.meta;
   stage.scene.add(rig);
   const [SX, SZ] = stage.size;
-  rig.position.set(-58, 0, 6); rig.rotation.y = Math.PI + 1.15;
+  rig.position.copy(stage.start.pos).setY(0); rig.rotation.y = Math.PI + stage.start.yaw;
   const audio = new GameAudio();
 
   // 手：硬質なスーツの前腕（右＝浄化の道具、左＝手首の端末）
@@ -99,7 +104,7 @@ async function main() {
   }
   function say(text: string, dur = 7) { const c = subP.ctx; subP.clear('rgba(4,7,9,0.72)'); c.fillStyle = '#eef3f5'; c.font = `40px ${FONT}`; subP.wrap(text, 36, 70, 950, 56); subP.tex.needsUpdate = true; subP.mesh.visible = true; subT = dur; }
   function drawWrist(prog: number, scan: boolean) {
-    const c = wrist.ctx; wrist.clear('rgba(4,9,11,0.94)'); c.fillStyle = '#8fa3ad'; c.font = `30px ${FONT}`; c.fillText('網膜　血流の回復', 28, 56);
+    const c = wrist.ctx; wrist.clear('rgba(4,9,11,0.94)'); c.fillStyle = '#8fa3ad'; c.font = `30px ${FONT}`; c.fillText(M.hud.slice(0, 16), 28, 56);
     c.fillStyle = '#e9eef2'; c.font = `300 120px ${FONT}`; c.fillText(`${Math.round(prog * 100)}%`, 28, 190); c.fillStyle = '#ffffff22'; c.fillRect(28, 222, 456, 10);
     const g = c.createLinearGradient(28, 0, 484, 0); g.addColorStop(0, '#f2b36b'); g.addColorStop(1, '#7fe0d2'); c.fillStyle = g; c.fillRect(28, 222, 456 * prog, 10);
     c.fillStyle = scan ? '#7fe0d2' : '#8fa3ad'; c.font = `28px ${FONT}`; c.fillText(scan ? 'スキャン中' : '端末を見るとスキャン', 28, 290);
@@ -124,8 +129,8 @@ async function main() {
       session = await xr!.requestSession('immersive-vr', { optionalFeatures: ['local-floor', 'bounded-floor'] });
       session.addEventListener('end', () => { session = null; btn.textContent = 'VR で遊ぶ'; W.__irXR = false; });
       await renderer.xr.setSession(session);
-      btn.textContent = 'VR を終了'; W.__irXR = true; audio.start();
-      if (!started) { started = true; say('こちらオペレーター。網膜の内側の面に着きました。足もとの白い濁りは、血流が止まった組織です。右手の道具を向けて、トリガーで浄化してください。', 10); }
+      btn.textContent = 'VR を終了'; W.__irXR = true; audio.start(); void audio.bed(`/static/audio/${M.id}.m4a`);
+      if (!started) { started = true; say(M.arrive, 12); }
     } catch (e) { msg.textContent = 'VR を開始できませんでした：' + String(e); errors.push(String(e)); }
   });
   // 右手・左手は、つながったコントローラーの種類（handedness）で決める
@@ -153,10 +158,10 @@ async function main() {
   let alt = 0; const swimV = new THREE.Vector3(); const prevHand = [new THREE.Vector3(), new THREE.Vector3()]; const gripOn = [false, false];
   hands.forEach((h, i) => { h.ray.addEventListener('squeezestart', () => { gripOn[i] = true; h.grip.getWorldPosition(prevHand[i]); }); h.ray.addEventListener('squeezeend', () => (gripOn[i] = false)); });
   const srcOf = (h: { grip: THREE.Object3D }) => (session ? Array.from(session.inputSources).find((s) => s.handedness === (h === right ? 'right' : 'left')) : undefined);
-  const diag = new Diagnosis(stage.health, stage.size as [number, number], stage.floorHeight, stage.vesselDist, 0.8, stage.plugs); stage.scene.add(diag.group);
+  const diag = new Diagnosis(stage.health, stage.size as [number, number], stage.floorHeight, (x: number, z: number) => stage.causeAt(x, z), 0.8, stage.plugs); stage.scene.add(diag.group);
   let wasHit = false, scanWas = false, diagT = 0, lastStep = -1;
   stage.setOnPlug((i, kind) => {
-    if (kind === 'hit') return;
+    if (kind === 'hit' || kind === 'pulse') { if (kind === 'pulse') haptic(srcOf(left), 0.4, 200); return; }
     const rest = stage.plugs.filter((p) => !p.cleared).length; audio.resolve(); purify.burst(); haptic(srcOf(right), 1, 300); haptic(srcOf(left), 0.6, 300);
     say(rest ? `塊がほぐれ、血が流れはじめました。残りの閉塞点は ${rest} か所です。` : 'すべての閉塞点がほぐれました。', 7);
   });
@@ -180,6 +185,7 @@ async function main() {
     v.set(d.x * my - d.z * mx, 0, d.z * my + d.x * mx);
     if (moveMode() === 'step' && session) { if (v.length() > 0.7 && stepReady) { rig.position.addScaledVector(v.normalize(), 2.2); stepReady = false; } if (v.length() < 0.3) stepReady = true; vel.set(0, 0, 0); }
     else { vel.lerp(v.multiplyScalar(tuning.vr.moveSpeed * K * 1.6), Math.min(1, dt * 4)); rig.position.addScaledVector(vel, dt); }
+    stage.collide?.(rig.position, 0.45 * K);
     rig.position.x = Math.max(-SX / 2 + 14, Math.min(SX / 2 - 14, rig.position.x)); rig.position.z = Math.max(-SZ / 2 + 12, Math.min(SZ / 2 - 12, rig.position.z));
     // 手で水をかく：握っている手の動き（世界の中での移動量）の反対へ、体を押し出す。離すと水の抵抗でゆっくり止まる
     if (session && handSwim()) for (let i = 0; i < 2; i++) {
@@ -189,7 +195,7 @@ async function main() {
     }
     swimV.multiplyScalar(Math.max(0, 1 - dt * tuning.vr.swimDrag));
     const sl = swimV.length(), maxS = tuning.vr.moveSpeed * K * 2.2; if (sl > maxS) swimV.multiplyScalar(maxS / sl);
-    rig.position.x += swimV.x * dt; rig.position.z += swimV.z * dt; alt = Math.max(0, Math.min(tuning.player.swimCeil, alt + swimV.y * dt)); if (alt <= 0 && swimV.y < 0) swimV.y = 0;
+    rig.position.x += swimV.x * dt; rig.position.z += swimV.z * dt; alt = Math.max(0, Math.min(M.swimCeil ?? tuning.player.swimCeil, alt + swimV.y * dt)); if (alt <= 0 && swimV.y < 0) swimV.y = 0;
     for (let i = 0; i < 2; i++) if (gripOn[i]) hands[i].grip.getWorldPosition(prevHand[i]);   // 体が動いたぶんを差し引く
     // 足場は急に上下させない（床の起伏＋泳いだ高さ＋目の高さの設定）
     const wantY = stage.floorHeight(rig.position.x, rig.position.z) + alt + eyeLift() * K;
@@ -218,15 +224,17 @@ async function main() {
     if (started) {
       const near = (p: THREE.Vector3, r: number) => Math.hypot(p.x - rig.position.x, p.z - rig.position.z) < r && stage.health.sample(p.x, p.z) > 0.55;
       const enq = (id: string, at: THREE.Vector3 | null) => { if (!known.has(id) && !queue.some((x) => x.id === id)) queue.push({ id, at }); };
-      if (t > 12) enq('vitreous', null); if (near(stage.points.nucleus, 20)) enq('endothelial', stage.points.nucleus); if (near(stage.points.pericyte, 20)) enq('pericyte', stage.points.pericyte);
-      if (stage.flowing() > 0.12) enq('rbc', stage.points.rbc().clone());
+      for (const e of stage.encounters(rig.position, t, t * 0.8)) enq(e.id, e.at);
       if (cardOn) { cardT -= dt; if (cardT <= 0) { cardP.mesh.visible = false; cardOn = false; } } else if (queue.length && !firing && subT <= 0) { const x = queue.shift()!; showCard(x.id, x.at); }
     }
     camera.getWorldPosition(v); camera.getWorldDirection(d);
     if (subT > 0) { subT -= dt; hit.copy(v).addScaledVector(d, 1.7 * K); hit.y -= 0.55 * K; subP.mesh.position.lerp(hit, Math.min(1, dt * 2)); subP.mesh.lookAt(v); if (subT <= 0) subP.mesh.visible = false; }
     drawPatient(prog);
     if (!finished && prog >= 1) {
-      finished = true; stage.health.setAll(1); audio.resolve(); say('血流が戻りました。目の前の窓は、患者の視界です。ぼやけていた光が、形を結びはじめました。', 12);
+      finished = true; stage.health.setAll(1); audio.resolve();
+      const next = ZONES[zi + 1]; writeSave({ done: [...new Set([...(loadSave().done ?? []), M.id])], zone: next ? next.id : M.id });
+      say(`${M.done}目の前の窓は、患者の視界です。` + (next ? `次は ${next.name}。VR を終えて「次の区域へ」を押してください。` : 'ステージ1の治療が終わりました。'), 14);
+      if (next) { const b = document.createElement('button'); b.className = 'btn'; b.textContent = `次の区域へ（${next.name}）`; b.onclick = () => (location.href = `${location.pathname}?zone=${next.id}`); $('vrui').appendChild(b); }
       d.y = 0; d.normalize(); patP.mesh.position.copy(v).addScaledVector(d, 1.8 * K); patP.mesh.position.y += 0.1 * K; patP.mesh.lookAt(v); patP.mesh.scale.setScalar(1.6); patP.mesh.visible = true;   // プレイヤーは動かさず、窓を目の前に出す
     }
     audio.update(mean, stage.flowing(), firing, stage.u.heartPhase.value as number);

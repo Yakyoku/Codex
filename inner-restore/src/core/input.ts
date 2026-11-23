@@ -2,7 +2,7 @@
 export type InputKind = 'kbm' | 'pad' | 'touch';
 export class Input {
   moveX = 0; moveY = 0; lookDX = 0; lookDY = 0; fire = false; scan = false; dash = false; swimUp = false; swimDown = false;
-  kind: InputKind = 'kbm'; locked = false;
+  kind: InputKind = 'kbm'; locked = false; blocked = false;   // blocked：図鑑の3Dビューアなどで、画面の操作をゲームに渡さない
   onAction: (a: 'skip' | 'replay' | 'atlas' | 'pause' | 'view') => void = () => {};
   onKind: (k: InputKind) => void = () => {};
   private keys = new Set<string>(); private mouseFire = false; private mouseScan = false;
@@ -20,6 +20,7 @@ export class Input {
     addEventListener('keyup', (e) => this.keys.delete(e.code));
     addEventListener('blur', () => { this.keys.clear(); this.mouseFire = this.mouseScan = false; });
     el.addEventListener('mousedown', (e) => {
+      if (this.blocked) return;
       this.setKind('kbm');
       if (!this.locked) { el.requestPointerLock?.(); return; }
       if (e.button === 0) this.mouseFire = true; if (e.button === 2) this.mouseScan = true;
