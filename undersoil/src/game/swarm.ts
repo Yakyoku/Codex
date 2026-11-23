@@ -5,7 +5,7 @@ import { float, vec3, instancedBufferAttribute, time, sin, cos, positionLocal, m
 import type { Collider } from './world';
 import { makeRng } from './rng';
 
-export interface Swarm { mesh: THREE.InstancedMesh; count: number; sync(microbesOfCell: (cell: number) => number): void; }
+export interface Swarm { mesh: THREE.InstancedMesh; count: number; sync(microbesOfCell: (cell: number) => number): void; find(from: THREE.Vector3, fwd: THREE.Vector3): { p: THREE.Vector3; r: number } | null; }
 
 /** 1 単位 = 10 µm。枯草菌は太さ約 0.8 µm × 長さ 2〜3 µm → 0.08 × 0.25 単位 */
 export function buildSwarm(colliders: Collider[], cellOf: (p: THREE.Vector3) => number, nearPath: (p: THREE.Vector3) => number, count: number): Swarm {
@@ -51,5 +51,17 @@ export function buildSwarm(colliders: Collider[], cellOf: (p: THREE.Vector3) => 
   m.roughnessNode = float(0.3); m.metalnessNode = float(0);
   void hash; void instanceIndex;
   const mesh = new THREE.InstancedMesh(geo, m, n2); mesh.name = 'swarm'; mesh.frustumCulled = false;
-  return { mesh, count: n2, sync(w) { const a = liveAttr.array as Float32Array; let ch = false; for (let i = 0; i < n2; i++) { const target = w(cells[i]) > (i % 97) / 97 * 0.9 + 0.05 ? 1 : 0; if (a[i] !== target) { a[i] += Math.sign(target - a[i]) * 0.2; if (Math.abs(a[i] - target) < 0.2) a[i] = target; ch = true; } } if (ch) liveAttr.needsUpdate = true; } };
+  const liveArr = liveAttr.array as Float32Array;
+  const find = (from: THREE.Vector3, fwd: THREE.Vector3) => {
+    // 生きている細菌が多く集まっている所（半径 1.5 単位＝15 µm に何個あるか）を、カメラの前から選ぶ
+    const c = new THREE.Vector3(), d = new THREE.Vector3(); let best: THREE.Vector3 | null = null, bs = 0;
+    for (let i = 0; i < n2; i += 7) {
+      if (liveArr[i] < 0.5) continue; c.set(pos[i * 3], pos[i * 3 + 1], pos[i * 3 + 2]); d.subVectors(c, from); const dist = d.length();
+      if (dist < 3 || dist > 22 || d.dot(fwd) / dist < 0.85) continue;
+      let k = 0; for (let j = 0; j < n2; j += 3) if (liveArr[j] > 0.5 && (pos[j * 3] - c.x) ** 2 + (pos[j * 3 + 1] - c.y) ** 2 + (pos[j * 3 + 2] - c.z) ** 2 < 2.25) k++;
+      const sc = k / (1 + dist * 0.05); if (sc > bs) { bs = sc; best = c.clone(); }
+    }
+    return best ? { p: best, r: 1.6 } : null;
+  };
+  return { mesh, count: n2, find, sync(w) { const a = liveAttr.array as Float32Array; let ch = false; for (let i = 0; i < n2; i++) { const target = w(cells[i]) > (i % 97) / 97 * 0.9 + 0.05 ? 1 : 0; if (a[i] !== target) { a[i] += Math.sign(target - a[i]) * 0.2; if (Math.abs(a[i] - target) < 0.2) a[i] = target; ch = true; } } if (ch) liveAttr.needsUpdate = true; } };
 }

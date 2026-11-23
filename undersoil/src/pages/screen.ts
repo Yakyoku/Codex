@@ -13,6 +13,8 @@ import { buildSurface, type Surface } from '../game/surface';
 import { makeEncounters } from '../game/encounters';
 import { SPECIES } from '../game/species';
 import { showCard } from '../ui/card';
+import { makePointer } from '../ui/pointer';
+import type { Target } from '../game/encounters';
 import { mountSettings, savedTier } from '../ui/settings';
 import { createAudio } from '../audio/engine';
 import { makeHud } from './hud';
@@ -84,22 +86,33 @@ async function main() {
   ($('loadBar') as HTMLElement).style.width = '100%';
   const begin = () => { started = true; audio.start(); setTimeout(() => $('loading').classList.add('hide'), 250); stopFacts(); if (wetQ === null && !testing) setTimeout(() => demo.start(), 2500); };
   // 確認用：?card=<id> で紹介カードをすぐ出す
-  const cardQ = Q.get('card'); if (cardQ && SPECIES[cardQ]) setTimeout(() => showCard(SPECIES[cardQ], { narration: false, holdMs: 600000 }), 50);
+  const cardQ = Q.get('card'); if (cardQ && SPECIES[cardQ]) setTimeout(() => { const T: Record<string, () => Target> = { sand: grain('quartz'), aggregate: grain('aggregate'), humus: grain('humus'), clay: grain('clay'), 'water-film': bridge, 'bacillus-subtilis': bacteria, 'pseudomonas-fluorescens': bacteria, colpoda, 'trifolium-repens': seedling }; const t = T[cardQ]; showCard(SPECIES[cardQ], { narration: false, holdMs: 600000, pointing: !!t }); pointer.show(t ?? null); }, 50);
   if (testing) begin(); else { const b = $('start') as HTMLButtonElement; b.hidden = false; b.addEventListener('click', begin, { once: true }); }
 
   // 出会いの順番（M1 の自動の流れ用。M3 で、プレイヤーの位置と行動に結び付ける）
   const cellW = (i: number) => world.grid.cells[i].water, cellM = (i: number) => world.grid.cells[i].microbes;
+  // 紹介カードが指し示す相手（カメラの前にあるもの）
+  const pointer = makePointer(camera);
+  const fwd = () => new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+  const grain = (k: 'quartz' | 'aggregate' | 'humus' | 'clay') => (): Target => world.find(k, camera.position, fwd());
+  const bridge = (): Target => { let best: THREE.Vector3 | null = null, bs = 0; const f = fwd(), d = new THREE.Vector3();
+    game.bridges.centers.forEach((c, i) => { if (world.grid.cells[game.bridges.cells[i]].water < 0.3) return; d.subVectors(c, camera.position); const dist = d.length(); if (dist < 3 || dist > 30) return; const cs = d.dot(f) / dist; if (cs < 0.85) return; const sc = cs / (1 + dist * 0.06); if (sc > bs) { bs = sc; best = c; } });
+    return best ? { p: (best as THREE.Vector3).clone(), r: 2.5 } : null; };
+  const bacteria = (): Target => game.swarm.find(camera.position, fwd());
+  const colpoda = (): Target => { const p = game.creatures.nearest(camera.position); return p ? { p: p.clone(), r: 4.5 } : null; };
+  const seedling = (): Target => mode === 'surface' ? { p: new THREE.Vector3(0.3, surface.groundY + 1.2, 0.2), r: 3.2 } : null;
+  let focusT: THREE.Vector3 | null = null;
   const enc = makeEncounters([
-    { id: 'sand', when: () => mode === 'soil' && started },
-    { id: 'aggregate', when: () => mode === 'soil' && started },
-    { id: 'water-film', when: () => mode === 'soil' && cellW(1) > 0.4 },
-    { id: 'bacillus-subtilis', when: () => mode === 'soil' && cellM(2) > 0.3 },
-    { id: 'humus', when: () => mode === 'soil' && cellW(4) > 0.4 },
-    { id: 'pseudomonas-fluorescens', when: () => mode === 'soil' && cellM(6) > 0.3 },
-    { id: 'colpoda', when: () => mode === 'soil' && game.creatures.anyActive() },
-    { id: 'clay', when: () => mode === 'soil' && cellW(8) > 0.4 },
-    { id: 'trifolium-repens', when: () => mode === 'surface' && surface.growth > 0.75 },
-  ], { gapSec: 4, onShow: () => audio.chime() });
+    { id: 'sand', when: () => mode === 'soil' && started && !!grain('quartz')(), target: grain('quartz') },
+    { id: 'aggregate', when: () => mode === 'soil' && started && !!grain('aggregate')(), target: grain('aggregate') },
+    { id: 'water-film', when: () => mode === 'soil' && cellW(1) > 0.4 && !!bridge(), target: bridge },
+    { id: 'bacillus-subtilis', when: () => mode === 'soil' && cellM(2) > 0.3 && !!bacteria(), target: bacteria },
+    { id: 'humus', when: () => mode === 'soil' && cellW(4) > 0.4 && !!grain('humus')(), target: grain('humus') },
+    { id: 'pseudomonas-fluorescens', when: () => mode === 'soil' && cellM(6) > 0.3 && !!bacteria(), target: bacteria },
+    { id: 'colpoda', when: () => mode === 'soil' && game.creatures.anyActive(), target: colpoda },
+    { id: 'clay', when: () => mode === 'soil' && cellW(8) > 0.4 && !!grain('clay')(), target: grain('clay') },
+    { id: 'trifolium-repens', when: () => mode === 'surface' && surface.growth > 0.75, target: seedling },
+  ], { gapSec: 4, onShow: (_id, t) => { audio.chime(); pointer.show(t); }, onHide: () => { pointer.hide(); focusT = null; } });
   $('water').addEventListener('click', () => demo.start());
   $('dry').addEventListener('click', () => demo.dry());
   $('sprout').addEventListener('click', () => switchTo(mode === 'soil' ? 'surface' : 'soil'));
@@ -131,6 +144,7 @@ async function main() {
     const t = fixedT !== null ? Number(fixedT) : now / 1000; const dt = last ? Math.min(0.1, (now - last) / 1000) : 0; last = now;
     if (dbg) { const v = dbg.split(',').map(Number); camera.position.set(v[0], v[1], v[2]); camera.lookAt(v[3], v[4], v[5]); }
     else if (camT !== null) placeOnPath(Number(camT));
+    else if (touring && pointer.focus()) { const f = pointer.focus()!; focusT = focusT ? focusT.lerp(f, 1 - Math.exp(-dt * 2)) : look.clone(); const q0 = camera.quaternion.clone(); camera.lookAt(focusT); camera.quaternion.slerp(q0, Math.exp(-dt * 1.5)); }
     else if (touring) { tourU = (tourU + dt * 0.012) % 1; placeOnPath(0.02 + 0.66 * (0.5 - 0.5 * Math.cos(tourU * Math.PI * 2))); /* 奥の種のまわり（まだ作っていない）へは行かない */ }
     else controls.update(dt);
     if (wetQ === null) { demo.update(dt); game.update(dt, t); }
@@ -140,6 +154,7 @@ async function main() {
       if (postSurface) postSurface.render(); else renderer.render(surface.scene, surface.camera);
     } else if (post) post.render(); else renderer.render(scene, camera);
     if (!testing) enc.update(dt);
+    pointer.update(dt);
     audio.setMode(mode); audio.setVitality(world.grid.mean()); audio.setGrowth(surface.growth); audio.update(dt);
     hud.tick(now); frames++;
     const vit = Math.round(world.grid.mean() * 100);

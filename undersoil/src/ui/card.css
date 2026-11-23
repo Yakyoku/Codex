@@ -19,3 +19,5 @@
 .card-foot .btn { font-size: .72em; padding: .45em 1.1em; min-height: 0; background: transparent; white-space: nowrap; flex: 0 0 auto; }
 .card-foot .life { height: 1px; background: rgba(239, 230, 216, .35); display: block; flex: 1 1 auto; max-width: 100%; }
 @media (max-width: 720px) { .card { bottom: 178px; font-size: 13px; } }
+.card-where { display: none; font-size: .68em; color: var(--accent); opacity: .85; margin: -.15em 0 .3em; letter-spacing: .08em; }
+.card.pointing .card-where { display: block; }

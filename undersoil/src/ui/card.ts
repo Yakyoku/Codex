@@ -9,7 +9,7 @@ let el: HTMLElement | null = null; let timer = 0; let onDone: (() => void) | nul
 function root() {
   if (el) return el;
   el = document.createElement('div'); el.className = 'card'; el.setAttribute('role', 'status');
-  el.innerHTML = '<div class="card-tag">はじめての出会い</div><h2></h2><div class="sci"></div><div class="size"><b></b><span></span></div><p></p><div class="card-foot"><button class="btn skip">次へ</button><i class="life"></i></div>';
+  el.innerHTML = '<div class="card-tag">はじめての出会い</div><div class="card-where">◯ 画面の印で囲んだもの</div><h2></h2><div class="sci"></div><div class="size"><b></b><span></span></div><p></p><div class="card-foot"><button class="btn skip">次へ</button><i class="life"></i></div>';
   document.body.append(el);
   el.querySelector('.skip')!.addEventListener('click', () => hideCard());
   addEventListener('keydown', (e) => { if (e.code === 'Enter' && el!.classList.contains('show')) hideCard(); });
@@ -24,11 +24,12 @@ function narrate(text: string) {
     synth.speak(u);
   } catch { /* 読み上げが使えない機器では字幕だけ */ }
 }
-export function showCard(s: Species, opts: { narration?: boolean; done?: () => void; holdMs?: number } = {}) {
+export function showCard(s: Species, opts: { narration?: boolean; done?: () => void; holdMs?: number; pointing?: boolean } = {}) {
   const mode = introMode(); if (mode === 'off') { opts.done?.(); return; }
   const r = root(); onDone = opts.done ?? null;
   r.querySelector('.card-tag')!.textContent = s.kind === 'organism' ? 'はじめての出会い' : '土のしくみ';
   r.querySelector('h2')!.textContent = s.title ?? s.nameJa;
+  r.classList.toggle('pointing', !!opts.pointing);
   r.querySelector('.sci')!.textContent = s.sci ?? '';
   r.querySelector('.size b')!.textContent = s.size; r.querySelector('.size span')!.textContent = s.sizeCompare;
   r.querySelector('p')!.textContent = mode === 'name' ? '' : s.intro;

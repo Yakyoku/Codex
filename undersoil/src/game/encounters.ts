@@ -2,8 +2,9 @@
 import { SPECIES } from './species';
 import { showCard } from '../ui/card';
 
-export interface Encounter { id: string; when: () => boolean; }
-export function makeEncounters(list: Encounter[], opts: { calm?: () => boolean; gapSec?: number; onShow?: (id: string) => void } = {}) {
+export type Target = { p: import('three').Vector3; r: number } | null;
+export interface Encounter { id: string; when: () => boolean; /** 画面のどれを説明しているかを示すための、世界の中の位置と大きさ */ target?: () => Target; }
+export function makeEncounters(list: Encounter[], opts: { calm?: () => boolean; gapSec?: number; onShow?: (id: string, target: (() => Target) | null) => void; onHide?: () => void } = {}) {
   const seen = new Set<string>(); let busy = false, wait = 2;
   return {
     seen,
@@ -11,8 +12,8 @@ export function makeEncounters(list: Encounter[], opts: { calm?: () => boolean; 
       if (busy) return; wait -= dt; if (wait > 0) return;
       if (opts.calm && !opts.calm()) return; // 緊迫した場面の最中には出さない
       const next = list.find((e) => !seen.has(e.id) && SPECIES[e.id] && e.when()); if (!next) return;
-      seen.add(next.id); busy = true; opts.onShow?.(next.id);
-      showCard(SPECIES[next.id], { done: () => { busy = false; wait = opts.gapSec ?? 3; } });
+      seen.add(next.id); busy = true; opts.onShow?.(next.id, next.target ?? null);
+      showCard(SPECIES[next.id], { pointing: !!next.target, done: () => { busy = false; wait = opts.gapSec ?? 3; opts.onHide?.(); } });
     },
   };
 }

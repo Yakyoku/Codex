@@ -17,6 +17,8 @@ export interface World {
   /** 区画の状態（水・活力）を粒の見た目に反映する */
   syncWetness(): void;
   stats: { instances: number; triangles: number; drawCalls: number };
+  /** カメラの前にある、その種類の粒（紹介カードで指し示すため） */
+  find(kind: GrainKind, from: THREE.Vector3, fwd: THREE.Vector3): { p: THREE.Vector3; r: number } | null;
 }
 
 export async function buildWorld(base: string, opts: { grainLod: 0 | 1; density: number; cheap?: boolean }): Promise<World> {
@@ -102,6 +104,16 @@ export async function buildWorld(base: string, opts: { grainLod: 0 | 1; density:
   const world: World = {
     group, samples, distToPath: (p) => nearest(p).d, path, colliders, grid, cellCount: N, stats,
     cellAt: (p) => cellOfSample(nearest(p).i), cellCenter: (i) => centers[i],
+    find(kind, from, fwd) {
+      let best: Placement | null = null, bs = -1; const d = new THREE.Vector3();
+      for (const pl of placements) {
+        if (kindOf(pl.variant) !== kind) continue;
+        d.subVectors(pl.pos, from); const dist = d.length(), r = Math.max(pl.scale.x, pl.scale.y, pl.scale.z);
+        if (dist < r + 1.5 || dist > 45) continue; const cos = d.dot(fwd) / dist; if (cos < 0.82) continue;
+        const sc = (cos - 0.82) * Math.min(1, r / Math.max(0.5, dist * 0.08)) / (1 + dist * 0.04); if (sc > bs) { bs = sc; best = pl; }
+      }
+      return best ? { p: best.pos.clone(), r: Math.max(best.scale.x, best.scale.y, best.scale.z) } : null;
+    },
     syncWetness() {
       for (const b of batches) {
         const a = b.wet.array as Float32Array; let changed = false;

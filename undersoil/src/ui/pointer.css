@@ -1,0 +1,7 @@
+svg.pointer { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9; opacity: 0; transition: opacity .5s ease; }
+svg.pointer.on { opacity: 1; }
+svg.pointer .pr { fill: none; stroke: var(--accent); stroke-width: 1.6; filter: drop-shadow(0 0 4px rgba(0,0,0,.8)); }
+svg.pointer .pr2 { fill: none; stroke: rgba(217, 164, 91, .45); stroke-width: 1; stroke-dasharray: 3 6; }
+svg.pointer .pt { stroke: var(--accent); stroke-width: 1.6; }
+svg.pointer .pl { fill: none; stroke: rgba(217, 164, 91, .85); stroke-width: 1.2; filter: drop-shadow(0 0 3px rgba(0,0,0,.9)); }
+svg.pointer .pa { fill: var(--accent); filter: drop-shadow(0 0 4px rgba(0,0,0,.8)); }

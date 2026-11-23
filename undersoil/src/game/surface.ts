@@ -9,7 +9,7 @@ import { buildLitter } from './litter';
 import { buildGround, makeHeight } from './ground';
 import { buildSand, buildSpill } from './sand';
 
-export interface Surface { scene: THREE.Scene; camera: THREE.PerspectiveCamera; focusDistance: { value: number }; setGrowth(g: number): void; update(dt: number, t: number): void; growth: number; }
+export interface Surface { groundY: number; scene: THREE.Scene; camera: THREE.PerspectiveCamera; focusDistance: { value: number }; setGrowth(g: number): void; update(dt: number, t: number): void; growth: number; }
 const STAGES = ['S0_seed', 'S1_radicle', 'S2_hook', 'S3_lift', 'S4_half', 'S5_open'];
 const LEAF_STAGES = ['L0_none', 'L1_bud', 'L2_rise'];
 /** 種は地表から 3 mm 下（シロツメクサは浅くまく） */
@@ -171,7 +171,7 @@ export async function buildSurface(renderer: THREE.WebGPURenderer, base: string,
   scene.add(spill.group); const dq = new URLSearchParams(location.search); if (dq.has('nospill')) spill.group.visible = false; if (dq.has('noplant')) holder.visible = false;
   const focusDistance = uniform(16);
   const surf: Surface = {
-    scene, camera, growth: 0, focusDistance,
+    scene, camera, growth: 0, focusDistance, groundY: gy,
     setGrowth(g) {
       surf.growth = g = Math.max(0, Math.min(1, g));
       pose(g); spill.update(g);
