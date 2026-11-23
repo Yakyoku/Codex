@@ -109,3 +109,19 @@ body.vb-off voice-buddy, body.vb-off [data-voice-buddy] { display:none !importan
 #patient.full { transition:none; animation:pv-in .9s ease-out both; }
 @keyframes pv-in { from { opacity:0; } to { opacity:1; } }
 #errline { position:fixed; left:max(12px,env(safe-area-inset-left)); right:40%; bottom:max(6px,env(safe-area-inset-bottom)); color:#ffb4a0; font-size:12px; line-height:1.4; z-index:60; pointer-events:none; text-shadow:0 1px 2px #000; }
+
+/* タイトルのメニュー */
+#tmenu { display:flex; flex-direction:column; align-items:center; gap:.7em; margin-top:1em; } #tmenu .btn { min-width:13em; }
+/* 全身マップ（人体はうしろのキャンバスに描く） */
+#hubui { position:fixed; inset:0; z-index:35; pointer-events:none; color:#e9eef2; }
+#hubui .hh { position:absolute; left:max(18px,env(safe-area-inset-left)); top:max(16px,env(safe-area-inset-top)); max-width:min(34em,60vw); }
+#hubui .hh b { display:block; font-size:clamp(22px,3vw,34px); font-weight:300; letter-spacing:.2em; } #hubui .hh span { color:#9fb3bc; font-size:clamp(13px,1.4vw,16px); line-height:1.6; }
+#hubui .vit { position:absolute; left:max(18px,env(safe-area-inset-left)); bottom:max(70px,calc(env(safe-area-inset-bottom) + 56px)); background:rgba(8,14,18,.7); border-left:3px solid #7fe0d2; padding:.7em 1em; font-size:clamp(14px,1.5vw,17px); line-height:1.8; }
+#hubui .vit b { display:inline-block; min-width:7.5em; color:#9fb3bc; font-weight:400; } #hubui .vit .ok { color:#ffc890; } #hubui .vit small { color:#78909a; }
+#hubui .org { position:absolute; right:max(18px,env(safe-area-inset-right)); top:50%; transform:translateY(-50%); width:min(24em,40vw); background:rgba(8,14,18,.82); border:1px solid #ffffff1c; padding:1em 1.1em; pointer-events:auto; }
+#hubui .org h3 { margin:0 0 .3em; font-weight:500; font-size:1.4em; } #hubui .org p { color:#b7c6cc; font-size:.92em; line-height:1.7; }
+#hubui .zl { display:flex; flex-direction:column; gap:.5em; } #hubui .zl .btn { text-align:left; font-size:.92em; } #hubui .zl .done::after { content:'　✓ 治療済み'; color:#ffc890; }
+#hubui #h-close { position:absolute; right:max(18px,env(safe-area-inset-right)); top:max(16px,env(safe-area-inset-top)); pointer-events:auto; }
+#hubui .hn { position:absolute; left:0; right:0; bottom:max(18px,env(safe-area-inset-bottom)); text-align:center; color:#9fb3bc; font-size:clamp(13px,1.4vw,16px); }
+body.hubbing #hud, body.hubbing #subs, body.hubbing #hint, body.hubbing #topbtns, body.hubbing #patient, body.hubbing #dx, body.hubbing #tags, body.hubbing #reticle, body.hubbing #card, body.hubbing #touch, body.hubbing #title { visibility:hidden; }
+@media (max-width:700px) { #hubui .org { top:auto; bottom:max(60px,env(safe-area-inset-bottom)); transform:none; width:auto; left:12px; right:12px; } #hubui .vit { display:none; } }

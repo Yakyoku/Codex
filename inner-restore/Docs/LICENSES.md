@@ -1,6 +1,6 @@
 # 素材とライブラリの出所・ライセンス
 
-## 素材（すべてこのリポジトリの中で生成。外部の写真・テクスチャ・音・フォントは使っていない）
+## 素材（フォント以外は、すべてこのリポジトリの中で生成）
 | 素材 | 作り方 |
 |---|---|
 | 3D モデル（赤血球、網膜の区画） | `tools/blender/*.py`（bpy）で生成 |
@@ -8,7 +8,7 @@
 | 患者の視界の絵 | `tools/blender/make_patient_view.py`（Cycles で描画。実在の場所・人物ではない） |
 | 音 | 実行時に Web Audio API で合成（`src/core/audio.ts`） |
 | ナレーション（仮） | 端末の読み上げ機能（音声データは同梱していない） |
-| フォント | 端末に入っているフォントを使用（同梱なし） |
+| フォント | Noto Sans JP（Google Fonts、SIL Open Font License 1.1、`public/static/fonts/OFL.txt`）。ゲームで使う文字だけを切り出して同梱（`tools/make_font.py`） |
 
 ## 外部の素材
 | 素材 | 出所 | ライセンス | 使い方 |
@@ -25,3 +25,5 @@
 | bpy（Blender） | 5.3.0 | GPL | モデルの生成に使用（同梱しない。出力したモデルに GPL は及ばない） |
 | iwer | 2.8.0 | MIT | VR の模擬による確認（同梱しない） |
 | Playwright | 1.63 | Apache-2.0 | 画面の確認（同梱しない） |
+
+| 音声会話の先生 | voice-buddy（持ち主の別のサイト https://voice-buddy-yk.netlify.app から実行時に読み込む）。持ち主の指示による、指示書の「外部から読み込まない」の例外 |

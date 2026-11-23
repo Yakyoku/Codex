@@ -12,6 +12,7 @@ import tuning from '../data/tuning.json';
 import { haptic } from '../core/feel';
 import { speak, voiceSettings } from '../core/voice';
 import { Diagnosis } from '../game/diagnosis';
+import { buildHubModel } from '../game/hub';
 
 const W = window as unknown as Record<string, unknown>;
 const errors: string[] = (W.__irErrors = []) as string[];
@@ -34,9 +35,10 @@ class Panel {
   }
   clear(bg = 'rgba(6,11,13,0.86)') { const c = this.ctx; c.clearRect(0, 0, this.w, this.h); c.fillStyle = bg; c.fillRect(0, 0, this.w, this.h); }
 }
-const FONT = '"Hiragino Sans","Yu Gothic UI","Noto Sans JP","Noto Sans CJK JP",sans-serif';
+const FONT = '"IRJP","Hiragino Sans","Yu Gothic UI","Noto Sans JP","Noto Sans CJK JP",sans-serif';
 
 async function main() {
+  try { await document.fonts?.load('40px IRJP'); } catch { /* 端末のフォントで描く */ }
   const canvas = $('view') as unknown as HTMLCanvasElement, btn = $('entervr') as HTMLButtonElement, msg = $('vrmsg');
   const device = detectDevice();
   const { renderer, backendLabel } = await createRenderer(canvas, { xr: true });
@@ -150,6 +152,8 @@ async function main() {
 
   const v = new THREE.Vector3(), d = new THREE.Vector3(), hit = new THREE.Vector3(), q = new THREE.Quaternion(), vel = new THREE.Vector3();
   let snapReady = true, stepReady = true, finished = false, wristT = 0, scanOn = false, lastProg = -1;
+  // 区域を選ぶ（画面版と同じ進み具合を使う）
+  { const zs = $('v-zone') as HTMLSelectElement; zs.value = Qv.get('zone') ?? ''; zs.onchange = () => { location.href = `${location.pathname}${zs.value ? `?zone=${zs.value}` : ''}`; }; }
   const moveMode = () => ($('v-move') as HTMLSelectElement).value, vigMax = () => Number(($('v-vig') as HTMLSelectElement).value);
   // 酔いにくさの設定は、次に開いたときも同じにする
   for (const id of ['v-intense', 'v-move', 'v-vig', 'v-turn', 'v-eye', 'v-swim']) {
@@ -165,6 +169,7 @@ async function main() {
   const guide = new THREE.SpotLight(0xffe6c0, 0, 30 * K, 0.35, 0.6, 1.2); guide.position.set(0, 0, -0.05); guide.target.position.set(0, 0, -1);
   hands[0].ray.add(guide, guide.target);
   const diag = new Diagnosis(stage.health, stage.size as [number, number], stage.floorHeight, (x: number, z: number) => stage.causeAt(x, z), 0.8, stage.plugs); stage.scene.add(diag.group);
+  let hubVR: Awaited<ReturnType<typeof buildHubModel>> | null = null; const hq = new THREE.Quaternion();
   let wasHit = false, scanWas = false, diagT = 0, lastStep = -1;
   stage.setOnPlug((i, kind) => {
     if (kind === 'hit' || kind === 'pulse') { if (kind === 'pulse') haptic(srcOf(left), 0.4, 200); return; }
@@ -247,9 +252,17 @@ async function main() {
       finished = true; stage.health.setAll(1); audio.resolve();
       const next = ZONES[zi + 1]; writeSave({ done: [...new Set([...(loadSave().done ?? []), M.id])], zone: next ? next.id : M.id });
       say(`${M.done}目の前の窓は、患者の視界です。` + (next ? `次は ${next.name}。VR を終えて「次の区域へ」を押してください。` : 'ステージ1の治療が終わりました。'), 14);
+      // 全身マップ：目の前に、立体の人体を浮かべる（治した器官が脈打つ）。のぞき込める大きさで
+      void buildHubModel(loadSave()).then((hm) => {
+        const side = new THREE.Vector3(d.z, 0, -d.x);
+        hm.group.scale.setScalar(0.55 * K); hm.group.position.copy(v).addScaledVector(d, 1.3 * K).addScaledVector(side, 0.9 * K); hm.group.position.y -= 0.9 * K;
+        hm.group.lookAt(v.x, hm.group.position.y, v.z); stage.scene.add(hm.group);
+        hubVR = hm;   // 動きは毎コマの更新で（VR 中は画面の requestAnimationFrame が動かないため）
+      });
       if (next) { const b = document.createElement('button'); b.className = 'btn'; b.textContent = `次の区域へ（${next.name}）`; b.onclick = () => (location.href = `${location.pathname}?zone=${next.id}`); $('vrui').appendChild(b); }
       d.y = 0; d.normalize(); patP.mesh.position.copy(v).addScaledVector(d, 1.8 * K); patP.mesh.position.y += 0.1 * K; patP.mesh.lookAt(v); patP.mesh.scale.setScalar(1.6); patP.mesh.visible = true;   // プレイヤーは動かさず、窓を目の前に出す
     }
+    if (hubVR) { hubVR.t.value += dt; camera.getWorldQuaternion(hq); for (const m of hubVR.marks) m.mesh.quaternion.copy(hq); hubVR.group.rotation.y += dt * 0.15; }
     audio.update(mean, stage.flowing(), firing, stage.u.heartPhase.value as number);
     renderer.render(stage.scene, camera);
     hud.tick(); W.__irFrames = ((W.__irFrames as number) || 0) + 1;

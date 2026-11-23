@@ -1,5 +1,7 @@
+/* 同梱フォント：Noto Sans JP（SIL OFL 1.1）からゲームで使う文字だけを切り出したもの（tools/make_font.py） */
+@font-face { font-family:"IRJP"; src:url("/static/fonts/ir-jp.woff2") format("woff2"); font-weight:300 600; font-display:swap; }
 :root { --ink:#e9eef2; --dim:#8fa3ad; --acc:#7fe0d2; --bg:#07090b; --warn:#f2b36b;
-  font-family: "Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic UI","Yu Gothic","Noto Sans JP","Meiryo",system-ui,sans-serif; }
+  font-family: "IRJP","Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic UI","Yu Gothic","Noto Sans JP","Meiryo",system-ui,sans-serif; }
 * { box-sizing: border-box; }
 html, body { margin:0; height:100%; background:var(--bg); color:var(--ink); overflow:hidden; -webkit-text-size-adjust:100%; }
 canvas#view { position:fixed; inset:0; width:100%; height:100%; display:block; touch-action:none; }

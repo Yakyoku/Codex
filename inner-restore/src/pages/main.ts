@@ -18,6 +18,8 @@ import { tunePanel } from '../game/tune';
 import { bindSettings, applyVB } from '../game/settings';
 import { voiceSettings, setVoice } from '../core/voice';
 import { AtlasViewer, hasModel } from '../game/viewer';
+import { HubView, organs, vitals } from '../game/hub';
+import { resetSave } from '../core/save';
 import { buildUI, renderAtlas, ATLAS, TIPS } from '../game/ui';
 import tuning from '../data/tuning.json';
 
@@ -156,6 +158,50 @@ async function main() {
   const openViewer = (id: string) => { const e = ATLAS.find((x) => x.id === id)!; $('viewer').classList.remove('hide'); $('atlas').classList.add('hide'); input.blocked = true; document.body.classList.add('viewing');
     ($('viewer').querySelector('.vt b') as HTMLElement).textContent = e.ja; ($('viewer').querySelector('.vt span') as HTMLElement).textContent = `${e.en}　${e.size}（${e.compare}）`; void viewer.show(id); };
   $('v-close').onclick = () => { viewer.hide(); input.blocked = false; document.body.classList.remove('viewing'); $('viewer').classList.add('hide'); openAtlas(true); };
+  // ---- 全身マップ（ハブ）----
+  const hub = new HubView(renderer, canvas); let hubWasPaused = false;
+  const hubEl = $('hubui'), orgEl = hubEl.querySelector('.org') as HTMLElement;
+  const openHub = async () => {
+    hubWasPaused = paused; paused = true; input.blocked = true; document.exitPointerLock?.();
+    document.body.classList.add('hubbing'); hubEl.classList.remove('hide'); orgEl.classList.add('hide'); $('done').classList.add('hide');
+    const sv = loadSave();
+    (hubEl.querySelector('.vit') as HTMLElement).innerHTML = vitals(sv).map((x) => `<div><b>${x.k}</b><span class="${x.ok ? 'ok' : ''}">${x.v}</span></div>`).join('') + '<small>数値はゲーム上の目安です</small>';
+    await hub.open(sv); hub.reset();
+  };
+  const closeHub = () => { hub.close(); hubEl.classList.add('hide'); document.body.classList.remove('hubbing'); input.blocked = false; paused = hubWasPaused && started; };
+  hub.onPick = async (id) => {
+    const j = await fetch('/static/data/hub.json').then((r) => r.json()); const o = organs(j.joints).find((x) => x.id === id)!; const sv = loadSave();
+    hub.focus(id); orgEl.classList.remove('hide');
+    orgEl.querySelector('h3')!.textContent = `${o.ja}（ステージ${o.stage}）`;
+    (orgEl.querySelector('p') as HTMLElement).textContent = o.ready ? o.note : `${o.note}。（これから作るステージです）`;
+    const zl = orgEl.querySelector('.zl') as HTMLElement;
+    zl.innerHTML = o.ready ? ZONES.map((z) => `<button class="btn ${sv.done?.includes(z.id) ? 'done' : ''}" data-z="${z.id}">${z.name}</button>`).join('') : '';
+    zl.querySelectorAll<HTMLButtonElement>('[data-z]').forEach((b) => (b.onclick = () => {
+      const zid = b.dataset.z!;
+      if (zid === M.id && !finished) { closeHub(); if (!started) begin(); return; }
+      location.href = `${location.pathname}?zone=${zid}${zid === 'retina' ? '&noentry' : ''}`;
+    }));
+  };
+  W.__hubPick = hub.onPick;
+  $('h-close').onclick = () => { closeHub(); if (finished) $('done').classList.remove('hide'); };
+  $('b-hub').onclick = () => void openHub(); $('p-hub').onclick = () => { $('pause').classList.add('hide'); void openHub(); }; $('b-dhub').onclick = () => void openHub();
+  // ---- 進み具合の書き出し・読み込み（短い文字列）----
+  const codeEl = $('o-code') as HTMLTextAreaElement, msgEl = $('o-msg');
+  $('o-export').onclick = () => {
+    const data = { s: loadSave(), k: [...known], i: store.get('ir.intro') ?? 'all' };
+    const code = 'IR1.' + btoa(unescape(encodeURIComponent(JSON.stringify(data)))).replace(/=+$/, '');
+    codeEl.value = code; codeEl.select(); void navigator.clipboard?.writeText(code).then(() => (msgEl.textContent = 'コピーしました。別の端末の「読み込む」に貼り付けてください。'), () => (msgEl.textContent = '文字列を選んでコピーしてください。'));
+  };
+  $('o-import').onclick = () => {
+    try {
+      const c = codeEl.value.trim(); if (!c.startsWith('IR1.')) throw new Error('形式');
+      const data = JSON.parse(decodeURIComponent(escape(atob(c.slice(4))))) as { s: object; k: string[]; i?: string };
+      if (typeof data !== 'object' || !data.s || !Array.isArray(data.k)) throw new Error('中身');
+      if (!confirm('いまの進み具合を、読み込んだ内容で置き換えますか？')) return;
+      localStorage.setItem('ir.save', JSON.stringify(data.s)); store.set('ir.known', data.k.filter((x) => typeof x === 'string').join(',')); if (data.i) store.set('ir.intro', data.i);
+      location.href = location.pathname;
+    } catch { msgEl.textContent = '読み込めませんでした。書き出した文字列を、そのまま貼り付けてください。'; }
+  };
   // ---- 患者の視界 ----
   const pImg = $('patient').querySelector('img') as HTMLImageElement, pSpot = $('patient').querySelector('.spot') as HTMLElement;
   function patientView(m: number) {
@@ -355,7 +401,12 @@ async function main() {
     $('hud').querySelector('.lab')!.textContent = M.hud;
     vbNotify('question_shown', { id: `${M.id}-task`, retry: false });                  /* voice-buddy */
   };
-  $('start').classList.remove('hide'); $('load').classList.add('hide'); $('start').addEventListener('click', begin);
+  // タイトルのメニュー：続きがあれば「つづきから」
+  const hasSave = !!(save.done?.length || save.zone || save.arrived);
+  $('start').textContent = hasSave ? `つづきから（${ZONES[zi].name}）` : 'はじめる';
+  $('b-new').classList.toggle('hide', !hasSave);
+  $('tmenu').classList.remove('hide'); $('load').classList.add('hide'); $('start').addEventListener('click', begin);
+  $('b-new').onclick = () => { if (!confirm('進み具合と図鑑を消して、はじめから遊びますか？（元に戻せません）')) return; resetSave(); store.set('ir.known', ''); location.href = location.pathname; };
   // ゲームパッド：認識したら知らせる（Safari は、ボタンを1回押すまで認識しない）。タイトルでは A／× ボタンでも開始できる
   const toast = (m: string) => { const t = $('toast'); t.textContent = m; t.classList.add('on'); setTimeout(() => t.classList.remove('on'), 2600); };
   addEventListener('gamepadconnected', (e) => { toast(`コントローラーを認識しました（${(e as GamepadEvent).gamepad.id.slice(0, 28)}）`); input.kind = 'pad'; setKind('pad'); });
@@ -383,7 +434,7 @@ async function main() {
     const live = !debugCam && sim === null && !Q.has('frames') && !Q.has('still');
     const tt = now / 1000;
     if (live) { sway.set(Math.sin(tt * 0.73) + 0.5 * Math.sin(tt * 1.91 + 1), Math.sin(tt * 0.61 + 2) + 0.4 * Math.sin(tt * 1.37), Math.sin(tt * 0.53 + 4)).multiplyScalar(0.012 * camera.position.distanceTo(diver.root.position)); camera.position.add(sway); }
-    if (viewer.active) { viewer.render(renderer, dt); } else if (post) {
+    if (hub.active) { hub.render(renderer, dt); } else if (viewer.active) { viewer.render(renderer, dt); } else if (post) {
       if (post.useDof) post.focus.value += (camera.position.distanceTo(debugCam ? dbgTarget : diver.root.position) + 0.3 + (live ? 0.35 * Math.sin(tt * 0.45) : 0) - post.focus.value) * (debugCam ? 1 : 0.2);
       post.exposure.value = live ? 1 + 0.022 * Math.pow(0.5 + 0.5 * Math.sin(stage.u.heartPhase.value), 3) + 0.015 * Math.sin(tt * 0.21) : 1;
       try { post.render(); } catch (e) { report('post', e); post = null; renderer.render(stage.scene, camera); }

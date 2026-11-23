@@ -15,13 +15,16 @@ export function buildUI() {
   <div id="patient" class="hide"><img src="/static/img/patient_view.jpg" alt=""><div class="spot"></div><div class="cap">患者の視界</div></div>
   <div id="reticle" class="hide"></div><div id="hint" class="hide"></div><div id="subs"></div>
   <div id="card"><div class="k">初めて出会ったもの</div><div class="n"></div><div class="e"></div><div class="s"></div><div class="d"></div><div class="p"><i></i></div><div class="h"></div></div>
+  <div id="hubui" class="hide"><div class="hh"><b>全身マップ</b><span>患者：灯（あかり）— ナノスーツの基礎理論を作った研究者。全身の器官が、順に働きを失っている。</span></div>
+    <div class="vit"></div><div class="org hide"><h3></h3><p class="on"></p><div class="zl"></div></div>
+    <button class="btn" id="h-close">戻る</button><div class="hn">器官をタップ（クリック）して選ぶ・ドラッグで回す</div></div>
   <div id="viewer" class="hide"><div class="vt"><b></b><span></span></div><button class="btn" id="v-close">図鑑に戻る</button><div class="vh">ドラッグで回す・ホイールで寄る。青緑の物差しは潜行士の身長（2µm）</div></div><div id="dx" class="hide"><div class="t">スキャン診断</div><div class="l"></div></div><div id="tags"><div class="tag"></div><div class="tag"></div><div class="tag"></div></div>
   <div id="touch" class="hide"><div id="stick" class="hide"><i></i></div><button class="tb" id="tb-fire">浄化</button><button class="tb" id="tb-scan">スキャン</button><button class="tb tb-s" id="tb-up">上へ</button><button class="tb tb-s" id="tb-down">下へ</button></div>
   <div id="topbtns" class="hide"><button id="b-atlas">図鑑</button><button id="b-pause">一時停止</button><button id="b-full">全画面</button></div>
   <div id="errline" class="hide"></div><div id="fade"></div><div id="toast"></div>
-  <div id="done" class="hide"><h2>区域の血流が戻りました</h2><p id="donetext"></p><button class="btn" id="b-next">次の区域へ</button> <button class="btn" id="b-cont">探索を続ける</button></div>
+  <div id="done" class="hide"><h2>区域の血流が戻りました</h2><p id="donetext"></p><button class="btn" id="b-next">次の区域へ</button> <button class="btn" id="b-dhub">全身マップへ</button> <button class="btn" id="b-cont">探索を続ける</button></div>
   <div id="pause" class="sheet hide"><h2 style="font-weight:300;letter-spacing:.3em">一時停止</h2><button class="btn" id="p-resume">再開する</button><button class="btn" id="p-atlas">図鑑</button><button class="btn" id="p-full">全画面表示</button>
-    <div style="font-size:.88em;color:#b7c6cc;max-width:34em;line-height:1.8;text-align:center">セーブはこのブラウザの中に保存され、別のブラウザや端末には引き継がれません。</div><button class="btn" id="p-settings">設定</button><a class="btn" href="/vr/" style="text-decoration:none">VR 版へ</a></div>
+    <div style="font-size:.88em;color:#b7c6cc;max-width:34em;line-height:1.8;text-align:center">セーブはこのブラウザの中に保存され、別のブラウザや端末には引き継がれません。</div><button class="btn" id="p-hub">全身マップ</button><button class="btn" id="p-settings">設定</button><a class="btn" href="/vr/" style="text-decoration:none">VR 版へ</a></div>
   <div id="settings" class="sheet hide"><h2 style="font-weight:300;letter-spacing:.3em">設定</h2>
     <div class="sgrid">
       <section><h3>読み上げ（字幕を声で読む）</h3>
@@ -37,6 +40,11 @@ export function buildUI() {
         <label>初登場の紹介 <select id="o-intro"><option value="all">すべて表示</option><option value="name">名前だけ</option><option value="off">表示しない</option></select></label>
         <label>音声会話の先生 <select id="o-vb"><option value="on">ボタンを出す</option><option value="off">出さない</option></select></label>
         <div class="snote">音声会話の先生：画面右下の「先生と はなす」を押すと、声で質問したり、ヒントをもらったりできます（マイクを使います）。先生の声と速さは、先生のパネルの中で選べます。</div></section>
+      <section><h3>進み具合（セーブ）</h3>
+        <div class="snote">進み具合と図鑑は、このブラウザの中だけに保存されます。別のブラウザや端末には引き継がれません。続きを別の端末で遊ぶときは、下の「書き出す」で出た文字列を、その端末の「読み込む」に貼り付けてください。</div>
+        <button class="btn" id="o-export">書き出す（文字列をコピー）</button>
+        <textarea id="o-code" rows="3" placeholder="ここに書き出した文字列が出ます／貼り付けて読み込みます" style="width:100%;font:inherit;font-size:.85em"></textarea>
+        <button class="btn" id="o-import">読み込む</button><div class="snote" id="o-msg"></div></section>
       <section><h3>描画</h3>
         <label>映像の仕上げ <select id="o-post"><option value="on">入れる（ぼけ・光のにじみ・色調）</option><option value="off">切る（軽い・不具合のとき）</option></select></label>
         <label>描画方式 <select id="o-backend"><option value="auto">自動</option><option value="webgpu">WebGPU</option><option value="webgl">WebGL 2</option></select></label>
@@ -46,7 +54,7 @@ export function buildUI() {
   <div id="atlas" class="sheet hide"><h2 style="font-weight:300;letter-spacing:.3em">体内図鑑</h2><div class="grid"></div><button class="btn" id="a-close">閉じる</button></div>
   <div id="title"><div class="sub">体内紀行</div><h1>INNER RESTORE</h1>
     <div id="load"><div class="bar"><i></i></div><div class="tip"></div></div>
-    <button class="btn hide" id="start">クリックして開始</button>
+    <div id="tmenu" class="hide"><button class="btn" id="start">はじめる</button><button class="btn" id="b-hub">全身マップ</button><button class="btn ghost" id="b-new">はじめから</button></div>
     <button class="btn ghost" id="b-settings">設定（声・速さ・字幕など）</button>
     <div class="links"><a href="/vr/" id="l-vr">VR で遊ぶ（Meta Quest 3）</a><a href="/diag/">実機診断</a><a href="/progress/">進捗</a></div>
     <div class="note">本作は娯楽作品であり、医療上の助言ではありません。<br>登場する細胞や組織は実在のものに基づいていますが、主人公と道具、治し方は作り事です。</div></div>`;
