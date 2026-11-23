@@ -5,6 +5,7 @@ import { G, wcMaterial, makeSky } from '../engine/watercolor';
 import { loadMesh, Rig } from '../engine/model';
 import { NIO_J } from '../models/nio.def';
 import { MONK_J } from '../models/monk.def';
+import type { Joints } from '../models/skeleton';
 import { buildPrologue, groundY } from '../scenes/prologue';
 import { createMonk, createNio, MONK_IDLE, NIO_A_STAND, NIO_UN_STAND } from '../game/actors';
 
@@ -38,13 +39,19 @@ export async function runViewer(canvas: HTMLCanvasElement, q: URLSearchParams): 
   st.scene.add(makeSky({ top: 0xb9c9cf, mid: 0xdfe6e0, low: 0xf1ede2 }));
   const what = q.get('view') || 'nio';
   if (what === 'scene') { await sceneView(st, q); return; }
-  const monk = what === 'monk';
-  const rig = new Rig(monk ? MONK_J : NIO_J);
+  const monk = what === 'monk', un = what === 'un';
   const mat = wcMaterial({ vertexColors: true, skinned: true, noiseScale: 2.2, emph: 1, grain: 0.35, dry: 0.12, mottle: 0.4 });
-  const un = what === 'un';
-  const [body, head] = await Promise.all([loadMesh(monk ? 'monk-body' : 'nio-body'), loadMesh(monk ? 'monk-head' : un ? 'nio-head-un' : 'nio-head-a')]);
-  rig.add(body, mat);
-  rig.add(head, wcMaterial({ vertexColors: true, skinned: true, noiseScale: 2.2, soft: 0.03, mottle: 0.3, grain: 0.25, dry: 0.05, emph: 1, dens: [1.25, 1.05, 0.6], bands: [0.32, 0.64] }));
+  let rig: Rig;
+  if (monk) {
+    rig = new Rig(MONK_J);
+    const [body, head] = await Promise.all([loadMesh('monk-body'), loadMesh('monk-head')]);
+    rig.add(body, mat);
+    rig.add(head, wcMaterial({ vertexColors: true, skinned: true, noiseScale: 2.2, soft: 0.03, mottle: 0.3, grain: 0.25, dry: 0.05, emph: 1, dens: [1.25, 1.05, 0.6], bands: [0.32, 0.64] }));
+  } else {
+    const body = await loadMesh(un ? 'nio-bl-un' : 'nio-bl-a');
+    rig = new Rig((body.userData.joints as Joints) ?? NIO_J);
+    rig.add(body, wcMaterial({ vertexColors: true, skinned: true, noiseScale: 1.9, bands: [0.36, 0.66], soft: 0.06, dens: [1.6, 1.05, 0.5], mottle: 0.5, grain: 0.3, dry: 0.12, rim: 0.8, emph: 1 }));
+  }
   st.scene.add(rig.root);
   // 腕を下ろした仮の構え
   rig.b('armL').rotation.z = -1.0; rig.b('armR').rotation.z = 1.0; rig.b('foreR').rotation.z = 0.6;

@@ -34,6 +34,7 @@ function parse(buf: ArrayBuffer): THREE.BufferGeometry {
   g.setAttribute('skinWeight', new THREE.BufferAttribute(sw, 4, true));
   g.setIndex(new THREE.BufferAttribute(idx, 1));
   g.computeBoundingSphere(); g.computeBoundingBox();
+  if (h.joints) g.userData.joints = h.joints;   // Blender で作った造形は関節の位置も持つ
   return g;
 }
 

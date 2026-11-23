@@ -5,6 +5,7 @@ import { wcMaterial } from '../engine/watercolor';
 import { loadMesh } from '../engine/model';
 import { MONK_J } from '../models/monk.def';
 import { NIO_J } from '../models/nio.def';
+import type { Joints } from '../models/skeleton';
 
 export const NIO_SCALE = 2.5; // 2m の造形 × 2.5 ＝ 像高 約5m
 
@@ -21,14 +22,15 @@ export async function createMonk(): Promise<Humanoid & { staff: THREE.Mesh }> {
 
 export type NioKind = 'a' | 'un';
 export async function createNio(kind: NioKind): Promise<Humanoid & { vajra?: THREE.Mesh; kind: NioKind }> {
-  const h = new Humanoid(NIO_J, NIO_SCALE) as Humanoid & { vajra?: THREE.Mesh; kind: NioKind };
+  // 体と顔は Blender で作った一つの造形（tools/blender/build_nio.py）。関節の位置も造形から読む
+  const [body, vj] = await Promise.all([loadMesh(kind === 'a' ? 'nio-bl-a' : 'nio-bl-un'), loadMesh('vajra')]);
+  const J = (body.userData.joints as Joints | undefined) ?? NIO_J;
+  const h = new Humanoid(J, NIO_SCALE) as Humanoid & { vajra?: THREE.Mesh; kind: NioKind };
   h.kind = kind;
-  const [body, head, vj] = await Promise.all([loadMesh('nio-body'), loadMesh(kind === 'a' ? 'nio-head-a' : 'nio-head-un'), loadMesh('vajra')]);
-  h.add(body, wcMaterial({ vertexColors: true, noiseScale: 1.9, bands: [0.4, 0.7], dens: [1.7, 1.1, 0.55], mottle: 0.45, grain: 0.22, dry: 0.14, rim: 0.9, sway: 1, wind: 0.22, emph: 1 }));
-  h.add(head, wcMaterial({ vertexColors: true, noiseScale: 1.9, bands: [0.32, 0.64], soft: 0.09, dens: [1.25, 1.05, 0.6], mottle: 0.25, grain: 0.14, dry: 0.05, rim: 0.6, emph: 1 }));
+  h.add(body, wcMaterial({ vertexColors: true, noiseScale: 1.9, bands: [0.36, 0.66], soft: 0.06, dens: [1.6, 1.05, 0.5], mottle: 0.5, grain: 0.3, dry: 0.12, rim: 0.8, sway: 1, wind: 0.22, emph: 1 }));
   if (kind === 'a') {
     h.vajra = new THREE.Mesh(vj, wcMaterial({ vertexColors: true, noiseScale: 4, dens: [1.7, 1.0, 0.3], mottle: 0.5, grain: 0.4, dry: 0.2, emph: 1 }));
-    h.vajra.scale.set(1.35, 0.72, 1.35); h.vajra.position.set(-0.1, -0.03, 0); h.vajra.rotation.set(Math.PI / 2, 0, 0);
+    h.vajra.scale.set(1.35, 0.72, 1.35); h.vajra.position.set(-0.08, -0.02, 0); h.vajra.rotation.set(Math.PI / 2, 0, 0);
     h.rig.b('handR').add(h.vajra);
   }
   h.stride = 0.5; h.stepTime = 0.5; h.wide = 0.55; h.hipDrop = 0.1;
