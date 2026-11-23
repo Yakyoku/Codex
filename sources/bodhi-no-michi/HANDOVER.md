@@ -27,6 +27,7 @@
   手順：Blender をダウンロード（download.blender.org、約 350MB）→ Human Base Meshes（CC0、約 100MB）→
   `blender -b human_base_meshes_bundle.blend --python tools/blender/build_nio.py -- a <出力.bin> [プレビュー.png] 6`（`a` を `un` にすると吽形）
 - 中身：土台の人体 → 腕を T 字へ（Blender の骨と自動の重み）→ 筋肉を盛る → 忿怒の顔 → 裳・帯・腕輪・髻・輪 → 頂点色 → ゲームの骨（20 本）へ自動の重み → ゲームの形式で書き出し。関節の位置もファイルに入り、ゲームはそれで骨組みを作る。
+- 主人公・蓮も同じ手順：`tools/blender/build_monk.py`（出力 `public/models/monk-bl.bin`。引数の 1 つ目は使わない）。
 - 既知の不具合：上腕の腕輪の縁が、腕を上げると脇の下に少し見える。阿形の顎の脇にわずかな折れ目。
 
 ## 法戦の作り替え（持ち主の「対峙が面白くない・直感的でない」への対応）

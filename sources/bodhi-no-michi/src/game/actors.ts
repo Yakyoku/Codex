@@ -10,10 +10,11 @@ import type { Joints } from '../models/skeleton';
 export const NIO_SCALE = 2.5; // 2m の造形 × 2.5 ＝ 像高 約5m
 
 export async function createMonk(): Promise<Humanoid & { staff: THREE.Mesh }> {
-  const h = new Humanoid(MONK_J, 1) as Humanoid & { staff: THREE.Mesh };
-  const [body, head, staff] = await Promise.all([loadMesh('monk-body'), loadMesh('monk-head'), loadMesh('shakujo')]);
-  h.add(body, wcMaterial({ vertexColors: true, noiseScale: 3.0, bands: [0.4, 0.7], dens: [1.3, 0.92, 0.48], mottle: 0.7, grain: 0.3, dry: 0.15, rim: 0.6, sway: 1, wind: 0.05, emph: 0.4 }));
-  h.add(head, wcMaterial({ vertexColors: true, noiseScale: 3.0, bands: [0.36, 0.66], soft: 0.07, dens: [1.35, 1.0, 0.5], mottle: 0.3, grain: 0.25, dry: 0.04, rim: 0.5, emph: 1 }));
+  // 体・顔・衣は Blender で作った一つの造形（tools/blender/build_monk.py）。関節の位置も造形から読む
+  const [body, staff] = await Promise.all([loadMesh('monk-bl'), loadMesh('shakujo')]);
+  const J = (body.userData.joints as Joints | undefined) ?? MONK_J;
+  const h = new Humanoid(J, 1) as Humanoid & { staff: THREE.Mesh };
+  h.add(body, wcMaterial({ vertexColors: true, noiseScale: 3.0, bands: [0.36, 0.66], soft: 0.06, dens: [1.3, 0.92, 0.45], mottle: 0.45, grain: 0.12, dry: 0.08, rim: 0.6, sway: 1, wind: 0.05, emph: 0.6 }));
   h.staff = new THREE.Mesh(staff, wcMaterial({ vertexColors: true, noiseScale: 3.0, dens: [1.6, 1.0, 0.4], mottle: 0.5, grain: 0.5, dry: 0.3, emph: 1 }));
   h.rig.b('handR').add(h.staff);
   h.stride = 0.5; h.stepTime = 0.24;

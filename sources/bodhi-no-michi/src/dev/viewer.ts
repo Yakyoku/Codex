@@ -43,10 +43,9 @@ export async function runViewer(canvas: HTMLCanvasElement, q: URLSearchParams): 
   const mat = wcMaterial({ vertexColors: true, skinned: true, noiseScale: 2.2, emph: 1, grain: 0.35, dry: 0.12, mottle: 0.4 });
   let rig: Rig;
   if (monk) {
-    rig = new Rig(MONK_J);
-    const [body, head] = await Promise.all([loadMesh('monk-body'), loadMesh('monk-head')]);
-    rig.add(body, mat);
-    rig.add(head, wcMaterial({ vertexColors: true, skinned: true, noiseScale: 2.2, soft: 0.03, mottle: 0.3, grain: 0.25, dry: 0.05, emph: 1, dens: [1.25, 1.05, 0.6], bands: [0.32, 0.64] }));
+    const body = await loadMesh('monk-bl');
+    rig = new Rig((body.userData.joints as Joints) ?? MONK_J);
+    rig.add(body, wcMaterial({ vertexColors: true, skinned: true, noiseScale: 3.0, bands: [0.36, 0.66], soft: 0.06, dens: [1.3, 0.92, 0.45], mottle: 0.45, grain: 0.12, dry: 0.08, rim: 0.6, emph: 1 }));
   } else {
     const body = await loadMesh(un ? 'nio-bl-un' : 'nio-bl-a');
     rig = new Rig((body.userData.joints as Joints) ?? NIO_J);
