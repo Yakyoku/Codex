@@ -9,7 +9,7 @@ let el: HTMLElement | null = null; let timer = 0; let onDone: (() => void) | nul
 function root() {
   if (el) return el;
   el = document.createElement('div'); el.className = 'card'; el.setAttribute('role', 'status');
-  el.innerHTML = '<div class="card-tag">はじめての出会い</div><div class="card-where">◯ 画面の印で囲んだもの</div><h2></h2><div class="sci"></div><div class="size"><b></b><span></span></div><p></p><div class="card-foot"><button class="btn skip">次へ</button><i class="life"></i></div>';
+  el.innerHTML = '<div class="card-tag">はじめての出会い</div><div class="card-where">✦ 画面で金色に光っているもの</div><h2></h2><div class="sci"></div><div class="size"><b></b><span></span></div><p></p><div class="card-foot"><button class="btn skip">次へ</button><i class="life"></i></div>';
   document.body.append(el);
   el.querySelector('.skip')!.addEventListener('click', () => hideCard());
   addEventListener('keydown', (e) => { if (e.code === 'Enter' && el!.classList.contains('show')) hideCard(); });

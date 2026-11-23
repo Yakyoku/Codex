@@ -18,7 +18,7 @@ export interface World {
   syncWetness(): void;
   stats: { instances: number; triangles: number; drawCalls: number };
   /** カメラの前にある、その種類の粒（紹介カードで指し示すため） */
-  find(kind: GrainKind, from: THREE.Vector3, fwd: THREE.Vector3): { p: THREE.Vector3; r: number } | null;
+  find(kind: GrainKind, from: THREE.Vector3, fwd: THREE.Vector3): { p: THREE.Vector3; r: number; geo?: THREE.BufferGeometry; matrix?: THREE.Matrix4 } | null;
 }
 
 export async function buildWorld(base: string, opts: { grainLod: 0 | 1; density: number; cheap?: boolean }): Promise<World> {
@@ -112,7 +112,9 @@ export async function buildWorld(base: string, opts: { grainLod: 0 | 1; density:
         if (dist < r + 1.5 || dist > 45) continue; const cos = d.dot(fwd) / dist; if (cos < 0.82) continue;
         const sc = (cos - 0.82) * Math.min(1, r / Math.max(0.5, dist * 0.08)) / (1 + dist * 0.04); if (sc > bs) { bs = sc; best = pl; }
       }
-      return best ? { p: best.pos.clone(), r: Math.max(best.scale.x, best.scale.y, best.scale.z) } : null;
+      if (!best) return null;
+      const b = best as Placement; const L = loaded.get(b.variant);
+      return { p: b.pos.clone(), r: Math.max(b.scale.x, b.scale.y, b.scale.z), geo: L?.geo[b.lod], matrix: new THREE.Matrix4().compose(b.pos, b.quat, b.scale) };
     },
     syncWetness() {
       for (const b of batches) {

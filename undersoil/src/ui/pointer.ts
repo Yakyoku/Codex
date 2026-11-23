@@ -3,8 +3,26 @@
 import * as THREE from 'three/webgpu';
 import './pointer.css';
 import type { Target } from '../game/encounters';
+import { dot, float, mix, normalLocal, normalView, oneMinus, positionLocal, positionViewDirection, pow, saturate, time, vec3 } from 'three/tsl';
 
-export function makePointer(camera: THREE.PerspectiveCamera) {
+/** 説明している物そのものの輪郭を光らせる（裏返して少し大きくした形＝輪郭線、表は縁だけ光る） */
+function makeHighlight(scene: THREE.Scene) {
+  const t = time.mul(3.0).sin().mul(0.5).add(0.5);
+  const outline = new THREE.MeshBasicNodeMaterial({ side: THREE.BackSide, transparent: true, depthWrite: false });
+  outline.colorNode = vec3(1.0, 0.72, 0.32); outline.opacityNode = mix(float(0.55), float(0.95), t);
+  outline.positionNode = positionLocal.add(normalLocal.mul(0.06));
+  const rim = new THREE.MeshBasicNodeMaterial({ transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
+  rim.colorNode = vec3(1.0, 0.7, 0.3).mul(pow(oneMinus(saturate(dot(normalView, positionViewDirection))), 2.2)).mul(mix(float(0.5), float(1.0), t));
+  const group = new THREE.Group(); group.matrixAutoUpdate = false; group.renderOrder = 20; scene.add(group);
+  const a = new THREE.Mesh(undefined, outline), b = new THREE.Mesh(undefined, rim); a.renderOrder = b.renderOrder = 20; group.add(a, b); group.visible = false;
+  return {
+    set(geo: THREE.BufferGeometry | undefined, m: THREE.Matrix4 | undefined) { if (!geo || !m) { group.visible = false; return; } a.geometry = b.geometry = geo; group.matrix.copy(m); group.matrixWorldNeedsUpdate = true; group.visible = true; },
+    hide() { group.visible = false; },
+  };
+}
+
+export function makePointer(camera: THREE.PerspectiveCamera, scenes: THREE.Scene[] = []) {
+  const hl = scenes.map(makeHighlight);
   const NS = 'http://www.w3.org/2000/svg';
   const svg = document.createElementNS(NS, 'svg'); svg.classList.add('pointer'); svg.setAttribute('aria-hidden', 'true');
   const line = document.createElementNS(NS, 'path'); line.classList.add('pl');
@@ -17,13 +35,13 @@ export function makePointer(camera: THREE.PerspectiveCamera) {
   const v = new THREE.Vector3(), e = new THREE.Vector3(), right = new THREE.Vector3();
   return {
     /** 指し示し始める（相手が動くもののときは、毎フレーム位置を取り直す） */
-    show(fn: (() => Target) | null) { get = fn; cached = fn ? fn() : null; refresh = 0; t0 = performance.now(); svg.classList.toggle('on', !!cached); },
-    hide() { get = null; cached = null; svg.classList.remove('on'); },
+    show(fn: (() => Target) | null) { get = fn; cached = fn ? fn() : null; refresh = 0; t0 = performance.now(); svg.classList.toggle('on', !!cached); hl.forEach((h) => h.set(cached?.geo, cached?.matrix)); },
+    hide() { get = null; cached = null; svg.classList.remove('on'); hl.forEach((h) => h.hide()); },
     /** カメラが向くべき位置（自動で巡っている間だけ使う） */
     focus(): THREE.Vector3 | null { return cached ? cached.p : null; },
     update(dt: number) {
       if (!get) return;
-      refresh -= dt; if (refresh <= 0) { const n = get(); if (n) cached = n; refresh = 0.1; }
+      refresh -= dt; if (refresh <= 0 && !cached?.geo) { const n = get(); if (n) cached = n; refresh = 0.1; }
       if (!cached) { svg.classList.remove('on'); return; }
       svg.classList.add('on');
       const W = innerWidth, H = innerHeight;
@@ -32,7 +50,7 @@ export function makePointer(camera: THREE.PerspectiveCamera) {
       // 丸の半径：対象の大きさを画面に写した長さ
       right.set(1, 0, 0).applyQuaternion(camera.quaternion); e.copy(cached.p).addScaledVector(right, cached.r).project(camera);
       let x = (v.x * 0.5 + 0.5) * W, y = (-v.y * 0.5 + 0.5) * H;
-      const r = Math.max(26, Math.min(H * 0.28, Math.abs(e.x - v.x) * 0.5 * W * 1.25));
+      const r = Math.max(18, Math.min(H * 0.22, Math.abs(e.x - v.x) * 0.5 * W * (cached.geo ? 0.95 : 1.05)));
       const off = behind || x < 0 || x > W || y < 0 || y > H;
       if (behind) { x = W - x; y = H - y; }
       const pulse = 1 + 0.06 * Math.sin((performance.now() - t0) / 260);
@@ -45,7 +63,7 @@ export function makePointer(camera: THREE.PerspectiveCamera) {
         ring.style.display = ring2.style.display = ticks.style.display = 'none'; line.setAttribute('d', '');
         return;
       }
-      arrow.style.display = 'none'; ring.style.display = ring2.style.display = ticks.style.display = '';
+      arrow.style.display = 'none'; ring.style.display = ring2.style.display = ticks.style.display = cached.geo ? 'none' : '';
       ring.setAttribute('cx', String(x)); ring.setAttribute('cy', String(y)); ring.setAttribute('r', String(r * pulse));
       ring2.setAttribute('cx', String(x)); ring2.setAttribute('cy', String(y)); ring2.setAttribute('r', String(r * 1.22));
       const t = r * 1.22, k = 9;

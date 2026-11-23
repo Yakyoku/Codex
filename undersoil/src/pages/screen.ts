@@ -92,7 +92,7 @@ async function main() {
   // 出会いの順番（M1 の自動の流れ用。M3 で、プレイヤーの位置と行動に結び付ける）
   const cellW = (i: number) => world.grid.cells[i].water, cellM = (i: number) => world.grid.cells[i].microbes;
   // 紹介カードが指し示す相手（カメラの前にあるもの）
-  const pointer = makePointer(camera);
+  const pointer = makePointer(camera, [scene]);
   const fwd = () => new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
   const grain = (k: 'quartz' | 'aggregate' | 'humus' | 'clay') => (): Target => world.find(k, camera.position, fwd());
   const bridge = (): Target => { let best: THREE.Vector3 | null = null, bs = 0; const f = fwd(), d = new THREE.Vector3();
