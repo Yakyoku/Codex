@@ -2,8 +2,9 @@
 // 写真を拡大して確かめた特徴：①粒は 0.08〜0.5 mm で、一つ一つ色が違う（白・灰・薄茶・こげ茶・赤み・半透明の石英）
 // ②粒と粒のすき間に小さな影がある ③粒が集まって小さな土のかたまり（団粒）を作る ④表面はつやがなく、石英の粒だけが鋭く光る
 import * as THREE from 'three/webgpu';
-import { float, mix, mx_noise_float, mx_worley_noise_float, positionLocal, positionWorld, saturate, smoothstep, vec3 } from 'three/tsl';
+import { bumpMap, float, mix, mx_noise_float, positionLocal, positionWorld, saturate, vec2, vec3 } from 'three/tsl';
 import { makeRng } from './rng';
+import { soilMicro } from './soilMicro';
 
 type Height = (x: number, z: number) => number;
 
@@ -25,12 +26,12 @@ export function grainGeometry(seed: number, detail: number) {
 // 写真から測った土の色（sRGB）と、出やすさ
 const PALETTE: [string, number][] = [
   ['#8f7a66', 0.22], ['#7d6c5c', 0.18], ['#6f6862', 0.12], ['#857b68', 0.12], ['#5e4e40', 0.12],
-  ['#433730', 0.09], ['#9c8a76', 0.06], ['#2f2620', 0.05], ['#80604a', 0.025], ['#b4aa9a', 0.015],
+  ['#4d4036', 0.09], ['#958370', 0.07], ['#3e332b', 0.05], ['#7c604c', 0.025], ['#a39886', 0.008],
 ];
 function pickColor(rng: ReturnType<typeof makeRng>, out: THREE.Color, darker = 1) {
   let x = rng.next(), hex = PALETTE[0][0];
   for (const [h, w] of PALETTE) { if (x < w) { hex = h; break; } x -= w; }
-  out.setStyle(hex); out.multiplyScalar(rng.range(0.8, 1.1) * darker * 0.85);
+  out.setStyle(hex); out.multiplyScalar(rng.range(0.86, 1.06) * darker * 0.85);
   return out;
 }
 
@@ -61,8 +62,8 @@ export function buildSand(height: Height, opts: SandOpts) {
   const list: G[] = []; const e = new THREE.Euler(); const col = new THREE.Color();
   const add = (x: number, y: number, z: number, s: number, darker = 1, quartzChance = 0.1) => {
     const quartz = rng.next() < quartzChance;
-    const c = quartz ? new THREE.Color().setStyle(rng.next() < 0.5 ? '#a8a49c' : '#8a857c') : pickColor(rng, col, darker).clone();
-    list.push({ p: new THREE.Vector3(x, y, z), s, q: new THREE.Quaternion().setFromEuler(e.set(rng.range(0, 6.28), rng.range(0, 6.28), rng.range(0, 6.28))), c, v: s < 0.09 ? rng.int(4, 5) : s < 0.2 ? rng.int(0, 1) : rng.int(2, 3), quartz });
+    const c = quartz ? new THREE.Color().setStyle(rng.next() < 0.5 ? '#8e897f' : '#77726a') : pickColor(rng, col, darker).clone();
+    list.push({ p: new THREE.Vector3(x, y, z), s, q: new THREE.Quaternion().setFromEuler(e.set(rng.range(0, 6.28), rng.range(0, 6.28), rng.range(0, 6.28))), c, v: s < 0.06 ? rng.int(4, 5) : s < 0.16 ? rng.int(0, 1) : rng.int(2, 3), quartz });
   };
   const R = opts.radius, keep = opts.keepOut ?? 0;
   // 1) 砂粒の層：芽のまわりほど細かく密に。遠くは粒を大きくして数を減らす（ぼけるので見分けがつかない）
@@ -71,23 +72,23 @@ export function buildSand(height: Height, opts: SandOpts) {
       const a = rng.range(0, Math.PI * 2), r = Math.sqrt(r0 * r0 + (r1 * r1 - r0 * r0) * rng.next());
       if (r < keep) continue;
       const x = Math.cos(a) * r, z = Math.sin(a) * r, u = rng.next();
-      const s = (sMin + sSpread * u * u * u + (rng.next() < 0.03 ? sSpread * 0.8 : 0)) * (1 + r * grow);   // 小さい粒が多く、大きい粒はまれ
+      const s = (sMin + sSpread * u * u * u + (rng.next() < 0.015 ? sSpread * 0.9 : 0)) * (1 + r * grow);   // 小さい粒が多く、大きい粒はまれ
       add(x, height(x, z) - s * rng.range(0.15, 0.5), z, s);
     }
   };
-  ring(Math.round(40000 * opts.density), 0, 9, 0.05, 0.2, 0.02);      // 芽のまわり：0.05〜0.25 mm
-  ring(Math.round(34000 * opts.density), 9, 17, 0.07, 0.26, 0.02);
-  ring(Math.round(14000 * opts.density), 17, R, 0.12, 0.4, 0.02);     // 遠く（ぼけて見える）
+  ring(Math.round(62000 * opts.density), 0, 6.5, 0.022, 0.085, 0.03);   // 芽のまわり：0.02〜0.1 mm（土の粉のような粒）
+  ring(Math.round(36000 * opts.density), 6.5, 14, 0.035, 0.12, 0.03);
+  ring(Math.round(12000 * opts.density), 14, R, 0.07, 0.22, 0.02);     // 遠く（ぼけて見える）
   // 2) 小さな土のかたまり：細かい粒が寄り集まったもの（0.3〜1.4 mm）。少し暗く、茶色っぽい
   const nCrumb = Math.round(90 * opts.density);
   for (let k = 0; k < nCrumb; k++) {
     const a = rng.range(0, Math.PI * 2), r = Math.max(keep + 1.5, R * 0.9 * Math.pow(rng.next(), 0.8));
-    const cx = Math.cos(a) * r, cz = Math.sin(a) * r, cr = (0.3 + 1.1 * rng.next() ** 2) * (1 + r * 0.02), cy = height(cx, cz) + cr * 0.2;
-    const darker = rng.range(0.7, 0.95), n = Math.min(260, Math.round(12 + (cr / 0.08) ** 2 * 1.6));
+    const cx = Math.cos(a) * r, cz = Math.sin(a) * r, cr = (0.2 + 0.7 * rng.next() ** 2) * (1 + r * 0.02), cy = height(cx, cz) + cr * 0.2;
+    const darker = rng.range(0.7, 0.95), n = Math.min(320, Math.round(12 + (cr / 0.06) ** 2 * 1.4));
     for (let j = 0; j < n; j++) {
       const d = new THREE.Vector3(rng.range(-1, 1), rng.range(-0.2, 1), rng.range(-1, 1)).normalize();
       const rr = cr * (0.75 + 0.3 * rng.next()) * (1 + 0.25 * Math.sin(Math.atan2(d.z, d.x) * 3 + k));
-      const s = (0.045 + 0.09 * rng.next() ** 2) * (1 + r * 0.02);
+      const s = (0.028 + 0.05 * rng.next() ** 2) * (1 + r * 0.02);
       add(cx + d.x * rr, cy + d.y * rr * 0.65, cz + d.z * rr, s, darker, 0.05);
     }
   }
@@ -113,7 +114,7 @@ export function buildSpill(height: Height, geos: THREE.BufferGeometry[], mats: T
   // 芽の上にかぶさっている土（半径 1.6 mm）
   for (let i = 0; i < opts.count; i++) {
     const a = rng.range(0, Math.PI * 2), r = 1.75 * Math.sqrt(rng.next()), x = Math.cos(a) * r, z = Math.sin(a) * r;
-    const s = 0.05 + 0.12 * rng.next() ** 2;
+    const s = 0.025 + 0.07 * rng.next() ** 2;
     st.push({ rest: new THREE.Vector3(x, height(x, z) + s * rng.range(0.1, 1.2), z), p: new THREE.Vector3(), v: new THREE.Vector3(), s, mode: 0, thr: rng.range(0.25, 1.4), rel: 0, vtx: -1, axis: new THREE.Vector3(rng.range(-1, 1), rng.range(-1, 1), rng.range(-1, 1)).normalize(), spin: 0, ang: 0, q0: new THREE.Quaternion().setFromEuler(e.set(rng.range(0, 6), rng.range(0, 6), rng.range(0, 6))) });
   }
   // 子葉の表に付いたまま持ち上げられる粒：子葉が開くときに、すべり落ちる
@@ -125,7 +126,7 @@ export function buildSpill(height: Height, geos: THREE.BufferGeometry[], mats: T
     else if (r < 0.5 && g < 0.5 && i % 3 === 0) stem.push(i);
   }
   for (let i = 0; i < opts.stuck; i++) {
-    const s = 0.045 + 0.08 * rng.next() ** 2;
+    const s = 0.03 + 0.05 * rng.next() ** 2;
     st.push({ rest: new THREE.Vector3(), p: new THREE.Vector3(), v: new THREE.Vector3(), s, mode: 2, thr: 0, rel: rng.range(0.44, 0.64), vtx: cotTop[rng.int(0, cotTop.length - 1)], axis: new THREE.Vector3(rng.range(-1, 1), rng.range(-1, 1), rng.range(-1, 1)).normalize(), spin: 0, ang: 0, q0: new THREE.Quaternion().setFromEuler(e.set(rng.range(0, 6), rng.range(0, 6), rng.range(0, 6))) });
   }
   const colors = st.map((s) => pickColor(rng, col, s.mode === 0 && Math.hypot(s.rest.x, s.rest.z) < 0.8 ? 0.72 : 1).clone());
@@ -158,7 +159,7 @@ export function buildSpill(height: Height, geos: THREE.BufferGeometry[], mats: T
     for (const vi of cotTop) { if (vi % 5) continue; plant.getVertexPosition(vi, tmp); plant.localToWorld(tmp); if (tmp.y > apex.y) apex.copy(tmp); }
     const g0 = hs(apex.x, apex.z);
     const collapse = Math.min(1, Math.max(0, (g - 0.40) / 0.12));                  // 子葉が持ち上がったら、山は崩れる
-    domeTop = Math.min(apex.y + 0.45, g0 + 0.9) * (1 - collapse) + (g0 - 0.2) * collapse;
+    domeTop = Math.min(apex.y + 0.35, g0 + 0.6) * (1 - collapse) + (g0 - 0.2) * collapse;
     domes[k * 3] = apex.x; domes[k * 3 + 1] = apex.z; domes[k * 3 + 2] = domeTop;
     for (let i = 0; i < N; i++) {
       const s = st[i];
@@ -207,9 +208,8 @@ export function buildSpill(height: Height, geos: THREE.BufferGeometry[], mats: T
   }
   mg.setAttribute('position', new THREE.BufferAttribute(mpos, 3)); mg.setIndex(mi);
   const mm = new THREE.MeshStandardNodeMaterial();
-  { const pw = positionWorld; const cell = mx_worley_noise_float(pw.xz.mul(9.0)), n2 = saturate(mx_noise_float(pw.xz.mul(4.0)).add(0.5));
-    mm.colorNode = mix(vec3(0.05, 0.035, 0.025), vec3(0.11, 0.08, 0.055), n2).mul(mix(float(1.0), float(0.55), smoothstep(0.2, 0.6, cell)));
-    mm.roughnessNode = float(0.9); mm.metalnessNode = float(0); }
+  { const pw = positionWorld; const sm = soilMicro(vec2(pw.x.add(pw.y.mul(0.9)), pw.z.sub(pw.y.mul(0.7))), float(0.3));   // 斜面でも模様が伸びないよう、高さも混ぜる
+    mm.colorNode = sm.col; mm.roughnessNode = sm.rough; mm.metalnessNode = float(0); mm.normalNode = bumpMap(sm.bump, float(0.5)); }
   const mound = new THREE.Mesh(mg, mm); mound.castShadow = true; mound.receiveShadow = true; mound.frustumCulled = false; group.add(mound);
   const setMound = (cx: number, cz: number, top: number) => {
     for (let i = 0; i <= RINGS * SEGS; i++) {
@@ -220,7 +220,7 @@ export function buildSpill(height: Height, geos: THREE.BufferGeometry[], mats: T
     mg.attributes.position.needsUpdate = true; mg.computeVertexNormals();
   };
   const meshes = [0, 1, 2, 3].map((v) => { const m = new THREE.InstancedMesh(geos[v], mats[0], N); m.count = 0; m.castShadow = true; m.receiveShadow = true; m.frustumCulled = false; group.add(m); return m; });
-  const slot = st.map((s) => (s.s < 0.12 ? 0 : 2) + (rng.next() < 0.5 ? 0 : 1));
+  const slot = st.map((s) => (s.s < 0.07 ? 0 : 2) + (rng.next() < 0.5 ? 0 : 1));
   const idx = new Int32Array(N); const cnt = [0, 0, 0, 0];
   for (let i = 0; i < N; i++) { idx[i] = cnt[slot[i]]++; }
   meshes.forEach((m, v) => { m.count = cnt[v]; });

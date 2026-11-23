@@ -4,6 +4,7 @@
 import * as THREE from 'three/webgpu';
 import { attribute, float, vec3, mix, smoothstep, saturate, positionWorld, mx_noise_float, mx_worley_noise_float, uniform, oneMinus, length, vec2, bumpMap, step } from 'three/tsl';
 import { makeRng } from './rng';
+import { soilMicro } from './soilMicro';
 
 /** 決まった乱数で、格子の各マスに「土のかたまり」を1つずつ置く（ゆらぎのある格子）。近くのマスだけ調べるので速い */
 function crumbLayer(cell: number, seed: number, rMin: number, rMax: number, hScale: number, fill: number) {
@@ -79,9 +80,10 @@ export function buildGround(height: (x: number, z: number) => number, opts: { se
   col = mix(col, vec3(0.30, 0.29, 0.27), quartz.mul(0.3));
   const sand = quartz;
   col = col.mul(mix(float(1.0), float(0.55), cavity.mul(0.9)));            // くぼみは暗い
+  { const sm = soilMicro(p.xz, wet); col = mix(col, sm.col, 0.75); }
   // 芽の出る所は、下から出てきた湿った土で暗い
   const ctr = smoothstep(2.2, 0.4, length(p.xz));
-  col = col.mul(mix(float(1.0), float(0.55), ctr));
+  col = col.mul(mix(float(1.0), float(0.8), ctr));
   m.colorNode = col;
   // 粗さ：乾いた所はつやなし、湿った所はしっとり。砂粒はわずかに光る
   m.roughnessNode = saturate(mix(float(0.95), float(0.6), wet).sub(sand.mul(0.8)));

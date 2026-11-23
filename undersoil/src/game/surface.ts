@@ -167,7 +167,7 @@ export async function buildSurface(renderer: THREE.WebGPURenderer, base: string,
     holder.rotation.z = Math.sin(ph) * 0.12 * env; holder.rotation.x = Math.sin(ph * 0.5 + 0.7) * 0.05 * env;
   };
   holder.updateMatrixWorld(true);
-  const spill = buildSpill(height, sand.geos, sand.mats, plant, pose, { growSec: 26, count: Math.round(1300 * Math.max(0.6, opts.density)), stuck: 60 });
+  const spill = buildSpill(height, sand.geos, sand.mats, plant, pose, { growSec: 26, count: Math.round(2600 * Math.max(0.6, opts.density)), stuck: 80 });
   scene.add(spill.group); const dq = new URLSearchParams(location.search); if (dq.has('nospill')) spill.group.visible = false; if (dq.has('noplant')) holder.visible = false;
   const focusDistance = uniform(16);
   const surf: Surface = {

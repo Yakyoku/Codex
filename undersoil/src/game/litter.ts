@@ -1,7 +1,7 @@
 // 地面の落ちもの：枯れ草のくず、小枝、落ち葉のかけら。シロツメクサの芽生えの写真4点すべてに写っている。単位は mm。
 // 形はその場で作る（画像に頼らない）。色は、写真の枯れ草（わら色〜灰褐色）、小枝（こげ茶）、落ち葉（赤茶〜こげ茶）に合わせる。
 import * as THREE from 'three/webgpu';
-import { attribute, float, vec3, mix, uv, sin, abs, fract, smoothstep, oneMinus, saturate, normalWorld, dot, cameraPosition, positionWorld, pow, uniform } from 'three/tsl';
+import { mx_noise_float, attribute, float, vec3, mix, uv, sin, abs, fract, smoothstep, oneMinus, saturate, normalWorld, dot, cameraPosition, positionWorld, pow, uniform } from 'three/tsl';
 import { makeRng } from './rng';
 
 type Height = (x: number, z: number) => number;
@@ -109,7 +109,7 @@ export function buildLitter(height: Height, opts: { density: number; keepOut: nu
     const geo = flakeGeometry(3); const tone = new THREE.InstancedBufferAttribute(new Float32Array(n), 1); geo.setAttribute('tone', tone);
     const mat = new THREE.MeshStandardNodeMaterial({ side: THREE.DoubleSide });
     const tn = attribute('tone', 'float'); const u2 = uv();
-    const leafC = mix(vec3(0.17, 0.10, 0.055), vec3(0.08, 0.055, 0.035), tn);
+    const leafC = mix(vec3(0.09, 0.055, 0.03), vec3(0.045, 0.032, 0.022), tn).mul(mix(float(0.7), float(1.2), saturate(mx_noise_float(u2.mul(9.0)).add(0.5))));
     const vein = oneMinus(smoothstep(0.0, 0.06, abs(fract(u2.x.mul(6.0).add(u2.y.mul(3.0))).sub(0.5)))).mul(0.3).add(oneMinus(smoothstep(0.0, 0.03, abs(u2.y.sub(0.5)))).mul(0.4));
     mat.colorNode = leafC.mul(oneMinus(vein.mul(0.4)).add(vein.mul(0.25)));
     mat.roughnessNode = float(0.78); mat.metalnessNode = float(0);
@@ -117,7 +117,7 @@ export function buildLitter(height: Height, opts: { density: number; keepOut: nu
     const mesh = new THREE.InstancedMesh(geo, mat, n);
     for (let i = 0; i < n; i++) {
       if (!place(3.0)) continue;
-      const sz = rng.range(0.8, 2.6) * 0.5;
+      const sz = rng.range(0.5, 1.6) * 0.5;
       q.setFromEuler(e.set(rng.range(-0.25, 0.25), rng.range(0, 6.28), rng.range(-0.25, 0.25))); p.y += rng.range(-0.05, 0.15);
       mesh.setMatrixAt(i, m4.compose(p, q, s.set(sz, sz, sz))); (tone.array as Float32Array)[i] = rng.next();
     }
