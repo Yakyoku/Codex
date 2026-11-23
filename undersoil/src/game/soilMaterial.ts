@@ -44,9 +44,10 @@ export function makeSoilMaterial(kind: GrainKind, na: THREE.Texture, detail: THR
   m.colorNode = opts.tint ? col.mul(vec3(...opts.tint)) : col;
   m.roughnessNode = saturate(mix(float(L.roughDry), float(L.roughWet), wet).add(d.r.sub(0.5).mul(0.25)));
   m.metalnessNode = float(0);
-  m.aoNode = mix(ao, float(1), 0.15);
+  const DBG = typeof location !== 'undefined' ? new URLSearchParams(location.search) : new URLSearchParams();
+  m.aoNode = DBG.has('noao') ? float(1) : mix(ao, float(1), 0.15);
   const n = normalMap(vec3(naT.r, naT.g, float(1)));
-  m.normalNode = n;
+  if (!DBG.has('nonormal')) m.normalNode = n;
   // 水の膜：クリアコートの二層反射。膜は滑らかなので、下地の凹凸は拾わせない
   m.clearcoatNode = wet.mul(L.coat);
   m.clearcoatRoughnessNode = mix(float(0.25), float(0.12), wet);

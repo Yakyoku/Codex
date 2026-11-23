@@ -115,7 +115,11 @@ for name, fn, seed, t0n, t1n, t2n in SPECS:
     # LOD0 に高解像度の形から法線と AO を焼く。LOD1 は同じ焼き方で別の画像（小さめ）
     for lo, size, tag in ((lod0, SIZE, ''), (lod1, SIZE // 2, '_lod1'), (lod2, SIZE // 4, '_lod2')):
         nrm = bake(lo, 'NORMAL', size, samples=1, highpoly=high, cage=0.06 if lo is not lod2 else 0.2)
-        ao = bake(lo, 'AO', size, samples=32, highpoly=high, cage=0.06 if lo is not lod2 else 0.2)
+        # AO は、その形だけを残して焼く。同じ場所に重なっている高解像度の形と他の LOD が写り込むと、黒い斑と割れ目のような線になる（2026-11-23 に見つけた不具合）
+        others = [o for o in (high, lod0, lod1, lod2) if o is not lo]
+        for o in others: o.hide_render = True
+        ao = bake(lo, 'AO', size, samples=32)
+        for o in others: o.hide_render = False
         n = np.array(nrm.pixels[:], dtype=np.float32).reshape(size, size, 4); a = np.array(ao.pixels[:], dtype=np.float32).reshape(size, size, 4)
         out = np.ones((size, size, 4), dtype=np.float32); out[..., 0] = n[..., 0]; out[..., 1] = n[..., 1]; out[..., 2] = a[..., 0]
         img = bpy.data.images.new('na', size, size, alpha=False); img.colorspace_settings.name = 'Non-Color'
