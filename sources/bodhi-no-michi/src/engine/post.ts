@@ -77,7 +77,7 @@ void main(){
   col = mix(col, mix(blur, far4, 0.6), wet * 0.75 * uArt.x * fx);
 
   // 墨の線：深度・法線の段差と、塗り分けの境（目・眉・筋）。筆圧で太さと濃さが揺れ、所々でかすれる。
-  float w = (1.0 + wn.b * 1.5) * uScale;
+  float w = (0.75 + wn.b * 0.9) * uScale;
   vec4 gL = texture(tG, uv - vec2(w, 0.0) * uPx), gR = texture(tG, uv + vec2(w, 0.0) * uPx);
   vec4 gD = texture(tG, uv - vec2(0.0, w) * uPx), gU = texture(tG, uv + vec2(0.0, w) * uPx);
   float zc = g0.z;
@@ -94,8 +94,8 @@ void main(){
   vec4 bn = nz(wp * 0.23 + 0.5);
   float breakup = smoothstep(0.14, 0.42, bn.r * 0.6 + wn.a * 0.4);        // かすれ・途切れ
   float lineA = e * lineMask * breakup * (1.0 - lit * 0.45) * (0.72 + bn.g * 0.5) * uArt2.x;
-  vec3 ink = mix(col * uLineCol, vec3(0.17, 0.15, 0.24), 0.72);          // 黒ではなく、藍を含んだ墨
-  col = mix(col, ink, clamp(lineA, 0.0, 0.94));
+  vec3 ink = mix(col * uLineCol, vec3(0.27, 0.22, 0.24), 0.62);          // 黒ではなく、藍を含んだ墨
+  col = mix(col, ink, clamp(lineA, 0.0, 0.86));
 
   // 紙の端は塗り残す（不定形の白へ溶かす）
   vec2 p = vUv * 2.0 - 1.0;

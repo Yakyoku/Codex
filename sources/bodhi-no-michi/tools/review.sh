@@ -3,12 +3,12 @@
 cd "$(dirname "$0")/.."
 O=${1:-round}; D=docs/art-review/prologue; mkdir -p $D .shots
 S() { node tools/shots.mjs "$1" .shots/$O-$2.png ${3:-960} ${4:-540} ${5:-14000} 1 2>&1 | grep -v -E 'toNonIndexed|AudioContext'; }
-S "?ui=0&cam=2.8,1.9,12.6,0.2,4.5,-9&fov=50" wide &
-S "?ui=0&cam=2.2,1.8,-3.2,6.0,3.3,-11.6&fov=50" a-full &
-S "?ui=0&cam=4.9,4.3,-8.3,6.15,4.72,-11.5&fov=30" a-face &
-S "?ui=0&cam=-4.9,4.3,-8.3,-6.15,4.72,-11.5&fov=30" un-face &
+S "?ui=0&cam=-0.6,2.6,13.2,0,3.6,-17&fov=48" wide &
+S "?ui=0&cam=2.0,2.2,-6,6.3,3.4,-18&fov=44" a-full &
+S "?ui=0&cam=5.3,5.0,-14.4,6.25,5.45,-17.9&fov=30" a-face &
+S "?ui=0&cam=-5.3,5.0,-14.4,-6.25,5.45,-17.9&fov=30" un-face &
 wait
-S "?ui=0&cam=2.3,1.75,4.4,0.9,1.2,6.5&fov=40" monk &
+S "?ui=0&cam=2.6,1.7,0.2,1.0,1.15,2.5&fov=40" monk &
 S "?auto=court&bot=1&speed=3" trial 960 540 100000 &
 S "?auto=begin&bot=1&ui=0" steps 960 540 22000 &
 S "" title &

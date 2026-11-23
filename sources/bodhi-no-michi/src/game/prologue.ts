@@ -101,7 +101,7 @@ export class Prologue {
       const ringMat = blotMaterial({ color: 0x3f4a66, opacity: 0, soft: 0.25, edge: 0.9 });
       const ring = new THREE.Mesh(new THREE.RingGeometry(0.86, 1, 48).rotateX(-Math.PI / 2), ringMat); ring.renderOrder = 3; ring.visible = false; root.add(ring);
       const home = this.scene.nioHome[i];
-      const d: Deity = { h, st: 'rest', t: 0, active: false, home, homeYaw: i === 0 ? -0.3 : 0.3, move: 'smash', impactIn: 0, struck: false, ring, ringMat, lastCycle: -1, wind: 1, cool: 2, combo: 1, feint: 0, grace: 0, waveR: 0, waveHit: false, pat: 0, spam: 0, push: 0 };
+      const d: Deity = { h, st: 'rest', t: 0, active: false, home, homeYaw: i === 0 ? -0.12 : 0.12, move: 'smash', impactIn: 0, struck: false, ring, ringMat, lastCycle: -1, wind: 1, cool: 2, combo: 1, feint: 0, grace: 0, waveR: 0, waveHit: false, pat: 0, spam: 0, push: 0 };
       h.place(home.x, home.z, d.homeYaw); h.target = i === 0 ? NIO_A_STAND : NIO_UN_STAND; h.rate = 5;
       h.onStep = () => { if (d.st === 'approach') this.audio.sfx('stomp', { pos: this.p3(h.pos), gain: 0.35 }); };
       this.nio.push(d);
@@ -114,7 +114,7 @@ export class Prologue {
       mesh.frustumCulled = false; mesh.renderOrder = 21; root.add(mesh);
       return { mesh, mat, p: new Float32Array(n * 8), seed, n };
     });
-    this.monk.place(0.9, 6.5, Math.PI); this.monk.target = MONK_IDLE;
+    this.monk.place(1.0, 2.5, Math.PI); this.monk.target = MONK_IDLE;
     progress(1, '筆を執ります');
   }
 
@@ -233,10 +233,10 @@ export class Prologue {
     this.busy = true; this.mode = 'cutscene'; this.setHint('');
     this.audio.sfx('bell');
     // 見せ場の構図：山門と二尊を見上げる
-    await this.cineTo([3.2, 1.7, 13.5], [1.6, 2.0, 9.5], [0.5, 5.2, -9], [0.3, 5.0, -10], 5.5);
+    await this.cineTo([0.9, 1.75, 14.5], [0.6, 2.0, 8.5], [0, 4.6, -16], [0, 4.4, -17], 5.5);
     await this.hooks.onZukan('kongorikishi');
     this.audio.sfx('voiceA', { pos: this.p3(this.nio[0].h.pos) });
-    void this.cineTo([-1.5, 2.4, 2.5], [-0.5, 2.6, 1.5], [6.0, 7.5, -11.6], [6.1, 8.2, -11.6], 9);
+    void this.cineTo([1.5, 2.2, -5.5], [2.5, 2.4, -7.5], [6.3, 4.4, -18], [6.3, 4.9, -18], 9);
     await this.ui.subtitle('来たか、修行の者。', '阿形', 3000);
     await this.ui.subtitle('力を比べるのではない。息を見よ。<br>阿（あ）で開き、吽（うん）で閉じる。', '阿形', 5200);
     this.cine = null;
@@ -645,7 +645,7 @@ export class Prologue {
     this.audio.setPhase(0); this.scene.setPhaseLook(4);
     for (const d of this.nio) { d.active = false; d.st = 'calm'; d.t = 0; }
     this.mind = 1;
-    void this.cineTo([this.monk.pos.x + 3, 1.6, this.monk.pos.z + 5], [1.0, 2.2, 6.5], [0, 4.5, -10], [0, 4.8, -10], 9);
+    void this.cineTo([this.monk.pos.x + 3, 1.6, this.monk.pos.z + 5], [0.6, 2.0, 7.5], [0, 4.2, -16], [0, 4.5, -17], 9);
     await this.wait(3.2);
     this.monk.yaw = Math.atan2(-this.monk.pos.x, GATE_Z - this.monk.pos.z); this.ps = 'pray';
     this.audio.sfx('voiceA', { pos: this.p3(this.nio[0].h.pos), gain: 0.6 });

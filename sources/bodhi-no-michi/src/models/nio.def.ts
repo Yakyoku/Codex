@@ -7,12 +7,12 @@ export const NIO_PROP = { H: 2.0, shoulderW: 0.275, hipW: 0.125, armLen: 0.74 };
 export const NIO_J = joints(NIO_PROP);
 
 // 彩色（顔料の色。濃い所は重ね塗りで深くなる）
-const SKIN: RGB = [0.85, 0.47, 0.35];       // 丹（に）の肌
-const SKIN_D: RGB = [0.62, 0.28, 0.24];
+const SKIN: RGB = [0.86, 0.62, 0.47];       // 丹（に）の肌
+const SKIN_D: RGB = [0.64, 0.38, 0.3];
 const INK: RGB = [0.27, 0.17, 0.22];        // 墨の描き込み（隈取り・筋）
-const CLOTH: RGB = [0.62, 0.74, 0.72];     // 裳：青緑
+const CLOTH: RGB = [0.55, 0.64, 0.42];     // 裳：青緑
 const CLOTH2: RGB = [0.8, 0.7, 0.45];      // 縁：黄土
-const SCARF: RGB = [0.88, 0.56, 0.4];      // 天衣：褪せた朱
+const SCARF: RGB = [0.78, 0.5, 0.38];      // 天衣：褪せた朱
 const HAIR: RGB = [0.3, 0.3, 0.42];
 const GOLD: RGB = [0.87, 0.7, 0.36];
 const WHITE: RGB = [0.97, 0.96, 0.93];
@@ -101,12 +101,12 @@ export function nioBody(): Sdf {
     // 襞の溝
     for (let i = 0; i < 4; i++) {
       const a = (i - 1.5) * 0.5 + sg * 0.25;
-      s.cone([sg * 0.13 + Math.sin(a) * 0.19, 0.98, Math.cos(a) * 0.19], [sg * 0.17 + Math.sin(a) * 0.27, 0.4, Math.cos(a) * 0.25], 0.012, 0.03, { bone: thigh, sub: true, k: 0.03, col: [0.5, 0.63, 0.63] });
+      s.cone([sg * 0.13 + Math.sin(a) * 0.19, 0.98, Math.cos(a) * 0.19], [sg * 0.17 + Math.sin(a) * 0.27, 0.4, Math.cos(a) * 0.25], 0.012, 0.03, { bone: thigh, sub: true, k: 0.03, col: [0.42, 0.5, 0.33] });
     }
   });
   s.ell([0, 0.62, 0.02], [0.16, 0.26, 0.13], { bone: B.hips, loose: 0.7, k: 0.07 });
   // 裾を切る（袋状にしない）→ 脛と足を付け直す
-  s.box([0, 0.17, 0], [0.9, 0.17, 0.9], 0.0, { sub: true, k: 0.015, col: [0.5, 0.63, 0.63] });
+  s.box([0, 0.17, 0], [0.9, 0.17, 0.9], 0.0, { sub: true, k: 0.015, col: [0.42, 0.5, 0.33] });
   s.set({ col: SKIN, k: 0.03, loose: 0 });
   s.mirror(sg => {
     const shin = sg > 0 ? B.shinL : B.shinR, foot = sg > 0 ? B.footL : B.footR;

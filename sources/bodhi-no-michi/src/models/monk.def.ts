@@ -6,8 +6,8 @@ export const MONK_PROP = { H: 1.7, shoulderW: 0.185, hipW: 0.085, armLen: 0.6 };
 export const MONK_J = joints(MONK_PROP);
 const SKIN: RGB = [0.93, 0.8, 0.68];
 const SKIN_D: RGB = [0.82, 0.62, 0.52];
-const ROBE: RGB = [0.44, 0.48, 0.62];      // 墨染め＝濃い藍
-const ROBE_L: RGB = [0.55, 0.6, 0.72];
+const ROBE: RGB = [0.5, 0.52, 0.57];      // 墨染め＝濃い藍
+const ROBE_L: RGB = [0.56, 0.59, 0.67];
 const WHITE: RGB = [0.97, 0.96, 0.92];
 const KESA: RGB = [0.72, 0.6, 0.42];      // 絡子（らくす）：黄土
 const STRAW: RGB = [0.82, 0.74, 0.52];
@@ -17,10 +17,10 @@ export function monkBody(): Sdf {
   const s = new Sdf(); s.skinK = 0.03;
   s.set({ col: ROBE, k: 0.04, loose: 0 });
   // 胴（衣の上から）
-  s.ell([0, 0.92, 0], [0.155, 0.11, 0.115], { bone: B.hips });
+  s.ell([0, 0.92, 0], [0.142, 0.11, 0.105], { bone: B.hips });
   s.ell([0, 1.06, 0.005], [0.15, 0.13, 0.11], { bone: B.spine });
-  s.ell([0, 1.24, 0], [0.175, 0.15, 0.115], { bone: B.chest });
-  s.ell([0, 1.36, -0.01], [0.17, 0.07, 0.1], { bone: B.chest });
+  s.ell([0, 1.24, 0], [0.16, 0.15, 0.105], { bone: B.chest });
+  s.ell([0, 1.36, -0.01], [0.16, 0.065, 0.095], { bone: B.chest });
   // 首（肌）と白い襟
   s.cone([0, 1.38, -0.005], [0, 1.5, 0.01], 0.05, 0.046, { bone: B.neck, col: SKIN, k: 0.02 });
   s.torus([0, 1.405, 0.0], 0.062, 0.02, { bone: B.chest, col: WHITE, k: 0.008, rot: [-18, 0, 0] });
@@ -30,17 +30,17 @@ export function monkBody(): Sdf {
   s.box([0, 1.2, 0.118], [0.055, 0.06, 0.008], 0.008, { bone: B.chest, col: KESA, k: 0.008 });
   s.mirror(sg => { s.cone([sg * 0.05, 1.26, 0.118], [sg * 0.075, 1.4, 0.04], 0.008, 0.008, { bone: B.chest, col: KESA, k: 0.005 }); });
   // 帯
-  s.torus([0, 0.99, 0], 0.142, 0.022, { bone: B.spine, col: [0.3, 0.33, 0.47], k: 0.006 });
+  s.torus([0, 0.99, 0], 0.132, 0.022, { bone: B.spine, col: [0.3, 0.33, 0.47], k: 0.006 });
   s.mirror(sg => {
     const L = sg > 0;
     const arm = L ? B.armL : B.armR, fore = L ? B.foreL : B.foreR, hand = L ? B.handL : B.handR;
     const thigh = L ? B.thighL : B.thighR, shin = L ? B.shinL : B.shinR, foot = L ? B.footL : B.footR;
     // 肩〜腕（袖の中）
-    s.ell([sg * 0.19, 1.385, 0], [0.07, 0.06, 0.07], { bone: arm, k: 0.035 });
-    s.cone([sg * 0.19, 1.385, 0], [sg * 0.47, 1.385, 0], 0.058, 0.06, { bone: arm, k: 0.03, loose: 0.1 });
-    s.cone([sg * 0.47, 1.385, 0], [sg * 0.62, 1.385, 0], 0.06, 0.066, { bone: fore, k: 0.03, loose: 0.3 });
+    s.ell([sg * 0.185, 1.385, 0], [0.058, 0.052, 0.06], { bone: arm, k: 0.035 });
+    s.cone([sg * 0.19, 1.385, 0], [sg * 0.47, 1.385, 0], 0.05, 0.05, { bone: arm, k: 0.03, loose: 0.1 });
+    s.cone([sg * 0.47, 1.385, 0], [sg * 0.62, 1.385, 0], 0.05, 0.056, { bone: fore, k: 0.03, loose: 0.3 });
     // 広い袖：前腕の下に垂れる
-    s.box([sg * 0.5, 1.26, 0], [0.095, 0.1, 0.012], 0.022, { bone: fore, k: 0.04, loose: 0.7 });
+    s.box([sg * 0.5, 1.27, 0], [0.09, 0.085, 0.01], 0.02, { bone: fore, k: 0.04, loose: 0.7 });
     s.box([sg * 0.52, 1.14, 0], [0.075, 0.06, 0.01], 0.02, { bone: fore, k: 0.03, loose: 1 });
     s.ell([sg * 0.64, 1.385, 0], [0.03, 0.05, 0.05], { bone: fore, sub: true, k: 0.01, col: [0.25, 0.28, 0.42] }); // 袖口
     // 手
@@ -53,8 +53,8 @@ export function monkBody(): Sdf {
     }
     s.cone([sg * 0.735, 1.38, 0.035], [sg * 0.78, 1.36, 0.05], 0.013, 0.011, { bone: hand, col: SKIN, k: 0.008 });
     // 衣の下半分：腰から脛へ。裾は揺れる
-    s.cone([sg * 0.075, 0.9, 0], [sg * 0.1, 0.6, 0.005], 0.125, 0.14, { bone: thigh, k: 0.06, loose: 0.3 });
-    s.cone([sg * 0.1, 0.6, 0.005], [sg * 0.12, 0.34, 0.0], 0.14, 0.15, { bone: thigh, k: 0.06, loose: 0.75 });
+    s.cone([sg * 0.075, 0.9, 0], [sg * 0.1, 0.6, 0.005], 0.112, 0.122, { bone: thigh, k: 0.06, loose: 0.3 });
+    s.cone([sg * 0.1, 0.6, 0.005], [sg * 0.12, 0.34, 0.0], 0.122, 0.138, { bone: thigh, k: 0.06, loose: 0.75 });
     for (let i = 0; i < 3; i++) {
       const a = (i - 1) * 0.7 + sg * 0.35;
       s.cone([sg * 0.08 + Math.sin(a) * 0.13, 0.9, Math.cos(a) * 0.13], [sg * 0.1 + Math.sin(a) * 0.2, 0.32, Math.cos(a) * 0.18], 0.008, 0.022, { bone: thigh, sub: true, k: 0.03, col: [0.28, 0.31, 0.46] });

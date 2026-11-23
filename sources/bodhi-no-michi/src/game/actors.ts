@@ -11,7 +11,7 @@ export const NIO_SCALE = 2.5; // 2m の造形 × 2.5 ＝ 像高 約5m
 export async function createMonk(): Promise<Humanoid & { staff: THREE.Mesh }> {
   const h = new Humanoid(MONK_J, 1) as Humanoid & { staff: THREE.Mesh };
   const [body, head, staff] = await Promise.all([loadMesh('monk-body'), loadMesh('monk-head'), loadMesh('shakujo')]);
-  h.add(body, wcMaterial({ vertexColors: true, noiseScale: 3.0, bands: [0.4, 0.7], dens: [1.6, 1.0, 0.42], mottle: 0.8, grain: 0.5, dry: 0.22, rim: 0.7, sway: 1, wind: 0.05, emph: 1 }));
+  h.add(body, wcMaterial({ vertexColors: true, noiseScale: 3.0, bands: [0.4, 0.7], dens: [1.3, 0.92, 0.48], mottle: 0.7, grain: 0.3, dry: 0.15, rim: 0.6, sway: 1, wind: 0.05, emph: 0.4 }));
   h.add(head, wcMaterial({ vertexColors: true, noiseScale: 3.0, bands: [0.36, 0.66], soft: 0.07, dens: [1.35, 1.0, 0.5], mottle: 0.3, grain: 0.25, dry: 0.04, rim: 0.5, emph: 1 }));
   h.staff = new THREE.Mesh(staff, wcMaterial({ vertexColors: true, noiseScale: 3.0, dens: [1.6, 1.0, 0.4], mottle: 0.5, grain: 0.5, dry: 0.3, emph: 1 }));
   h.rig.b('handR').add(h.staff);
@@ -38,7 +38,7 @@ export async function createNio(kind: NioKind): Promise<Humanoid & { vajra?: THR
 // ───────── 姿勢（オイラー角・ラジアン）。+x が本人の左。腕は基本姿勢でT字 ─────────
 import type { Pose } from '../engine/humanoid';
 /** 蓮：自然に立つ。右手に錫杖を立てて持つ */
-export const MONK_IDLE: Pose = { armL: [0.05, 0, -1.3], foreL: [0, -0.25, 0], armR: [0.1, 0.25, 1.05], foreR: [0, 1.25, 0], handR: [0, 0, 0], chest: [0.03, 0, 0], head: [0.02, 0, 0] };
+export const MONK_IDLE: Pose = { armL: [0.05, 0, -1.47], foreL: [0, -0.12, 0], armR: [0.1, 0.25, 1.05], foreR: [0, 1.25, 0], handR: [0, 0, 0], chest: [0.03, 0, 0], head: [0.02, 0, 0] };
 /** 金剛力士の構え（阿形：右手の金剛杵を高く振り上げ、左手は開いて下へ張る。腰をひねる） */
 export const NIO_A_STAND: Pose = { hips: [0, 0.3, 0.07], spine: [0.03, -0.12, -0.1], chest: [-0.1, -0.22, -0.05], head: [0.16, 0.2, 0.05],
   armR: [0, 0.3, -0.75], foreR: [0, 0, -1.35], handR: [0, 0, -0.1], armL: [0.3, 0.0, -0.95], foreL: [0, -0.3, 0], handL: [0, 0, 0.9] };

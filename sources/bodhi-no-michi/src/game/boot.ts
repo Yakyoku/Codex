@@ -84,10 +84,11 @@ export async function boot(canvas: HTMLCanvasElement, q: URLSearchParams): Promi
   if (q.get('art') === '1') artPanel(stage);
 
   const titleCam = (t: number) => {
-    const a = Math.sin(t * 0.07) * 0.5;
-    stage.camera.position.set(2.6 + a * 2.2, 1.9 + Math.sin(t * 0.05) * 0.2, 13.2 - Math.abs(a));
-    stage.camera.lookAt(-3.0, 5.0, -9); if (stage.camera.fov !== 50) { stage.camera.fov = 50; stage.camera.updateProjectionMatrix(); }
-    (G.uFocus.value as THREE.Vector4).set(0, 3, -8, 14);
+    // 題字：蓮の背中越しに、正面の山門と二尊を見る
+    const a = Math.sin(t * 0.06) * 0.6;
+    stage.camera.position.set(0.9 + a, 2.3 + Math.sin(t * 0.05) * 0.15, 12.6);
+    stage.camera.lookAt(-1.6 + a * 0.3, 4.3, -17); if (stage.camera.fov !== 50) { stage.camera.fov = 50; stage.camera.updateProjectionMatrix(); }
+    (G.uFocus.value as THREE.Vector4).set(0, 3, -10, 16);
   };
   const neutral: InputState = input.update();
 

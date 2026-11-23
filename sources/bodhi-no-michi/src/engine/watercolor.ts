@@ -76,6 +76,7 @@ export interface WcOpts {
   vertexColors?: boolean;
   side?: THREE.Side;
   fadeY?: [number, number]; // この高さより下を紙の白へ溶かす [開始, 終了]
+  flag?: [number, number, number, number]; // 敷石：中心x, 中心z, 半径, 石の大きさ
   alphaBlot?: boolean;      // 染みの形で抜く（霧・花びらなどの板）
   transparent?: boolean;
   opacity?: number;
@@ -142,7 +143,7 @@ layout(location = 1) out highp vec4 gBuf;
 uniform vec3 uLightDir, uShadowTint, uWarm, uPaper, uAerial, uTint;
 uniform float uAerialK, uClarity, uAerialAmt, uSoft, uMottle, uGrain, uRim, uDry, uLine, uFlat, uOpacity, uEmph;
 uniform vec4 uArt, uArt2, uFocus;
-uniform vec2 uBands, uFadeY; uniform vec3 uDens;
+uniform vec2 uBands, uFadeY; uniform vec3 uDens; uniform vec4 uFlag;
 varying vec3 vCol; varying vec3 vRest; varying vec3 vWorld; varying vec3 vN; varying vec3 vVN; varying float vViewZ; varying float vLoose;
 ${NOISE_GLSL}
 void main(){
@@ -190,6 +191,28 @@ void main(){
   vec3 pig = clamp(vCol * uTint, 0.002, 1.0);
   pig = mix(pig * mix(vec3(1.0), uShadowTint, 1.0 - uFlat), pig, b1);
   pig = mix(pig, pig * uWarm, b2);
+  #ifdef FLAG
+  {
+    // 不揃いの敷石：段ごとに幅とずれを変えた石組み。目地は濃く、苔がのる
+    float fm = 1.0 - smoothstep(uFlag.z - 1.2, uFlag.z + 0.6, distance(vWorld.xz, uFlag.xy) + (n1.r - 0.5) * 2.0);
+    vec2 fp = (vWorld.xz + (n1.rg - 0.5) * 0.6) / uFlag.w;
+    float row = floor(fp.y);
+    fp.x = fp.x * (0.6 + 0.32 * fract(sin(row * 91.7) * 4375.85)) + fract(sin(row * 12.9898) * 43758.5);
+    vec2 fid = floor(fp), ff = fract(fp);
+    float fr2 = fract(sin(dot(fid, vec2(127.1, 311.7))) * 43758.5453);
+    float fe = min(min(ff.x, 1.0 - ff.x) * 1.5, min(ff.y, 1.0 - ff.y));
+    float gap = (1.0 - smoothstep(0.008, 0.04, fe + (n2.r - 0.5) * 0.03)) * fm;
+    float nearG = (1.0 - smoothstep(0.03, 0.3, fe + (n2.g - 0.5) * 0.16)) * fm;
+    vec3 stone = vec3(0.8, 0.79, 0.74) * mix(0.84, 1.06, fr2) + vec3(0.03, 0.0, -0.03) * (fract(fr2 * 7.3) - 0.5);
+    pig = mix(pig, stone, fm);
+    // 苔は目地から石の上へ、染みのように広がる
+    float mossy = smoothstep(0.42, 0.72, n1.b * 0.5 + n2.b * 0.3 + n1.g * 0.3);
+    pig = mix(pig, vec3(0.52, 0.62, 0.4), clamp(nearG * mossy * 1.1 + mossy * 0.12, 0.0, 0.85) * fm);
+    // 目地は土と影の色（藍を含んだ焦げ茶）
+    pig = mix(pig, vec3(0.5, 0.47, 0.47), gap * 0.85);
+    dens += gap * 1.2 + nearG * 0.3 + (fr2 - 0.5) * 0.3 * fm;
+  }
+  #endif
   // 重ね塗り（透明水彩）：C' = C^d。濃い所は深く、薄い所は紙の白へ
   vec3 col = pow(pig, vec3(dens));
   // 彩度
@@ -221,6 +244,7 @@ export function wcMaterial(o: WcOpts = {}): THREE.ShaderMaterial {
   const defines: Record<string, string> = {};
   if (o.vertexColors) defines.USE_VC = '';
   if (o.worldAnchor) defines.ANCHOR_WORLD = '';
+  if (o.flag) defines.FLAG = '';
   const m = new THREE.ShaderMaterial({
     glslVersion: THREE.GLSL3,
     defines,
@@ -241,6 +265,7 @@ export function wcMaterial(o: WcOpts = {}): THREE.ShaderMaterial {
       uAerialAmt: { value: o.aerial ?? 1 },
       uNoiseScale: { value: o.noiseScale ?? 1 },
       uFadeY: { value: new THREE.Vector2(...(o.fadeY ?? [0, 0])) },
+      uFlag: { value: new THREE.Vector4(...(o.flag ?? [0, 0, 0, 1])) },
       uSwayVec: { value: new THREE.Vector3() },
       uSway: { value: o.sway ?? 0 },
       uWindAmt: { value: o.wind ?? 0 },
