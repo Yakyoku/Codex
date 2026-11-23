@@ -30,7 +30,7 @@ function valueNoise(seed: number) {
 
 export function makeHeight() {
   const n1 = valueNoise(11), n2 = valueNoise(12), n3 = valueNoise(13);
-  const big = crumbLayer(3.2, 1, 0.9, 2.2, 0.22, 0.55), mid = crumbLayer(1.15, 2, 0.35, 0.8, 0.6, 0.8), fine = crumbLayer(0.42, 3, 0.12, 0.3, 0.6, 0.9);
+  const big = crumbLayer(3.2, 1, 0.9, 2.2, 0.12, 0.55), mid = crumbLayer(1.15, 2, 0.35, 0.8, 0.6, 0.8), fine = crumbLayer(0.42, 3, 0.12, 0.3, 0.6, 0.9);
   const rough = (x: number, z: number) => Math.sin(x * 0.09) * 0.7 + Math.sin(z * 0.11 + 1.3) * 0.6 + Math.sin((x - z) * 0.23) * 0.25;
   return (x: number, z: number) => rough(x, z) + Math.max(big(x, z), mid(x, z) * 0.9, fine(x, z) * 0.8) + mid(x, z) * 0.15 + fine(x, z) * 0.12
     + n1(x * 1.3, z * 1.3) * 0.22 + n2(x * 3.7, z * 3.7) * 0.09 + n3(x * 9, z * 9) * 0.035;   // 細かい凸凹
@@ -71,14 +71,17 @@ export function buildGround(height: (x: number, z: number) => number, opts: { se
   const grainA = smoothstep(0.62, 0.18, sA), grainB = smoothstep(0.7, 0.25, sB);
   const tone = saturate(mx_noise_float(p.xz.mul(10.0).floor().add(0.5)).add(0.5));   // 粒ごとの色
   const sandCol = mix(vec3(0.13, 0.095, 0.065), vec3(0.30, 0.235, 0.17), tone);
-  col = mix(col, sandCol, grainA.mul(0.45).add(grainB.mul(0.25)).mul(oneMinus(wet.mul(0.5))));
+  col = mix(col, sandCol, grainA.mul(0.3).add(grainB.mul(0.15)).mul(oneMinus(wet.mul(0.5))));
   const gap = smoothstep(0.35, 0.75, sA).mul(smoothstep(0.4, 0.85, sB).mul(0.5).add(0.5));
-  col = col.mul(mix(float(1.0), float(0.18), gap.mul(0.75)));                  // 粒のすき間は暗い
+  col = col.mul(mix(float(0.75), float(0.15), gap.mul(0.8)));                  // 粒のすき間は暗い
   // ガラスのように透き通った石英の粒（一部だけ）：小さく鋭い光
   const quartz = smoothstep(0.08, 0.03, sA).mul(step(0.78, tone));
-  col = mix(col, vec3(0.55, 0.55, 0.52), quartz.mul(0.6));
+  col = mix(col, vec3(0.30, 0.29, 0.27), quartz.mul(0.3));
   const sand = quartz;
   col = col.mul(mix(float(1.0), float(0.55), cavity.mul(0.9)));            // くぼみは暗い
+  // 芽の出る所は、下から出てきた湿った土で暗い
+  const ctr = smoothstep(2.2, 0.4, length(p.xz));
+  col = col.mul(mix(float(1.0), float(0.55), ctr));
   m.colorNode = col;
   // 粗さ：乾いた所はつやなし、湿った所はしっとり。砂粒はわずかに光る
   m.roughnessNode = saturate(mix(float(0.95), float(0.6), wet).sub(sand.mul(0.8)));

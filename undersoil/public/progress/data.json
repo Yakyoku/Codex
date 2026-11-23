@@ -19,6 +19,14 @@
    "note": "参考にした写真（Wikimedia Commons。写真そのものは載せず、出所だけを示します）： https://commons.wikimedia.org/wiki/File:Trifolium_repens_2020-05-20_8615.jpg ／ https://commons.wikimedia.org/wiki/File:Trifolium_repens_kz01.jpg ／ https://commons.wikimedia.org/wiki/File:Trifolium_repens_2018-04-27_9523.jpg ／ https://commons.wikimedia.org/wiki/File:Trifolium_repens_2020-05-22_9003.jpg 　残っている違い：朝露なし、種皮をかぶった姿なし、本葉の縁のぎざぎざなし、子葉の表面のきらめきが写真より弱い。",
    "items": [
     {
+     "src": "./img/m1/sprout_v4_0.34.webp",
+     "caption": "土を下から押し上げて小さな山ができ、割れ目から芽の頭が出る。砂粒が斜面を転がり落ちる"
+    },
+    {
+     "src": "./img/m1/sprout_v4_0.5.webp",
+     "caption": "子葉に付いた砂粒は、子葉が開くとすべり落ちる"
+    },
+    {
      "src": "./img/m1/sprout_v3_0.42.webp",
      "caption": "土を割って出たところ。出たばかりの子葉は黄色"
     },

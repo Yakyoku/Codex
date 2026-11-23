@@ -7,6 +7,7 @@ import { makeRng } from './rng';
 import { makeSoilMaterial } from './soilMaterial';
 import { buildLitter } from './litter';
 import { buildGround, makeHeight } from './ground';
+import { buildSand, buildSpill } from './sand';
 
 export interface Surface { scene: THREE.Scene; camera: THREE.PerspectiveCamera; focusDistance: { value: number }; setGrowth(g: number): void; update(dt: number, t: number): void; growth: number; }
 const STAGES = ['S0_seed', 'S1_radicle', 'S2_hook', 'S3_lift', 'S4_half', 'S5_open'];
@@ -41,28 +42,18 @@ export async function buildSurface(renderer: THREE.WebGPURenderer, base: string,
   const height = makeHeight();
   scene.add(buildGround(height, { segments: opts.density >= 0.9 ? 420 : 300, size: 170, sunDir }));
   const rng = makeRng(4242); const detail = await loadTexture(base, 'tex/soil_detail.webp', { repeat: true });
-  // 土のかたまり：0.15〜1.1 mm の小さな団粒と砂粒を、地面の上にぎっしり重ねる（写真の、ぼろぼろした表面）
-  const kinds: [string, 'quartz' | 'aggregate' | 'humus', number, number, number][] = [['aggregate_a', 'aggregate', 0.18, 1.1, 5200], ['aggregate_b', 'aggregate', 0.14, 0.8, 6400], ['aggregate_c', 'aggregate', 0.1, 0.55, 6400], ['quartz_a', 'quartz', 0.06, 0.32, 1800], ['quartz_b', 'quartz', 0.05, 0.25, 1800], ['humus_a', 'humus', 0.15, 0.8, 900]];
-  const lifts: { mesh: THREE.InstancedMesh; idx: number[]; base: THREE.Matrix4[] }[] = [];
-  for (const [nm, kind, r0, r1, n0] of kinds) {
-    const n = Math.round(n0 * opts.density * (kind === 'quartz' ? 0.8 : 0.25));
-    const near = kind !== 'quartz';
-    const [g, na] = await Promise.all([loadGLB(base, `models/grains/${nm}.glb`), loadTexture(base, `models/grains/${nm}_lod2_na.webp`)]);
-    const geo = (g.scene.getObjectByName(`${nm}_LOD2`) as THREE.Mesh).geometry;
-    const wet = new THREE.InstancedBufferAttribute(new Float32Array(n), 1), seed = new THREE.InstancedBufferAttribute(new Float32Array(n), 1);
-    const mesh = new THREE.InstancedMesh(geo, makeSoilMaterial(kind, na, detail, wet, seed, { mottle: 0.08, tint: kind === 'quartz' ? [0.92, 0.9, 0.86] : [0.80, 0.68, 0.56] }), n);
-    const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), p = new THREE.Vector3(), sc = new THREE.Vector3(); const idx: number[] = [], bases: THREE.Matrix4[] = [];
-    for (let i = 0; i < n; i++) {
-      const a = rng.range(0, Math.PI * 2), rad = 34 * rng.next() ** 0.62, r = (r0 + (r1 - r0) * rng.next() ** 2.4) * (1 + rad * 0.03);
-      p.set(Math.cos(a) * rad, 0, Math.sin(a) * rad); p.y = height(p.x, p.z) - r * rng.range(0.15, 0.5);
-      q.setFromEuler(e.set(rng.range(0, 6.28), rng.range(0, 6.28), rng.range(0, 6.28))); sc.set(r, r * rng.range(0.6, 0.9), r * rng.range(0.85, 1.1));
-      mesh.setMatrixAt(i, m4.compose(p, q, sc));
-      { const patch = 0.5 + 0.5 * Math.sin(p.x * 0.31 + Math.sin(p.z * 0.23) * 2.0) * Math.sin(p.z * 0.27 + 0.7); (wet.array as Float32Array)[i] = (0.06 + 0.3 * patch * patch) * rng.range(0.7, 1); }
-      (seed.array as Float32Array)[i] = rng.next();
-      if (near && rad < 3.2) { idx.push(i); bases.push(m4.clone()); }
-    }
-    mesh.castShadow = true; mesh.receiveShadow = true; mesh.computeBoundingSphere(); scene.add(mesh); lifts.push({ mesh, idx, base: bases });
-  }
+  // 土：一粒ずつの砂粒と、粒が集まった小さなかたまり（sand.ts）。芽の上の粒は、芽が出るときにこぼれ落ちる（下の spill）
+  const sand = buildSand(height, { density: opts.density, radius: 30, keepOut: 1.7 });
+  scene.add(sand.group);
+  // 小石：まれに混じる、角の取れた石（0.4〜1.2 mm）
+  { const rngS = makeRng(4242); const detail = await loadTexture(base, 'tex/soil_detail.webp', { repeat: true });
+    const [g, na] = await Promise.all([loadGLB(base, 'models/grains/quartz_b.glb'), loadTexture(base, 'models/grains/quartz_b_lod1_na.webp')]);
+    const n = Math.round(46 * opts.density); const wet = new THREE.InstancedBufferAttribute(new Float32Array(n), 1), seedA = new THREE.InstancedBufferAttribute(new Float32Array(n), 1);
+    const mesh = new THREE.InstancedMesh((g.scene.getObjectByName('quartz_b_LOD1') as THREE.Mesh).geometry, makeSoilMaterial('quartz', na, detail, wet, seedA, { mottle: 0.1, tint: [0.85, 0.82, 0.78] }), n);
+    const m4 = new THREE.Matrix4(), e = new THREE.Euler(), q = new THREE.Quaternion(), p = new THREE.Vector3(), sc = new THREE.Vector3();
+    for (let i = 0; i < n; i++) { const a = rngS.range(0, 6.28), r = 3 + 26 * rngS.next() ** 0.8, sz = (0.2 + 0.4 * rngS.next() ** 2) * (1 + r * 0.03); p.set(Math.cos(a) * r, 0, Math.sin(a) * r); p.y = height(p.x, p.z) - sz * 0.35;
+      mesh.setMatrixAt(i, m4.compose(p, q.setFromEuler(e.set(rngS.range(0, 6), rngS.range(0, 6), rngS.range(0, 6))), sc.set(sz, sz * 0.7, sz))); (seedA.array as Float32Array)[i] = rngS.next(); }
+    mesh.castShadow = true; mesh.receiveShadow = true; mesh.computeBoundingSphere(); scene.add(mesh); }
   scene.add(buildLitter(height, { density: opts.density, keepOut: 1.6, radius: 30, sunDir }));
 
   // 芽生え（子葉・胚軸・根）と、最初の本葉
@@ -162,26 +153,28 @@ export async function buildSurface(renderer: THREE.WebGPURenderer, base: string,
   /** 0..n の位置から、隣り合う2つのキーの重みを決める（最後の先は基本形＝重みなし） */
   const blend = (inf: number[], d: Record<string, number>, names: string[], x: number) => { const i = Math.min(names.length - 1, Math.floor(x)); const f = ease(Math.min(1, x - i)); inf.fill(0); inf[d[names[i]]] = 1 - f; if (i + 1 < names.length) inf[d[names[i + 1]]] = f; };
 
-  const tmp = new THREE.Matrix4(), tp = new THREE.Vector3(), tq = new THREE.Quaternion(), ts = new THREE.Vector3();
+  const key = (t: number, pts: [number, number][]) => { for (let i = 1; i < pts.length; i++) if (t <= pts[i][0]) { const [t0, v0] = pts[i - 1], [t1, v1] = pts[i]; return v0 + (v1 - v0) * ((t - t0) / (t1 - t0)); } return pts[pts.length - 1][1]; };
+  const pose = (g: number) => {
+    // 時間配分：土の中（種〜かぎ）はゆっくり、地上に出てからの「持ち上げ〜開く」をたっぷり見せ、最後に本葉が伸びる
+    blend(infl, dict, STAGES, key(g, [[0, 0], [0.08, 1], [0.24, 2], [0.38, 3], [0.52, 4], [0.66, 5], [0.80, 6], [1, 6]]));
+    blend(linfl, ldict, LEAF_STAGES, key(g, [[0, 0], [0.66, 0], [0.76, 1], [0.88, 2], [1, 3]]));
+    leaf.visible = g > 0.66;
+    uGreen.value = Math.max(0, Math.min(1, (g - 0.30) / 0.36));
+    // 首振り（回旋運動）：早回し動画（CC BY 3.0、Internet Archive の接写映像）で確かめた動き。
+    // 芽が出てから子葉が開くまでの間、かぎ形の先が左右にゆっくり大きく揺れ（約 3 往復）、開ききると収まる
+    const w = Math.max(0, Math.min(1, (g - 0.22) / 0.46)), env = Math.sin(w * Math.PI) ** 0.8;
+    const ph = w * Math.PI * 2 * 3;
+    holder.rotation.z = Math.sin(ph) * 0.12 * env; holder.rotation.x = Math.sin(ph * 0.5 + 0.7) * 0.05 * env;
+  };
+  holder.updateMatrixWorld(true);
+  const spill = buildSpill(height, sand.geos, sand.mats, plant, pose, { growSec: 26, count: Math.round(1300 * Math.max(0.6, opts.density)), stuck: 60 });
+  scene.add(spill.group); const dq = new URLSearchParams(location.search); if (dq.has('nospill')) spill.group.visible = false; if (dq.has('noplant')) holder.visible = false;
   const focusDistance = uniform(16);
   const surf: Surface = {
     scene, camera, growth: 0, focusDistance,
     setGrowth(g) {
       surf.growth = g = Math.max(0, Math.min(1, g));
-      // 時間配分：土の中（種〜かぎ）はゆっくり、地上に出てからの「持ち上げ〜開く」をたっぷり見せ、最後に本葉が伸びる
-      const key = (t: number, pts: [number, number][]) => { for (let i = 1; i < pts.length; i++) if (t <= pts[i][0]) { const [t0, v0] = pts[i - 1], [t1, v1] = pts[i]; return v0 + (v1 - v0) * ((t - t0) / (t1 - t0)); } return pts[pts.length - 1][1]; };
-      blend(infl, dict, STAGES, key(g, [[0, 0], [0.08, 1], [0.24, 2], [0.38, 3], [0.52, 4], [0.66, 5], [0.80, 6], [1, 6]]));
-      blend(linfl, ldict, LEAF_STAGES, key(g, [[0, 0], [0.66, 0], [0.76, 1], [0.88, 2], [1, 3]]));
-      leaf.visible = g > 0.66;
-      uGreen.value = Math.max(0, Math.min(1, (g - 0.30) / 0.36));
-      // 首振り（回旋運動）：早回し動画（CC BY 3.0、Internet Archive の接写映像）で確かめた動き。
-      // 芽が出てから子葉が開くまでの間、かぎ形の先が左右にゆっくり大きく揺れ（約 3 往復）、開ききると収まる
-      const w = Math.max(0, Math.min(1, (g - 0.22) / 0.46)), env = Math.sin(w * Math.PI) ** 0.8;
-      const ph = w * Math.PI * 2 * 3;
-      holder.rotation.z = Math.sin(ph) * 0.12 * env; holder.rotation.x = Math.sin(ph * 0.5 + 0.7) * 0.05 * env;
-      // 胚軸が土を押し上げる：芽の出る所の粒が、盛り上がって外へ退く
-      const push = Math.max(0, Math.min(1, (g - 0.16) / 0.16));
-      for (const L of lifts) { L.idx.forEach((ii, k) => { L.base[k].decompose(tp, tq, ts); const d = Math.hypot(tp.x, tp.z), w = Math.max(0, 1 - d / 3.2) * push; if (d > 1e-3) { tp.x += (tp.x / d) * w * 0.9; tp.z += (tp.z / d) * w * 0.9; } tp.y += w * 0.45; L.mesh.setMatrixAt(ii, tmp.compose(tp, tq, ts)); }); L.mesh.instanceMatrix.needsUpdate = true; }
+      pose(g); spill.update(g);
     },
     update(_dt, t) {
       // カメラ：写真のように 55°で見下ろし、固定（早回しの間、カメラは動かさない）。画面の幅は約 20 mm。地平線と空は写さない
