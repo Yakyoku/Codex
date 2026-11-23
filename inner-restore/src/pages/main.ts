@@ -5,6 +5,7 @@ import { createRenderer, fitRenderer, backendPrefFromURL } from '../core/rendere
 import { detectDevice, DEVICE_LABEL, pickTier, TIER_LABEL } from '../core/device';
 import { Hud } from '../core/hud';
 import { DynamicResolution } from '../core/dynres';
+import { createPost } from '../core/post';
 import { Input } from '../core/input';
 import { GameAudio, speak } from '../core/audio';
 import { buildRetina } from '../stages/eye/retina';
@@ -52,6 +53,8 @@ async function main() {
   progress(0.7);
   const diver = await Diver.load(tier === 'pc-high' || tier === 'mobile-high');
   stage.scene.add(diver.root);
+  // 仕上げ（浅いピント・光のにじみ・色調）。?post=off で切れる
+  const post = Q.get('post') === 'off' ? null : createPost(renderer, stage.scene, camera, Q.get('post') === 'full' ? 'pc-high' : tier);
   const audio = new GameAudio();
   const input = new Input(canvas);
   input.sens = { mouse: tuning.camera.mouseSens, pad: tuning.camera.padSens, touch: tuning.camera.touchSens };
@@ -256,11 +259,12 @@ async function main() {
     if (sim !== null) { for (const id of ['hud', 'patient', 'hint']) $(id).classList.remove('hide'); setKind('kbm'); $('reticle').classList.remove('hide'); const n = Math.round(sim * 30); for (let i = 0; i < n; i++) step(1 / 30); }
     else { const c = debugCam!.split(',').map(Number); diver.root.visible = false; for (let i = 0; i < 40; i++) stage.update(0.1, i * 0.1, camera); camera.position.set(c[0], c[1], c[2]); camera.lookAt(c[3], c[4], c[5]); camera.updateMatrixWorld(); stage.update(0, 4, camera); }
   }
+  const dbgTarget = new THREE.Vector3(...(debugCam ? debugCam.split(',').map(Number).slice(3, 6) : [0, 0, 0]));
   let last = performance.now();
   renderer.setAnimationLoop(() => {
     const now = performance.now(); const dt = Math.min(0.05, (now - last) / 1000); last = now;
     if (!debugCam && sim === null && !paused) { if (started) step(dt); else { t += dt; stage.update(dt, t, camera); } dyn?.tick(dt); }
-    renderer.render(stage.scene, camera);
+    if (post) { if (post.useDof) post.focus.value += (camera.position.distanceTo(debugCam ? dbgTarget : diver.root.position) + 0.3 - post.focus.value) * (debugCam ? 1 : 0.2); post.render(); } else renderer.render(stage.scene, camera);
     hud.tick();
     W.__irFrames = ((W.__irFrames as number) || 0) + 1;
     if (Q.has('frames') && (W.__irFrames as number) >= Number(Q.get('frames'))) { renderer.setAnimationLoop(null); W.__irDone = true; }
