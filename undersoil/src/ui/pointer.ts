@@ -3,20 +3,18 @@
 import * as THREE from 'three/webgpu';
 import './pointer.css';
 import type { Target } from '../game/encounters';
-import { dot, float, mix, normalLocal, normalView, oneMinus, positionLocal, positionViewDirection, pow, saturate, time, vec3 } from 'three/tsl';
+import { dot, float, mix, normalView, oneMinus, positionViewDirection, pow, saturate, time, vec3 } from 'three/tsl';
 
 /** 説明している物そのものの輪郭を光らせる（裏返して少し大きくした形＝輪郭線、表は縁だけ光る） */
 function makeHighlight(scene: THREE.Scene) {
   const t = time.mul(3.0).sin().mul(0.5).add(0.5);
-  const outline = new THREE.MeshBasicNodeMaterial({ side: THREE.BackSide, transparent: true, depthWrite: false });
-  outline.colorNode = vec3(1.0, 0.72, 0.32); outline.opacityNode = mix(float(0.55), float(0.95), t);
-  outline.positionNode = positionLocal.add(normalLocal.mul(0.06));
-  const rim = new THREE.MeshBasicNodeMaterial({ transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
-  rim.colorNode = vec3(1.0, 0.7, 0.3).mul(pow(oneMinus(saturate(dot(normalView, positionViewDirection))), 2.2)).mul(mix(float(0.5), float(1.0), t));
+  // 縁だけが金色に光る（形を太らせた殻は使わない。粒が大きいと殻が厚い黄色の塊に見えた）
+  const rim = new THREE.MeshBasicNodeMaterial({ transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
+  rim.colorNode = vec3(1.0, 0.62, 0.22).mul(pow(oneMinus(saturate(dot(normalView, positionViewDirection))), 2.2)).mul(mix(float(0.6), float(1.3), t));
   const group = new THREE.Group(); group.matrixAutoUpdate = false; group.renderOrder = 20; scene.add(group);
-  const a = new THREE.Mesh(undefined, outline), b = new THREE.Mesh(undefined, rim); a.renderOrder = b.renderOrder = 20; group.add(a, b); group.visible = false;
+  const b = new THREE.Mesh(undefined, rim); b.renderOrder = 20; group.add(b); group.visible = false;
   return {
-    set(geo: THREE.BufferGeometry | undefined, m: THREE.Matrix4 | undefined) { if (!geo || !m) { group.visible = false; return; } a.geometry = b.geometry = geo; group.matrix.copy(m); group.matrixWorldNeedsUpdate = true; group.visible = true; },
+    set(geo: THREE.BufferGeometry | undefined, m: THREE.Matrix4 | undefined) { if (!geo || !m) { group.visible = false; return; } b.geometry = geo; group.matrix.copy(m); group.matrixWorldNeedsUpdate = true; group.visible = true; },
     hide() { group.visible = false; },
   };
 }
@@ -63,7 +61,7 @@ export function makePointer(camera: THREE.PerspectiveCamera, scenes: THREE.Scene
         ring.style.display = ring2.style.display = ticks.style.display = 'none'; line.setAttribute('d', '');
         return;
       }
-      arrow.style.display = 'none'; ring.style.display = ring2.style.display = ticks.style.display = cached.geo ? 'none' : '';
+      arrow.style.display = 'none'; ring.style.display = ring2.style.display = cached.geo ? 'none' : ''; ticks.style.display = '';
       ring.setAttribute('cx', String(x)); ring.setAttribute('cy', String(y)); ring.setAttribute('r', String(r * pulse));
       ring2.setAttribute('cx', String(x)); ring2.setAttribute('cy', String(y)); ring2.setAttribute('r', String(r * 1.22));
       const t = r * 1.22, k = 9;
