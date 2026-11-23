@@ -5,7 +5,7 @@ export type V3 = [number, number, number];
 export type RGB = [number, number, number];
 
 type Kind = 'ell' | 'cone' | 'box' | 'torus';
-interface Prim {
+export interface Prim {
   kind: Kind;
   c: V3;                 // 中心
   m: number[];           // 回転行列（ローカル→ワールド）の転置＝ワールド→ローカル（9要素）

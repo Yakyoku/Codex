@@ -25,7 +25,7 @@ export async function createNio(kind: NioKind): Promise<Humanoid & { vajra?: THR
   h.kind = kind;
   const [body, head, vj] = await Promise.all([loadMesh('nio-body'), loadMesh(kind === 'a' ? 'nio-head-a' : 'nio-head-un'), loadMesh('vajra')]);
   h.add(body, wcMaterial({ vertexColors: true, noiseScale: 1.9, bands: [0.4, 0.7], dens: [1.7, 1.1, 0.55], mottle: 0.45, grain: 0.22, dry: 0.14, rim: 0.9, sway: 1, wind: 0.22, emph: 1 }));
-  h.add(head, wcMaterial({ vertexColors: true, noiseScale: 1.9, bands: [0.38, 0.68], soft: 0.07, dens: [1.32, 1.08, 0.6], mottle: 0.25, grain: 0.14, dry: 0.05, rim: 0.6, emph: 1 }));
+  h.add(head, wcMaterial({ vertexColors: true, noiseScale: 1.9, bands: [0.32, 0.64], soft: 0.09, dens: [1.25, 1.05, 0.6], mottle: 0.25, grain: 0.14, dry: 0.05, rim: 0.6, emph: 1 }));
   if (kind === 'a') {
     h.vajra = new THREE.Mesh(vj, wcMaterial({ vertexColors: true, noiseScale: 4, dens: [1.7, 1.0, 0.3], mottle: 0.5, grain: 0.4, dry: 0.2, emph: 1 }));
     h.vajra.scale.set(1.35, 0.72, 1.35); h.vajra.position.set(-0.1, -0.03, 0); h.vajra.rotation.set(Math.PI / 2, 0, 0);

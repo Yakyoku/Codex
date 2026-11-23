@@ -44,7 +44,7 @@ export async function runViewer(canvas: HTMLCanvasElement, q: URLSearchParams): 
   const un = what === 'un';
   const [body, head] = await Promise.all([loadMesh(monk ? 'monk-body' : 'nio-body'), loadMesh(monk ? 'monk-head' : un ? 'nio-head-un' : 'nio-head-a')]);
   rig.add(body, mat);
-  rig.add(head, wcMaterial({ vertexColors: true, skinned: true, noiseScale: 2.2, soft: 0.03, mottle: 0.3, grain: 0.25, dry: 0.05, emph: 1, dens: [1.4, 1.0, 0.45] }));
+  rig.add(head, wcMaterial({ vertexColors: true, skinned: true, noiseScale: 2.2, soft: 0.03, mottle: 0.3, grain: 0.25, dry: 0.05, emph: 1, dens: [1.25, 1.05, 0.6], bands: [0.32, 0.64] }));
   st.scene.add(rig.root);
   // 腕を下ろした仮の構え
   rig.b('armL').rotation.z = -1.0; rig.b('armR').rotation.z = 1.0; rig.b('foreR').rotation.z = 0.6;
