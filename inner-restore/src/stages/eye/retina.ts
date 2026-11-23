@@ -339,6 +339,7 @@ export async function buildRetina(renderer: THREE.WebGPURenderer, tier: Tier, op
       cone.quaternion.setFromUnitVectors(new THREE.Vector3(0, -1, 0), sun.position.clone().multiplyScalar(-1).normalize()); cone.renderOrder = 2; scene.add(cone);
     }
   }
+  const NEAR = 18; let nearMotes: (cam: THREE.Vector3) => void = () => {};
   // ---- 硝子体：コラーゲンの細い線維（太さ 10〜20nm。この縮尺では糸のように見える）と、ただよう微粒子 ----
   {
     let seed = 9; const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
@@ -360,6 +361,17 @@ export async function buildRetina(renderer: THREE.WebGPURenderer, tier: Tier, op
     pm.colorNode = color(0xfff0e0); pm.opacityNode = float(0.16).mul(u.lightIn.mul(0.7).add(0.35)); pm.sizeNode = float(vr ? 0.015 : 0.07);
     const pts = new THREE.Points(pg, pm); pts.renderOrder = 41; scene.add(pts);
     (scene.userData as { motes: THREE.Points }).motes = pts;
+    // 体のまわりの細かな粒：泳いで進むと、そばを後ろへ流れていく（何もない水の中でも、動いていることが分かる）
+    const nN = vr ? 220 : 420, base = new Float32Array(nN * 3), np = new Float32Array(nN * 3);
+    for (let i = 0; i < nN * 3; i++) base[i] = rnd() * NEAR;
+    const ng = new THREE.BufferGeometry(); ng.setAttribute('position', new THREE.BufferAttribute(np, 3));
+    const nm = new THREE.PointsNodeMaterial({ transparent: true, depthWrite: false, sizeAttenuation: true });
+    nm.colorNode = color(0xfff4ea); nm.opacityNode = float(0.32); nm.sizeNode = float(vr ? 0.02 : 0.05);
+    const near = new THREE.Points(ng, nm); near.frustumCulled = false; near.renderOrder = 42; scene.add(near);
+    nearMotes = (cam: THREE.Vector3) => {
+      for (let i = 0; i < nN; i++) for (let k = 0; k < 3; k++) { const c = cam.getComponent(k); let v = (base[i * 3 + k] - c) % NEAR; if (v < 0) v += NEAR; np[i * 3 + k] = c + v - NEAR / 2; }
+      (ng.attributes.position as THREE.BufferAttribute).needsUpdate = true;
+    };
   }
 
   function floorHeight(x: number, z: number): number {
@@ -378,7 +390,7 @@ export async function buildRetina(renderer: THREE.WebGPURenderer, tier: Tier, op
     meta: RETINA_META, scene, health, size: [W, D], u, floorHeight, sun, cores, progress,
     // 入口：硝子体の高い所から、瞳の光の柱をたどって泳いで降りる
     // 向き：区域の中ほど（＋x）を向いて始める（以前は外の縁を向いていて、前へ進むとすぐ端で止まった）
-    start: { pos: new THREE.Vector3(-58, opts.entrance ? floorHeight(-58, 6) + 34 : 0, 6), yaw: Math.atan2(58, -6), swimming: !!opts.entrance },
+    start: { pos: new THREE.Vector3(-58, opts.entrance ? floorHeight(-58, 6) + 20 : 0, 6), yaw: Math.atan2(58, -6), swimming: !!opts.entrance },
     causeAt(x, z) { const near = vDist(x, z) < 9; return near ? { short: '毛細血管の閉塞', cause: '赤血球が止まって詰まり、この先へ血が届いていません' } : { short: '虚血（血が届かない）', cause: '近くの血管が止まり、酸素が届かず濁っています' }; },
     encounters(pos, t, walked) {
       const out: { id: string; at: THREE.Vector3 | null }[] = [];
@@ -427,6 +439,7 @@ export async function buildRetina(renderer: THREE.WebGPURenderer, tier: Tier, op
       updateFlow(dt, t);
       if (health.version !== hVersion) { health.toBytes(hBytes); hTex.needsUpdate = true; hVersion = health.version; }
       keyLightDirView.value.copy(sun.position).normalize().transformDirection(camera.matrixWorldInverse);
+      nearMotes(camera.position);
     },
   };
 }

@@ -211,7 +211,7 @@ async function main() {
       dir.set(fx * Math.cos(pitch), -Math.sin(pitch), fz * Math.cos(pitch));
       tmp.set(dir.x * input.moveY - fz * input.moveX, dir.y * input.moveY, dir.z * input.moveY + fx * input.moveX).multiplyScalar(S);
       tmp.y += ((input.swimUp ? 1 : 0) - (input.swimDown ? 1 : 0)) * S * 0.8;
-      if (!arrived && !input.swimUp) tmp.y -= S * 0.35;   // 入口：何もしなくても、ゆっくり網膜へ沈んでいく
+      if (!arrived && !input.swimUp) tmp.y -= S * 0.3;   // 入口：何もしなくても、ゆっくり網膜へ沈んでいく
       const wantMove = tmp.lengthSq() > 0.01;
       swimVel.lerp(tmp, Math.min(1, dt * (wantMove ? P.swimAccel : P.swimDrag)));
       pos.addScaledVector(swimVel, dt);

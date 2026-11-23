@@ -1,6 +1,6 @@
 {
   "player": { "height": 2.0, "walkSpeed": 3.1, "dashSpeed": 4.2, "accel": 6.0, "decel": 6.5, "turnLerp": 10.0, "eyeHeight": 1.75,
-    "swimSpeed": 2.4, "swimDash": 1.5, "swimAccel": 2.2, "swimDrag": 1.3, "swimLift": 2.4, "swimCeil": 16 },
+    "swimSpeed": 4.2, "swimDash": 1.5, "swimAccel": 3.0, "swimDrag": 1.3, "swimLift": 2.4, "swimCeil": 16 },
   "camera": { "distance": 5.4, "height": 2.2, "fov": 50, "follow": 6.0, "pitchMin": -0.55, "pitchMax": 0.9, "mouseSens": 0.0022, "padSens": 2.2, "touchSens": 0.005 },
   "beam": { "range": 26, "radius": 13, "rate": 0.95, "atpPerSec": 0 },
   "scan": { "fadeIn": 5.0, "fadeOut": 2.2 },
