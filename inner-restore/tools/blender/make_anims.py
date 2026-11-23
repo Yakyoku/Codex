@@ -129,7 +129,7 @@ def empty(name, loc):
 def add_ik(bone, target, pole, chain=2):
     pb = rig.pose.bones[bone]; c = pb.constraints.new("IK"); c.target = target; c.chain_count = chain; c.pole_target = pole
     best = None
-    for ang in range(-180, 180, 15):      # ひざ・ひじが極（pole）の方を向く角度を探す
+    for ang in range(-180, 180, 5):      # ひざ・ひじが極（pole）の方を向く角度を探す
         c.pole_angle = math.radians(ang); bpy.context.view_layer.update()
         mid = rig.matrix_world @ rig.pose.bones[bone].head
         d = (mid - pole.location).length
@@ -174,7 +174,7 @@ HIP_L, HIP_R = world_of("thighL", False), world_of("thighR", False)
 # 着地はかかとから、蹴り出しはつま先で。腰の上下・左右、骨盤のひねり、腕の振りは止まらない滑らかな波で動かす。
 import math as _m
 def _ease(u): return 0.5 - 0.5 * _m.cos(_m.pi * u)
-def loco(name, T, fs, D, lift, drop, bob, twist, tilt, shift, lean, arm, elbow, elbow_fwd, run=False):
+def loco(name, T, fs, D, lift, drop, bob, twist, tilt, shift, lean, arm, elbow, elbow_fwd, run=False, arm_in=0.0, track=0.06):
     """T: 1周期（2歩）のコマ数, fs: 足が地面に着いている割合, D: 着いている間に足が後ろへ流れる距離（＝歩幅）,
        lift: 足を上げる高さ, drop: 骨盤を下げる量, bob: 上下動, twist/tilt/shift: 骨盤のひねり・傾き・左右移動,
        lean: 前傾, arm: 腕の振り, elbow: ひじの曲げ, elbow_fwd: 腕が前のときの追加の曲げ"""
@@ -183,6 +183,11 @@ def loco(name, T, fs, D, lift, drop, bob, twist, tilt, shift, lean, arm, elbow, 
     po = {k: empty("pole_" + k, (0, 0, 0)) for k in ("footL", "footR")}
     rot = {k: empty("rot_" + k, (0, 0, 0)) for k in ("footL", "footR")}
     base_q = {k: (rig.matrix_world @ rig.data.bones[k].matrix_local).to_quaternion() for k in ("footL", "footR")}
+    # ひざが向く角度を探す前に、足を少し引き上げてひざが前へ曲がる姿勢を作っておく（目標が原点のままだと、ひざが内側・横へ曲がる）
+    apply({}, (0, 0, -drop)); bpy.context.view_layer.update()
+    for k, AN, sx in (("footL", AN_L, 1), ("footR", AN_R, -1)):
+        tg[k].location = (sx * track, AN.y, AN.z + 0.18); po[k].location = (sx * track * 0.4, AN.y - 1.0, 0.55)
+    bpy.context.view_layer.update()
     add_ik("shinL", tg["footL"], po["footL"]); add_ik("shinR", tg["footR"], po["footR"])
     for k in ("footL", "footR"):
         c = rig.pose.bones[k].constraints.new("COPY_ROTATION"); c.target = rot[k]
@@ -195,7 +200,7 @@ def loco(name, T, fs, D, lift, drop, bob, twist, tilt, shift, lean, arm, elbow, 
         tw = twist * _m.cos(2 * _m.pi * p); tl = tilt * _m.sin(2 * _m.pi * p - 0.6)
         armL = arm * _m.cos(2 * _m.pi * p); armR = -armL
         pose = {"pelvis": (lean * 0.45, tw, tl), "chest": (lean * 0.55 + 0.012 * _m.cos(4 * _m.pi * p), -tw * 1.1, -tl * 0.7), "head": (-lean * 0.8, tw * 0.15, tl * 0.3),
-                "upperArmL": (armL, 0, 0.05 + abs(armL) * 0.05), "upperArmR": (armR, 0, -0.05 - abs(armR) * 0.05),
+                "upperArmL": (armL, 0, 0.05 - arm_in + abs(armL) * 0.03), "upperArmR": (armR, 0, -0.05 + arm_in - abs(armR) * 0.03),
                 "foreArmL": (-(elbow + elbow_fwd * max(0, -armL) / max(arm, 1e-3)), 0, 0), "foreArmR": (-(elbow + elbow_fwd * max(0, -armR) / max(arm, 1e-3)), 0, 0),
                 "handL": (-0.12, 0, 0.05), "handR": (-0.12, 0, -0.05)}
         apply(pose, (x, 0, z))
@@ -211,9 +216,9 @@ def loco(name, T, fs, D, lift, drop, bob, twist, tilt, shift, lean, arm, elbow, 
                 fwd = -D / 2 + D * s - back
                 up = lift * _m.sin(_m.pi * u) ** (0.7 if run else 1.0)
                 tiltf = 0.7 * (1 - _ease(min(1, u * 1.6))) - 0.28 * _ease(max(0, (u - 0.6) / 0.4)); heel = 0.09 * (1 - min(1, u * 3))
-            tx = sx * 0.105 + (0.012 * sx if not run else 0.0)
+            tx = sx * track                    # 足を置く左右の位置（小さいほど一本の線の上を歩く、女性らしい足運び）
             tg[k].location = (tx, AN.y - fwd, AN.z + up + heel)
-            po[k].location = (tx + sx * 0.05, AN.y - fwd - 0.8, 0.6)
+            po[k].location = (sx * track * 0.4, AN.y - 1.0, 0.55)   # ひざは内側へ寄せて、まっすぐ前へ
             rot[k].rotation_quaternion = Quaternion(Vector((1, 0, 0)), tiltf) @ base_q[k]
         key(1 + f)
         for e in list(tg.values()) + list(po.values()): e.keyframe_insert("location", frame=1 + f)
@@ -225,9 +230,9 @@ def loco(name, T, fs, D, lift, drop, bob, twist, tilt, shift, lean, arm, elbow, 
     bake(a, 1, 1 + T)
     return a
 # 歩き：1.1 秒（33 コマ）で2歩。歩幅 0.62、ゲームでの速さ ≒ 0.62 / (0.62 × 1.1) ≒ 0.91
-loco("walk", 33, 0.62, 0.62, 0.075, 0.035, 0.012, 0.13, 0.07, 0.022, 0.03, 0.34, 0.2, 0.22)
+loco("walk", 33, 0.62, 0.56, 0.07, 0.04, 0.012, 0.17, 0.1, 0.035, 0.02, 0.28, 0.28, 0.18, arm_in=0.14, track=0.03)
 # 走り：0.68 秒（約 20 コマ）で2歩。着いている割合 0.36、歩幅 0.76、ゲームでの速さ ≒ 0.76 / (0.36 × 0.68) ≒ 3.1
-loco("run", 20, 0.36, 0.76, 0.24, 0.085, 0.03, 0.17, 0.05, 0.012, 0.22, 0.62, 1.2, 0.35, run=True)
+loco("run", 20, 0.36, 0.76, 0.24, 0.085, 0.03, 0.19, 0.06, 0.016, 0.22, 0.5, 0.9, 0.25, run=True, arm_in=0.36, track=0.045)
 # 立ち：腰に手を当て、体重を左足に。ゆっくり呼吸し、重心を少し揺らす（4 秒＝120 コマ）
 def stand(f, tg, po, init=False):
     s = math.sin((f - 1) / 120 * 2 * math.pi); br = math.sin((f - 1) / 60 * 2 * math.pi)

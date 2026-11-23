@@ -71,7 +71,7 @@ async function main() {
   let yaw = -1.15, pitch = 0.22, facing = yaw, firstPerson = false, paused = false, started = false, finished = false, t = 0, walked = 0;
   const known = new Set<string>((store.get('ir.known') ?? '').split(',').filter(Boolean));
   const camTarget = new THREE.Vector3(), camPos = new THREE.Vector3(), tmp = new THREE.Vector3(), dir = new THREE.Vector3(), hit = new THREE.Vector3(), focus = new THREE.Vector3();
-  let focusAmt = 0; let focusOn = false; let scanT = 0;
+  let focusAmt = 0; let focusOn = false; let scanT = 0; let curSpeed = 0;
   const hud = new Hud(`${backendLabel} · ${TIER_LABEL[tier]} · ${DEVICE_LABEL[device]}`, () => dyn ? `解像度 ×${dyn.scale.toFixed(2)}` : '');
   $('pf').textContent = String(tuning.flow.perceptionFactor);
 
@@ -137,23 +137,33 @@ async function main() {
   }
   function step(dt: number) {
     t += dt;
-    const look = sim !== null || Q.has('demo') ? (demoInput(t), { dx: 0, dy: 0 }) : input.poll(dt);
+    const force = W.__force as { x: number; y: number } | undefined;   // 確認用：入力を固定して1コマずつ進める
+    const look = force ? (input.moveX = force.x, input.moveY = force.y, input.fire = false, input.scan = false, input.dash = false, { dx: 0, dy: 0 }) : sim !== null || Q.has('demo') ? (demoInput(t), { dx: 0, dy: 0 }) : input.poll(dt);
     yaw -= look.dx; pitch = Math.min(tuning.camera.pitchMax, Math.max(tuning.camera.pitchMin, pitch + look.dy));
     const P = tuning.player;
     // 移動：カメラの向きを基準に。加速と減速に慣性を持たせる
     const fx = Math.sin(yaw), fz = Math.cos(yaw);
-    const sp = (input.dash ? P.dashSpeed : P.walkSpeed) * (input.fire ? 0.3 : 1) * (input.scan ? 0.35 : 1);
+    const sp = (input.dash ? P.dashSpeed : P.walkSpeed) * (input.fire ? 0.265 : 1) * (input.scan ? 0.35 : 1);
     tmp.set((fx * input.moveY - fz * input.moveX) * sp, 0, (fz * input.moveY + fx * input.moveX) * sp);
     const moving = tmp.lengthSq() > 0.01;
-    vel.lerp(tmp, Math.min(1, dt * (moving ? P.accel : P.decel)));
-    pos.addScaledVector(vel, dt); walked += vel.length() * dt;
+    // 向き：進みたい方向へ体を回す（速いほどゆっくり曲がる）。構えて止まっている間は狙う方向へ
+    const wantFace = moving ? Math.atan2(tmp.x, tmp.z) : input.fire ? yaw : facing;
+    let df = wantFace - facing; df = Math.atan2(Math.sin(df), Math.cos(df));
+    const maxTurn = (curSpeed > 2 ? 6.5 : 9.5) * dt;
+    const dFace = Math.max(-maxTurn, Math.min(maxTurn, df * Math.min(1, dt * P.turnLerp * 1.4))); facing += dFace; const turnRate = dt > 0 ? dFace / dt : 0;
+    // 進む：体の向いている方向へだけ進む（足が地面を横に滑らないように）。向きが大きくずれている間は、まず向きを変えてから加速する
+    const align = Math.cos(df);
+    const targetSpeed = moving ? Math.hypot(tmp.x, tmp.z) * Math.min(1, Math.max(0.0, (align + 0.15) / 1.15)) : 0;
+    curSpeed += (targetSpeed - curSpeed) * Math.min(1, dt * (targetSpeed > curSpeed ? P.accel : P.decel));
+    vel.set(Math.sin(facing) * curSpeed, 0, Math.cos(facing) * curSpeed);
+    pos.addScaledVector(vel, dt); walked += curSpeed * dt;
     pos.x = Math.max(-SX / 2 + 14, Math.min(SX / 2 - 14, pos.x)); pos.z = Math.max(-SZ / 2 + 12, Math.min(SZ / 2 - 12, pos.z));
     pos.y = stage.floorHeight(pos.x, pos.z);
-    const speed = vel.length();
-    const wantFace = input.fire ? yaw : speed > 0.3 ? Math.atan2(vel.x, vel.z) : facing;
-    let df = wantFace - facing; df = Math.atan2(Math.sin(df), Math.cos(df)); const dFace = df * Math.min(1, dt * P.turnLerp); facing += dFace; const turnRate = dt > 0 ? dFace / dt : 0;
+    const speed = curSpeed;
+    // 構えて動くとき：脚は進む方向、上半身は狙う方向へひねる
+    let aimTwist = 0; if (input.fire) { aimTwist = Math.atan2(Math.sin(yaw - facing), Math.cos(yaw - facing)); aimTwist = Math.max(-1.4, Math.min(1.4, aimTwist)); }
     diver.root.position.copy(pos); diver.root.rotation.y = facing; diver.root.visible = !firstPerson;
-    diver.update(dt, speed, input.fire, pitch, turnRate, input.scan);
+    diver.update(dt, speed, input.fire, pitch, turnRate, input.scan, aimTwist);
     // カメラ：肩ごしの三人称。対象の紹介中は、ゆっくり対象のほうへ寄る
     dir.set(Math.sin(yaw) * Math.cos(pitch), -Math.sin(pitch), Math.cos(yaw) * Math.cos(pitch));
     focusAmt += ((focusOn ? 1 : 0) - focusAmt) * Math.min(1, dt * 1.6);
@@ -255,7 +265,7 @@ async function main() {
     W.__irFrames = ((W.__irFrames as number) || 0) + 1;
     if (Q.has('frames') && (W.__irFrames as number) >= Number(Q.get('frames'))) { renderer.setAnimationLoop(null); W.__irDone = true; }
   });
-  W.__pos = pos; W.__input = input; W.__stage = stage; W.__begin = begin; W.__advance = (n: number) => { for (let i = 0; i < n; i++) step(1 / 30); };
+  W.__pos = pos; W.__diver = diver; W.__input = input; W.__stage = stage; W.__begin = begin; W.__advance = (n: number) => { for (let i = 0; i < n; i++) step(1 / 30); };
   W.__irReady = { backend: backendLabel, tier, device };
 }
 main().catch((e) => { errors.push(String(e)); console.error(e); const el = document.querySelector('#load .tip'); if (el) el.textContent = '読み込みに失敗しました：' + String(e); });

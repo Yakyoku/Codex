@@ -100,15 +100,15 @@ export class Diver {
   // ---- Blender で作ったアニメーション（idle・walk・run・squat・crouch）を、重みで滑らかに混ぜる ----
   mixer?: THREE.AnimationMixer; private act: Record<string, THREE.AnimationAction> = {};
   private w: Record<string, number> = { idle: 1, walk: 0, run: 0, squat: 0, crouch: 0 };
-  static WALK_SPEED = 0.91; static RUN_SPEED = 3.17;   // それぞれの動きが、足が滑らずに見える速さ（µm/s）
-  private still = 0; private gait = 0;
+  static WALK_SPEED = 0.82; static RUN_SPEED = 3.17;   // それぞれの動きが、足が滑らずに見える速さ（µm/s）
+  private still = 0; private gait = 0; private twistS = 0;
   initAnimations(clips: THREE.AnimationClip[], model: THREE.Object3D) {
     this.mixer = new THREE.AnimationMixer(model);
     for (const c of clips) { const a = this.mixer.clipAction(c); a.play(); a.setEffectiveWeight(c.name === 'idle' ? 1 : 0); this.act[c.name] = a; }
   }
   private qa2 = new THREE.Quaternion(); private qt = new THREE.Quaternion();
   /** speed: 進む速さ（µm/s）, aiming: 道具を構えているか, pitch: 視点の上下, turn: 向きの変わる速さ（rad/s）, scanning: スキャン中か */
-  update(dt: number, speed: number, aiming: boolean, pitch: number, turn = 0, scanning = false) {
+  update(dt: number, speed: number, aiming: boolean, pitch: number, turn = 0, scanning = false, aimTwist = 0) {
     if (dt <= 0 || !this.mixer) return;
     this.t += dt;
     const sp = this.speedS.step(speed, dt);
@@ -136,13 +136,15 @@ export class Diver {
     const accel = (sp - this.lastSpeed) / dt; this.lastSpeed = sp;
     const lean = this.leanS.step(Math.max(-0.1, Math.min(0.14, accel * 0.02)), dt);
     const bank = this.bankS.step(Math.max(-0.22, Math.min(0.22, -turn * 0.07 * Math.min(1, sp / 2))), dt);
-    this.addRot('pelvis', lean * 0.5, 0, bank);
+    // 傾きは胸から上だけに掛ける（骨盤に掛けると脚ごと傾き、足が地面から浮く・横へずれる）
+    this.addRot('chest', lean * 0.6, 0, bank * 0.8); this.addRot('head', -lean * 0.3, 0, -bank * 0.3);
     // 上乗せ：構えると右腕を前へ伸ばし、胴と頭を道具の方へ向ける（アニメーションの上に重ねる）
     const A = this.aimS.step(aiming ? 1 : 0, dt);
     if (A > 0.001) {
       this.blendTo('upperArmR', -1.42 + pitch * 0.85, 0, Diver.ARM_DOWN + 0.05, A);
       this.blendTo('foreArmR', 0.3, 0, 0, A); this.blendTo('handR', 0, 0, 0, A);
-      this.addRot('chest', 0, 0.2 * A, 0); this.addRot('head', -pitch * 0.35 * A, -0.15 * A, 0);
+      this.twistS = this.twistS + (aimTwist - this.twistS) * Math.min(1, dt * 10);
+      this.addRot('chest', 0, (0.2 + this.twistS * 0.7) * A, 0); this.addRot('head', -pitch * 0.35 * A, (-0.15 + this.twistS * 0.3) * A, 0);
     }
   }
   /** アニメーションの姿勢に、体の向きを基準にした回転を上乗せする */
