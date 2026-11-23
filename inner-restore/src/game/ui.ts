@@ -15,7 +15,8 @@ export function buildUI() {
   <div id="patient" class="hide"><img src="/static/img/patient_view.jpg" alt=""><div class="spot"></div><div class="cap">患者の視界</div></div>
   <div id="reticle" class="hide"></div><div id="hint" class="hide"></div><div id="subs"></div>
   <div id="card"><div class="k">初めて出会ったもの</div><div class="n"></div><div class="e"></div><div class="s"></div><div class="d"></div><div class="p"><i></i></div><div class="h"></div></div>
-  <div id="touch" class="hide"><div id="stick" class="hide"><i></i></div><button class="tb" id="tb-fire">浄化</button><button class="tb" id="tb-scan">スキャン</button></div>
+  <div id="dx" class="hide"><div class="t">スキャン診断</div><div class="l"></div></div><div id="tags"><div class="tag"></div><div class="tag"></div><div class="tag"></div></div>
+  <div id="touch" class="hide"><div id="stick" class="hide"><i></i></div><button class="tb" id="tb-fire">浄化</button><button class="tb" id="tb-scan">スキャン</button><button class="tb tb-s" id="tb-up">上へ</button><button class="tb tb-s" id="tb-down">下へ</button></div>
   <div id="topbtns" class="hide"><button id="b-atlas">図鑑</button><button id="b-pause">一時停止</button><button id="b-full">全画面</button></div>
   <div id="fade"></div><div id="toast"></div>
   <div id="done" class="hide"><h2>区域の血流が戻りました</h2><p id="donetext"></p><button class="btn" id="b-cont">探索を続ける</button></div>

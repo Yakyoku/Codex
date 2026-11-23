@@ -68,3 +68,16 @@ body:has(#ui) .ir-hud { left:auto; right:max(12px,env(safe-area-inset-right)); b
 #patient.waking::after { content:''; position:absolute; inset:0; pointer-events:none; background:radial-gradient(ellipse at 50% 45%, rgba(255,250,240,.9), rgba(255,250,240,0) 70%); animation:wake 5.5s ease-out forwards; }
 @keyframes wake { from { opacity:1; } to { opacity:0; } }
 #patient.full img { object-fit:cover; }
+
+/* 泳ぐ：上へ／下へ（浄化ボタンの上に縦に並べる） */
+#tb-up { right:max(34px,calc(env(safe-area-inset-right) + 12px)); bottom:max(250px,calc(env(safe-area-inset-bottom) + 234px)); }
+#tb-down { right:max(130px,calc(env(safe-area-inset-right) + 112px)); bottom:max(150px,calc(env(safe-area-inset-bottom) + 134px)); }
+.tb-s { width:4.2em !important; height:4.2em !important; font-size:.92em; }
+
+/* スキャン診断（スーツの走査表示）：左の健康度の下に、見つけた病巣と原因 */
+#dx { position:fixed; left:max(18px,env(safe-area-inset-left)); top:calc(max(14px,env(safe-area-inset-top)) + 8.6em); max-width:min(26em,44vw); padding:.7em .9em; background:rgba(14,10,6,.62); border-left:3px solid #ffb060; color:#f4e6d8; font-size:clamp(14px,1.55vw,18px); line-height:1.5; pointer-events:none; backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); transition:opacity .4s; }
+#dx .t { color:#ffb868; font-size:.82em; letter-spacing:.12em; margin-bottom:.3em; }
+#dx .l div { margin:.15em 0; } #dx .l b { color:#ffcf8a; font-weight:600; } #dx .l small { color:#cdbcae; display:block; font-size:.86em; }
+#tags { position:fixed; inset:0; pointer-events:none; }
+#tags .tag { position:absolute; transform:translate(-50%,-110%); padding:.3em .6em; background:rgba(20,12,6,.66); border:1px solid #ffb06088; border-radius:.4em; color:#ffe2bc; font-size:clamp(13px,1.35vw,16px); white-space:nowrap; opacity:0; transition:opacity .3s; }
+#tags .tag b { color:#ffbe70; }

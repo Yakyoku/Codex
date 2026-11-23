@@ -17,6 +17,9 @@ export interface RetinaStage {
   scene: THREE.Scene; health: HealthField; size: [number, number];
   u: { time: N; scan: N; lightIn: N; beamPos: N; beamOn: N; heartPhase: N; scanR: N; scanOrigin: N; scanPulse: N };
   floorHeight(x: number, z: number): number;
+  vesselDist(x: number, z: number): number;
+  cores: THREE.Vector3[];
+  progress(): number;
   update(dt: number, t: number, camera: THREE.Camera): void;
   heal(x: number, z: number, dt: number): number;
   points: { rbc: () => THREE.Vector3; nucleus: THREE.Vector3; pericyte: THREE.Vector3 };
@@ -169,6 +172,16 @@ export async function buildRetina(renderer: THREE.WebGPURenderer, tier: Tier): P
   });
   edges.forEach((e, i) => edges.forEach((f, j) => { if (i !== j && e.P[e.P.length - 1].distanceTo(f.P[0]) < 0.5) e.next.push(j); }));
   const allPts: THREE.Vector3[] = edges.flatMap((e) => e.P.filter((_, i) => i % 2 === 0));
+  // 初めの病み方：毛細血管が詰まった所（閉塞点）を核に、その先の組織ほど酸素が届かず濁る。
+  // 区域を横に3つに分け、それぞれの中ほどにある血管の点を閉塞点にする
+  const cores = [-0.3, 0.02, 0.3].map((fx) => {
+    const tx = fx * W, tz = (fx > 0 ? -0.12 : 0.1) * D;
+    return allPts.reduce((b, p) => (Math.hypot(p.x - tx, p.z - tz) < Math.hypot(b.x - tx, b.z - tz) ? p : b), allPts[0]).clone();
+  });
+  health.setFn((x, z) => { let k = 0; for (const c of cores) k = Math.max(k, Math.exp(-((x - c.x) ** 2 + (z - c.z) ** 2) / (26 * 26))); return 0.24 - 0.23 * k + 0.03 * Math.sin(x * 0.11) * Math.cos(z * 0.13); });
+  const startMean = health.mean();
+  /** 回復の進み具合（始めの状態＝0、目標＝1） */
+  const progress = () => Math.min(1, Math.max(0, (health.mean() - startMean) / (hc.doneAt - startMean)));
   const src = (() => { const out: THREE.Mesh[] = []; rbcGltf.scene.traverse((o) => { if ((o as THREE.Mesh).isMesh) out.push(o as THREE.Mesh); }); return out.sort((a, b) => a.name.localeCompare(b.name)); })();
   const rbcGeo = src[vr ? 1 : tier === 'compat' ? 1 : 0].geometry.clone();
   { // 形を CPU 側で変形しておく：細い毛細血管の中の「パラシュート形」。進む向き（+y）は丸い弾頭、後ろは浅いくぼみ。
@@ -319,7 +332,9 @@ export async function buildRetina(renderer: THREE.WebGPURenderer, tier: Tier): P
   const rbcPoint = new THREE.Vector3();
   let heart = 0;
   return {
-    scene, health, size: [W, D], u, floorHeight, sun,
+    scene, health, size: [W, D], u, floorHeight, sun, cores, progress,
+    /** いちばん近い毛細血管の中心線までの水平距離（µm） */
+    vesselDist(x: number, z: number) { let d2 = 1e9; for (let i = 0; i < allPts.length; i++) { const p = allPts[i]; const dx = p.x - x, dz = p.z - z; const d = dx * dx + dz * dz; if (d < d2) d2 = d; } return Math.sqrt(d2); },
     points: { rbc: () => { rbc.getMatrixAt(Math.floor(count * 0.18), m4); return rbcPoint.setFromMatrixPosition(m4); }, nucleus: nearest(data.nuclei, -40, -6), pericyte: nearest(data.pericytes, -30, -10) },
     flowing: () => flowSum / count,
     heal(x, z, dt) { return health.heal(x, z, tuning.beam.radius, tuning.beam.rate * dt); },
@@ -328,7 +343,7 @@ export async function buildRetina(renderer: THREE.WebGPURenderer, tier: Tier): P
       const bpm = tuning.heart.bpmSick + (tuning.heart.bpmHealthy - tuning.heart.bpmSick) * mean;
       heart += dt * (bpm / 60) * Math.PI * 2 / 2.2;   // 知覚加速ぶん、見かけの拍動はゆっくりにしてある
       u.heartPhase.value = heart; u.time.value = t;
-      u.lightIn.value += ((0.35 + 0.65 * Math.min(1, mean / hc.doneAt)) - u.lightIn.value) * Math.min(1, dt * 1.5);
+      u.lightIn.value += ((0.35 + 0.65 * progress()) - u.lightIn.value) * Math.min(1, dt * 1.5);
       sun.intensity = 0.7 + 2.4 * u.lightIn.value;
       // 病むと光は青白く沈み、血流が戻ると下から橙赤色の光が透けて満ちる
       hemi.groundColor.setRGB(0.32 + 0.4 * mean, 0.2 + 0.06 * mean, 0.16 - 0.06 * mean);

@@ -22,6 +22,9 @@ class Spring {
 const JOINTS = ['pelvis', 'chest', 'head', 'upperArmL', 'foreArmL', 'handL', 'upperArmR', 'foreArmR', 'handR', 'thighL', 'shinL', 'footL', 'thighR', 'shinR', 'footR'];
 export class Diver {
   root = new THREE.Group();
+  // 泳ぐときは、腰を中心に体を前へ倒す（root＝足もと → pivot＝腰の高さ → holder＝模型）
+  private pivot = new THREE.Group(); private holder = new THREE.Group(); static HIP = 1.0;
+  private swimOn = 0; private swimPitch = 0; private swimRoll = 0; private swimWant = 0; private pitchWant = 0; private rollWant = 0;
   private b: Record<string, BoneRig> = {};
   private sp: Record<string, [Spring, Spring, Spring]> = {};
   private phase = 0; private t = 0; private speedS = new Spring(30, 1); private aimS = new Spring(120, 0.9); private leanS = new Spring(40, 0.9); private bankS = new Spring(35, 0.85);
@@ -31,7 +34,7 @@ export class Diver {
   static async load(rich = true) {
     const d = new Diver();
     const g = await loadGLB('/static/models/diver.glb', true);
-    const model = g.scene; d.root.add(model);
+    const model = g.scene; d.root.add(d.pivot); d.pivot.position.y = Diver.HIP; d.pivot.add(d.holder); d.holder.position.y = -Diver.HIP; d.holder.add(model);
     model.updateMatrixWorld(true);
     const nodes: Record<string, THREE.Object3D> = {};
     model.traverse((o) => {
@@ -99,13 +102,16 @@ export class Diver {
   static ARM_DOWN = 0.62;
   // ---- Blender で作ったアニメーション（idle・walk・run・squat・crouch）を、重みで滑らかに混ぜる ----
   mixer?: THREE.AnimationMixer; private act: Record<string, THREE.AnimationAction> = {};
-  private w: Record<string, number> = { idle: 1, walk: 0, run: 0, squat: 0, crouch: 0 };
+  private w: Record<string, number> = { idle: 1, walk: 0, run: 0, squat: 0, crouch: 0, swim: 0, float: 0 };
   static WALK_SPEED = 0.82; static RUN_SPEED = 3.17;   // それぞれの動きが、足が滑らずに見える速さ（µm/s）
   private still = 0; private gait = 0; private twistS = 0;
   initAnimations(clips: THREE.AnimationClip[], model: THREE.Object3D) {
     this.mixer = new THREE.AnimationMixer(model);
     for (const c of clips) { const a = this.mixer.clipAction(c); a.play(); a.setEffectiveWeight(c.name === 'idle' ? 1 : 0); this.act[c.name] = a; }
   }
+  /** 泳ぎの状態。on: 体液の中か、pitch: 体の前への倒れ（0＝立ち、1.4＝ほぼ水平）、roll: 曲がるときの体の傾き */
+  setSwim(on: boolean, pitch: number, roll: number) { this.swimWant = on ? 1 : 0; this.pitchWant = on ? pitch : 0; this.rollWant = on ? roll : 0; }
+  get swimming() { return this.swimOn > 0.5; }
   private qa2 = new THREE.Quaternion(); private qt = new THREE.Quaternion();
   /** speed: 進む速さ（µm/s）, aiming: 道具を構えているか, pitch: 視点の上下, turn: 向きの変わる速さ（rad/s）, scanning: スキャン中か */
   update(dt: number, speed: number, aiming: boolean, pitch: number, turn = 0, scanning = false, aimTwist = 0) {
@@ -118,9 +124,19 @@ export class Diver {
     const crouch = scanning && sp < 0.6 ? 1 : 0;
     const squat = !crouch && this.still > 9 && (this.still % 14) < 4 ? 1 : 0;   // 長く立ち止まると、ときどきしゃがむ
     const move = k(sp, 0.08, 0.5), run = k(sp, Diver.WALK_SPEED * 1.15, Diver.RUN_SPEED * 0.8);
-    const target = { idle: (1 - move) * (1 - crouch) * (1 - squat), walk: move * (1 - run) * (1 - crouch), run: move * run * (1 - crouch), squat: squat * (1 - crouch), crouch };
+    // 泳ぎ：地上の動きから、体液の中の動き（かき進む／ただよう）へ移る
+    this.swimOn += (this.swimWant - this.swimOn) * Math.min(1, dt * 4);
+    const sw = this.swimOn, land = 1 - sw, stroke = k(sp, 0.25, 1.3);
+    const target = { idle: land * (1 - move) * (1 - crouch) * (1 - squat), walk: land * move * (1 - run) * (1 - crouch), run: land * move * run * (1 - crouch), squat: land * squat * (1 - crouch), crouch: land * crouch,
+      swim: sw * stroke, float: sw * (1 - stroke) };
+    // 体の倒れと傾き（水の抵抗で、ゆっくり追いつく）
+    this.swimPitch += (this.pitchWant - this.swimPitch) * Math.min(1, dt * 2.6);
+    this.swimRoll += (this.rollWant - this.swimRoll) * Math.min(1, dt * 3);
+    this.pivot.rotation.set(this.swimPitch, 0, this.swimRoll);
+    // かく速さは進む速さに合わせる（速いほど、こまめにかく）
+    if (this.act.swim) this.act.swim.timeScale = 0.55 + 0.45 * Math.min(1.6, sp / 1.6);
     for (const n of Object.keys(target) as (keyof typeof target)[]) {
-      this.w[n] += (target[n] - this.w[n]) * Math.min(1, dt * (n === 'crouch' || n === 'squat' ? 3.5 : 7));
+      this.w[n] += (target[n] - this.w[n]) * Math.min(1, dt * (n === 'crouch' || n === 'squat' ? 3.5 : n === 'swim' || n === 'float' ? 3 : 7));
       this.act[n]?.setEffectiveWeight(this.w[n]);
     }
     // 歩きと走りの足運びをそろえる：進んだ距離から「歩の位相」を進め、両方の動きを同じ位相で再生する

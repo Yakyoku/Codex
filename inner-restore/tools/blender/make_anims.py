@@ -266,6 +266,33 @@ def crouch(f, tg, po, init=False):
     po["handL"].location = (0.6, 0.4, 0.9); po["handR"].location = (-0.5, 0.2, 0.9)
     return {"legs": 1, "armL": 1, "armR": 1, "tiltR": 0.9}
 ik_clip("crouch", [1, 31, 61], crouch)
+# ---------------- 泳ぎ（体液の中）：ゲーム側で体を腰を中心に前へ倒して水平にする ----------------
+# swim … 平泳ぎ風の1かき（1.6 秒＝48 コマ）：伸び → かき → 引きつけ（脚を曲げる）→ けり出し＋腕を前へ。ひざはそろえたまま（ガニ股にしない）
+def both(p):
+    """左側だけ書いた姿勢を、右側にも左右対称に写す"""
+    out = dict(p); out.update(mirror({k: v for k, v in p.items() if k.endswith("L")})); return out
+S_GLIDE = both({"pelvis": (0.0, 0, 0), "chest": (0.1, 0, 0), "head": (0.25, 0, 0),
+                "upperArmL": (-2.85, 0, -0.12), "foreArmL": (-0.05, 0, 0), "handL": (0.0, 0, 0),
+                "thighL": (0.06, 0, 0.04), "shinL": (0.06, 0, 0), "footL": (0.55, 0, 0)})
+S_PULL = both({"pelvis": (0.02, 0, 0), "chest": (0.02, 0, 0), "head": (0.12, 0, 0),
+               "upperArmL": (-1.9, 0, 0.85), "foreArmL": (-0.55, 0, 0), "handL": (-0.25, 0, 0),
+               "thighL": (0.0, 0, 0.03), "shinL": (0.15, 0, 0), "footL": (0.5, 0, 0)})
+S_DRAW = both({"pelvis": (0.0, 0, 0), "chest": (-0.02, 0, 0), "head": (0.0, 0, 0),
+               "upperArmL": (-0.75, 0, 0.25), "foreArmL": (-2.0, 0, 0), "handL": (-0.2, 0, 0),
+               "thighL": (-0.5, 0, 0.08), "shinL": (1.95, 0, 0), "footL": (-0.35, 0, 0)})
+S_KICK = both({"pelvis": (0.0, 0, 0), "chest": (0.06, 0, 0), "head": (0.18, 0, 0),
+               "upperArmL": (-2.2, 0, -0.05), "foreArmL": (-0.7, 0, 0), "handL": (0.0, 0, 0),
+               "thighL": (0.12, 0, 0.06), "shinL": (0.45, 0, 0), "footL": (0.25, 0, 0)})
+cyclic("swim", [(S_GLIDE, (0, 0, 0)), (S_GLIDE, (0, 0, 0.01)), (S_PULL, (0, 0, 0.02)), (S_DRAW, (0, 0.04, 0.0)), (S_KICK, (0, 0.02, -0.01)), (S_GLIDE, (0, 0, -0.005))], 48)
+# float … その場でただよう（3 秒＝90 コマ）：腕を横に開いて手のひらでゆっくり水をかき、脚は交互にゆるく自転車をこぐ
+F_A = {"pelvis": (-0.05, 0.03, 0), "chest": (0.03, -0.03, 0), "head": (0.05, 0, 0),
+       "upperArmL": (-0.35, 0.3, 0.95), "foreArmL": (-0.55, 0, 0), "handL": (0.2, 0, 0.15),
+       "upperArmR": (-0.25, -0.3, -0.85), "foreArmR": (-0.75, 0, 0), "handR": (0.2, 0, -0.15),
+       "thighL": (-0.55, 0, 0.05), "shinL": (0.95, 0, 0), "footL": (0.45, 0, 0),
+       "thighR": (-0.2, 0, -0.05), "shinR": (0.45, 0, 0), "footR": (0.5, 0, 0)}
+F_B = mirror(F_A)
+cyclic("float", [(F_A, (0, 0, 0.02)), (F_B, (0, 0, -0.02))], 90)
+
 for e in [o for o in bpy.data.objects if o.name.startswith(("ik_", "pole_", "rot_"))]: bpy.data.objects.remove(e)
 for a in [a for a in bpy.data.actions if a.name.startswith(("ik_", "pole_", "rot_"))]: bpy.data.actions.remove(a)
 

@@ -58,3 +58,11 @@ describe('flowFactor', () => {
     expect(m).toBeGreaterThan(0.4); expect(m).toBeLessThan(0.6);
   });
 });
+
+import { HealthField as HF2 } from '../src/core/health';
+import { test as t2, expect as e2 } from 'vitest';
+t2('setFn：場所ごとに初めの健康度を決められ、核の近くほど低い', () => {
+  const h = new HF2(20, 10, 100, 50, 0);
+  h.setFn((x, z) => 0.3 - 0.3 * Math.exp(-(x * x + z * z) / 100));
+  e2(h.sample(0, 0)).toBeLessThan(0.05); e2(h.sample(45, 20)).toBeGreaterThan(0.28);
+});

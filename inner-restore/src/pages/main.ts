@@ -6,11 +6,14 @@ import { detectDevice, DEVICE_LABEL, pickTier, TIER_LABEL } from '../core/device
 import { Hud } from '../core/hud';
 import { DynamicResolution } from '../core/dynres';
 import { createPost } from '../core/post';
+import { rumble, buzz } from '../core/feel';
 import { Input } from '../core/input';
 import { GameAudio, speak } from '../core/audio';
 import { buildRetina } from '../stages/eye/retina';
 import { Diver } from '../game/diver';
 import { PurifyBeam } from '../game/beam';
+import { Diagnosis } from '../game/diagnosis';
+import { tunePanel } from '../game/tune';
 import { buildUI, renderAtlas, ATLAS, TIPS } from '../game/ui';
 import tuning from '../data/tuning.json';
 
@@ -53,6 +56,7 @@ async function main() {
   progress(0.7);
   const diver = await Diver.load(tier === 'pc-high' || tier === 'mobile-high');
   stage.scene.add(diver.root);
+  const diag = new Diagnosis(stage.health, stage.size as [number, number], stage.floorHeight, stage.vesselDist); stage.scene.add(diag.group);
   // 仕上げ（浅いピント・光のにじみ・色調）。?post=off で切れる
   const post = Q.get('post') === 'off' ? null : createPost(renderer, stage.scene, camera, Q.get('post') === 'full' ? 'pc-high' : tier);
   const audio = new GameAudio();
@@ -74,6 +78,8 @@ async function main() {
   let yaw = -1.15, pitch = 0.22, facing = yaw, firstPerson = false, paused = false, started = false, finished = false, t = 0, walked = 0;
   const known = new Set<string>((store.get('ir.known') ?? '').split(',').filter(Boolean));
   const camTarget = new THREE.Vector3(), camPos = new THREE.Vector3(), tmp = new THREE.Vector3(), dir = new THREE.Vector3(), hit = new THREE.Vector3(), focus = new THREE.Vector3();
+  let swimming = false; const swimVel = new THREE.Vector3(); let scanWas = false, diagT = 0;
+  const F = tuning.feel; let hitStop = 0, shake = 0, rumbleT = 0, wasHitting = false, lastStep = -1;
   let focusAmt = 0; let focusOn = false; let scanT = 0; let curSpeed = 0;
   const hud = new Hud(`${backendLabel} · ${TIER_LABEL[tier]} · ${DEVICE_LABEL[device]}`, () => dyn ? `解像度 ×${dyn.scale.toFixed(2)}` : '');
   $('pf').textContent = String(tuning.flow.perceptionFactor);
@@ -101,16 +107,16 @@ async function main() {
 
   // ---- UI の操作 ----
   const hints: Record<string, string> = {
-    kbm: 'WASD：移動　マウス：視点　左クリック長押し：浄化　右クリック／Q：スキャン　Tab：図鑑　V：視点切替　Esc：一時停止',
-    pad: '左スティック：移動　右スティック：視点　RT：浄化　LT：スキャン　Select：図鑑　Start：一時停止',
-    touch: '左側：移動　右側をドラッグ：視点　浄化ボタンを長押し（コントローラーはボタンを1回押すと使えます）',
+    kbm: 'WASD：移動　Space／C：上へ／下へ泳ぐ　マウス：視点　左クリック長押し：浄化　右クリック／Q：スキャン　Tab：図鑑　V：視点　Esc：一時停止',
+    pad: '左スティック：移動　A／B：上へ／下へ泳ぐ　右スティック：視点　RT：浄化　LT：スキャン　L3：速く　Select：図鑑　Start：一時停止',
+    touch: '左側：移動　右側をドラッグ：視点　上へ／下へ：泳ぐ　浄化ボタンを長押し（コントローラーはボタンを1回押すと使えます）',
   };
   const setKind = (k: string) => { $('hint').textContent = hints[k]; $('touch').classList.toggle('hide', k !== 'touch' || !started); $('reticle').classList.toggle('hide', !started); };
   input.onKind = setKind;
   input.onStick = (on, ox, oy, dx, dy) => { const s = $('stick'); s.classList.toggle('hide', !on); if (on) { s.style.left = ox + 'px'; s.style.top = oy + 'px'; (s.firstElementChild as HTMLElement).style.transform = `translate(${dx}px,${dy}px)`; } };
   const hold = (id: string, set: (v: boolean) => void) => { const b = $(id); const on = (e: Event) => { e.preventDefault(); set(true); b.classList.add('on'); }; const off = () => { set(false); b.classList.remove('on'); };
     b.addEventListener('touchstart', on, { passive: false }); b.addEventListener('touchend', off); b.addEventListener('touchcancel', off); b.addEventListener('mousedown', on); b.addEventListener('mouseup', off); };
-  hold('tb-fire', (v) => (input.touchFire = v)); hold('tb-scan', (v) => (input.touchScan = v));
+  hold('tb-fire', (v) => (input.touchFire = v)); hold('tb-scan', (v) => (input.touchScan = v)); hold('tb-up', (v) => (input.touchUp = v)); hold('tb-down', (v) => (input.touchDown = v));
   const setPause = (p: boolean) => { if (!started || finished) return; paused = p; $('pause').classList.toggle('hide', !p); audio.suspend(p); if (p) document.exitPointerLock?.(); };
   const openAtlas = (o: boolean) => { if (o) renderAtlas($('atlas').querySelector('.grid') as HTMLElement, known); $('atlas').classList.toggle('hide', !o); if (o) { paused = true; document.exitPointerLock?.(); } else if ($('pause').classList.contains('hide')) paused = false; };
   const full = () => { const d = document as Document & { webkitFullscreenElement?: Element }; const el = document.documentElement as HTMLElement & { webkitRequestFullscreen?: () => void };
@@ -132,20 +138,69 @@ async function main() {
     pSpot.style.background = `radial-gradient(ellipse 38% 42% at 46% 52%, rgba(20,16,14,${(0.85 * k).toFixed(2)}) 0%, rgba(20,16,14,0) 100%), radial-gradient(ellipse 22% 26% at 72% 36%, rgba(20,16,14,${(0.6 * k).toFixed(2)}) 0%, rgba(20,16,14,0) 100%)`;
   }
 
+  // ---- スキャン診断の表示（病巣の札と、左の一覧）----
+  const tags = Array.from($('tags').children) as HTMLElement[], dxEl = $('dx'), dxList = dxEl.querySelector('.l') as HTMLElement; let dxKey = '';
+  const pv = new THREE.Vector3();
+  function showDiag() {
+    const on = diag.show > 0.05 && started;
+    dxEl.classList.toggle('hide', !on); dxEl.style.opacity = String(Math.min(1, diag.show * 1.5));
+    if (on) {
+      const fl = stage.flowing();
+      const key = diag.findings.map((f) => `${f.short}${Math.round(f.health * 20)}${Math.round(f.dist / 5)}`).join('|') + Math.round(fl * 20);
+      if (key !== dxKey) { dxKey = key;
+        dxList.innerHTML = (diag.findings.length ? diag.findings.map((f, i) => `<div><b>病巣${i + 1}</b>　${f.short}　健康度 ${Math.round(f.health * 100)}%・${Math.round(f.dist)}µm<small>${f.cause}</small></div>`).join('') : '<div>この近くに大きな病巣はありません</div>')
+          + `<div><small>区域の血流 ${Math.round(fl * 100)}%　／　主な原因：毛細血管の血流停止（虚血）</small></div>`; }
+    }
+    for (let i = 0; i < 3; i++) {
+      const f = diag.findings[i], el = tags[i];
+      if (!f || !on) { el.style.opacity = '0'; continue; }
+      pv.set(f.x, f.y + 6, f.z).project(camera);
+      if (pv.z > 1 || Math.abs(pv.x) > 1.1 || Math.abs(pv.y) > 1.1) { el.style.opacity = '0'; continue; }
+      el.style.left = `${Math.min(0.9, Math.max(0.1, pv.x * 0.5 + 0.5)) * innerWidth}px`; el.style.top = `${Math.min(0.85, Math.max(0.3, -pv.y * 0.5 + 0.5)) * innerHeight}px`; el.style.opacity = String(diag.show);
+      el.innerHTML = `<b>病巣${i + 1}</b> ${f.short}　${Math.round(f.dist)}µm`;
+    }
+  }
+
   // ---- 1コマぶんの更新 ----
   function demoInput(time: number) {   // 自動操作（確認用の決まった経路）
-    const cyc = time % 11; input.moveX = 0; input.moveY = cyc < 2.6 ? 1 : 0; input.fire = cyc >= 2.9 && cyc < 10.6; input.scan = time > 4.2 && time < 5.4; input.dash = false;
+    const cyc = time % 11; input.moveX = 0; input.moveY = cyc < 2.6 ? 1 : 0; input.fire = cyc >= 2.9 && cyc < 10.6; input.scan = time > 4.2 && time < 5.4; input.dash = false; input.swimUp = false; input.swimDown = false;
     const way = [[-40, -4], [-22, 6], [-6, 16], [14, 22], [32, 24]]; const w = way[Math.min(way.length - 1, Math.floor(time / 11))];
     const want = Math.atan2(w[0] - pos.x, w[1] - pos.z); let d = want - yaw; d = Math.atan2(Math.sin(d), Math.cos(d)); yaw += d * 0.08; pitch += (0.34 - pitch) * 0.1;
   }
   function step(dt: number) {
     t += dt;
-    const force = W.__force as { x: number; y: number } | undefined;   // 確認用：入力を固定して1コマずつ進める
-    const look = force ? (input.moveX = force.x, input.moveY = force.y, input.fire = false, input.scan = false, input.dash = false, { dx: 0, dy: 0 }) : sim !== null || Q.has('demo') ? (demoInput(t), { dx: 0, dy: 0 }) : input.poll(dt);
+    const force = W.__force as { x: number; y: number; up?: boolean; down?: boolean; pitch?: number; yaw?: number; scan?: boolean; fire?: boolean } | undefined;   // 確認用：入力を固定して1コマずつ進める
+    const look = force ? (input.moveX = force.x, input.moveY = force.y, input.fire = !!force.fire, input.scan = !!force.scan, input.dash = false, input.swimUp = !!force.up, force.yaw !== undefined && (yaw = force.yaw), input.swimDown = !!force.down, force.pitch !== undefined && (pitch = force.pitch), { dx: 0, dy: 0 }) : sim !== null || Q.has('demo') ? (demoInput(t), { dx: 0, dy: 0 }) : input.poll(dt);
     yaw -= look.dx; pitch = Math.min(tuning.camera.pitchMax, Math.max(tuning.camera.pitchMin, pitch + look.dy));
     const P = tuning.player;
     // 移動：カメラの向きを基準に。加速と減速に慣性を持たせる
     const fx = Math.sin(yaw), fz = Math.cos(yaw);
+    let turnRate = 0;
+    // 床から上へ泳ぎ出す（上へボタン）。床に向かって泳いで着くと、歩きに戻る
+    if (!swimming && input.swimUp && !finished) { swimming = true; swimVel.set(vel.x, P.swimLift, vel.z); }
+    if (swimming) {
+      // 体液の中：視点の向き（上下も含む）へ進む。上へ／下へボタンで浮き沈み。水の抵抗で、ゆっくり加速しゆっくり止まる
+      const S = P.swimSpeed * (input.dash ? P.swimDash : 1) * (input.fire ? 0.5 : 1) * (input.scan ? 0.5 : 1);
+      dir.set(fx * Math.cos(pitch), -Math.sin(pitch), fz * Math.cos(pitch));
+      tmp.set(dir.x * input.moveY - fz * input.moveX, dir.y * input.moveY, dir.z * input.moveY + fx * input.moveX).multiplyScalar(S);
+      tmp.y += ((input.swimUp ? 1 : 0) - (input.swimDown ? 1 : 0)) * S * 0.8;
+      const wantMove = tmp.lengthSq() > 0.01;
+      swimVel.lerp(tmp, Math.min(1, dt * (wantMove ? P.swimAccel : P.swimDrag)));
+      pos.addScaledVector(swimVel, dt);
+      const fy = stage.floorHeight(pos.x, pos.z);
+      if (pos.y > fy + P.swimCeil) { pos.y = fy + P.swimCeil; swimVel.y = Math.min(0, swimVel.y); }
+      if (pos.y <= fy + 0.02 && swimVel.y <= 0.05 && !input.swimUp) { pos.y = fy; swimming = false; curSpeed = Math.hypot(swimVel.x, swimVel.z); }
+      else pos.y = Math.max(pos.y, fy);
+      const hs = Math.hypot(swimVel.x, swimVel.z), vs = swimVel.length();
+      const wantFace = hs > 0.35 ? Math.atan2(swimVel.x, swimVel.z) : input.fire ? yaw : facing;
+      let df = wantFace - facing; df = Math.atan2(Math.sin(df), Math.cos(df));
+      const dFace = df * Math.min(1, dt * 3.2); facing += dFace; turnRate = dt > 0 ? dFace / dt : 0;
+      // 体は進む向きに沿わせる（水平に進むときは水平、まっすぐ上なら立つ）。ただよう間は、ほぼ立ち姿
+      const along = Math.min(2.3, Math.atan2(hs, swimVel.y));
+      const k = Math.min(1, Math.max(0, (vs - 0.3) / 1.2));
+      diver.setSwim(true, (input.fire ? 0.15 : along) * k + 0.08 * (1 - k), Math.max(-0.5, Math.min(0.5, -turnRate * 0.18)) * k);
+      curSpeed = vs; walked += vs * dt;
+    } else {
     const sp = (input.dash ? P.dashSpeed : P.walkSpeed) * (input.fire ? 0.265 : 1) * (input.scan ? 0.35 : 1);
     tmp.set((fx * input.moveY - fz * input.moveX) * sp, 0, (fz * input.moveY + fx * input.moveX) * sp);
     const moving = tmp.lengthSq() > 0.01;
@@ -153,15 +208,17 @@ async function main() {
     const wantFace = moving ? Math.atan2(tmp.x, tmp.z) : input.fire ? yaw : facing;
     let df = wantFace - facing; df = Math.atan2(Math.sin(df), Math.cos(df));
     const maxTurn = (curSpeed > 2 ? 6.5 : 9.5) * dt;
-    const dFace = Math.max(-maxTurn, Math.min(maxTurn, df * Math.min(1, dt * P.turnLerp * 1.4))); facing += dFace; const turnRate = dt > 0 ? dFace / dt : 0;
+    const dFace = Math.max(-maxTurn, Math.min(maxTurn, df * Math.min(1, dt * P.turnLerp * 1.4))); facing += dFace; turnRate = dt > 0 ? dFace / dt : 0;
     // 進む：体の向いている方向へだけ進む（足が地面を横に滑らないように）。向きが大きくずれている間は、まず向きを変えてから加速する
     const align = Math.cos(df);
     const targetSpeed = moving ? Math.hypot(tmp.x, tmp.z) * Math.min(1, Math.max(0.0, (align + 0.15) / 1.15)) : 0;
     curSpeed += (targetSpeed - curSpeed) * Math.min(1, dt * (targetSpeed > curSpeed ? P.accel : P.decel));
     vel.set(Math.sin(facing) * curSpeed, 0, Math.cos(facing) * curSpeed);
     pos.addScaledVector(vel, dt); walked += curSpeed * dt;
-    pos.x = Math.max(-SX / 2 + 14, Math.min(SX / 2 - 14, pos.x)); pos.z = Math.max(-SZ / 2 + 12, Math.min(SZ / 2 - 12, pos.z));
     pos.y = stage.floorHeight(pos.x, pos.z);
+    diver.setSwim(false, 0, 0);
+    }
+    pos.x = Math.max(-SX / 2 + 14, Math.min(SX / 2 - 14, pos.x)); pos.z = Math.max(-SZ / 2 + 12, Math.min(SZ / 2 - 12, pos.z));
     const speed = curSpeed;
     // 構えて動くとき：脚は進む方向、上半身は狙う方向へひねる
     let aimTwist = 0; if (input.fire) { aimTwist = Math.atan2(Math.sin(yaw - facing), Math.cos(yaw - facing)); aimTwist = Math.max(-1.4, Math.min(1.4, aimTwist)); }
@@ -170,11 +227,12 @@ async function main() {
     // カメラ：肩ごしの三人称。対象の紹介中は、ゆっくり対象のほうへ寄る
     dir.set(Math.sin(yaw) * Math.cos(pitch), -Math.sin(pitch), Math.cos(yaw) * Math.cos(pitch));
     focusAmt += ((focusOn ? 1 : 0) - focusAmt) * Math.min(1, dt * 1.6);
-    camTarget.copy(pos); camTarget.y += P.eyeHeight;
+    camTarget.copy(pos); camTarget.y += swimming ? P.eyeHeight * 0.7 : P.eyeHeight;
     if (firstPerson) { camPos.copy(camTarget).addScaledVector(dir, 0.2); }
     else { camTarget.x += fz * -0.75; camTarget.z += fx * 0.75; tmp.copy(camTarget).addScaledVector(dir, -tuning.camera.distance * (1 - 0.25 * focusAmt)); tmp.y += tuning.camera.height * 0.35;
       tmp.y = Math.max(tmp.y, stage.floorHeight(tmp.x, tmp.z) + 0.5); camPos.lerp(tmp, started || sim !== null ? Math.min(1, dt * tuning.camera.follow) : 1); }
     camera.position.copy(camPos);
+    if (shake > 0.001) { const a = shake * shake * F.shake; camera.position.x += (Math.random() - 0.5) * a; camera.position.y += (Math.random() - 0.5) * a; shake = Math.max(0, shake - dt * 5); }
     tmp.copy(firstPerson ? camPos : camTarget).addScaledVector(dir, 12); if (focusAmt > 0.001 && focus.distanceTo(pos) < 26) tmp.lerp(focus, focusAmt * 0.4);
     camera.lookAt(tmp); camera.fov = tuning.camera.fov - 8 * focusAmt; camera.updateProjectionMatrix(); camera.updateMatrixWorld();
     // 浄化ビーム：画面の中心が指す床の一点を治す
@@ -183,16 +241,24 @@ async function main() {
       camera.getWorldDirection(dir); let found = false;
       for (let s = 2; s < tuning.beam.range + tuning.camera.distance; s += 0.4) { hit.copy(camera.position).addScaledVector(dir, s); if (hit.y <= stage.floorHeight(hit.x, hit.z)) { found = true; break; } }
       if (!found) { hit.set(pos.x + fx * 9, 0, pos.z + fz * 9); hit.y = stage.floorHeight(hit.x, hit.z); }
+      const hBefore = stage.health.sample(hit.x, hit.z);
       stage.heal(hit.x, hit.z, dt); firing = true;
+      // 手応え：病んだ組織に光が触れた瞬間に一瞬の間・小さな揺れ・振動・音。照射中は弱い振動を続ける
+      if (!wasHitting && hBefore < 0.6) { hitStop = F.hitStop; shake = 1; rumble(0.35 * F.rumble, 0.8 * F.rumble, 110); buzz(18); audio.hit(); }
+      if ((rumbleT -= dt) <= 0) { rumbleT = 0.22; if (hBefore < 0.8) rumble(0.05 * F.rumble, 0.22 * F.rumble, 200); }
       diver.hand.getWorldPosition(beamFrom); beamTo.copy(hit);
       stage.u.beamPos.value.copy(hit);
     }
+    wasHitting = firing;
     const bo = stage.u.beamOn.value as number; stage.u.beamOn.value = bo + ((firing ? 1 : 0) - bo) * Math.min(1, dt * 10);
     if (!firing) diver.hand.getWorldPosition(beamFrom);
     purify.update(dt, beamFrom, beamTo, firing, camera);
     const sc = stage.u.scan.value as number; stage.u.scan.value = sc + ((input.scan ? 1 : 0) - sc) * Math.min(1, dt * (input.scan ? tuning.scan.fadeIn : tuning.scan.fadeOut));
     // スキャンの波紋：押している間、主人公から 1.4 秒ごとに輪が広がる
     if (input.scan) { scanT += dt; if (scanT > 1.4) scanT = 0; } else if (scanT > 0) scanT = Math.min(1.4, scanT + dt);
+    // 診断：押した瞬間と、押している間は1秒ごとに病巣を調べ直す
+    if (input.scan && (!scanWas || (diagT -= dt) <= 0)) { diag.analyze(pos.x, pos.z); diagT = 1; }
+    scanWas = input.scan; diag.update(dt, input.scan, pos.x, pos.z); showDiag();
     stage.u.scanR.value = scanT * 48; stage.u.scanOrigin.value.copy(pos); stage.u.scanPulse.value = scanT > 0 && scanT < 1.4 ? 1 - scanT / 1.4 : 0;
     diver.lamp.intensity = tier === 'pc-high' ? 16 : 0;
     stage.update(dt, t, camera);
@@ -209,7 +275,11 @@ async function main() {
       else if ((cardGap -= dt) <= 0 && queue.length && !firing && subT <= 0 && t > 1.5) { const q = queue.shift()!; showCard(q.id, q.at); }
     }
     if (subT > 0) { subT -= dt; if (subT <= 0) subs.classList.remove('on'); }
-    const prog = Math.min(1, mean / tuning.health.doneAt);
+    const prog = stage.progress();
+    // 一区切り（10% ごと）回復するたびに、和音と振動と光の脈で知らせる
+    const stepNow = Math.floor(prog * 10);
+    if (stepNow > lastStep && lastStep >= 0 && !finished) { audio.restored(stepNow); rumble(0.5 * F.rumble, 0.5 * F.rumble, 180); buzz(30); purify.burst(); shake = Math.max(shake, 0.6); }
+    lastStep = Math.max(lastStep, stepNow);
     $('hv').textContent = String(Math.round(prog * 100)); $('hm').style.width = `${prog * 100}%`;
     patientView(prog); $('reticle').classList.toggle('on', firing);
     audio.update(mean, stage.flowing(), firing, stage.u.heartPhase.value as number);
@@ -264,7 +334,7 @@ async function main() {
   let last = performance.now();
   renderer.setAnimationLoop(() => {
     const now = performance.now(); const dt = Math.min(0.05, (now - last) / 1000); last = now;
-    if (!debugCam && sim === null && !paused) { if (started) step(dt); else { t += dt; stage.update(dt, t, camera); } dyn?.tick(dt); }
+    if (!debugCam && sim === null && !paused) { if (started) { if (hitStop > 0) { hitStop -= dt; step(dt * F.hitStopScale); } else step(dt); } else { t += dt; stage.update(dt, t, camera); } dyn?.tick(dt); }
     // 顕微鏡の映像らしさ：手持ちでない機材でもわずかに揺れ、ピントがかすかに前後し、明るさが心拍に合わせて息づく（確認用の固定撮影では止める）
     const live = !debugCam && sim === null && !Q.has('frames') && !Q.has('still');
     const tt = now / 1000;
@@ -279,6 +349,7 @@ async function main() {
     W.__irFrames = ((W.__irFrames as number) || 0) + 1;
     if (Q.has('frames') && (W.__irFrames as number) >= Number(Q.get('frames'))) { renderer.setAnimationLoop(null); W.__irDone = true; }
   });
+  if (Q.has('tune')) tunePanel(tuning as unknown as Record<string, unknown>);
   W.__pos = pos; W.__diver = diver; W.__input = input; W.__stage = stage; W.__begin = begin; W.__advance = (n: number) => { for (let i = 0; i < n; i++) step(1 / 30); };
   W.__irReady = { backend: backendLabel, tier, device };
 }

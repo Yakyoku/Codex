@@ -1,16 +1,17 @@
 // 入力の共通化：キーボード＋マウス、ゲームパッド、タッチ。（Quest のコントローラーは VR 側で扱う）
 export type InputKind = 'kbm' | 'pad' | 'touch';
 export class Input {
-  moveX = 0; moveY = 0; lookDX = 0; lookDY = 0; fire = false; scan = false; dash = false;
+  moveX = 0; moveY = 0; lookDX = 0; lookDY = 0; fire = false; scan = false; dash = false; swimUp = false; swimDown = false;
   kind: InputKind = 'kbm'; locked = false;
   onAction: (a: 'skip' | 'replay' | 'atlas' | 'pause' | 'view') => void = () => {};
   onKind: (k: InputKind) => void = () => {};
   private keys = new Set<string>(); private mouseFire = false; private mouseScan = false;
   private stick = { id: -1, ox: 0, oy: 0, x: 0, y: 0 }; private look = { id: -1, x: 0, y: 0 };
-  touchFire = false; touchScan = false; private padPrev: boolean[] = [];
+  touchFire = false; touchScan = false; touchUp = false; touchDown = false; private padPrev: boolean[] = [];
   sens = { mouse: 0.0022, pad: 2.2, touch: 0.005 };
   constructor(private el: HTMLElement) {
     addEventListener('keydown', (e) => {
+      if (e.code === 'Space') e.preventDefault();
       if (e.repeat) return; this.setKind('kbm'); this.keys.add(e.code);
       if (e.code === 'KeyE') this.onAction('skip'); if (e.code === 'KeyR') this.onAction('replay');
       if (e.code === 'Tab') { e.preventDefault(); this.onAction('atlas'); }
@@ -66,6 +67,7 @@ export class Input {
     if (k.has('KeyW') || k.has('ArrowUp')) my += 1; if (k.has('KeyS') || k.has('ArrowDown')) my -= 1;
     if (k.has('KeyD') || k.has('ArrowRight')) mx += 1; if (k.has('KeyA') || k.has('ArrowLeft')) mx -= 1;
     let fire = this.mouseFire || k.has('KeyF'), scan = this.mouseScan || k.has('KeyQ'), dash = k.has('ShiftLeft');
+    let up = k.has('Space') || this.touchUp, down = k.has('KeyC') || k.has('ControlLeft') || this.touchDown;
     if (this.stick.id >= 0) { mx += this.stick.x; my -= this.stick.y; }
     fire ||= this.touchFire; scan ||= this.touchScan;
     const pad = Array.from(navigator.getGamepads?.() ?? []).find((p) => p && p.connected);
@@ -75,12 +77,12 @@ export class Input {
       const b = (i: number) => !!pad.buttons[i]?.pressed || (pad.buttons[i]?.value ?? 0) > 0.4;
       if (ax || ay || rx || ry || pad.buttons.some((x) => x.pressed)) this.setKind('pad');
       mx += ax; my -= ay; this.lookDX += rx * this.sens.pad * dt; this.lookDY += ry * this.sens.pad * dt;
-      fire ||= b(7) || b(5); scan ||= b(6) || b(2); dash ||= b(10) || b(0);
+      fire ||= b(7) || b(5); scan ||= b(6) || b(2); dash ||= b(10); up ||= b(0); down ||= b(1);
       const edge = (i: number, a: Parameters<Input['onAction']>[0]) => { const p = b(i); if (p && !this.padPrev[i]) this.onAction(a); this.padPrev[i] = p; };
       edge(3, 'skip'); edge(8, 'atlas'); edge(9, 'pause'); edge(11, 'view');
     }
     const l = Math.hypot(mx, my); if (l > 1) { mx /= l; my /= l; }
-    this.moveX = mx; this.moveY = my; this.fire = fire; this.scan = scan; this.dash = dash;
+    this.moveX = mx; this.moveY = my; this.fire = fire; this.scan = scan; this.dash = dash; this.swimUp = up; this.swimDown = down;
     const out = { dx: this.lookDX, dy: this.lookDY }; this.lookDX = this.lookDY = 0; return out;
   }
 }

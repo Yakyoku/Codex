@@ -1,10 +1,12 @@
 {
-  "player": { "height": 2.0, "walkSpeed": 3.1, "dashSpeed": 4.2, "accel": 6.0, "decel": 6.5, "turnLerp": 10.0, "eyeHeight": 1.75 },
+  "player": { "height": 2.0, "walkSpeed": 3.1, "dashSpeed": 4.2, "accel": 6.0, "decel": 6.5, "turnLerp": 10.0, "eyeHeight": 1.75,
+    "swimSpeed": 2.4, "swimDash": 1.5, "swimAccel": 2.2, "swimDrag": 1.3, "swimLift": 2.4, "swimCeil": 16 },
   "camera": { "distance": 5.4, "height": 2.2, "fov": 50, "follow": 6.0, "pitchMin": -0.55, "pitchMax": 0.9, "mouseSens": 0.0022, "padSens": 2.2, "touchSens": 0.005 },
   "beam": { "range": 26, "radius": 13, "rate": 0.95, "atpPerSec": 0 },
   "scan": { "fadeIn": 5.0, "fadeOut": 2.2 },
   "health": { "gridW": 60, "gridH": 44, "flowStart": 0.35, "flowFull": 0.8, "regrow": 0.5, "doneAt": 0.8 },
   "flow": { "speed": 8.5, "spacing": 9.0, "perceptionFactor": 200 },
   "heart": { "bpmSick": 96, "bpmHealthy": 62 },
-  "vr": { "worldScale": 0.85, "moveSpeed": 1.6, "snapDeg": 30, "vignette": 0.6 }
+  "vr": { "worldScale": 0.85, "moveSpeed": 1.6, "snapDeg": 30, "vignette": 0.6, "swimPull": 1.6, "swimDrag": 1.2 },
+  "feel": { "hitStop": 0.07, "hitStopScale": 0.12, "shake": 0.05, "rumble": 0.55 }
 }

@@ -11,7 +11,9 @@ export class PurifyBeam {
   private core: THREE.Mesh; private outer: THREE.Mesh; private impact: THREE.Mesh; private flare: THREE.Mesh;
   private sparks: THREE.Points; private sparkPos: Float32Array; private sparkSeed: Float32Array;
   light = new THREE.PointLight(0xd9c4ff, 0, 22, 1.6);
-  private on = 0; private t = 0;
+  private on = 0; private t = 0; private burstT = 0;
+  /** 一区切り回復したときの、光の強い脈 */
+  burst() { this.burstT = 1; }
   constructor(noise: THREE.Texture, private scale = 1) {
     const geo = (r0: number, r1: number) => { const g = new THREE.CylinderGeometry(r0 * scale, r1 * scale, 1, 20, 1, true); g.translate(0, 0.5, 0); g.rotateX(Math.PI / 2); return g; };
     const facing = abs(dot(normalView, positionViewDirection));                       // 正面ほど 1、縁ほど 0
@@ -55,12 +57,13 @@ export class PurifyBeam {
   /** from: 光の出口、to: 当たった所、firing: 照射中か、camera: 根元の光の花を正面に向けるため */
   update(dt: number, from: THREE.Vector3, to: THREE.Vector3, firing: boolean, camera: THREE.Camera) {
     this.t += dt; this.on += ((firing ? 1 : 0) - this.on) * Math.min(1, dt * (firing ? 14 : 6));
-    const on = this.on * (0.9 + 0.1 * Math.sin(this.t * 37));
+    this.burstT = Math.max(0, this.burstT - dt * 2.2);
+    const on = this.on * (0.9 + 0.1 * Math.sin(this.t * 37)) * (1 + 1.2 * this.burstT * this.burstT);
     this.uTime.value = this.t; this.uOn.value = on; this.group.visible = this.on > 0.01;
     if (!this.group.visible) { this.light.intensity = 0; return; }
     const len = from.distanceTo(to); this.uLen.value = len;
     for (const m of [this.core, this.outer]) { m.position.copy(from); m.lookAt(to); m.scale.set(1, 1, len); }
-    this.impact.position.copy(to).y += 0.06;
+    this.impact.position.copy(to).y += 0.06; this.impact.scale.setScalar(1 + 0.8 * this.burstT);
     this.flare.position.copy(from); this.flare.quaternion.copy(camera.quaternion);
     this.light.position.copy(to).y += 1.2; this.light.intensity = 30 * on;
     // 粒の位置

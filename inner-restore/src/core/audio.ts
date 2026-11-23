@@ -70,6 +70,10 @@ export class GameAudio {
       o.connect(e); e.connect(this.master); o.start(s); o.stop(s + 1.7);
     });
   }
+  /** 浄化の光が病んだ組織に触れた瞬間：やわらかく「ぽっ」と当たる音 */
+  hit() { const c = this.ctx; if (!c) return; this.thump(c.currentTime, 220, 0.18); this.chime([987.8], 0.03); }
+  /** 一区切り回復したとき：小さく和音が開く（回復の手応え） */
+  restored(step: number) { const base = [392, 440, 493.9, 523.3, 587.3, 659.3][step % 6]; this.chime([base, base * 1.5, base * 2], 0.05); }
   /** 回復の瞬間：和音が開く */
   resolve() { this.chime([220, 277.18, 329.63, 440, 554.37, 659.25], 0.09); }
   suspend(on: boolean) { if (this.ctx) void (on ? this.ctx.suspend() : this.ctx.resume()); }

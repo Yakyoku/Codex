@@ -8,6 +8,8 @@ import { buildRetina } from '../stages/eye/retina';
 import { ATLAS } from '../game/ui';
 import { PurifyBeam } from '../game/beam';
 import tuning from '../data/tuning.json';
+import { haptic } from '../core/feel';
+import { Diagnosis } from '../game/diagnosis';
 
 const W = window as unknown as Record<string, unknown>;
 const errors: string[] = (W.__irErrors = []) as string[];
@@ -100,7 +102,10 @@ async function main() {
     const c = wrist.ctx; wrist.clear('rgba(4,9,11,0.94)'); c.fillStyle = '#8fa3ad'; c.font = `30px ${FONT}`; c.fillText('網膜　血流の回復', 28, 56);
     c.fillStyle = '#e9eef2'; c.font = `300 120px ${FONT}`; c.fillText(`${Math.round(prog * 100)}%`, 28, 190); c.fillStyle = '#ffffff22'; c.fillRect(28, 222, 456, 10);
     const g = c.createLinearGradient(28, 0, 484, 0); g.addColorStop(0, '#f2b36b'); g.addColorStop(1, '#7fe0d2'); c.fillStyle = g; c.fillRect(28, 222, 456 * prog, 10);
-    c.fillStyle = scan ? '#7fe0d2' : '#8fa3ad'; c.font = `28px ${FONT}`; c.fillText(scan ? 'スキャン中' : '端末を見るとスキャン', 28, 290); c.fillText(`知覚加速 ×${tuning.flow.perceptionFactor}`, 28, 340); wrist.tex.needsUpdate = true;
+    c.fillStyle = scan ? '#7fe0d2' : '#8fa3ad'; c.font = `28px ${FONT}`; c.fillText(scan ? 'スキャン中' : '端末を見るとスキャン', 28, 290);
+    if (scan && diag.findings.length) { c.fillStyle = '#ffc070'; c.font = `26px ${FONT}`; diag.findings.slice(0, 2).forEach((f, i) => c.fillText(`病巣${i + 1} ${f.short} ${Math.round(f.dist)}µm`, 28, 332 + i * 34)); }
+    else c.fillText(`知覚加速 ×${tuning.flow.perceptionFactor}`, 28, 340);
+    wrist.tex.needsUpdate = true;
   }
 
   // ---- VR の開始 ----
@@ -109,7 +114,7 @@ async function main() {
   const xr = (navigator as Navigator & { xr?: XRSystem }).xr;
   const supported = !!xr && (await xr.isSessionSupported('immersive-vr').catch(() => false));
   btn.disabled = !supported;
-  msg.textContent = supported ? '左スティック：移動　右スティック：向きを変える　右トリガー：浄化　左手首を見る：スキャン'
+  msg.textContent = supported ? '左スティック：移動　右スティック：向きを変える　右トリガー：浄化　左手首を見る：スキャン　握って引く：泳ぐ'
     : 'このブラウザは VR に対応していません。Meta Quest 3 の標準ブラウザで開いてください。下は確認用の画面表示です（ドラッグで見回し、WASD で移動、F で浄化）。';
   if (!supported) { $('vrui').classList.add('min'); const m2 = document.createElement('div'); m2.className = 'ir-nav'; m2.innerHTML = '<span style="color:var(--dim);font-size:12px">確認モード：ドラッグ＝見回す　WASD＝移動　F＝浄化　Q＝スキャン</span>'; document.body.appendChild(m2); }
   let started = !supported; let t = 0;
@@ -138,6 +143,18 @@ async function main() {
   const v = new THREE.Vector3(), d = new THREE.Vector3(), hit = new THREE.Vector3(), q = new THREE.Quaternion(), vel = new THREE.Vector3();
   let snapReady = true, stepReady = true, finished = false, wristT = 0, scanOn = false, lastProg = -1;
   const moveMode = () => ($('v-move') as HTMLSelectElement).value, vigMax = () => Number(($('v-vig') as HTMLSelectElement).value);
+  // 酔いにくさの設定は、次に開いたときも同じにする
+  for (const id of ['v-intense', 'v-move', 'v-vig', 'v-turn', 'v-eye', 'v-swim']) {
+    const el = $(id) as HTMLSelectElement; try { const v = localStorage.getItem('ir.' + id); if (v) el.value = v; } catch { /* 保存できない */ }
+    el.addEventListener('change', () => { try { localStorage.setItem('ir.' + id, el.value); } catch { /* 保存できない */ } });
+  }
+  const turnMode = () => ($('v-turn') as HTMLSelectElement).value, eyeLift = () => Number(($('v-eye') as HTMLSelectElement).value), handSwim = () => ($('v-swim') as HTMLSelectElement).value === 'on';
+  // 手で泳ぐ：握った手を引くと、その反対へ体が進む（水をかく）。体液の中では高さも変えられる
+  let alt = 0; const swimV = new THREE.Vector3(); const prevHand = [new THREE.Vector3(), new THREE.Vector3()]; const gripOn = [false, false];
+  hands.forEach((h, i) => { h.ray.addEventListener('squeezestart', () => { gripOn[i] = true; h.grip.getWorldPosition(prevHand[i]); }); h.ray.addEventListener('squeezeend', () => (gripOn[i] = false)); });
+  const srcOf = (h: { grip: THREE.Object3D }) => (session ? Array.from(session.inputSources).find((s) => s.handedness === (h === right ? 'right' : 'left')) : undefined);
+  const diag = new Diagnosis(stage.health, stage.size as [number, number], stage.floorHeight, stage.vesselDist, 0.8); stage.scene.add(diag.group);
+  let wasHit = false, scanWas = false, diagT = 0, lastStep = -1;
   let last = performance.now();
   renderer.setAnimationLoop(() => {
     const now = performance.now(); const dt = Math.min(0.05, (now - last) / 1000); last = now; t += dt;
@@ -151,32 +168,48 @@ async function main() {
       camera.rotation.set(pitchD, yawD, 0, 'YXZ');
     }
     // 向き：一定の角度ずつ変える（なめらかに回さない）
-    if (Math.abs(turn) > 0.6 && snapReady) { rig.rotation.y -= Math.sign(turn) * THREE.MathUtils.degToRad(tuning.vr.snapDeg); snapReady = false; } if (Math.abs(turn) < 0.3) snapReady = true;
+    if (turnMode() === 'smooth') { if (Math.abs(turn) > 0.2) rig.rotation.y -= turn * 1.2 * dt; }
+    else { if (Math.abs(turn) > 0.6 && snapReady) { rig.rotation.y -= Math.sign(turn) * THREE.MathUtils.degToRad(Number(turnMode()) || tuning.vr.snapDeg); snapReady = false; } if (Math.abs(turn) < 0.3) snapReady = true; }
     // 移動：頭の向きを基準に、水平にだけ進む。加速と減速は穏やかに
     camera.getWorldDirection(d); d.y = 0; d.normalize();
     v.set(d.x * my - d.z * mx, 0, d.z * my + d.x * mx);
     if (moveMode() === 'step' && session) { if (v.length() > 0.7 && stepReady) { rig.position.addScaledVector(v.normalize(), 2.2); stepReady = false; } if (v.length() < 0.3) stepReady = true; vel.set(0, 0, 0); }
     else { vel.lerp(v.multiplyScalar(tuning.vr.moveSpeed * K * 1.6), Math.min(1, dt * 4)); rig.position.addScaledVector(vel, dt); }
     rig.position.x = Math.max(-SX / 2 + 14, Math.min(SX / 2 - 14, rig.position.x)); rig.position.z = Math.max(-SZ / 2 + 12, Math.min(SZ / 2 - 12, rig.position.z));
-    rig.position.y += (stage.floorHeight(rig.position.x, rig.position.z) - rig.position.y) * Math.min(1, dt * 6);   // 足場は急に上下させない
-    vigMat.opacity += (Math.min(1, vel.length() / (tuning.vr.moveSpeed * K)) * vigMax() - vigMat.opacity) * Math.min(1, dt * 6);
+    // 手で水をかく：握っている手の動き（世界の中での移動量）の反対へ、体を押し出す。離すと水の抵抗でゆっくり止まる
+    if (session && handSwim()) for (let i = 0; i < 2; i++) {
+      if (!gripOn[i]) continue; hands[i].grip.getWorldPosition(v); d.subVectors(v, prevHand[i]);
+      if (d.length() < 0.5 * K) swimV.addScaledVector(d, -tuning.vr.swimPull / Math.max(dt, 1e-3) * Math.min(1, dt * 6));
+      prevHand[i].copy(v);
+    }
+    swimV.multiplyScalar(Math.max(0, 1 - dt * tuning.vr.swimDrag));
+    const sl = swimV.length(), maxS = tuning.vr.moveSpeed * K * 2.2; if (sl > maxS) swimV.multiplyScalar(maxS / sl);
+    rig.position.x += swimV.x * dt; rig.position.z += swimV.z * dt; alt = Math.max(0, Math.min(tuning.player.swimCeil, alt + swimV.y * dt)); if (alt <= 0 && swimV.y < 0) swimV.y = 0;
+    for (let i = 0; i < 2; i++) if (gripOn[i]) hands[i].grip.getWorldPosition(prevHand[i]);   // 体が動いたぶんを差し引く
+    // 足場は急に上下させない（床の起伏＋泳いだ高さ＋目の高さの設定）
+    const wantY = stage.floorHeight(rig.position.x, rig.position.z) + alt + eyeLift() * K;
+    rig.position.y += (wantY - rig.position.y) * Math.min(1, dt * 6);
+    vigMat.opacity += (Math.min(1, (vel.length() + swimV.length()) / (tuning.vr.moveSpeed * K)) * vigMax() - vigMat.opacity) * Math.min(1, dt * 6);
     rig.updateMatrixWorld(true);
     // 浄化：右手の向きの先の床
     let firing = false;
     if (fire && !finished) {
       const src = session ? right.ray : camera; src.getWorldPosition(v); src.getWorldQuaternion(q); d.set(0, 0, -1).applyQuaternion(q);
       let found = false; for (let s = 0.5; s < tuning.beam.range; s += 0.4) { hit.copy(v).addScaledVector(d, s); if (hit.y <= stage.floorHeight(hit.x, hit.z)) { found = true; break; } }
-      if (found) { stage.heal(hit.x, hit.z, dt); firing = true; if (!session) v.y -= 0.5; beamFrom.copy(v); beamTo.copy(hit); stage.u.beamPos.value.copy(hit); }
+      if (found) { const hb = stage.health.sample(hit.x, hit.z); if (!wasHit && hb < 0.6) haptic(srcOf(right), 0.6, 90); else if (hb < 0.8 && Math.random() < dt * 4) haptic(srcOf(right), 0.12, 60); stage.heal(hit.x, hit.z, dt); firing = true; if (!session) v.y -= 0.5; beamFrom.copy(v); beamTo.copy(hit); stage.u.beamPos.value.copy(hit); }
     }
+    wasHit = firing;
     const bo = stage.u.beamOn.value as number; stage.u.beamOn.value = bo + ((firing ? 1 : 0) - bo) * Math.min(1, dt * 10);
     purify.update(dt, beamFrom, beamTo, firing, camera);
     // スキャン：左手首の端末を自分の顔に向けている間
     if (session) { left.grip.getWorldQuaternion(q); d.set(0, 1, 0).applyQuaternion(q); left.grip.getWorldPosition(v); camera.getWorldPosition(hit); scanOn = d.dot(hit.sub(v).normalize()) > 0.72; } else scanOn = keys.has('KeyQ');
     const sc = stage.u.scan.value as number; stage.u.scan.value = sc + ((scanOn ? 1 : 0) - sc) * Math.min(1, dt * 4);
+    if (scanOn && (!scanWas || (diagT -= dt) <= 0)) { diag.analyze(rig.position.x, rig.position.z); diagT = 1; wristT = 0; lastProg = -1; } scanWas = scanOn; diag.update(dt, scanOn, rig.position.x, rig.position.z);
     stage.update(dt, t, camera);
     // 進み具合、紹介、字幕、患者の窓
-    const mean = stage.health.mean(), prog = Math.min(1, mean / tuning.health.doneAt);
-    wristT -= dt; if (wristT <= 0 && Math.abs(prog - lastProg) > 0.004) { drawWrist(prog, scanOn); wristT = 0.25; lastProg = prog; }
+    const mean = stage.health.mean(), prog = stage.progress();
+    const stepNow = Math.floor(prog * 10); if (stepNow > lastStep && lastStep >= 0 && !finished) { audio.restored(stepNow); purify.burst(); haptic(srcOf(right), 0.8, 160); haptic(srcOf(left), 0.5, 160); } lastStep = Math.max(lastStep, stepNow);
+    wristT -= dt; if (wristT <= 0 && (Math.abs(prog - lastProg) > 0.004 || scanOn)) { drawWrist(prog, scanOn); wristT = 0.25; lastProg = prog; }
     if (started) {
       const near = (p: THREE.Vector3, r: number) => Math.hypot(p.x - rig.position.x, p.z - rig.position.z) < r && stage.health.sample(p.x, p.z) > 0.55;
       const enq = (id: string, at: THREE.Vector3 | null) => { if (!known.has(id) && !queue.some((x) => x.id === id)) queue.push({ id, at }); };
