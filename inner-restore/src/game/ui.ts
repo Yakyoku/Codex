@@ -18,7 +18,7 @@ export function buildUI() {
   <div id="viewer" class="hide"><div class="vt"><b></b><span></span></div><button class="btn" id="v-close">図鑑に戻る</button><div class="vh">ドラッグで回す・ホイールで寄る。青緑の物差しは潜行士の身長（2µm）</div></div><div id="dx" class="hide"><div class="t">スキャン診断</div><div class="l"></div></div><div id="tags"><div class="tag"></div><div class="tag"></div><div class="tag"></div></div>
   <div id="touch" class="hide"><div id="stick" class="hide"><i></i></div><button class="tb" id="tb-fire">浄化</button><button class="tb" id="tb-scan">スキャン</button><button class="tb tb-s" id="tb-up">上へ</button><button class="tb tb-s" id="tb-down">下へ</button></div>
   <div id="topbtns" class="hide"><button id="b-atlas">図鑑</button><button id="b-pause">一時停止</button><button id="b-full">全画面</button></div>
-  <div id="fade"></div><div id="toast"></div>
+  <div id="errline" class="hide"></div><div id="fade"></div><div id="toast"></div>
   <div id="done" class="hide"><h2>区域の血流が戻りました</h2><p id="donetext"></p><button class="btn" id="b-next">次の区域へ</button> <button class="btn" id="b-cont">探索を続ける</button></div>
   <div id="pause" class="sheet hide"><h2 style="font-weight:300;letter-spacing:.3em">一時停止</h2><button class="btn" id="p-resume">再開する</button><button class="btn" id="p-atlas">図鑑</button><button class="btn" id="p-full">全画面表示</button>
     <div style="font-size:.88em;color:#b7c6cc;max-width:34em;line-height:1.8;text-align:center">セーブはこのブラウザの中に保存され、別のブラウザや端末には引き継がれません。</div><button class="btn" id="p-settings">設定</button><a class="btn" href="/vr/" style="text-decoration:none">VR 版へ</a></div>
@@ -38,8 +38,9 @@ export function buildUI() {
         <label>音声会話の先生 <select id="o-vb"><option value="on">ボタンを出す</option><option value="off">出さない</option></select></label>
         <div class="snote">音声会話の先生：画面右下の「先生と はなす」を押すと、声で質問したり、ヒントをもらったりできます（マイクを使います）。先生の声と速さは、先生のパネルの中で選べます。</div></section>
       <section><h3>描画</h3>
+        <label>映像の仕上げ <select id="o-post"><option value="on">入れる（ぼけ・光のにじみ・色調）</option><option value="off">切る（軽い・不具合のとき）</option></select></label>
         <label>描画方式 <select id="o-backend"><option value="auto">自動</option><option value="webgpu">WebGPU</option><option value="webgl">WebGL 2</option></select></label>
-        <div class="snote">描画方式を変えると、ページを読み込み直します。</div></section>
+        <div class="snote">映像の仕上げと描画方式を変えると、ページを読み込み直します。動かない・止まるときは「WebGL 2」と「切る」を試してください。</div></section>
     </div>
     <button class="btn" id="s-close">閉じる</button></div>
   <div id="atlas" class="sheet hide"><h2 style="font-weight:300;letter-spacing:.3em">体内図鑑</h2><div class="grid"></div><button class="btn" id="a-close">閉じる</button></div>

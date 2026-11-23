@@ -108,3 +108,4 @@ body.vb-off voice-buddy, body.vb-off [data-voice-buddy] { display:none !importan
 /* 患者の視界を全画面にするとき：大きさは一度に変え、ふわっと浮かび上がらせる（大きさの変化を途中で見せると、縦長の帯に見えるため） */
 #patient.full { transition:none; animation:pv-in .9s ease-out both; }
 @keyframes pv-in { from { opacity:0; } to { opacity:1; } }
+#errline { position:fixed; left:max(12px,env(safe-area-inset-left)); right:40%; bottom:max(6px,env(safe-area-inset-bottom)); color:#ffb4a0; font-size:12px; line-height:1.4; z-index:60; pointer-events:none; text-shadow:0 1px 2px #000; }

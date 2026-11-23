@@ -8,11 +8,11 @@ const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.
   '.webp': 'image/webp', '.png': 'image/png', '.jpg': 'image/jpeg', '.wasm': 'application/wasm', '.m4a': 'audio/mp4', '.mp3': 'audio/mpeg', '.woff2': 'font/woff2', '.svg': 'image/svg+xml', '.mp4': 'video/mp4' };
 export const DIST = path.resolve(import.meta.dirname, '..', 'dist');
 
-export async function launch({ webgpu = false, width = 1280, height = 720, dsf = 1, extraArgs = [], initScripts = [] } = {}) {
+export async function launch({ webgpu = false, width = 1280, height = 720, dsf = 1, extraArgs = [], initScripts = [], ctxOpts = {} } = {}) {
   const args = ['--use-angle=swiftshader', '--use-gl=angle', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--autoplay-policy=no-user-gesture-required', ...extraArgs];
   if (webgpu) args.push('--enable-unsafe-webgpu', '--enable-features=Vulkan,WebGPU', '--use-vulkan=swiftshader', '--use-webgpu-adapter=swiftshader');
   const browser = await pw.chromium.launch({ args });
-  const ctx = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: dsf, ignoreHTTPSErrors: true });
+  const ctx = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: dsf, ignoreHTTPSErrors: true, ...ctxOpts });
   for (const s of initScripts) await ctx.addInitScript(s);
   await ctx.route(ORIGIN + '/**', async (route) => {
     const u = new URL(route.request().url());

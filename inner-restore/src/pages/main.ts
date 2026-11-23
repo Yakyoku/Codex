@@ -42,6 +42,8 @@ async function main() {
   const progress = (p: number) => (barEl.style.width = `${p * 100}%`);
   if (device === 'quest') { $('l-vr').style.cssText = 'font-size:1.5em;border:1px solid var(--acc);padding:.5em 1em'; }
   ($('o-backend') as HTMLSelectElement).value = backendPrefFromURL();
+  ($('o-post') as HTMLSelectElement).value = store.get('ir.post') ?? 'on';
+  $('o-post').addEventListener('change', (e) => { store.set('ir.post', (e.target as HTMLSelectElement).value); location.reload(); });
   $('o-backend').addEventListener('change', (e) => { store.set('ir.backend', (e.target as HTMLSelectElement).value); location.reload(); });
   const introSel = $('o-intro') as HTMLSelectElement, ttsSel = $('o-tts') as HTMLSelectElement;
   introSel.value = store.get('ir.intro') ?? 'all'; if (store.get('ir.tts') === 'off') setVoice({ on: false }); ttsSel.value = voiceSettings.on ? 'on' : 'off';
@@ -75,7 +77,8 @@ async function main() {
   stage.scene.add(diver.root);
   const diag = new Diagnosis(stage.health, stage.size as [number, number], stage.floorHeight, (x: number, z: number) => stage.causeAt(x, z), 1, stage.plugs, M.plugDiag); stage.scene.add(diag.group);
   // 仕上げ（浅いピント・光のにじみ・色調）。?post=off で切れる
-  const post = Q.get('post') === 'off' ? null : createPost(renderer, stage.scene, camera, Q.get('post') === 'full' ? 'pc-high' : tier);
+  // 映像の仕上げは設定で切れる（ir.post=off）。失敗したら自動で切って、そのまま描き続ける
+  let post = Q.get('post') === 'off' || (store.get('ir.post') === 'off' && !Q.has('post')) ? null : createPost(renderer, stage.scene, camera, Q.get('post') === 'full' ? 'pc-high' : tier);
   const audio = new GameAudio();
   const input = new Input(canvas);
   input.sens = { mouse: tuning.camera.mouseSens, pad: tuning.camera.padSens, touch: tuning.camera.touchSens };
@@ -95,7 +98,7 @@ async function main() {
   let yaw = stage.start.yaw, pitch = 0.22, facing = yaw, firstPerson = false, paused = false, started = false, finished = false, t = 0, walked = 0;
   const known = new Set<string>((store.get('ir.known') ?? '').split(',').filter(Boolean));
   const camTarget = new THREE.Vector3(), camPos = new THREE.Vector3(), tmp = new THREE.Vector3(), dir = new THREE.Vector3(), hit = new THREE.Vector3(), focus = new THREE.Vector3();
-  let patientDone = false; let swimming = stage.start.swimming, arrived = !stage.start.swimming; const swimVel = new THREE.Vector3(); let scanWas = false, diagT = 0;
+  let patientDone = false; let edgeT = 0; let swimming = stage.start.swimming, arrived = !stage.start.swimming; const swimVel = new THREE.Vector3(); let scanWas = false, diagT = 0;
   const F = tuning.feel; let hitStop = 0, shake = 0, rumbleT = 0, wasHitting = false, lastStep = -1;
   let focusAmt = 0; let focusOn = false; let scanT = 0; let curSpeed = 0;
   const hud = new Hud(`${backendLabel} · ${TIER_LABEL[tier]} · ${DEVICE_LABEL[device]}`, () => dyn ? `解像度 ×${dyn.scale.toFixed(2)}` : '');
@@ -208,6 +211,7 @@ async function main() {
       dir.set(fx * Math.cos(pitch), -Math.sin(pitch), fz * Math.cos(pitch));
       tmp.set(dir.x * input.moveY - fz * input.moveX, dir.y * input.moveY, dir.z * input.moveY + fx * input.moveX).multiplyScalar(S);
       tmp.y += ((input.swimUp ? 1 : 0) - (input.swimDown ? 1 : 0)) * S * 0.8;
+      if (!arrived && !input.swimUp) tmp.y -= S * 0.35;   // 入口：何もしなくても、ゆっくり網膜へ沈んでいく
       const wantMove = tmp.lengthSq() > 0.01;
       swimVel.lerp(tmp, Math.min(1, dt * (wantMove ? P.swimAccel : P.swimDrag)));
       pos.addScaledVector(swimVel, dt);
@@ -243,7 +247,9 @@ async function main() {
     diver.setSwim(false, 0, 0);
     }
     stage.collide?.(pos, 0.45);
+    const px0 = pos.x, pz0 = pos.z;
     pos.x = Math.max(-SX / 2 + 14, Math.min(SX / 2 - 14, pos.x)); pos.z = Math.max(-SZ / 2 + 12, Math.min(SZ / 2 - 12, pos.z));
+    if ((px0 !== pos.x || pz0 !== pos.z) && (edgeT -= dt) <= 0 && started) { edgeT = 8; toast('区域の端です。向きを変えて、中ほどへ進んでください。'); }
     const speed = curSpeed;
     // 構えて動くとき：脚は進む方向、上半身は狙う方向へひねる
     let aimTwist = 0; if (input.fire) { aimTwist = Math.atan2(Math.sin(yaw - facing), Math.cos(yaw - facing)); aimTwist = Math.max(-1.4, Math.min(1.4, aimTwist)); }
@@ -364,10 +370,15 @@ async function main() {
   }
   const dbgTarget = new THREE.Vector3(...(debugCam ? debugCam.split(',').map(Number).slice(3, 6) : [0, 0, 0]));
   const sway = new THREE.Vector3();
+  const errSeen = new Set<string>();
+  const report = (where: string, e: unknown) => { const m = `${where}: ${String((e as Error)?.message ?? e)}`.slice(0, 160); if (errSeen.has(m)) return; errSeen.add(m); errors.push(m); console.error(m, e);
+    const el = $('errline'); el.textContent = `内部エラー（${errSeen.size}）${m}　— 設定で「描画方式：WebGL 2」「映像の仕上げ：切る」にすると直る場合があります`; el.classList.remove('hide'); };
   let last = performance.now();
   renderer.setAnimationLoop(() => {
     const now = performance.now(); const dt = Math.min(0.05, (now - last) / 1000); last = now;
-    if (!debugCam && sim === null && !paused) { if (started) { if (hitStop > 0) { hitStop -= dt; step(dt * F.hitStopScale); } else step(dt); } else { t += dt; stage.update(dt, t, camera); } dyn?.tick(dt); }
+    // 1コマの更新で思わぬ失敗が起きても、止まらずに続ける（失敗は画面の右下と __irErrors に残す）
+    try { if (!debugCam && sim === null && !paused) { if (started) { if (hitStop > 0) { hitStop -= dt; step(dt * F.hitStopScale); } else step(dt); } else { t += dt; stage.update(dt, t, camera); } dyn?.tick(dt); } }
+    catch (e) { report('update', e); }
     // 顕微鏡の映像らしさ：手持ちでない機材でもわずかに揺れ、ピントがかすかに前後し、明るさが心拍に合わせて息づく（確認用の固定撮影では止める）
     const live = !debugCam && sim === null && !Q.has('frames') && !Q.has('still');
     const tt = now / 1000;
@@ -375,7 +386,7 @@ async function main() {
     if (viewer.active) { viewer.render(renderer, dt); } else if (post) {
       if (post.useDof) post.focus.value += (camera.position.distanceTo(debugCam ? dbgTarget : diver.root.position) + 0.3 + (live ? 0.35 * Math.sin(tt * 0.45) : 0) - post.focus.value) * (debugCam ? 1 : 0.2);
       post.exposure.value = live ? 1 + 0.022 * Math.pow(0.5 + 0.5 * Math.sin(stage.u.heartPhase.value), 3) + 0.015 * Math.sin(tt * 0.21) : 1;
-      post.render();
+      try { post.render(); } catch (e) { report('post', e); post = null; renderer.render(stage.scene, camera); }
     } else renderer.render(stage.scene, camera);
     if (live) camera.position.sub(sway);
     hud.tick();

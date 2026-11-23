@@ -377,7 +377,8 @@ export async function buildRetina(renderer: THREE.WebGPURenderer, tier: Tier, op
   return {
     meta: RETINA_META, scene, health, size: [W, D], u, floorHeight, sun, cores, progress,
     // 入口：硝子体の高い所から、瞳の光の柱をたどって泳いで降りる
-    start: { pos: new THREE.Vector3(-58, opts.entrance ? floorHeight(-58, 6) + 34 : 0, 6), yaw: -1.15, swimming: !!opts.entrance },
+    // 向き：区域の中ほど（＋x）を向いて始める（以前は外の縁を向いていて、前へ進むとすぐ端で止まった）
+    start: { pos: new THREE.Vector3(-58, opts.entrance ? floorHeight(-58, 6) + 34 : 0, 6), yaw: Math.atan2(58, -6), swimming: !!opts.entrance },
     causeAt(x, z) { const near = vDist(x, z) < 9; return near ? { short: '毛細血管の閉塞', cause: '赤血球が止まって詰まり、この先へ血が届いていません' } : { short: '虚血（血が届かない）', cause: '近くの血管が止まり、酸素が届かず濁っています' }; },
     encounters(pos, t, walked) {
       const out: { id: string; at: THREE.Vector3 | null }[] = [];
