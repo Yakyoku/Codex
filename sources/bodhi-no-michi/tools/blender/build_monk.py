@@ -287,13 +287,13 @@ if STAGE >= 4:
     bmesh.ops.delete(bm, geom=[v for v in bm.verts if cut(v.co)], context='VERTS')
     for v in bm.verts:
         n = v.normal; p = v.co
-        off = 0.008 + 0.006 * sm((abs(p.x) - 0.18) / 0.1) + 0.004 * math.sin(p.z * 60 + p.x * 20) * sm((abs(p.x) - 0.2) / 0.1)
+        off = 0.009 + 0.006 * sm((abs(p.x) - 0.18) / 0.1) + 0.0015 * math.sin(p.z * 30 + p.x * 10) * sm((abs(p.x) - 0.2) / 0.1)
         v.co = p + n * off
+    bmesh.ops.smooth_vert(bm, verts=bm.verts, factor=0.5, use_axis_x=True, use_axis_y=True, use_axis_z=True)
     up = new_obj('robe_top', bm); up['col'] = ROBE_C; parts.append(up)
     # 衿：首の後ろから V 字に胸元へ下りる白い帯。体の表面に沿わせ、上衣の切り口を覆う
-    kd = kdtree.KDTree(len(V))
-    for i_, v in enumerate(V): kd.insert(v.co, i_)
-    kd.balance()
+    from mathutils.bvhtree import BVHTree
+    bvh = BVHTree.FromPolygons([v.co.copy() for v in V], [tuple(p.vertices) for p in body.data.polygons])
     yN = slice_center(0.83 * H, (-0.05, 0.05)).y
     zTopC, zBot = 0.845 * H, 0.705 * H
     def collar_pt(u):
@@ -308,15 +308,16 @@ if STAGE >= 4:
             p0 = Vector((s0 * math.sin(math.pi * 0.62) * 0.085, yN + math.cos(math.pi * 0.62) * 0.07, zTopC - 0.002))
             p1 = Vector((s0 * 0.006 - 0.004, yN - 0.15, zBot))
             p = p0.lerp(p1, k)
-        co, idx, dist = kd.find(p)
-        return co + V[idx].normal * 0.018
+        co, n, _, _ = bvh.find_nearest(p)
+        return co + n * 0.019
     def collar(t, a):
         p = collar_pt(t); q = collar_pt(min(1, t + 0.01)) - collar_pt(max(0, t - 0.01))
         nrm = (p - collar_pt(t)).normalized() if False else None
-        co, idx, dist = kd.find(p); n = V[idx].normal
+        co, n, _, _ = bvh.find_nearest(p)
         side = q.cross(n).normalized() if q.length > 0 else Vector((0, 0, 1))
-        return p + side * math.cos(a) * 0.02 + n * math.sin(a) * 0.006
-    cl = tube('collar', 60, 8, collar); cl['col'] = WHITE; cl['bone'] = ''; parts.append(cl)
+        ca, sa = math.cos(a), math.sin(a)
+        return p + side * ca * 0.027 + n * (sa * 0.008 + 0.002 * ca * ca)
+    cl = tube('collar', 160, 12, collar); cl['col'] = WHITE; cl['bone'] = ''; parts.append(cl)
     # 下衣：腰から脛の中ほどまで、ゆるく広がるひだ
     zTop, zHem = waistZ + 0.02, 0.2 * H
     rad0 = {j: max(body_radius(zTop, j / 48 * 2 * math.pi), 0.07) + 0.018 for j in range(48)}
@@ -380,6 +381,8 @@ def body_col(p, i):
     if 0.04 * H < p.z < 0.3 * H: c = list(WHITE)
     # 衿の下に見える白い襦袢
     if p.y < yc and 0.69 * H < p.z < 0.86 * H and abs(p.x) < 0.07: c = list(WHITE)
+    # 首まわり（衿の下）は白い襦袢：上衣の切り口から肌がのぞかないように
+    if 0.79 * H < p.z < 0.865 * H and abs(p.x) < 0.16 and not (p.z > 0.84 * H and abs(p.x) < 0.06 and p.y < yc - 0.02): c = list(WHITE)
     return (c[0], c[1], c[2], 0.0)
 if STAGE >= 5:
     paint(body, body_col)

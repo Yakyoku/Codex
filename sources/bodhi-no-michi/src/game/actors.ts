@@ -14,8 +14,8 @@ export async function createMonk(): Promise<Humanoid & { staff: THREE.Mesh }> {
   const [body, staff] = await Promise.all([loadMesh('monk-bl'), loadMesh('shakujo')]);
   const J = (body.userData.joints as Joints | undefined) ?? MONK_J;
   const h = new Humanoid(J, 1) as Humanoid & { staff: THREE.Mesh };
-  h.add(body, wcMaterial({ vertexColors: true, noiseScale: 3.0, bands: [0.36, 0.66], soft: 0.06, dens: [1.3, 0.92, 0.45], mottle: 0.45, grain: 0.12, dry: 0.08, rim: 0.6, sway: 1, wind: 0.05, emph: 0.6 }));
-  h.staff = new THREE.Mesh(staff, wcMaterial({ vertexColors: true, noiseScale: 3.0, dens: [1.6, 1.0, 0.4], mottle: 0.5, grain: 0.5, dry: 0.3, emph: 1 }));
+  h.add(body, wcMaterial({ vertexColors: true, bands: [0.36, 0.66], soft: 0.08, dens: [1.3, 0.92, 0.45], mottle: 0.22, grain: 0.08, dry: 0.05, rim: 0.6, noiseScale: 1.4, sway: 1, wind: 0.05, emph: 0.6 }));
+  h.staff = new THREE.Mesh(staff, wcMaterial({ vertexColors: true, noiseScale: 1.5, bands: [0.36, 0.66], soft: 0.06, dens: [1.5, 1.0, 0.45], mottle: 0.25, grain: 0.1, dry: 0.08, emph: 1 }));
   h.rig.b('handR').add(h.staff);
   h.stride = 0.5; h.stepTime = 0.24;
   return h;

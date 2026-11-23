@@ -45,7 +45,7 @@ export async function runViewer(canvas: HTMLCanvasElement, q: URLSearchParams): 
   if (monk) {
     const body = await loadMesh('monk-bl');
     rig = new Rig((body.userData.joints as Joints) ?? MONK_J);
-    rig.add(body, wcMaterial({ vertexColors: true, skinned: true, noiseScale: 3.0, bands: [0.36, 0.66], soft: 0.06, dens: [1.3, 0.92, 0.45], mottle: 0.45, grain: 0.12, dry: 0.08, rim: 0.6, emph: 1 }));
+    rig.add(body, wcMaterial({ vertexColors: true, skinned: true, bands: [0.36, 0.66], soft: 0.08, dens: [1.3, 0.92, 0.45], mottle: 0.22, grain: 0.08, dry: 0.05, rim: 0.6, noiseScale: 1.4, emph: 1 }));
   } else {
     const body = await loadMesh(un ? 'nio-bl-un' : 'nio-bl-a');
     rig = new Rig((body.userData.joints as Joints) ?? NIO_J);

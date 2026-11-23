@@ -128,5 +128,6 @@ export function shakujo(): Sdf {
 export const MONK_JOBS = [
   { name: 'monk-body', sdf: monkBody, min: [-0.9, -0.01, -0.3] as V3, max: [0.9, 1.5, 0.3] as V3, cell: 0.0135 },
   { name: 'monk-head', sdf: monkHead, min: [-0.11, 1.38, -0.12] as V3, max: [0.11, 1.72, 0.14] as V3, cell: 0.0044 },
-  { name: 'shakujo', sdf: shakujo, min: [-0.1, -1.06, -0.04] as V3, max: [0.1, 0.74, 0.04] as V3, cell: 0.0062 },
+  // 錫杖は Blender で作る（tools/blender/build_shakujo.py）
+  // { name: 'shakujo', sdf: shakujo, min: [-0.1, -1.06, -0.04] as V3, max: [0.1, 0.74, 0.04] as V3, cell: 0.0062 },
 ];
