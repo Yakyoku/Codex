@@ -7,10 +7,14 @@ export type GrainKind = 'quartz' | 'aggregate' | 'humus' | 'clay';
 interface Look { dry: [number, number, number]; wet: [number, number, number]; roughDry: number; roughWet: number; coat: number; detail: number; bump: number; }
 // 色は肉眼・光学顕微鏡で見える土の色を基準にした線形 RGB
 export const LOOKS: Record<GrainKind, Look> = {
-  quartz:    { dry: [0.36, 0.33, 0.29], wet: [0.15, 0.14, 0.125], roughDry: 0.7, roughWet: 0.12, coat: 1.0, detail: 2.5, bump: 0.35 },
-  aggregate: { dry: [0.27, 0.215, 0.165], wet: [0.060, 0.038, 0.024], roughDry: 0.96, roughWet: 0.62, coat: 0.5, detail: 3.5, bump: 1.0 },
-  humus:     { dry: [0.085, 0.066, 0.052], wet: [0.016, 0.011, 0.008], roughDry: 0.98, roughWet: 0.5, coat: 0.7, detail: 4.0, bump: 1.2 },
-  clay:      { dry: [0.44, 0.36, 0.27], wet: [0.17, 0.115, 0.07], roughDry: 0.9, roughWet: 0.35, coat: 0.85, detail: 5.0, bump: 0.4 },
+  // 石英：写真では、厚い中央は乳白色がかった青灰（#79849A〜#8F94A2）、縁は暖色（#ACA28C）。半透明でガラスのよう
+  quartz:    { dry: [0.16, 0.17, 0.20], wet: [0.10, 0.105, 0.125], roughDry: 0.55, roughWet: 0.2, coat: 0.6, detail: 2.5, bump: 0.35 },
+  // 団粒：けば立った、孔の多い、つやのない土のかたまり
+  aggregate: { dry: [0.20, 0.15, 0.10], wet: [0.075, 0.05, 0.032], roughDry: 0.97, roughWet: 0.82, coat: 0.08, detail: 3.5, bump: 1.0 },
+  // 腐植：赤みのある暗い茶色で、つやはない
+  humus:     { dry: [0.09, 0.05, 0.03], wet: [0.035, 0.02, 0.012], roughDry: 0.98, roughWet: 0.88, coat: 0.0, detail: 4.0, bump: 1.2 },
+  // 粘土：黄褐色（薄片の写真 #7C6332）
+  clay:      { dry: [0.30, 0.21, 0.07], wet: [0.15, 0.10, 0.03], roughDry: 0.9, roughWet: 0.55, coat: 0.35, detail: 5.0, bump: 0.4 },
 };
 
 export const soilUniforms = {
@@ -49,12 +53,15 @@ export function makeSoilMaterial(kind: GrainKind, na: THREE.Texture, detail: THR
   const n = normalMap(vec3(naT.r, naT.g, float(1)));
   if (!DBG.has('nonormal')) m.normalNode = n;
   // 水の膜：クリアコートの二層反射。膜は滑らかなので、下地の凹凸は拾わせない
-  m.clearcoatNode = wet.mul(L.coat);
+  m.clearcoatNode = kind === 'quartz' ? wet.mul(L.coat).mul(oneMinus(ao).mul(1.5).add(0.15).min(1.0)) : wet.mul(L.coat);
   m.clearcoatRoughnessNode = mix(float(0.25), float(0.12), wet);
   if (kind === 'quartz') {
     // 石英は半透明：縁で光が抜けて明るむ（厚みの代わりに視線と法線の角度で近似する）
-    const rim = pow(oneMinus(saturate(dot(normalView, positionViewDirection))), 2.5);
-    m.emissiveNode = col.mul(rim).mul(mix(float(0.12), float(0.5), wet));
+    const rim = pow(oneMinus(saturate(dot(normalView, positionViewDirection))), 2.0);
+    m.emissiveNode = vec3(0.40, 0.36, 0.28).mul(rim).mul(0.35);                   // 縁の暖かい透け
+    const stain = saturate(oneMinus(ao).mul(2.2).sub(0.3)).mul(saturate(d.g.mul(1.5).sub(0.2)));
+    m.colorNode = mix(m.colorNode as typeof col, vec3(0.32, 0.20, 0.07), stain.mul(0.6));   // くぼみの鉄のしみ
+    m.transmission = 0; m.thickness = 0;
     m.ior = 1.54;
   }
   m.envMapIntensity = 1;

@@ -20,12 +20,12 @@ export function makeEnvironment(renderer: THREE.WebGPURenderer): THREE.Texture {
 export interface Lights { lamp: THREE.SpotLight; fill: THREE.PointLight; top: THREE.DirectionalLight; hemi: THREE.HemisphereLight; }
 export function addLights(scene: THREE.Scene, camera: THREE.Camera, opts: { shadows: number }): Lights {
   // 主人公のライト：暖色のスポット。影を落とすのはこれだけ
-  const lamp = new THREE.SpotLight(0xffdcb0, 80, 160, 1.0, 0.8, 1.15);
+  const lamp = new THREE.SpotLight(0xfff1e2, 95, 160, 1.0, 0.8, 1.15);
   lamp.position.set(3.2, 2.6, 0.5); lamp.target.position.set(-0.6, -1.2, -14);
   camera.add(lamp); camera.add(lamp.target);
   if (opts.shadows > 0) { lamp.castShadow = true; lamp.shadow.mapSize.set(1024, 1024); lamp.shadow.camera.near = 1; lamp.shadow.camera.far = 90; lamp.shadow.bias = -0.0015; lamp.shadow.normalBias = 0.25; }
   // ライトのこぼれ光（影なし）：近くの粒の裏側が真っ黒につぶれないように
-  const fill = new THREE.PointLight(0xffc998, 5, 40, 1.3); fill.position.set(-0.8, 0.4, 1.0); camera.add(fill);
+  const fill = new THREE.PointLight(0xffe6cc, 7, 40, 1.3); fill.position.set(-0.8, 0.4, 1.0); camera.add(fill);
   // 地表から粒のすき間を通って届く、わずかな昼の光
   const top = new THREE.DirectionalLight(0xbfd4ff, 0.22); top.position.set(-0.3, 1, 0.25); scene.add(top);
   const hemi = new THREE.HemisphereLight(0x51607a, 0x150d08, 0.16); scene.add(hemi);

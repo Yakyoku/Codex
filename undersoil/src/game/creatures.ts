@@ -1,7 +1,7 @@
 // 生き物（コルポダ）。モデルは assets/blender/creatures/colpoda.py。GLB は −Z が前、1 単位 = 10 µm。
 // 乾いた区画ではシスト（丸い殻）のまま動かず、水が養分を運んでくると殻を出て、らせんを描いて泳ぐ（実際は約2時間かかる。ゲームでは早回し）。
 import * as THREE from 'three/webgpu';
-import { texture, uv, vec3, float, mix, normalMap, normalView, positionViewDirection, dot, pow, oneMinus, saturate, smoothstep, fract, sin, time, abs } from 'three/tsl';
+import { texture, uv, vec3, float, mix, normalMap, normalView, positionViewDirection, dot, pow, oneMinus, saturate, smoothstep, fract, sin, time, abs, positionLocal, mx_noise_float, mx_worley_noise_float } from 'three/tsl';
 import { loadGLB, loadTexture } from '../core/assets';
 import type { World } from './world';
 
@@ -39,7 +39,13 @@ export async function buildCreatures(base: string, world: World, opts: { lod: 0 
   const [gltf, na] = await Promise.all([loadGLB(base, 'models/creatures/colpoda.glb'), loadTexture(base, opts.lod === 0 ? 'models/creatures/colpoda_na.webp' : 'models/creatures/colpoda_lod1_na.webp')]);
   const L = `_LOD${opts.lod}`, other = `_LOD${1 - opts.lod}`;
   const body = bodyMaterial(na), vac = innerMaterial(0.2, [0.30, 0.31, 0.27]), cv = innerMaterial(0.1, [0.5, 0.52, 0.5]), nuc = innerMaterial(0.12, [0.5, 0.5, 0.48]), cil = ciliaMaterial();
-  const wall = innerMaterial(0.5, [0.55, 0.53, 0.46]), cell = innerMaterial(0.55, [0.45, 0.45, 0.40]);
+  // シスト：屈折の強い二重の殻（縁だけが明るい、ほぼ透明）の中に、細かい粒の詰まった一つの細胞のかたまり（写真で確認。白い粒の集まりではない）
+  const wall = new THREE.MeshPhysicalNodeMaterial({ transparent: true, depthWrite: false, side: THREE.DoubleSide });
+  { const rim = pow(oneMinus(saturate(dot(normalView, positionViewDirection)).abs()), 2.2);
+    wall.colorNode = vec3(0.30, 0.29, 0.25); wall.roughnessNode = float(0.3); wall.opacityNode = mix(float(0.05), float(0.75), rim); wall.emissiveNode = vec3(0.12, 0.11, 0.09).mul(rim); }
+  const cell = new THREE.MeshStandardNodeMaterial();
+  { const g = saturate(mx_noise_float(positionLocal.mul(9.0)).mul(0.6).add(mx_worley_noise_float(positionLocal.mul(5.0)).mul(-0.5)).add(0.6));
+    cell.colorNode = mix(vec3(0.10, 0.09, 0.07), vec3(0.24, 0.21, 0.15), g); cell.roughnessNode = float(0.85); }
   const list: { root: THREE.Object3D; active: THREE.Object3D[]; cyst: THREE.Object3D[]; cvMesh: THREE.Object3D | null; cellIdx: number; home: THREE.Vector3; ph: number; a: number; axis: THREE.Vector3 }[] = [];
   for (let k = 0; k < opts.count; k++) {
     const root = gltf.scene.clone(true); const active: THREE.Object3D[] = [], cyst: THREE.Object3D[] = []; let cvMesh: THREE.Object3D | null = null;
@@ -53,6 +59,7 @@ export async function buildCreatures(base: string, world: World, opts: { lod: 0 
       else if (n === 'colpoda_cv') { me.material = cv; active.push(me); cvMesh = me; }
       else if (n === 'colpoda_macronucleus') { me.material = nuc; active.push(me); }
       else if (n.startsWith('colpoda_cyst_wall')) { me.material = wall; me.renderOrder = 8; cyst.push(me); }
+      else if (n.startsWith('colpoda_cyst_granules')) { me.visible = false; }   // 白い粒は使わない
       else { me.material = cell; cyst.push(me); }
       void L;
     });
@@ -77,7 +84,7 @@ export async function buildCreatures(base: string, world: World, opts: { lod: 0 
       for (const c of list) {
         const cellS = world.grid.cells[c.cellIdx]; const target = cellS.microbes > 0.45 && cellS.water > 0.4 ? 1 : 0;
         c.a += Math.sign(target - c.a) * Math.min(Math.abs(target - c.a), dt * 0.5);
-        const act = c.a > 0.5; for (const o of c.active) o.visible = act && !o.name.endsWith(other); for (const o of c.cyst) o.visible = !act && !o.name.endsWith(other);
+        const act = c.a > 0.5; for (const o of c.active) o.visible = act && !o.name.endsWith(other); for (const o of c.cyst) o.visible = !act && !o.name.endsWith(other) && !o.name.startsWith('colpoda_cyst_granules');
         if (!act) { c.root.position.copy(c.home); c.root.position.y -= 1.8; c.root.scale.setScalar(1); continue; }
         posAt(c, t, p); posAt(c, t + 0.05, nxt); nxt.sub(p).normalize();
         q.setFromUnitVectors(fwd, nxt); roll.setFromAxisAngle(fwd, t * 2.2 + c.ph); q.multiply(roll); // 体の長い軸のまわりに回りながら進む

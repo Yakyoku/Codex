@@ -45,9 +45,18 @@ def join(objs):
 def make_quartz(seed):
     rng = random.Random(seed)
     o = ico(5); o.scale = (1.0, rng.uniform(0.7, 0.9), rng.uniform(0.6, 0.85)); bpy.ops.object.transform_apply(scale=True)
-    plane_cuts(o, 9, rng)
-    remesh(o, 0.022); smooth(o, 3, 0.6)   # 角を少し丸める（風化）
-    displace_noise(o, [(1.3, 0.05, 'n'), (5.0, 0.012, 'n'), (22.0, 0.004, 'ridge'), (60.0, 0.0015, 'n')], seed)
+    plane_cuts(o, 12, rng, depth=(0.5, 0.88))
+    # 貝殻状の割れ口：浅いくぼみを 4〜8 か所えぐる（写真の石英粒の特徴）
+    bm = bmesh.new(); bm.from_mesh(o.data)
+    for _ in range(rng.randint(4, 8)):
+        c = Vector((rng.uniform(-1, 1), rng.uniform(-1, 1), rng.uniform(-1, 1))).normalized()
+        rad, dep = rng.uniform(0.25, 0.5), rng.uniform(0.04, 0.10)
+        for v in bm.verts:
+            d = (v.co.normalized() - c).length
+            if d < rad: v.co -= v.co.normalized() * dep * (1 - (d / rad) ** 2) ** 1.5
+    bm.to_mesh(o.data); bm.free()
+    remesh(o, 0.012); smooth(o, 1, 0.35)   # 角はわずかに丸めるだけ（亜角）
+    displace_noise(o, [(1.3, 0.04, 'n'), (6.0, 0.012, 'n'), (28.0, 0.005, 'ridge'), (90.0, 0.002, 'n')], seed)   # すりガラス状の細かい凹凸
     return o
 
 def make_aggregate(seed):

@@ -14,14 +14,23 @@ export function buildSwarm(colliders: Collider[], cellOf: (p: THREE.Vector3) => 
   const hosts = colliders.filter((c) => c.r > 1.5);
   const pos = new Float32Array(count * 3), tang = new Float32Array(count * 3), cells = new Uint16Array(count), ph = new Float32Array(count);
   const p = new THREE.Vector3(), n = new THREE.Vector3(), t = new THREE.Vector3(); let k = 0, guard = 0;
+  // 細菌は、水中を均一に漂うのではなく、粒の表面やくぼみに小さな集落を作って張り付いている（写真で確認）
+  const c0 = new THREE.Vector3(), cn = new THREE.Vector3(), u = new THREE.Vector3(), w = new THREE.Vector3();
   while (k < count && guard++ < count * 40) {
     const h = hosts[rng.int(0, hosts.length - 1)];
-    n.set(rng.range(-1, 1), rng.range(-1, 1), rng.range(-1, 1)).normalize();
-    p.set(h.x, h.y, h.z).addScaledVector(n, h.r * 1.08 + rng.range(0.05, 0.5)); // 粒の表面の水の膜の中
-    if (nearPath(p) > 13) continue;
-    if (colliders.some((c) => c !== h && (p.x - c.x) ** 2 + (p.y - c.y) ** 2 + (p.z - c.z) ** 2 < (c.r * 0.98) ** 2)) continue;
-    t.set(rng.range(-1, 1), rng.range(-1, 1), rng.range(-1, 1)).cross(n).normalize();
-    pos.set([p.x, p.y, p.z], k * 3); tang.set([t.x, t.y, t.z], k * 3); cells[k] = cellOf(p); ph[k] = rng.next(); k++;
+    cn.set(rng.range(-1, 1), rng.range(-1, 0.6), rng.range(-1, 1)).normalize();
+    c0.set(h.x, h.y, h.z).addScaledVector(cn, h.r);
+    if (nearPath(c0) > 13) continue;
+    u.set(rng.range(-1, 1), rng.range(-1, 1), rng.range(-1, 1)).cross(cn).normalize(); w.crossVectors(cn, u);
+    const size = rng.int(8, 60), spread = 0.15 + 0.02 * size;
+    for (let j = 0; j < size && k < count; j++) {
+      const a = rng.range(0, 6.28), r = spread * Math.sqrt(rng.next());
+      n.copy(cn).addScaledVector(u, Math.cos(a) * r / h.r).addScaledVector(w, Math.sin(a) * r / h.r).normalize();
+      p.set(h.x, h.y, h.z).addScaledVector(n, h.r * 1.0 + rng.range(0.02, 0.08));
+      if (colliders.some((c) => c !== h && (p.x - c.x) ** 2 + (p.y - c.y) ** 2 + (p.z - c.z) ** 2 < (c.r * 0.98) ** 2)) continue;
+      t.set(rng.range(-1, 1), rng.range(-1, 1), rng.range(-1, 1)).cross(n).normalize();
+      pos.set([p.x, p.y, p.z], k * 3); tang.set([t.x, t.y, t.z], k * 3); cells[k] = cellOf(p); ph[k] = rng.next(); k++;
+    }
   }
   const n2 = k;
   type F = ReturnType<typeof float>; type V = ReturnType<typeof vec3>;
@@ -35,7 +44,7 @@ export function buildSwarm(colliders: Collider[], cellOf: (p: THREE.Vector3) => 
   const tt = time.mul(mix(float(0.5), float(1.1), aPh)).add(aPh.mul(40.0));
   const side = aTan.cross(vec3(0.3, 0.9, 0.2)).normalize();
   const run = sin(tt).mul(0.9).add(sin(tt.mul(0.37).add(aPh.mul(6.0))).mul(1.6));
-  const drift = aTan.mul(run).add(side.mul(cos(tt.mul(0.61)).mul(0.8)));
+  const drift = aTan.mul(run).add(side.mul(cos(tt.mul(0.61)).mul(0.8))).mul(0.06);
   // 棒の向きを進む方向へ（カプセルの長軸は Y）
   const heading = aTan.mul(cos(tt)).add(side.mul(sin(tt.mul(0.61)).mul(-0.5))).normalize();
   const bx = heading.cross(vec3(0.0, 0.0, 1.0)).normalize(), bz = heading.cross(bx);
@@ -45,9 +54,9 @@ export function buildSwarm(colliders: Collider[], cellOf: (p: THREE.Vector3) => 
   m.positionNode = aPos.add(drift).add(rotated.mul(live));
   // 色：光学顕微鏡で見る細菌はほぼ無色透明。淡い灰色で、縁がわずかに明るい
   const rim = pow(oneMinus(saturate(dot(normalView, positionViewDirection))), 2.0);
-  m.colorNode = vec3(0.20, 0.20, 0.18);
-  m.emissiveNode = vec3(0.05, 0.055, 0.05).mul(rim);
-  m.opacityNode = mix(float(0.45), float(0.95), rim);
+  m.colorNode = vec3(0.30, 0.31, 0.29);
+  m.emissiveNode = vec3(0.10, 0.11, 0.10).mul(rim);
+  m.opacityNode = mix(float(0.06), float(0.7), pow(rim, float(1.4)));
   m.roughnessNode = float(0.3); m.metalnessNode = float(0);
   void hash; void instanceIndex;
   const mesh = new THREE.InstancedMesh(geo, m, n2); mesh.name = 'swarm'; mesh.frustumCulled = false;

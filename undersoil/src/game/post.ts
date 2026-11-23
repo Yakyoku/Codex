@@ -14,7 +14,7 @@ export function makePost(renderer: THREE.WebGPURenderer, scene: THREE.Scene, cam
   let out = base.rgb;
   if (effects.some((e) => e.startsWith('bloom'))) {
     const lite = effects.includes('bloom-lite');
-    out = out.add(bloom(vec4(base.rgb.min(vec3(3.0)), float(1)) as unknown as typeof base, lite ? 0.18 : 0.24, lite ? 0.3 : 0.45, 1.15).rgb);
+    out = out.add(bloom(vec4(base.rgb.min(vec3(1.5)), float(1)) as unknown as typeof base, lite ? 0.18 : 0.24, lite ? 0.3 : 0.45, 1.15).rgb);
   }
   if (effects.includes('grade')) {
     // 暗部をわずかに寒色へ、明部を暖色へ（映画的な分離）。彩度は上げない

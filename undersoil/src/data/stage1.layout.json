@@ -10,7 +10,7 @@
   "bigRadius": [10, 24],
   "midCount": 700, "midRadius": [1.6, 5.5],
   "smallCount": 2600, "smallRadius": [0.35, 1.5],
-  "clayCount": 1800, "clayRadius": [0.3, 1.1],
+  "clayCount": 1800, "clayRadius": [0.06, 0.18],
   "seedCenter": [150, -14, 0],
   "seedRadii": [52, 44, 48]
 }

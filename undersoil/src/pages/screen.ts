@@ -1,4 +1,5 @@
 import * as THREE from 'three/webgpu';
+import { uniform } from 'three/tsl';
 import '../ui/base.css';
 import '../ui/game.css';
 import facts from '../data/facts.json';
@@ -46,7 +47,8 @@ async function main() {
   const game = await createGame(renderer, './', tier);
   const { scene, camera, world } = game;
   renderer.shadowMap.enabled = game.q.shadows > 0;
-  const post = Q.has('nopost') || !game.q.post.length ? null : makePost(renderer, scene, camera, game.q.post);
+  const underFocus = uniform(12);
+  const post = Q.has('nopost') || !game.q.post.length ? null : makePost(renderer, scene, camera, game.q.post, { distance: underFocus as never, range: 8, bokeh: 2.2 });
   const resize = () => {
     renderer.setPixelRatio(Math.min(devicePixelRatio, game.q.maxDpr)); renderer.setSize(innerWidth, innerHeight, false);
     camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
@@ -155,6 +157,11 @@ async function main() {
     } else if (post) post.render(); else renderer.render(scene, camera);
     if (!testing) enc.update(dt);
     pointer.update(dt);
+    { // ピント：説明している物があればそこ、なければ画面中央の粒まで
+      const f = pointer.focus(); let d = f ? camera.position.distanceTo(f) : 0;
+      if (!f) { const ray = new THREE.Raycaster(camera.position, new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion)); let best = 1e9; for (const c of world.colliders) { const v = new THREE.Vector3(c.x, c.y, c.z).sub(camera.position); const t = v.dot(ray.ray.direction); if (t < 0) continue; const off = v.lengthSq() - t * t; if (off < c.r * c.r) best = Math.min(best, t - Math.sqrt(c.r * c.r - off)); } d = best < 1e8 ? best : 14; }
+      underFocus.value += (Math.max(2, Math.min(30, d)) - underFocus.value) * (1 - Math.exp(-dt * 3));
+    }
     audio.setMode(mode); audio.setVitality(world.grid.mean()); audio.setGrowth(surface.growth); audio.update(dt);
     hud.tick(now); frames++;
     const vit = Math.round(world.grid.mean() * 100);
