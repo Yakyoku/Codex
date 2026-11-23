@@ -48,6 +48,8 @@ export class HealthField {
   mean(): number { let s = 0; for (let i = 0; i < this.data.length; i++) s += this.data[i]; return s / this.data.length; }
   /** 場所ごとの値を関数で決める（初期の病み方の分布） */
   setFn(f: (x: number, z: number) => number) { for (let j = 0; j < this.h; j++) for (let i = 0; i < this.w; i++) this.data[j * this.w + i] = Math.min(1, Math.max(0, f((i / (this.w - 1) - 0.5) * this.sizeX, (j / (this.h - 1) - 0.5) * this.sizeZ))); this.version++; }
+  /** 場所ごとの上限で抑える（血が届かない所は治りきらない）。変わったときだけ版を進める */
+  clampFn(cap: (x: number, z: number) => number) { let ch = false; for (let j = 0; j < this.h; j++) for (let i = 0; i < this.w; i++) { const k = j * this.w + i; if (this.data[k] < 0.3) continue; const c = cap((i / (this.w - 1) - 0.5) * this.sizeX, (j / (this.h - 1) - 0.5) * this.sizeZ); if (this.data[k] > c) { this.data[k] = c; ch = true; } } if (ch) this.version++; }
   setAll(v: number) { this.data.fill(Math.min(1, Math.max(0, v))); this.version++; }
   /** 0〜255 のバイト列（テクスチャ用）に書き出す */
   toBytes(out: Uint8Array) { for (let i = 0; i < this.data.length; i++) out[i] = Math.round(this.data[i] * 255); return out; }

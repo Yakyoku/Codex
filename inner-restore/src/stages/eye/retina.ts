@@ -20,6 +20,8 @@ export interface RetinaStage {
   vesselDist(x: number, z: number): number;
   cores: THREE.Vector3[];
   progress(): number;
+  plugs: { p: THREE.Vector3; hp: number; cleared: boolean }[];
+  setOnPlug(f: (i: number, kind: 'hit' | 'cleared') => void): void;
   update(dt: number, t: number, camera: THREE.Camera): void;
   heal(x: number, z: number, dt: number): number;
   points: { rbc: () => THREE.Vector3; nucleus: THREE.Vector3; pericyte: THREE.Vector3 };
@@ -181,7 +183,9 @@ export async function buildRetina(renderer: THREE.WebGPURenderer, tier: Tier): P
   health.setFn((x, z) => { let k = 0; for (const c of cores) k = Math.max(k, Math.exp(-((x - c.x) ** 2 + (z - c.z) ** 2) / (26 * 26))); return 0.24 - 0.23 * k + 0.03 * Math.sin(x * 0.11) * Math.cos(z * 0.13); });
   const startMean = health.mean();
   /** 回復の進み具合（始めの状態＝0、目標＝1） */
-  const progress = () => Math.min(1, Math.max(0, (health.mean() - startMean) / (hc.doneAt - startMean)));
+  // 閉塞点がすべてほぐれるまでは、9割で止まる
+  const progress = () => Math.min(plugsLeft() ? 0.9 : 1, Math.max(0, (health.mean() - startMean) / (hc.doneAt - startMean)));
+  let plugsLeft = () => 0;
   const src = (() => { const out: THREE.Mesh[] = []; rbcGltf.scene.traverse((o) => { if ((o as THREE.Mesh).isMesh) out.push(o as THREE.Mesh); }); return out.sort((a, b) => a.name.localeCompare(b.name)); })();
   const rbcGeo = src[vr ? 1 : tier === 'compat' ? 1 : 0].geometry.clone();
   { // 形を CPU 側で変形しておく：細い毛細血管の中の「パラシュート形」。進む向き（+y）は丸い弾頭、後ろは浅いくぼみ。
@@ -230,6 +234,44 @@ export async function buildRetina(renderer: THREE.WebGPURenderer, tier: Tier): P
     const i = Math.floor(f), t = f - i;
     outP.lerpVectors(e.P[i], e.P[i + 1], t); outT.subVectors(e.P[i + 1], e.P[i]).normalize();
   }
+  // ---- 閉塞点：止まった赤血球が血管の中で塊になり、その先へ血が届かない（区域の病巣）----
+  //   浄化の光を塊に当て続けると、ほぐれて流れが戻る。ほぐれるまで、そのまわりの組織は治りきらない
+  const plugMat = makeCellMaterial({ color: 0x4a0a10, transmit: 0x901018, orm: rbcSrcMat.aoMap, absorption: 2.4, wet: 0 });
+  plugMat.roughnessNode = float(0.7); plugMat.envMapIntensity = 0.1;
+  const PER = 9;
+  const plugs = cores.map((c) => {
+    // いちばん近い血管の向きに沿って、赤血球を不ぞろいに重ねる
+    let best = { e: 0, s: 0, d: 1e9 };
+    edges.forEach((e, ei) => e.P.forEach((p, i) => { const d = p.distanceTo(c); if (d < best.d) best = { e: ei, s: e.arc[i], d }; }));
+    const mesh = new THREE.InstancedMesh(rbcGeo, plugMat, PER); mesh.frustumCulled = false; mesh.renderOrder = 11; scene.add(mesh);
+    const base: THREE.Matrix4[] = [];
+    let sd = best.e * 31 + 7; const r = () => { sd = (sd * 16807) % 2147483647; return sd / 2147483647; };
+    for (let i = 0; i < PER; i++) {
+      pathAt(best.e, Math.max(0, Math.min(edges[best.e].len, best.s + (i - PER / 2) * 2.1)), tmpP, tmpT);
+      q.setFromUnitVectors(up, tmpT); q2.setFromEuler(new THREE.Euler((r() - 0.5) * 1.2, r() * 6.28, (r() - 0.5) * 1.2)); q.multiply(q2);
+      tmpP.x += (r() - 0.5) * 0.9; tmpP.y += (r() - 0.5) * 0.7; tmpP.z += (r() - 0.5) * 0.9;
+      base.push(new THREE.Matrix4().compose(tmpP.clone(), q.clone(), new THREE.Vector3(1, 0.85, 1).multiplyScalar(0.95 + r() * 0.15)));
+    }
+    return { p: c, hp: 1, cleared: false, mesh, base, e: best.e, shake: 0, gone: 0 };
+  });
+  const capAround = (x: number, z: number) => { let cap = 1; for (const pl of plugs) if (!pl.cleared) { const d = Math.hypot(x - pl.p.x, z - pl.p.z); if (d < 22) cap = Math.min(cap, 0.3 + 0.7 * Math.max(0, (d - 12) / 10)); } return cap; };
+  const sc2 = new THREE.Vector3(), mtmp = new THREE.Matrix4();
+  function updatePlugs(dt: number, t: number) {
+    for (const pl of plugs) {
+      if (pl.cleared) pl.gone = Math.min(1, pl.gone + dt * 0.8);
+      pl.shake = Math.max(0, pl.shake - dt * 3);
+      for (let i = 0; i < PER; i++) {
+        mtmp.copy(pl.base[i]); mtmp.decompose(tmpP, q, sc2);
+        // 当てている間は小刻みに震え、ほぐれると流れの向きへ散って消える
+        const j = pl.shake * 0.12; tmpP.x += Math.sin(t * 40 + i) * j; tmpP.y += Math.cos(t * 37 + i * 2) * j;
+        if (pl.gone > 0) { tmpP.addScaledVector(tmpT.set(Math.sin(i * 1.7), 0.15, Math.cos(i * 1.7)), pl.gone * 4); sc2.multiplyScalar(1 - pl.gone); }
+        pl.mesh.setMatrixAt(i, mtmp.compose(tmpP, q, sc2));
+      }
+      pl.mesh.instanceMatrix.needsUpdate = true; pl.mesh.visible = pl.gone < 1;
+    }
+  }
+  let onPlug: (i: number, kind: 'hit' | 'cleared') => void = () => {};
+  plugsLeft = () => plugs.filter((p) => !p.cleared).length;
   let flowSum = 0;
   // 区間ごとの速さのゆらぎ（数秒で変わる）。速い所で間が空き、遅い所で詰まって列になる
   const edgePhase = edges.map((_, i) => i * 2.399);
@@ -337,7 +379,20 @@ export async function buildRetina(renderer: THREE.WebGPURenderer, tier: Tier): P
     vesselDist(x: number, z: number) { let d2 = 1e9; for (let i = 0; i < allPts.length; i++) { const p = allPts[i]; const dx = p.x - x, dz = p.z - z; const d = dx * dx + dz * dz; if (d < d2) d2 = d; } return Math.sqrt(d2); },
     points: { rbc: () => { rbc.getMatrixAt(Math.floor(count * 0.18), m4); return rbcPoint.setFromMatrixPosition(m4); }, nucleus: nearest(data.nuclei, -40, -6), pericyte: nearest(data.pericytes, -30, -10) },
     flowing: () => flowSum / count,
-    heal(x, z, dt) { return health.heal(x, z, tuning.beam.radius, tuning.beam.rate * dt); },
+    heal(x, z, dt) {
+      // 閉塞点に光が当たっていれば、塊をほぐす
+      plugs.forEach((pl, i) => {
+        if (pl.cleared || Math.hypot(x - pl.p.x, z - pl.p.z) > 7) return;
+        if (pl.hp === 1) onPlug(i, 'hit');
+        pl.hp = Math.max(0, pl.hp - dt / 3.2); pl.shake = 1;
+        if (pl.hp <= 0) { pl.cleared = true; onPlug(i, 'cleared'); health.heal(pl.p.x, pl.p.z, 20, 0.35); }
+      });
+      const got = health.heal(x, z, tuning.beam.radius, tuning.beam.rate * dt);
+      // ほぐれていない閉塞点のまわりは、治りきらない（血が届かないため）
+      health.clampFn(capAround);
+      return got;
+    },
+    plugs, setOnPlug(f) { onPlug = f; },
     update(dt, t, camera) {
       const mean = health.mean();
       const bpm = tuning.heart.bpmSick + (tuning.heart.bpmHealthy - tuning.heart.bpmSick) * mean;
@@ -352,7 +407,7 @@ export async function buildRetina(renderer: THREE.WebGPURenderer, tier: Tier): P
       scene.fog!.color.setRGB(0.5 + 0.3 * mean, 0.42 - 0.06 * mean, 0.38 - 0.14 * mean).multiplyScalar(0.55 + 0.4 * u.lightIn.value);
       (scene.background as THREE.Color).copy(scene.fog!.color).multiplyScalar(0.8);
       scene.environmentIntensity = 0.16 + 0.22 * u.lightIn.value;
-      health.spread(dt, hc.regrow);
+      health.spread(dt, hc.regrow); health.clampFn(capAround); updatePlugs(dt, t);
       updateFlow(dt, t);
       if (health.version !== hVersion) { health.toBytes(hBytes); hTex.needsUpdate = true; hVersion = health.version; }
       keyLightDirView.value.copy(sun.position).normalize().transformDirection(camera.matrixWorldInverse);

@@ -56,7 +56,7 @@ async function main() {
   progress(0.7);
   const diver = await Diver.load(tier === 'pc-high' || tier === 'mobile-high');
   stage.scene.add(diver.root);
-  const diag = new Diagnosis(stage.health, stage.size as [number, number], stage.floorHeight, stage.vesselDist); stage.scene.add(diag.group);
+  const diag = new Diagnosis(stage.health, stage.size as [number, number], stage.floorHeight, stage.vesselDist, 1, stage.plugs); stage.scene.add(diag.group);
   // 仕上げ（浅いピント・光のにじみ・色調）。?post=off で切れる
   const post = Q.get('post') === 'off' ? null : createPost(renderer, stage.scene, camera, Q.get('post') === 'full' ? 'pc-high' : tier);
   const audio = new GameAudio();
@@ -148,7 +148,7 @@ async function main() {
       const fl = stage.flowing();
       const key = diag.findings.map((f) => `${f.short}${Math.round(f.health * 20)}${Math.round(f.dist / 5)}`).join('|') + Math.round(fl * 20);
       if (key !== dxKey) { dxKey = key;
-        dxList.innerHTML = (diag.findings.length ? diag.findings.map((f, i) => `<div><b>病巣${i + 1}</b>　${f.short}　健康度 ${Math.round(f.health * 100)}%・${Math.round(f.dist)}µm<small>${f.cause}</small></div>`).join('') : '<div>この近くに大きな病巣はありません</div>')
+        dxList.innerHTML = (diag.findings.length ? diag.findings.map((f, i) => `<div><b>病巣${i + 1}</b>　${f.short}　${f.health < 0 ? '' : `健康度 ${Math.round(f.health * 100)}%・`}${Math.round(f.dist)}µm<small>${f.cause}</small></div>`).join('') : '<div>この近くに大きな病巣はありません</div>')
           + `<div><small>区域の血流 ${Math.round(fl * 100)}%　／　主な原因：毛細血管の血流停止（虚血）</small></div>`; }
     }
     for (let i = 0; i < 3; i++) {
@@ -348,6 +348,14 @@ async function main() {
     hud.tick();
     W.__irFrames = ((W.__irFrames as number) || 0) + 1;
     if (Q.has('frames') && (W.__irFrames as number) >= Number(Q.get('frames'))) { renderer.setAnimationLoop(null); W.__irDone = true; }
+  });
+  // 閉塞点：初めて光が当たったとき・ほぐれたときの手応えと案内
+  let plugHelp = false;
+  stage.setOnPlug((i, kind) => {
+    if (kind === 'hit') { if (!plugHelp) { plugHelp = true; say('塊に当たっています。止まった赤血球の塊です。そのまま当て続けて、ほぐしてください。', 6); } return; }
+    const left = stage.plugs.filter((p) => !p.cleared).length;
+    hitStop = 0.16; shake = 1; rumble(0.9 * F.rumble, 0.9 * F.rumble, 320); buzz(60); audio.resolve(); purify.burst();
+    say(left ? `塊がほぐれ、血が流れはじめました。残りの閉塞点は ${left} か所です。スキャンで探してください。` : 'すべての閉塞点がほぐれました。網膜の血流が戻りつつあります。', 7);
   });
   if (Q.has('tune')) tunePanel(tuning as unknown as Record<string, unknown>);
   W.__pos = pos; W.__diver = diver; W.__input = input; W.__stage = stage; W.__begin = begin; W.__advance = (n: number) => { for (let i = 0; i < n; i++) step(1 / 30); };

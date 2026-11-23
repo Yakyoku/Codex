@@ -153,8 +153,13 @@ async function main() {
   let alt = 0; const swimV = new THREE.Vector3(); const prevHand = [new THREE.Vector3(), new THREE.Vector3()]; const gripOn = [false, false];
   hands.forEach((h, i) => { h.ray.addEventListener('squeezestart', () => { gripOn[i] = true; h.grip.getWorldPosition(prevHand[i]); }); h.ray.addEventListener('squeezeend', () => (gripOn[i] = false)); });
   const srcOf = (h: { grip: THREE.Object3D }) => (session ? Array.from(session.inputSources).find((s) => s.handedness === (h === right ? 'right' : 'left')) : undefined);
-  const diag = new Diagnosis(stage.health, stage.size as [number, number], stage.floorHeight, stage.vesselDist, 0.8); stage.scene.add(diag.group);
+  const diag = new Diagnosis(stage.health, stage.size as [number, number], stage.floorHeight, stage.vesselDist, 0.8, stage.plugs); stage.scene.add(diag.group);
   let wasHit = false, scanWas = false, diagT = 0, lastStep = -1;
+  stage.setOnPlug((i, kind) => {
+    if (kind === 'hit') return;
+    const rest = stage.plugs.filter((p) => !p.cleared).length; audio.resolve(); purify.burst(); haptic(srcOf(right), 1, 300); haptic(srcOf(left), 0.6, 300);
+    say(rest ? `塊がほぐれ、血が流れはじめました。残りの閉塞点は ${rest} か所です。` : 'すべての閉塞点がほぐれました。', 7);
+  });
   let last = performance.now();
   renderer.setAnimationLoop(() => {
     const now = performance.now(); const dt = Math.min(0.05, (now - last) / 1000); last = now; t += dt;
