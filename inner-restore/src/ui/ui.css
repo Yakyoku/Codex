@@ -40,7 +40,7 @@
 #stick { position:absolute; width:112px; height:112px; margin:-56px; border-radius:50%; border:1px solid #ffffff33; pointer-events:none; } #stick i { position:absolute; left:50%; top:50%; width:44px; height:44px; margin:-22px; border-radius:50%; background:#ffffff33; }
 #topbtns { position:absolute; left:50%; top:max(10px,env(safe-area-inset-top)); transform:translateX(-50%); display:flex; gap:.6em; } #topbtns button { background:#0c1416aa; color:var(--ink); border:1px solid #ffffff3a; font:inherit; font-size:.85em; padding:.5em 1em; letter-spacing:.1em; }
 /* 一時停止・図鑑 */
-.sheet { position:absolute; inset:0; background:#040608e6; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1em; padding:24px; z-index:40; overflow:auto; }
+.sheet { position:absolute; inset:0; background:#040608e6; display:flex; flex-direction:column; align-items:center; justify-content:safe center; gap:1em; padding:24px; z-index:40; overflow:auto; }
 #atlas { justify-content:flex-start; } #atlas .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(min(100%,19em),1fr)); gap:14px; width:min(96vw,1200px); }
 #atlas .it { background:#0b1114; border:1px solid #ffffff14; padding:.9em 1em; font-size:.92em; line-height:1.7; } #atlas .it.unk { opacity:.45; } #atlas .it h3 { margin:0; font-size:1.25em; font-weight:500; } #atlas .it .e { color:var(--dim); font-size:.8em; }
 #atlas .it img { width:100%; aspect-ratio:2/1; object-fit:cover; margin:.5em 0; } #atlas .it.unk img { filter:brightness(0) invert(.25); } #atlas .it dt { color:var(--acc); font-size:.82em; letter-spacing:.16em; margin-top:.5em; } #atlas .it dd { margin:0; }
@@ -90,3 +90,21 @@ body:has(#ui) .ir-hud { left:auto; right:max(12px,env(safe-area-inset-right)); b
 #viewer .vh { position:absolute; left:0; right:0; bottom:max(18px,env(safe-area-inset-bottom)); text-align:center; color:#9fb3bc; font-size:clamp(13px,1.4vw,16px); }
 #atlas .v3d { margin:.4em 0 .6em; font-size:.85em; padding:.45em .9em; }
 body.viewing #hud, body.viewing #subs, body.viewing #hint, body.viewing #topbtns, body.viewing #patient, body.viewing #dx, body.viewing #tags, body.viewing #reticle, body.viewing #card, body.viewing #touch { visibility:hidden; }
+
+/* 設定 */
+#settings { z-index:40; } #settings .sgrid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,21em),1fr)); gap:18px; width:min(94vw,1100px); }
+#settings section { background:#0b1114; border:1px solid #ffffff14; padding:1em 1.1em; display:flex; flex-direction:column; gap:.7em; }
+#settings h3 { margin:0 0 .2em; font-weight:500; font-size:1.05em; color:var(--acc); letter-spacing:.08em; }
+#settings label { display:grid; grid-template-columns:7.5em 1fr auto; align-items:center; gap:.6em; font-size:clamp(15px,1.6vw,18px); }
+#settings select, #settings input[type=range] { width:100%; min-height:2.2em; font-size:inherit; }
+#settings output { min-width:3.2em; text-align:right; color:#cfe; }
+#settings .snote { font-size:.82em; color:#9fb3bc; line-height:1.7; }
+.btn.ghost { background:transparent; border:1px solid #ffffff40; margin-top:.6em; }
+body.subs-off #subs { display:none !important; }
+/* 音声会話の先生のボタン（右下）と重ならないよう、タッチのボタンを上へずらす */
+body.vb #tb-fire { bottom:max(160px,calc(env(safe-area-inset-bottom) + 144px)); } body.vb #tb-scan { bottom:max(108px,calc(env(safe-area-inset-bottom) + 92px)); }
+body.vb #tb-up { bottom:max(324px,calc(env(safe-area-inset-bottom) + 308px)); } body.vb #tb-down { bottom:max(224px,calc(env(safe-area-inset-bottom) + 208px)); }
+body.vb-off voice-buddy, body.vb-off [data-voice-buddy] { display:none !important; }
+/* 患者の視界を全画面にするとき：大きさは一度に変え、ふわっと浮かび上がらせる（大きさの変化を途中で見せると、縦長の帯に見えるため） */
+#patient.full { transition:none; animation:pv-in .9s ease-out both; }
+@keyframes pv-in { from { opacity:0; } to { opacity:1; } }

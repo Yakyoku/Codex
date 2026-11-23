@@ -107,3 +107,12 @@
 - 通しプレイ：`node scripts/playthrough.mjs`（3区域、成功で終了コード 0）。
 - 未確認：実機の見た目・速さ（区域Bは透明な層の重なりが多く、iPhone で重い可能性）、VR の区域B・Cでの酔いやすさ、環境音の聞こえ方。
 - 残り（M3 の仕上げ）：映像を本物の写真と見比べて詰める（区域B・C）、区域B の「光を導く」を VR でも手で導く形に、細胞の確認用の絵（図鑑の画像）、動画。その後 M4。
+
+## 2026-11-23 読み上げの設定・音声会話の先生（voice-buddy）・M3 の仕上げ
+- 読み上げ：`src/core/voice.ts`（声の選び方：女性の声の名前の一覧から。設定は localStorage `ir.voice`）。設定画面 `src/game/settings.ts`＋`ui.ts` の `#settings`。VR 版の字幕も読み上げる。
+- 音声会話の先生：`index.html` の末尾で voice-buddy.js を読み込む（手順書 https://voice-buddy-yk.netlify.app/integrate.md）。要点JSONは `node scripts/build-vb-context.mjs` で台帳から作る（`public/voice-buddy-context.json`、課題6・用語14）。
+  notify：紹介カード＝lesson_shown（`showCard`）、区域の開始＝question_shown（`<区域>-task`、`begin`）、塊をほどいた＝answered correct:true（`<区域>-plug`、`setOnPlug`）、区域を治しきった＝all_clear（`finish`）。
+  先生のボタンが出たら `body.vb` でタッチのボタンを上へずらす。設定で非表示にできる（`ir.vb`）。VR 版には入れていない。
+- M3 の仕上げ：区域B（細隙灯の見え方）、区域C（外節の先の明るい点・光の筋）、VR 区域Bの左手の「導きの光」、患者の視界の全画面表示の崩れ。
+- 未確認：先生との会話（マイク）、端末ごとの声の種類、iPhone での区域B・C の重さ。
+- 次：M4（全身マップ、セーブの書き出し・読み込み、タイトル、画面版と VR 版の行き来）。

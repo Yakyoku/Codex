@@ -15,6 +15,8 @@ import { Diver } from '../game/diver';
 import { PurifyBeam } from '../game/beam';
 import { Diagnosis } from '../game/diagnosis';
 import { tunePanel } from '../game/tune';
+import { bindSettings, applyVB } from '../game/settings';
+import { voiceSettings, setVoice } from '../core/voice';
 import { AtlasViewer, hasModel } from '../game/viewer';
 import { buildUI, renderAtlas, ATLAS, TIPS } from '../game/ui';
 import tuning from '../data/tuning.json';
@@ -24,6 +26,8 @@ const errors: string[] = (W.__irErrors = []) as string[];
 addEventListener('error', (e) => errors.push(String(e.message)));
 addEventListener('unhandledrejection', (e) => errors.push(String(e.reason)));
 const Q = new URLSearchParams(location.search);
+/* voice-buddy：音声会話の先生への連絡（読み込みに失敗しても、ゲームはそのまま動く） */
+const vbNotify = (t: string, p?: object) => { try { (window as unknown as { VoiceBuddy?: { notify: (t: string, p?: object) => void } }).VoiceBuddy?.notify(t, p); } catch { /* 何もしない */ } };
 const store = { get: (k: string) => { try { return localStorage.getItem(k); } catch { return null; } }, set: (k: string, v: string) => { try { localStorage.setItem(k, v); } catch { /* 保存できなくても続ける */ } } };
 
 async function main() {
@@ -40,8 +44,14 @@ async function main() {
   ($('o-backend') as HTMLSelectElement).value = backendPrefFromURL();
   $('o-backend').addEventListener('change', (e) => { store.set('ir.backend', (e.target as HTMLSelectElement).value); location.reload(); });
   const introSel = $('o-intro') as HTMLSelectElement, ttsSel = $('o-tts') as HTMLSelectElement;
-  introSel.value = store.get('ir.intro') ?? 'all'; ttsSel.value = store.get('ir.tts') ?? 'on';
+  introSel.value = store.get('ir.intro') ?? 'all'; if (store.get('ir.tts') === 'off') setVoice({ on: false }); ttsSel.value = voiceSettings.on ? 'on' : 'off';
   introSel.addEventListener('change', () => store.set('ir.intro', introSel.value)); ttsSel.addEventListener('change', () => store.set('ir.tts', ttsSel.value));
+  // 設定画面（タイトルと一時停止から）
+  const settingsUI = bindSettings($, () => {});
+  $('b-settings').onclick = (e) => { e.stopPropagation(); settingsUI.open(); };
+  // 音声会話の先生（voice-buddy）：読み込まれたらボタンの表示を設定に合わせる
+  const vbOn = () => (store.get('ir.vb') ?? 'on') === 'on';
+  { let n = 0; const t = setInterval(() => { applyVB(vbOn()); if (++n > 40 || document.body.classList.contains('vb')) clearInterval(t); }, 500); }
 
   progress(0.1);
   let info = await createRenderer(canvas, { pref: backendPrefFromURL() });
@@ -105,6 +115,7 @@ async function main() {
     card.querySelector('.h')!.textContent = input.kind === 'touch' ? 'カードをタップで閉じる ／ 図鑑に登録しました' : input.kind === 'pad' ? 'Y：閉じる ／ 図鑑に登録しました' : 'E：閉じる　R：もう一度 ／ 図鑑に登録しました';
     card.classList.add('on'); cardCur = id; lastCard = id; cardT = 0; cardDur = mode === 'name' ? 3.5 : 8;
     if (mode === 'all') speak(`${e.ja}。${e.intro}`, ttsSel.value === 'on' && sim === null);
+    vbNotify('lesson_shown', { title: e.ja });                                          /* voice-buddy */
     if (at) { focus.copy(at); focusOn = true; } else focusOn = false;
   }
   let cardGap = 0;
@@ -132,6 +143,7 @@ async function main() {
     if (a === 'skip') hideCard(); if (a === 'replay' && lastCard && !cardCur) showCard(lastCard, null, true);
     if (a === 'atlas') openAtlas($('atlas').classList.contains('hide')); if (a === 'pause') setPause(!paused); if (a === 'view') firstPerson = !firstPerson;
   };
+  $('p-settings').onclick = () => settingsUI.open();
   $('p-resume').onclick = () => setPause(false); $('p-atlas').onclick = () => openAtlas(true); $('a-close').onclick = () => openAtlas(false);
   $('p-full').onclick = full; $('b-full').onclick = full; $('b-atlas').onclick = () => openAtlas(true); $('b-pause').onclick = () => setPause(true);
   document.addEventListener('visibilitychange', () => { if (document.hidden) setPause(true); });
@@ -297,6 +309,7 @@ async function main() {
   function finish() {
     finished = true; audio.resolve(); stage.health.setAll(1); hideCard(); queue.length = 0;
     say(M.done, 5);
+    vbNotify('all_clear', { total: stage.plugs.length, firstTry: stage.plugs.length, miss: 0 });   /* voice-buddy */
     const done = [...new Set([...(loadSave().done ?? []), M.id])]; const next = ZONES[zi + 1];
     writeSave({ done, zone: next ? next.id : M.id });
     if (sim !== null) return;
@@ -334,6 +347,7 @@ async function main() {
     setKind(input.kind); if (device === 'pc') canvas.requestPointerLock?.();
     say(stage.start.swimming && M.enter ? M.enter : M.arrive, 10);
     $('hud').querySelector('.lab')!.textContent = M.hud;
+    vbNotify('question_shown', { id: `${M.id}-task`, retry: false });                  /* voice-buddy */
   };
   $('start').classList.remove('hide'); $('load').classList.add('hide'); $('start').addEventListener('click', begin);
   // ゲームパッド：認識したら知らせる（Safari は、ボタンを1回押すまで認識しない）。タイトルでは A／× ボタンでも開始できる
@@ -374,6 +388,7 @@ async function main() {
     if (kind === 'hit') { if (!plugHelp) { plugHelp = true; say(M.plugHit, 8); } return; }
     if (kind === 'pulse') { shake = Math.max(shake, 0.7); rumble(0.6 * F.rumble, 0.3 * F.rumble, 260); audio.hit(); return; }
     const left = stage.plugs.filter((p) => !p.cleared).length;
+    vbNotify('answered', { id: `${M.id}-plug`, correct: true, choice: `${M.plugName}をほどいた（残り${left}）`, retry: false });   /* voice-buddy */
     hitStop = 0.16; shake = 1; rumble(0.9 * F.rumble, 0.9 * F.rumble, 320); buzz(60); audio.resolve(); purify.burst();
     say(M.plugCleared(left), 7);
   });

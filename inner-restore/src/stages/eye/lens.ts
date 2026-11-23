@@ -70,7 +70,7 @@ export async function buildLens(renderer: THREE.WebGPURenderer, tier: string): P
   fiberMat.opacityNode = saturate(haze.add(fres.mul(mix(float(0.12), float(0.3), sick))).add(0.025));
   fiberMat.specularIntensityNode = float(0.7);
   fiberMat.emissiveNode = color(0xfff1dc).mul(lit.mul(mix(float(0.03), float(0.07), H)).mul(fres.mul(0.8).add(0.2)))
-    .add(color(0xf4ece4).mul(haze.mul(lit.mul(0.18).add(0.03))))
+    .add(color(0xf4ece4).mul(haze.mul(lit.mul(0.3).add(0.03))))
     .add(color(0xffe9c8).mul(beamGlow.mul(0.4))).add(scanCol.mul(u.scan).mul(fres.mul(0.5).add(0.05))).add(scanCol.mul(scanRing.mul(0.8)));
   const segs = Object.keys(geos).filter((k) => k.startsWith('fiber')).map((k) => geos[k]);
   const layers: [number, number][] = vr ? [[-1, 0], [GAP + 1, 5]] : [[-1, 0], [-3, 5], [GAP + 1, 5]];
@@ -126,12 +126,13 @@ export async function buildLens(renderer: THREE.WebGPURenderer, tier: string): P
 
   // ---- 光：前（-x）の上から差し込む瞳の光と、層の間を通る光の帯 ----
   const sun = new THREE.DirectionalLight(0xfff4e6, 1.4); sun.position.set(-80, 50, 10); scene.add(sun);
-  const hemi = new THREE.HemisphereLight(0xe8eef4, 0x3a3632, 0.55); scene.add(hemi);
+  const hemi = new THREE.HemisphereLight(0xe8eef4, 0x3a3632, 0.35); scene.add(hemi);
   {
     const g = new THREE.BoxGeometry(W * 1.4, GAP - 0.4, D * 1.2); g.translate(0, GAP / 2, 0);
     const m = new THREE.MeshBasicNodeMaterial({ transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.BackSide, fog: false });
     const streak = texture(noiseTex, vec2(positionWorld.x.mul(0.004).sub(u.time.mul(0.01)), positionWorld.z.mul(0.03))).g;
-    m.colorNode = color(0xfff0dc).mul(lit.mul(streak.mul(0.08).add(0.035))).mul(u.lightIn);
+    // 光の筋：細い帯だけが光る（画面全体を一様に明るくしない）
+    m.colorNode = color(0xfff0dc).mul(lit.mul(smoothstep(0.55, 0.85, streak).mul(0.09).add(0.006))).mul(u.lightIn);
     const slab = new THREE.Mesh(g, m); slab.renderOrder = 40; scene.add(slab);
   }
   let flowS = 0;
@@ -171,7 +172,7 @@ export async function buildLens(renderer: THREE.WebGPURenderer, tier: string): P
       const prog = progress();
       u.lightIn.value += ((0.3 + 0.7 * prog) - u.lightIn.value) * Math.min(1, dt * 1.5);
       (scene.fog as THREE.FogExp2).density = 0.016 - 0.01 * prog;
-      (scene.fog as THREE.FogExp2).color.setRGB(0.44 - 0.3 * prog, 0.42 - 0.28 * prog, 0.4 - 0.25 * prog);
+      (scene.fog as THREE.FogExp2).color.setRGB(0.4 - 0.32 * prog, 0.38 - 0.3 * prog, 0.36 - 0.27 * prog);
       (scene.background as THREE.Color).copy((scene.fog as THREE.FogExp2).color).multiplyScalar(0.6);
       sun.intensity = 0.8 + 1.6 * u.lightIn.value;
       if (health.version !== hVersion) { health.toBytes(hBytes); hTex.needsUpdate = true; hVersion = health.version; updateGrains(t); }

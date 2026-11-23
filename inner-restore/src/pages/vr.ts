@@ -10,6 +10,7 @@ import { ATLAS } from '../game/ui';
 import { PurifyBeam } from '../game/beam';
 import tuning from '../data/tuning.json';
 import { haptic } from '../core/feel';
+import { speak, voiceSettings } from '../core/voice';
 import { Diagnosis } from '../game/diagnosis';
 
 const W = window as unknown as Record<string, unknown>;
@@ -102,7 +103,9 @@ async function main() {
     if (at) { const side = new THREE.Vector3(fwd.z, 0, -fwd.x); p.addScaledVector(side, -1.0 * K); p.y = head.y + 0.05 * K; const d = p.clone().sub(head); d.y = 0; if (d.length() < 1.5 * K || d.length() > 4 * K) p.copy(head).addScaledVector(d.normalize(), 2.0 * K); }
     cardP.mesh.position.copy(p); cardP.mesh.lookAt(head); cardP.mesh.visible = true; cardT = 8; cardOn = true;
   }
-  function say(text: string, dur = 7) { const c = subP.ctx; subP.clear('rgba(4,7,9,0.72)'); c.fillStyle = '#eef3f5'; c.font = `40px ${FONT}`; subP.wrap(text, 36, 70, 950, 56); subP.tex.needsUpdate = true; subP.mesh.visible = true; subT = dur; }
+  function say(text: string, dur = 7) {
+    speak(text);   // 読み上げ（声・速さは画面版の「設定」で選んだもの）
+    subP.mesh.userData.off = !voiceSettings.subs; const c = subP.ctx; subP.clear('rgba(4,7,9,0.72)'); c.fillStyle = '#eef3f5'; c.font = `40px ${FONT}`; subP.wrap(text, 36, 70, 950, 56); subP.tex.needsUpdate = true; subP.mesh.visible = voiceSettings.subs; subT = dur; }
   function drawWrist(prog: number, scan: boolean) {
     const c = wrist.ctx; wrist.clear('rgba(4,9,11,0.94)'); c.fillStyle = '#8fa3ad'; c.font = `30px ${FONT}`; c.fillText(M.hud.slice(0, 16), 28, 56);
     c.fillStyle = '#e9eef2'; c.font = `300 120px ${FONT}`; c.fillText(`${Math.round(prog * 100)}%`, 28, 190); c.fillStyle = '#ffffff22'; c.fillRect(28, 222, 456, 10);
@@ -119,7 +122,7 @@ async function main() {
   const xr = (navigator as Navigator & { xr?: XRSystem }).xr;
   const supported = !!xr && (await xr.isSessionSupported('immersive-vr').catch(() => false));
   btn.disabled = !supported;
-  msg.textContent = supported ? '左スティック：移動　右スティック：向きを変える　右トリガー：浄化　左手首を見る：スキャン　握って引く：泳ぐ'
+  msg.textContent = supported ? '左スティック：移動　右スティック：向きを変える　右トリガー：浄化　左手首を見る：スキャン　握って引く：泳ぐ　（水晶体では）左トリガー：導きの光'
     : 'このブラウザは VR に対応していません。Meta Quest 3 の標準ブラウザで開いてください。下は確認用の画面表示です（ドラッグで見回し、WASD で移動、F で浄化）。';
   if (!supported) { $('vrui').classList.add('min'); const m2 = document.createElement('div'); m2.className = 'ir-nav'; m2.innerHTML = '<span style="color:var(--dim);font-size:12px">確認モード：ドラッグ＝見回す　WASD＝移動　F＝浄化　Q＝スキャン</span>'; document.body.appendChild(m2); }
   let started = !supported; let t = 0;
@@ -158,6 +161,9 @@ async function main() {
   let alt = 0; const swimV = new THREE.Vector3(); const prevHand = [new THREE.Vector3(), new THREE.Vector3()]; const gripOn = [false, false];
   hands.forEach((h, i) => { h.ray.addEventListener('squeezestart', () => { gripOn[i] = true; h.grip.getWorldPosition(prevHand[i]); }); h.ray.addEventListener('squeezeend', () => (gripOn[i] = false)); });
   const srcOf = (h: { grip: THREE.Object3D }) => (session ? Array.from(session.inputSources).find((s) => s.handedness === (h === right ? 'right' : 'left')) : undefined);
+  // 導きの光（区域B）：左手から前へ向けた、やわらかな暖かい光
+  const guide = new THREE.SpotLight(0xffe6c0, 0, 30 * K, 0.35, 0.6, 1.2); guide.position.set(0, 0, -0.05); guide.target.position.set(0, 0, -1);
+  hands[0].ray.add(guide, guide.target);
   const diag = new Diagnosis(stage.health, stage.size as [number, number], stage.floorHeight, (x: number, z: number) => stage.causeAt(x, z), 0.8, stage.plugs); stage.scene.add(diag.group);
   let wasHit = false, scanWas = false, diagT = 0, lastStep = -1;
   stage.setOnPlug((i, kind) => {
@@ -210,6 +216,13 @@ async function main() {
       if (found) { const hb = stage.health.sample(hit.x, hit.z); if (!wasHit && hb < 0.6) haptic(srcOf(right), 0.6, 90); else if (hb < 0.8 && Math.random() < dt * 4) haptic(srcOf(right), 0.12, 60); stage.heal(hit.x, hit.z, dt); firing = true; if (!session) v.y -= 0.5; beamFrom.copy(v); beamTo.copy(hit); stage.u.beamPos.value.copy(hit); }
     }
     wasHit = firing;
+    // 区域B（水晶体）だけ：左手のトリガーで「導きの光」。手のひらから瞳の光を導き、当てた所の濁りを少しずつ晴らす（光を導く遊びを、手で）
+    if (M.id === 'lens' && session) {
+      if (guide.parent !== left.ray) left.ray.add(guide, guide.target);   // 左手がどちらのコントローラーか分かってから付け替える
+      const on = left.on && !finished; guide.intensity += ((on ? 26 : 0) - guide.intensity) * Math.min(1, dt * 8);
+      if (on) { left.ray.getWorldPosition(v); left.ray.getWorldQuaternion(q); d.set(0, 0, -1).applyQuaternion(q);
+        for (let s2 = 0.5; s2 < tuning.beam.range; s2 += 0.5) { hit.copy(v).addScaledVector(d, s2); if (hit.y <= stage.floorHeight(hit.x, hit.z)) { stage.heal(hit.x, hit.z, dt * 0.5); if (Math.random() < dt * 3) haptic(srcOf(left), 0.08, 40); break; } } }
+    }
     const bo = stage.u.beamOn.value as number; stage.u.beamOn.value = bo + ((firing ? 1 : 0) - bo) * Math.min(1, dt * 10);
     purify.update(dt, beamFrom, beamTo, firing, camera);
     // スキャン：左手首の端末を自分の顔に向けている間

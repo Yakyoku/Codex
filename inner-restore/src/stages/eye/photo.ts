@@ -99,7 +99,9 @@ export async function buildPhoto(renderer: THREE.WebGPURenderer, tier: string): 
     // 光の導き：健康な視細胞は、上から来た光を外節へ導く（光が柱の中を下へ流れる）
     const flowL = fract(yy.div(46).add(u.time.mul(0.35))).pow(8).mul(H).mul(u.lightIn);
     m.opacityNode = saturate(mix(float(0.55), float(0.78), H).add(fres.mul(0.2))).mul(camFade);
-    m.emissiveNode = color(base).mul(H.mul(u.lightIn).mul(0.22).add(0.02)).add(color(0xfff0dc).mul(flowL.mul(0.35))).add(color(base).mul(fres.mul(H).mul(0.12))).add(color(0xd89a60).mul(mito.mul(0.18).mul(H)))
+    // 外節の先：導いてきた光を返す明るい点（補償光学で撮った生体の眼底像の「視細胞のモザイク」）
+    const tip = smoothstep(2.5, 0.2, yy).mul(H).mul(u.lightIn);
+    m.emissiveNode = color(0xfff2e0).mul(tip.mul(0.9)).add(color(base).mul(H.mul(u.lightIn).mul(0.22).add(0.02))).add(color(0xfff0dc).mul(flowL.mul(0.35))).add(color(base).mul(fres.mul(H).mul(0.12))).add(color(0xd89a60).mul(mito.mul(0.18).mul(H)))
       .add(color(0xff7a40).mul(waveRing.mul(0.6))).add(color(0xfff2d8).mul(bootRing.mul(1.2))).add(color(0xffe9c8).mul(beamGlow.mul(0.3)))
       .add(scanCol.mul(u.scan).mul(fres.mul(0.6).add(0.06))).add(scanCol.mul(scanRing.mul(0.8)));
     void y; void abs;
@@ -131,6 +133,15 @@ export async function buildPhoto(renderer: THREE.WebGPURenderer, tier: string): 
     return { mesh, list };
   });
 
+  // ---- 上（網膜の内側）から届く光の筋：森の間をやわらかく照らす ----
+  {
+    const g = new THREE.CylinderGeometry(5, 9, 70, 24, 1, true); g.translate(0, 35, 0);
+    const m = new THREE.MeshBasicNodeMaterial({ transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, fog: false });
+    const edge = pow(saturate(dot(normalView, positionViewDirection).abs()), float(2.2));
+    const vy = positionWorld.y.div(70);
+    m.colorNode = color(0xffe8cc).mul(edge.mul(0.06)).mul(smoothstep(0.0, 0.15, vy)).mul(smoothstep(1.0, 0.5, vy)).mul(H.mul(0.8).add(0.2)).mul(u.lightIn);
+    for (let i = 0; i < (vr ? 4 : 9); i++) { const sh = new THREE.Mesh(g, m); sh.position.set(-W / 2 + 12 + i * (W - 24) / 8, 0, (Math.sin(i * 2.3) * 0.35) * D); sh.rotation.z = 0.12; sh.renderOrder = 50; scene.add(sh); }
+  }
   // ---- 光 ----
   const sun = new THREE.DirectionalLight(0xfff0e0, 1.4); sun.position.set(-20, 90, 30); scene.add(sun);
   const hemi = new THREE.HemisphereLight(0xffe8dc, 0x3a1810, 0.7); scene.add(hemi);

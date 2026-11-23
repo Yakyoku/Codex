@@ -11,5 +11,9 @@
 <canvas id="view"></canvas>
 <div id="app"></div>
 <script type="module" src="/src/pages/main.ts"></script>
+<!-- voice-buddy：音声会話の先生（ここから） -->
+<script src="https://voice-buddy-yk.netlify.app/lib/voice-buddy/voice-buddy.js"></script>
+<script>window.VoiceBuddy&&window.VoiceBuddy.init({ contextFile: 'voice-buddy-context.json' });</script>
+<!-- voice-buddy（ここまで） -->
 </body>
 </html>

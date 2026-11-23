@@ -21,14 +21,32 @@ export function buildUI() {
   <div id="fade"></div><div id="toast"></div>
   <div id="done" class="hide"><h2>区域の血流が戻りました</h2><p id="donetext"></p><button class="btn" id="b-next">次の区域へ</button> <button class="btn" id="b-cont">探索を続ける</button></div>
   <div id="pause" class="sheet hide"><h2 style="font-weight:300;letter-spacing:.3em">一時停止</h2><button class="btn" id="p-resume">再開する</button><button class="btn" id="p-atlas">図鑑</button><button class="btn" id="p-full">全画面表示</button>
-    <div style="font-size:.88em;color:#b7c6cc;max-width:34em;line-height:1.8;text-align:center">セーブはこのブラウザの中に保存され、別のブラウザや端末には引き継がれません。</div><a class="btn" href="/vr/" style="text-decoration:none">VR 版へ</a></div>
+    <div style="font-size:.88em;color:#b7c6cc;max-width:34em;line-height:1.8;text-align:center">セーブはこのブラウザの中に保存され、別のブラウザや端末には引き継がれません。</div><button class="btn" id="p-settings">設定</button><a class="btn" href="/vr/" style="text-decoration:none">VR 版へ</a></div>
+  <div id="settings" class="sheet hide"><h2 style="font-weight:300;letter-spacing:.3em">設定</h2>
+    <div class="sgrid">
+      <section><h3>読み上げ（字幕を声で読む）</h3>
+        <label>読み上げ <select id="o-tts"><option value="on">あり</option><option value="off">なし</option></select></label>
+        <label>声 <select id="o-voice"><option value="">おすすめ（やさしい女性の声）</option></select></label>
+        <label>速さ <input type="range" id="o-rate" min="0.6" max="1.5" step="0.05"><output id="o-rate-v"></output></label>
+        <label>声の高さ <input type="range" id="o-pitch" min="0.6" max="1.5" step="0.05"><output id="o-pitch-v"></output></label>
+        <label>声の大きさ <input type="range" id="o-vol" min="0.1" max="1" step="0.05"><output id="o-vol-v"></output></label>
+        <button class="btn" id="o-test">試しに聞く</button>
+        <div class="snote">声の種類は、お使いの端末に入っている声から選べます。iPhone・iPad は「設定 → アクセシビリティ → 読み上げコンテンツ → 声 → 日本語」で声を追加すると、ここに増えます。</div></section>
+      <section><h3>表示</h3>
+        <label>字幕 <select id="o-subs"><option value="on">表示する</option><option value="off">表示しない</option></select></label>
+        <label>初登場の紹介 <select id="o-intro"><option value="all">すべて表示</option><option value="name">名前だけ</option><option value="off">表示しない</option></select></label>
+        <label>音声会話の先生 <select id="o-vb"><option value="on">ボタンを出す</option><option value="off">出さない</option></select></label>
+        <div class="snote">音声会話の先生：画面右下の「先生と はなす」を押すと、声で質問したり、ヒントをもらったりできます（マイクを使います）。先生の声と速さは、先生のパネルの中で選べます。</div></section>
+      <section><h3>描画</h3>
+        <label>描画方式 <select id="o-backend"><option value="auto">自動</option><option value="webgpu">WebGPU</option><option value="webgl">WebGL 2</option></select></label>
+        <div class="snote">描画方式を変えると、ページを読み込み直します。</div></section>
+    </div>
+    <button class="btn" id="s-close">閉じる</button></div>
   <div id="atlas" class="sheet hide"><h2 style="font-weight:300;letter-spacing:.3em">体内図鑑</h2><div class="grid"></div><button class="btn" id="a-close">閉じる</button></div>
   <div id="title"><div class="sub">体内紀行</div><h1>INNER RESTORE</h1>
     <div id="load"><div class="bar"><i></i></div><div class="tip"></div></div>
     <button class="btn hide" id="start">クリックして開始</button>
-    <div id="opts"><label>描画方式 <select id="o-backend"><option value="auto">自動</option><option value="webgpu">WebGPU</option><option value="webgl">WebGL 2</option></select></label>
-      <label>初登場の紹介 <select id="o-intro"><option value="all">すべて表示</option><option value="name">名前だけ</option><option value="off">表示しない</option></select></label>
-      <label>読み上げ <select id="o-tts"><option value="on">あり</option><option value="off">なし</option></select></label></div>
+    <button class="btn ghost" id="b-settings">設定（声・速さ・字幕など）</button>
     <div class="links"><a href="/vr/" id="l-vr">VR で遊ぶ（Meta Quest 3）</a><a href="/diag/">実機診断</a><a href="/progress/">進捗</a></div>
     <div class="note">本作は娯楽作品であり、医療上の助言ではありません。<br>登場する細胞や組織は実在のものに基づいていますが、主人公と道具、治し方は作り事です。</div></div>`;
   document.body.appendChild(ui);

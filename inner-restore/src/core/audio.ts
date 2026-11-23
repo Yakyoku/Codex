@@ -94,13 +94,5 @@ export class GameAudio {
 const smooth = (x: number) => x * x * (3 - 2 * x);
 
 /** ナレーション（仮の音声）：ブラウザの読み上げ機能。使えない機器では字幕だけになる */
-export function speak(text: string, enabled = true) {
-  try {
-    if (!enabled || !('speechSynthesis' in window)) return;
-    window.speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(text); u.lang = 'ja-JP'; u.rate = 0.95; u.pitch = 0.9; u.volume = 0.9;
-    const v = window.speechSynthesis.getVoices().find((x) => x.lang.startsWith('ja'));
-    if (v) u.voice = v;
-    window.speechSynthesis.speak(u);
-  } catch { /* 読み上げなしで続ける */ }
-}
+// 読み上げは voice.ts に移した（設定画面で声・速さを選べる）
+export { speak } from './voice';
