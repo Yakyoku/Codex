@@ -1,7 +1,7 @@
 // 細菌の群れ：桿菌（両端が丸い棒）をインスタンス描画し、動きは頂点シェーダーで作る。
 // 水の膜の中でだけ泳ぐ。乾いた区画では見えない（芽胞として休眠している）。
 import * as THREE from 'three/webgpu';
-import { float, vec3, instancedBufferAttribute, time, sin, cos, positionLocal, mix, saturate, normalView, positionViewDirection, dot, pow, oneMinus, hash, instanceIndex , uniform, smoothstep } from 'three/tsl';
+import { float, vec3, instancedBufferAttribute, time, sin, cos, positionLocal, mix, saturate, normalView, positionViewDirection, dot, pow, oneMinus, hash, instanceIndex , uniform, smoothstep, mx_noise_float } from 'three/tsl';
 import type { Collider } from './world';
 import { makeRng } from './rng';
 
@@ -38,7 +38,7 @@ export function buildSwarm(colliders: Collider[], cellOf: (p: THREE.Vector3) => 
         const sn = p.clone().sub(new THREE.Vector3(h.x, h.y, h.z)).normalize(); p.set(h.x, h.y, h.z).addScaledVector(sn, h.r + (species === 'bacillus' ? rng.range(0.03, 0.07) : rng.range(0.12, 0.45)));
         if (colliders.some((c) => c !== h && (p.x - c.x) ** 2 + (p.y - c.y) ** 2 + (p.z - c.z) ** 2 < (c.r * 0.98) ** 2)) continue;
         pos.set([p.x, p.y, p.z], k * 3); tang.set([t.x, t.y, t.z], k * 3); cells[k] = cellOf(p); ph[k] = rng.next();
-        if (species === 'bacillus' && chain === 1 && rng.next() < 0.18) { scl.set([0.9, 0.62, 0.9], k * 3); bright[k] = 1; }   // 芽胞：小さく明るい楕円
+        if (species === 'bacillus' && rng.next() < 0.55) bright[k] = rng.range(0.6, 1.0);   // 芽胞：細胞の中の楕円（位置は細胞の中ほど〜端寄り）
         swim[k] = species === 'pseudomonas' ? rng.range(0.6, 1.4) : 0.04;
         k++;
       }
@@ -68,18 +68,56 @@ export function buildSwarm(colliders: Collider[], cellOf: (p: THREE.Vector3) => 
   const lps = lp.mul(aScl);
   const rotated = bx.mul(lps.x.add(wig.mul(aSwim))).add(heading.mul(lps.y)).add(bz.mul(lps.z));
   m.positionNode = aPos.add(drift).add(rotated.mul(live));
-  // 色：光学顕微鏡で見る細菌はほぼ無色透明。淡い灰色で、縁がわずかに明るい
+  // 見た目（持ち主の資料と顕微鏡写真）：両端の丸い棒。細い暗い輪郭線、中は淡い灰色で細かい粒々。
+  //   枯草菌：多くは細胞の中に楕円の芽胞（くすんだ灰緑色で、縁がくっきり）。まわりに細く波打つ鞭毛が数本
+  //   シュードモナス：やや短く、わずかに黄緑がかる。片方の端から長く波打つ鞭毛が 1 本
   const rim = pow(oneMinus(saturate(dot(normalView, positionViewDirection))), 2.0);
-  m.colorNode = vec3(0.22, 0.23, 0.22);
-  m.emissiveNode = vec3(0.06, 0.065, 0.06).mul(rim).add(vec3(0.30, 0.30, 0.26).mul(aBright));   // 芽胞は光を強く屈折して明るく見える
-  // 紹介中は、指し示した集落の細菌だけを、縁を金色に光らせて見分けやすくする
+  const R0 = species === 'bacillus' ? 0.04 : 0.035, HL = species === 'bacillus' ? 0.085 : 0.06;
+  const grain = smoothstep(0.55, 0.85, mx_noise_float(lp.mul(90.0).add(aPh.mul(13.0))).add(0.5));
+  const base = species === 'bacillus' ? vec3(0.46, 0.45, 0.44) : vec3(0.44, 0.44, 0.36);
+  let col = base.mul(mix(float(1.0), float(0.72), grain));
+  // 芽胞：細胞の長軸上、中ほど（やや端寄り）に楕円
+  const so = aPh.sub(0.5).mul(HL * 0.6), sd = vec3(lp.x.div(R0 * 0.62), lp.y.sub(so).div(HL * 0.55), lp.z.div(R0 * 0.62)).length();
+  const spore = smoothstep(1.0, 0.85, sd).mul(aBright), sporeRim = smoothstep(1.05, 0.95, sd).sub(smoothstep(0.92, 0.8, sd)).mul(aBright);
+  col = mix(col, vec3(0.34, 0.33, 0.28), spore.mul(0.8));
+  col = mix(col, vec3(0.08, 0.08, 0.07), sporeRim.mul(0.7));
+  col = mix(col, vec3(0.07, 0.07, 0.065), smoothstep(0.35, 0.8, rim).mul(0.85));   // 細い暗い輪郭線（明視野では縁が暗く見える）
+  m.colorNode = col;
   const uHi = uniform(new THREE.Vector3()), uHiOn = uniform(0);
   const near = smoothstep(2.2, 0.8, aPos.distance(uHi)).mul(uHiOn);
-  m.emissiveNode = vec3(0.06, 0.065, 0.06).mul(rim).add(vec3(0.30, 0.30, 0.26).mul(aBright)).add(vec3(0.55, 0.38, 0.16).mul(rim.mul(0.7).add(0.3)).mul(near));
-  m.opacityNode = mix(mix(mix(float(0.04), float(0.45), pow(rim, float(1.6))), float(0.9), aBright), float(0.95), near.mul(0.7));
-  m.roughnessNode = float(0.3); m.metalnessNode = float(0);
+  m.emissiveNode = col.mul(0.25).add(vec3(0.55, 0.38, 0.16).mul(rim.mul(0.7).add(0.3)).mul(near));
+  m.opacityNode = mix(float(0.62), float(0.95), rim).max(near.mul(0.9));
+  m.roughnessNode = float(0.5); m.metalnessNode = float(0);
   void hash; void instanceIndex;
   const mesh = new THREE.InstancedMesh(geo, m, n2); mesh.name = 'swarm_' + species; mesh.frustumCulled = false;
+  // 鞭毛：細いリボンを細胞ごとに置き、細胞と同じ動きに、波打ちを足す
+  const NF = species === 'bacillus' ? 3 : 1, FL = species === 'bacillus' ? 0.32 : 0.5;
+  const fseg = 14, fg = new THREE.BufferGeometry(); { const fp: number[] = [], fi: number[] = [];
+    for (let i = 0; i <= fseg; i++) { const sv = i / fseg; fp.push(-0.5, sv, 0, 0.5, sv, 0); if (i < fseg) { const a = i * 2; fi.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); } }
+    fg.setAttribute('position', new THREE.Float32BufferAttribute(fp, 3)); fg.setIndex(fi); }
+  const fIdx = new Float32Array(n2 * NF * 2);
+  const rep3 = (src: Float32Array) => { const o = new Float32Array(n2 * NF * 3); for (let i = 0; i < n2; i++) for (let f = 0; f < NF; f++) o.set(src.subarray(i * 3, i * 3 + 3), (i * NF + f) * 3); return o; };
+  const rep1 = (src: Float32Array) => { const o = new Float32Array(n2 * NF); for (let i = 0; i < n2; i++) for (let f = 0; f < NF; f++) o[i * NF + f] = src[i]; return o; };
+  for (let i = 0; i < n2; i++) for (let f = 0; f < NF; f++) { const o = (i * NF + f) * 2; fIdx[o] = species === 'bacillus' ? rng.range(-0.8, 0.8) : -1; fIdx[o + 1] = rng.range(0, 6.28); }
+  const fLive = new THREE.InstancedBufferAttribute(new Float32Array(n2 * NF), 1); fLive.setUsage(THREE.DynamicDrawUsage);
+  const fA = (arr: Float32Array, sz: number) => instancedBufferAttribute(new THREE.InstancedBufferAttribute(arr, sz));
+  const fPos = fA(rep3(pos.subarray(0, n2 * 3)), 3) as unknown as V, fTan = fA(rep3(tang.subarray(0, n2 * 3)), 3) as unknown as V, fPh = fA(rep1(ph.subarray(0, n2)), 1) as unknown as F, fSw = fA(rep1(swim.subarray(0, n2)), 1) as unknown as F;
+  const fAt = fA(fIdx, 2) as unknown as ReturnType<typeof vec3>, fL = instancedBufferAttribute(fLive) as unknown as F;
+  const fm = new THREE.MeshBasicNodeMaterial({ transparent: true, depthWrite: false, side: THREE.DoubleSide });
+  { const tt2 = time.mul(mix(float(0.5), float(1.1), fPh)).mul(species === 'pseudomonas' ? 2.2 : 1.0).add(fPh.mul(40.0));
+    const side2 = fTan.cross(vec3(0.3, 0.9, 0.2)).normalize();
+    const run2 = sin(tt2).mul(0.9).add(sin(tt2.mul(0.37).add(fPh.mul(6.0))).mul(1.6));
+    const center = fPos.add(fTan.mul(run2).add(side2.mul(cos(tt2.mul(0.61)).mul(0.5))).mul(fSw).mul(0.35));
+    const hd = species === 'pseudomonas' ? fTan.mul(cos(tt2).sign().add(0.001)).add(side2.mul(sin(tt2.mul(0.61)).mul(-0.3))).normalize() : fTan;
+    const ax = hd.cross(vec3(0.0, 0.0, 1.0)).normalize(), az = hd.cross(ax);
+    const radial = ax.mul(cos(fAt.y)).add(az.mul(sin(fAt.y)));
+    const root = center.add(hd.mul(fAt.x.mul(HL + R0 * 0.8))).add(species === 'bacillus' ? radial.mul(R0) : vec3(0, 0, 0));
+    const dir = (species === 'bacillus' ? radial.mul(0.75).sub(hd.mul(0.65)) : hd.negate()).normalize();
+    const perp = dir.cross(radial.add(vec3(0.01, 0.02, 0.0))).normalize();
+    const sv = positionLocal.y, wave = sin(sv.mul(12.0).sub(time.mul(species === 'pseudomonas' ? 30.0 : 14.0)).add(fPh.mul(20.0))).mul(0.045).mul(sv.add(0.15));
+    fm.positionNode = root.add(dir.mul(sv.mul(FL))).add(perp.mul(wave)).add(perp.cross(dir).mul(positionLocal.x.mul(0.006))).mul(fL).add(center.mul(oneMinus(fL)));
+    fm.colorNode = vec3(0.62, 0.62, 0.58); fm.opacityNode = float(0.38).mul(oneMinus(sv.mul(0.6))).mul(fL); }
+  const flag = new THREE.InstancedMesh(fg, fm, n2 * NF); flag.name = 'swarm_flagella_' + species; flag.frustumCulled = false; mesh.add(flag);
   const liveArr = liveAttr.array as Float32Array;
   const find = (from: THREE.Vector3, fwd: THREE.Vector3) => {
     // 生きている細菌が多く集まっている所（半径 1.5 単位＝15 µm に何個あるか）を、カメラの前から選ぶ
@@ -92,5 +130,5 @@ export function buildSwarm(colliders: Collider[], cellOf: (p: THREE.Vector3) => 
     }
     return best ? { p: best, r: 1.6 } : null;
   };
-  return { highlight(p) { if (p) { uHi.value.copy(p); uHiOn.value = 1; } else uHiOn.value = 0; }, mesh, count: n2, find, sync(w) { const a = liveAttr.array as Float32Array; let ch = false; for (let i = 0; i < n2; i++) { const target = w(cells[i]) > (i % 97) / 97 * 0.9 + 0.05 ? 1 : 0; if (a[i] !== target) { a[i] += Math.sign(target - a[i]) * 0.2; if (Math.abs(a[i] - target) < 0.2) a[i] = target; ch = true; } } if (ch) liveAttr.needsUpdate = true; } };
+  return { highlight(p) { if (p) { uHi.value.copy(p); uHiOn.value = 1; } else uHiOn.value = 0; }, mesh, count: n2, find, sync(w) { const a = liveAttr.array as Float32Array; let ch = false; for (let i = 0; i < n2; i++) { const target = w(cells[i]) > (i % 97) / 97 * 0.9 + 0.05 ? 1 : 0; if (a[i] !== target) { a[i] += Math.sign(target - a[i]) * 0.2; if (Math.abs(a[i] - target) < 0.2) a[i] = target; ch = true; } } if (ch) { liveAttr.needsUpdate = true; const fa = fLive.array as Float32Array; for (let i = 0; i < n2; i++) for (let f = 0; f < NF; f++) fa[i * NF + f] = a[i]; fLive.needsUpdate = true; } } };
 }

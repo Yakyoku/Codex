@@ -40,3 +40,13 @@ body.idle .nav, body.idle .actions, body.idle .hud, body.idle .scale-tag, body.i
   .card { bottom: 52px; font-size: 12px; width: min(21em, 48vw); }
 }
 dialog.settings ol.steps { margin: .6em 0; padding-left: 1.3em; line-height: 1.9; font-size: .9em; }
+/* 拡大像の枠（右上）。中身は WebGL で、この枠の位置に描き足す */
+.scope { position: fixed; right: max(16px, env(safe-area-inset-right)); top: max(70px, calc(env(safe-area-inset-top) + 60px)); width: min(38vw, 520px); aspect-ratio: 4 / 3; border-radius: 14px; border: 1px solid rgba(239, 230, 216, .35);
+  box-shadow: 0 10px 40px rgba(0,0,0,.5), inset 0 0 0 1px rgba(0,0,0,.25); pointer-events: none; opacity: 0; transition: opacity .5s ease; z-index: 6; }
+.scope.on { opacity: 1; }
+.scope-tag { position: absolute; left: 12px; top: 10px; color: #4a3a22; font-size: clamp(11px, 1vw, 16px); font-weight: 700; letter-spacing: .15em; }
+.scope-tag small { display: block; font-weight: 500; letter-spacing: .05em; color: #6b5a42; font-size: .85em; }
+.scope-name { position: absolute; left: 12px; bottom: 10px; color: #2a2116; font-size: clamp(14px, 1.4vw, 24px); font-weight: 700; }
+.scope-scale { position: absolute; right: 14px; bottom: 12px; color: #2a2116; font-size: clamp(11px, 1vw, 16px); font-weight: 600; }
+@media (max-width: 720px) { .scope { width: 58vw; top: 56px; } }
+body.surface .scope { display: none; }

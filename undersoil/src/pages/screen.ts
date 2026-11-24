@@ -11,6 +11,7 @@ import { makeFreeControls, pushOut } from '../game/controls';
 import { makeDemo } from '../game/demo';
 import { makePost } from '../game/post';
 import { buildSurface, type Surface } from '../game/surface';
+import { buildMicroscope } from '../game/microscope';
 import { makeEncounters } from '../game/encounters';
 import { SPECIES } from '../game/species';
 import { showCard } from '../ui/card';
@@ -88,7 +89,7 @@ async function main() {
   ($('loadBar') as HTMLElement).style.width = '100%';
   const begin = () => { started = true; audio.start(); setTimeout(() => $('loading').classList.add('hide'), 250); stopFacts(); if (wetQ === null && !testing) setTimeout(() => demo.start(), 2500); };
   // 確認用：?card=<id> で紹介カードをすぐ出す
-  const cardQ = Q.get('card'); if (cardQ && SPECIES[cardQ]) setTimeout(() => { const T: Record<string, () => Target> = { sand: grain('quartz'), aggregate: grain('aggregate'), humus: grain('humus'), clay: grain('clay'), 'water-film': bridge, 'bacillus-subtilis': bacteria, 'pseudomonas-fluorescens': pseudo, colpoda, 'trifolium-repens': seedling, 'paramacrobiotus-metropolitanus': tardi }; const t = T[cardQ]; showCard(SPECIES[cardQ], { narration: false, holdMs: 600000, pointing: !!t }); pointer.show(t ?? null, SPECIES[cardQ].nameJa); if (ORGANISMS.includes(cardQ)) beginVisit(cardQ, t ?? null); }, 1500);
+  const cardQ = Q.get('card'); if (cardQ && SPECIES[cardQ]) setTimeout(() => { const T: Record<string, () => Target> = { sand: grain('quartz'), aggregate: grain('aggregate'), humus: grain('humus'), clay: grain('clay'), 'water-film': bridge, 'bacillus-subtilis': bacteria, 'pseudomonas-fluorescens': pseudo, colpoda, 'trifolium-repens': seedling, 'paramacrobiotus-metropolitanus': tardi }; const t = T[cardQ]; showCard(SPECIES[cardQ], { narration: false, holdMs: 600000, pointing: !!t }); pointer.show(t ?? null, SPECIES[cardQ].nameJa); if (ORGANISMS.includes(cardQ)) { beginVisit(cardQ, t ?? null); scope.show(cardQ, SPECIES[cardQ].nameJa); } }, 1500);
   if (testing) begin(); else { const b = $('start') as HTMLButtonElement; b.hidden = false; b.addEventListener('click', begin, { once: true }); }
 
   // 出会いの順番（M1 の自動の流れ用。M3 で、プレイヤーの位置と行動に結び付ける）
@@ -109,6 +110,7 @@ async function main() {
   const tardi = (): Target => game.tardigrade.target();
   const seedling = (): Target => mode === 'surface' ? { p: new THREE.Vector3(0.3, surface.groundY + 1.2, 0.2), r: 3.2 } : null;
   let focusT: THREE.Vector3 | null = null;
+  const scope = await buildMicroscope('./');
   // 生き物を見せに行く：カードが出ている間、カメラはその生き物のそばで止まり、離れていれば暗転して移る
   const ORGANISMS = ['bacillus-subtilis', 'pseudomonas-fluorescens', 'colpoda', 'paramacrobiotus-metropolitanus'];
   const VIEW: Record<string, number> = { 'bacillus-subtilis': 2.2, 'pseudomonas-fluorescens': 2.6, colpoda: 13, 'paramacrobiotus-metropolitanus': 70 };
@@ -135,12 +137,13 @@ async function main() {
     if (!t || !touring) return; const first = t(); if (!first) return;
     const dist = VIEW[id] ?? 6, pos = viewFor(first.p, dist, first.view);
     // 手前の細かい粒で見えなくならないよう、見ている間だけ、カメラのすぐ前（距離の半分まで）は描かない
-    camera.near = Math.max(0.08, dist * 0.5); camera.updateProjectionMatrix();
+    camera.near = Math.max(0.08, dist * (dist < 4 ? 0.8 : 0.5)); camera.updateProjectionMatrix();
     if (id === 'bacillus-subtilis') game.swarm.highlight(first.p); if (id === 'pseudomonas-fluorescens') game.swarm2.highlight(first.p);
+    game.lights.fill.intensity = 7 + Math.min(60, dist * 0.9) * 2;
     visit = { get: t, dist, pos, anchor: first.p.clone(), ret: camera.position.clone(), retQ: camera.quaternion.clone() };
     if (camera.position.distanceTo(pos) > 12) { fade.classList.add('on'); setTimeout(() => { if (visit) { camera.position.copy(visit.pos); const f = visit.get(); if (f) camera.lookAt(f.p); } fade.classList.remove('on'); }, 700); }
   };
-  const endVisit = () => { game.swarm.highlight(null); game.swarm2.highlight(null); if (!visit) return; const v = visit; visit = null; setTimeout(() => { camera.near = 0.08; camera.updateProjectionMatrix(); }, 700); if (camera.position.distanceTo(v.ret) > 12) { fade.classList.add('on'); setTimeout(() => fade.classList.remove('on'), 700); } };
+  const endVisit = () => { game.lights.fill.intensity = 7; game.swarm.highlight(null); game.swarm2.highlight(null); if (!visit) return; const v = visit; visit = null; setTimeout(() => { camera.near = 0.08; camera.updateProjectionMatrix(); }, 700); if (camera.position.distanceTo(v.ret) > 12) { fade.classList.add('on'); setTimeout(() => fade.classList.remove('on'), 700); } };
   const enc = makeEncounters([
     { id: 'sand', when: () => mode === 'soil' && started && !!grain('quartz')(), target: grain('quartz') },
     { id: 'aggregate', when: () => mode === 'soil' && started && !!grain('aggregate')(), target: grain('aggregate') },
@@ -152,7 +155,7 @@ async function main() {
     { id: 'paramacrobiotus-metropolitanus', when: () => mode === 'soil' && game.tardigrade.active(), target: tardi },
     { id: 'clay', when: () => mode === 'soil' && cellW(8) > 0.4 && !!grain('clay')(), target: grain('clay') },
     { id: 'trifolium-repens', when: () => mode === 'surface' && surface.growth > 0.75, target: seedling },
-  ], { gapSec: 4, onShow: (id, t) => { audio.chime(); pointer.show(t, SPECIES[id]?.nameJa ?? ''); if (ORGANISMS.includes(id)) beginVisit(id, t); }, onHide: () => { pointer.hide(); focusT = null; endVisit(); } });
+  ], { gapSec: 4, onShow: (id, t) => { audio.chime(); pointer.show(t, SPECIES[id]?.nameJa ?? ''); if (ORGANISMS.includes(id)) { beginVisit(id, t); scope.show(id, SPECIES[id].nameJa); } }, onHide: () => { pointer.hide(); focusT = null; endVisit(); scope.hide(); } });
   $('meet').addEventListener('click', () => { enc.replay(ORGANISMS); if (!touring) $('tour').click(); });
   $('water').addEventListener('click', () => demo.start());
   $('dry').addEventListener('click', () => demo.dry());
@@ -195,6 +198,7 @@ async function main() {
       surface.update(dt, t);
       if (postSurface) postSurface.render(); else renderer.render(surface.scene, surface.camera);
     } else if (post) post.render(); else renderer.render(scene, camera);
+    if (mode === 'soil') scope.render(renderer, dt);
     if (!testing) enc.update(dt);
     pointer.update(dt);
     { // ピント：説明している物があればそこ、なければ画面中央の粒まで

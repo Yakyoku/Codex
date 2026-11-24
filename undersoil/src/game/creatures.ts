@@ -8,15 +8,17 @@ import type { World } from './world';
 export interface Creatures { group: THREE.Group; update(dt: number, t: number): void; anyActive(): boolean; nearest(p: THREE.Vector3): THREE.Vector3 | null; }
 
 function bodyMaterial(na: THREE.Texture) {
-  // 光学顕微鏡で見るコルポダは無色で、ほぼ透明。縁と厚い所がわずかに見える
+  // 持ち主の資料と顕微鏡写真：腎臓形。細い暗い輪郭線。中は淡い灰褐色（#C2B5A4）で、細かい粒々が詰まっている
   const m = new THREE.MeshPhysicalNodeMaterial({ transparent: true, depthWrite: false });
   const naT = texture(na, uv());
-  // 繊毛の列の溝は、実物ではごく細い線にしか見えない。法線は弱く効かせる
-  m.normalNode = normalMap(vec3(mix(float(0.5), naT.r, 0.22), mix(float(0.5), naT.g, 0.22), float(1)));
+  m.normalNode = normalMap(vec3(mix(float(0.5), naT.r, 0.15), mix(float(0.5), naT.g, 0.15), float(1)));
   const rim = pow(oneMinus(saturate(dot(normalView, positionViewDirection))), 1.6);
-  m.colorNode = vec3(0.40, 0.42, 0.39); m.roughnessNode = float(0.28); m.metalnessNode = float(0);
-  m.opacityNode = mix(float(0.07), float(0.5), rim);
-  m.clearcoat = 0.3; m.clearcoatRoughness = 0.2;
+  const speck = smoothstep(0.62, 0.9, mx_noise_float(positionLocal.mul(25.0)).add(0.5)).add(smoothstep(0.7, 0.95, mx_noise_float(positionLocal.mul(60.0)).add(0.5)).mul(0.7)).min(1.0);
+  const base = mix(vec3(0.42, 0.38, 0.32), vec3(0.30, 0.26, 0.19), speck);
+  m.colorNode = mix(base, vec3(0.06, 0.06, 0.05), smoothstep(0.55, 0.9, rim));     // 輪郭線は暗く細い
+  m.emissiveNode = base.mul(0.18);
+  m.roughnessNode = float(0.45); m.metalnessNode = float(0);
+  m.opacityNode = mix(float(0.42), float(0.95), smoothstep(0.3, 0.9, rim)).max(speck.mul(0.55));
   return m;
 }
 function innerMaterial(opacity: number, col: [number, number, number]) {
@@ -29,8 +31,8 @@ function ciliaMaterial() {
   const edge = pow(smoothstep(0.75, 0.0, abs(dot(normalView, positionViewDirection))), 2.0);
   const u = uv(); const row = fract(u.x.mul(80.0)); const line = smoothstep(0.0, 0.35, row).mul(smoothstep(1.0, 0.65, row));
   const wave = sin(u.y.mul(42.0).sub(time.mul(26.0)).add(u.x.mul(240.0))).mul(0.5).add(0.5);
-  m.colorNode = vec3(0.7, 0.72, 0.68); m.roughnessNode = float(0.6);
-  m.opacityNode = edge.mul(mix(float(0.25), float(1), line)).mul(mix(float(0.45), float(1), wave)).mul(0.11);
+  m.colorNode = vec3(0.75, 0.74, 0.7); m.roughnessNode = float(0.6);
+  m.opacityNode = edge.mul(mix(float(0.25), float(1), line)).mul(mix(float(0.55), float(1), wave)).mul(0.32);
   return m;
 }
 
@@ -38,7 +40,13 @@ export async function buildCreatures(base: string, world: World, opts: { lod: 0 
   const group = new THREE.Group(); group.name = 'creatures';
   const [gltf, na] = await Promise.all([loadGLB(base, 'models/creatures/colpoda.glb'), loadTexture(base, opts.lod === 0 ? 'models/creatures/colpoda_na.webp' : 'models/creatures/colpoda_lod1_na.webp')]);
   const L = `_LOD${opts.lod}`, other = `_LOD${1 - opts.lod}`;
-  const body = bodyMaterial(na), vac = innerMaterial(0.2, [0.30, 0.31, 0.27]), cv = innerMaterial(0.1, [0.5, 0.52, 0.5]), nuc = innerMaterial(0.12, [0.5, 0.5, 0.48]), cil = ciliaMaterial();
+  const body = bodyMaterial(na), cv = innerMaterial(0.25, [0.46, 0.46, 0.44]), cil = ciliaMaterial();
+  const vac = new THREE.MeshStandardNodeMaterial({ transparent: true });
+  { const rim = pow(oneMinus(saturate(dot(normalView, positionViewDirection))), 1.5); const dots = smoothstep(0.6, 0.9, mx_noise_float(positionLocal.mul(30.0)).add(0.5));
+    vac.colorNode = mix(mix(vec3(0.36, 0.29, 0.13), vec3(0.18, 0.14, 0.06), dots), vec3(0.08, 0.06, 0.03), smoothstep(0.5, 0.9, rim)); vac.opacityNode = float(0.85); vac.roughnessNode = float(0.5); }
+  const nuc = new THREE.MeshStandardNodeMaterial({ transparent: true });
+  { const g = smoothstep(0.5, 0.9, mx_noise_float(positionLocal.mul(18.0)).add(0.5)); const rim = pow(oneMinus(saturate(dot(normalView, positionViewDirection))), 1.5);
+    nuc.colorNode = mix(mix(vec3(0.36, 0.34, 0.29), vec3(0.24, 0.23, 0.2), g), vec3(0.1, 0.1, 0.09), smoothstep(0.55, 0.9, rim)); nuc.opacityNode = float(0.75); }
   // シスト：屈折の強い二重の殻（縁だけが明るい、ほぼ透明）の中に、細かい粒の詰まった一つの細胞のかたまり（写真で確認。白い粒の集まりではない）
   const wall = new THREE.MeshPhysicalNodeMaterial({ transparent: true, depthWrite: false, side: THREE.DoubleSide });
   { const rim = pow(oneMinus(saturate(dot(normalView, positionViewDirection)).abs()), 2.2);

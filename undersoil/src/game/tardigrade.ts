@@ -2,7 +2,7 @@
 // GLB は −Z が前、+Y が上、1 単位 = 10 µm（体長 約 56）。シェイプキー：tun（乾眠の樽）、walk_a〜d（歩き）。
 // 見た目（写真で確認）：乳白色がかった青白い半透明の体（#B6BED4）に、腸の中身の橙褐色（#DDC8C0）が透け、丸い貯蔵細胞がたくさん見える。眼はない。
 import * as THREE from 'three/webgpu';
-import { attribute, dot, float, mix, mx_noise_float, mx_worley_noise_float, normalView, oneMinus, positionLocal, positionViewDirection, pow, saturate, smoothstep, vec3 } from 'three/tsl';
+import { attribute, dot, float, mix, mx_noise_float, normalView, oneMinus, positionLocal, positionViewDirection, pow, saturate, sin, smoothstep, vec3 } from 'three/tsl';
 import { loadGLB, loadTexture } from '../core/assets';
 import type { World } from './world';
 
@@ -14,17 +14,23 @@ export async function buildTardigrade(base: string, world: World, lod: 0 | 1): P
   const vc = attribute('color', 'vec4');
   // 体：半透明。縁ほど白く濃く、中央は透ける。中に丸い貯蔵細胞の模様
   const body = new THREE.MeshPhysicalNodeMaterial({ transparent: true, depthWrite: false });
-  { const rim = pow(oneMinus(saturate(dot(normalView, positionViewDirection))), 1.8);
-    const cellsN = smoothstep(0.42, 0.18, mx_worley_noise_float(positionLocal.mul(0.55)));
+  // 持ち主の資料と顕微鏡写真：黄褐色がかった半透明の体（#A5926C）。体節ごとのしわが細い線で見え、
+  // 中に黄褐色の粒々の貯蔵細胞のかたまりが透ける。脚は短く太く、先に灰白色の鉤爪
+  { const rim = pow(oneMinus(saturate(dot(normalView, positionViewDirection))), 1.6);
     const claw = vc.g;
-    const tone = saturate(mx_noise_float(positionLocal.mul(0.12)).mul(0.5).add(0.5));
-    body.colorNode = mix(mix(vec3(0.42, 0.46, 0.58), vec3(0.52, 0.55, 0.66), tone), vec3(0.62, 0.58, 0.50), cellsN.mul(0.45)).mul(mix(float(1), float(0.55), claw));
-    body.roughnessNode = float(0.35); body.metalnessNode = float(0); body.clearcoat = 0.4; body.clearcoatRoughness = 0.25;
-    body.opacityNode = mix(mix(float(0.42), float(0.92), rim), float(1.0), claw);
-    body.emissiveNode = vec3(0.10, 0.11, 0.14).mul(rim).add(vec3(0.05, 0.055, 0.07)); }
+    const clump = smoothstep(0.1, 0.45, mx_noise_float(positionLocal.mul(3.0)).add(0.2));
+    const grain = smoothstep(0.55, 0.85, mx_noise_float(positionLocal.mul(60.0)).add(0.5));
+    const fold = smoothstep(0.75, 0.98, sin(positionLocal.z.mul(14.0)).abs());   // 体節の境の細いしわ
+    let col = mix(vec3(0.42, 0.36, 0.24), vec3(0.34, 0.27, 0.15), clump.mul(0.8));
+    col = mix(col, vec3(0.22, 0.17, 0.08), grain.mul(clump).mul(0.6));
+    col = mix(col, vec3(0.16, 0.13, 0.08), fold.mul(0.45).add(smoothstep(0.55, 0.9, rim).mul(0.7)).min(0.85));
+    body.colorNode = mix(col, vec3(0.62, 0.62, 0.6), claw);
+    body.roughnessNode = float(0.4); body.metalnessNode = float(0); body.clearcoat = 0.3; body.clearcoatRoughness = 0.3;
+    body.opacityNode = mix(mix(float(0.5), float(0.95), rim).max(clump.mul(grain).mul(0.7)), float(0.95), claw);
+    body.emissiveNode = col.mul(0.22); }
   // 中身：口の管と咽頭（硬い部分）は明るい灰、腸は橙褐色
   const inner = new THREE.MeshStandardNodeMaterial();
-  { const hard = vc.g; inner.colorNode = mix(vec3(0.55, 0.36, 0.24), vec3(0.62, 0.62, 0.58), smoothstep(0.5, 0.9, hard)); inner.roughnessNode = float(0.6); }
+  { const hard = vc.g; inner.colorNode = mix(vec3(0.40, 0.30, 0.16), vec3(0.55, 0.54, 0.5), smoothstep(0.5, 0.9, hard)); inner.roughnessNode = float(0.6); }
   const meshes: THREE.Mesh[] = [];
   gltf.scene.traverse((o) => {
     const m = o as THREE.Mesh; if (!m.isMesh) return;
