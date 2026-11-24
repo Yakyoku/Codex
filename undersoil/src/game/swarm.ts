@@ -70,7 +70,7 @@ export function buildSwarm(colliders: Collider[], cellOf: (p: THREE.Vector3) => 
   m.positionNode = aPos.add(drift).add(rotated.mul(live));
   // 見た目（持ち主の資料と顕微鏡写真）：両端の丸い棒。細い暗い輪郭線、中は淡い灰色で細かい粒々。
   //   枯草菌：多くは細胞の中に楕円の芽胞（くすんだ灰緑色で、縁がくっきり）。まわりに細く波打つ鞭毛が数本
-  //   シュードモナス：やや短く、わずかに黄緑がかる。片方の端から長く波打つ鞭毛が 1 本
+  //   シュードモナス：やや短く、わずかに黄緑がかる。片方の端から長く波打つ鞭毛が数本の束（P. fluorescens は 1 本より多い極鞭毛。電子顕微鏡の写真で確認）
   const rim = pow(oneMinus(saturate(dot(normalView, positionViewDirection))), 2.0);
   const R0 = species === 'bacillus' ? 0.04 : 0.035, HL = species === 'bacillus' ? 0.085 : 0.06;
   const grain = smoothstep(0.55, 0.85, mx_noise_float(lp.mul(90.0).add(aPh.mul(13.0))).add(0.5));
@@ -91,7 +91,7 @@ export function buildSwarm(colliders: Collider[], cellOf: (p: THREE.Vector3) => 
   void hash; void instanceIndex;
   const mesh = new THREE.InstancedMesh(geo, m, n2); mesh.name = 'swarm_' + species; mesh.frustumCulled = false;
   // 鞭毛：細いリボンを細胞ごとに置き、細胞と同じ動きに、波打ちを足す
-  const NF = species === 'bacillus' ? 3 : 1, FL = species === 'bacillus' ? 0.32 : 0.5;
+  const NF = 3, FL = species === 'bacillus' ? 0.32 : 0.5;
   const fseg = 14, fg = new THREE.BufferGeometry(); { const fp: number[] = [], fi: number[] = [];
     for (let i = 0; i <= fseg; i++) { const sv = i / fseg; fp.push(-0.5, sv, 0, 0.5, sv, 0); if (i < fseg) { const a = i * 2; fi.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); } }
     fg.setAttribute('position', new THREE.Float32BufferAttribute(fp, 3)); fg.setIndex(fi); }
@@ -99,6 +99,9 @@ export function buildSwarm(colliders: Collider[], cellOf: (p: THREE.Vector3) => 
   const rep3 = (src: Float32Array) => { const o = new Float32Array(n2 * NF * 3); for (let i = 0; i < n2; i++) for (let f = 0; f < NF; f++) o.set(src.subarray(i * 3, i * 3 + 3), (i * NF + f) * 3); return o; };
   const rep1 = (src: Float32Array) => { const o = new Float32Array(n2 * NF); for (let i = 0; i < n2; i++) for (let f = 0; f < NF; f++) o[i * NF + f] = src[i]; return o; };
   for (let i = 0; i < n2; i++) for (let f = 0; f < NF; f++) { const o = (i * NF + f) * 2; fIdx[o] = species === 'bacillus' ? rng.range(-0.8, 0.8) : -1; fIdx[o + 1] = rng.range(0, 6.28); }
+  // シュードモナスの鞭毛の本数は株で違う（SBW25 株は平均 1.5 本、束で持つ株もある）。細胞ごとに 1〜3 本にする
+  const fMask = new Float32Array(n2 * NF).fill(1);
+  if (species === 'pseudomonas') for (let i = 0; i < n2; i++) { const k = 1 + Math.floor(rng.next() * 2.6); for (let f = k; f < NF; f++) fMask[i * NF + f] = 0; }
   const fLive = new THREE.InstancedBufferAttribute(new Float32Array(n2 * NF), 1); fLive.setUsage(THREE.DynamicDrawUsage);
   const fA = (arr: Float32Array, sz: number) => instancedBufferAttribute(new THREE.InstancedBufferAttribute(arr, sz));
   const fPos = fA(rep3(pos.subarray(0, n2 * 3)), 3) as unknown as V, fTan = fA(rep3(tang.subarray(0, n2 * 3)), 3) as unknown as V, fPh = fA(rep1(ph.subarray(0, n2)), 1) as unknown as F, fSw = fA(rep1(swim.subarray(0, n2)), 1) as unknown as F;
@@ -111,8 +114,8 @@ export function buildSwarm(colliders: Collider[], cellOf: (p: THREE.Vector3) => 
     const hd = species === 'pseudomonas' ? fTan.mul(cos(tt2).sign().add(0.001)).add(side2.mul(sin(tt2.mul(0.61)).mul(-0.3))).normalize() : fTan;
     const ax = hd.cross(vec3(0.0, 0.0, 1.0)).normalize(), az = hd.cross(ax);
     const radial = ax.mul(cos(fAt.y)).add(az.mul(sin(fAt.y)));
-    const root = center.add(hd.mul(fAt.x.mul(HL + R0 * 0.8))).add(species === 'bacillus' ? radial.mul(R0) : vec3(0, 0, 0));
-    const dir = (species === 'bacillus' ? radial.mul(0.75).sub(hd.mul(0.65)) : hd.negate()).normalize();
+    const root = center.add(hd.mul(fAt.x.mul(HL + R0 * 0.8))).add(radial.mul(species === 'bacillus' ? R0 : R0 * 0.3));
+    const dir = (species === 'bacillus' ? radial.mul(0.75).sub(hd.mul(0.65)) : hd.negate().add(radial.mul(0.2))).normalize();
     const perp = dir.cross(radial.add(vec3(0.01, 0.02, 0.0))).normalize();
     const sv = positionLocal.y, wave = sin(sv.mul(12.0).sub(time.mul(species === 'pseudomonas' ? 30.0 : 14.0)).add(fPh.mul(20.0))).mul(0.045).mul(sv.add(0.15));
     fm.positionNode = root.add(dir.mul(sv.mul(FL))).add(perp.mul(wave)).add(perp.cross(dir).mul(positionLocal.x.mul(0.006))).mul(fL).add(center.mul(oneMinus(fL)));
@@ -130,5 +133,5 @@ export function buildSwarm(colliders: Collider[], cellOf: (p: THREE.Vector3) => 
     }
     return best ? { p: best, r: 1.6 } : null;
   };
-  return { highlight(p) { if (p) { uHi.value.copy(p); uHiOn.value = 1; } else uHiOn.value = 0; }, mesh, count: n2, find, sync(w) { const a = liveAttr.array as Float32Array; let ch = false; for (let i = 0; i < n2; i++) { const target = w(cells[i]) > (i % 97) / 97 * 0.9 + 0.05 ? 1 : 0; if (a[i] !== target) { a[i] += Math.sign(target - a[i]) * 0.2; if (Math.abs(a[i] - target) < 0.2) a[i] = target; ch = true; } } if (ch) { liveAttr.needsUpdate = true; const fa = fLive.array as Float32Array; for (let i = 0; i < n2; i++) for (let f = 0; f < NF; f++) fa[i * NF + f] = a[i]; fLive.needsUpdate = true; } } };
+  return { highlight(p) { if (p) { uHi.value.copy(p); uHiOn.value = 1; } else uHiOn.value = 0; }, mesh, count: n2, find, sync(w) { const a = liveAttr.array as Float32Array; let ch = false; for (let i = 0; i < n2; i++) { const target = w(cells[i]) > (i % 97) / 97 * 0.9 + 0.05 ? 1 : 0; if (a[i] !== target) { a[i] += Math.sign(target - a[i]) * 0.2; if (Math.abs(a[i] - target) < 0.2) a[i] = target; ch = true; } } if (ch) { liveAttr.needsUpdate = true; const fa = fLive.array as Float32Array; for (let i = 0; i < n2; i++) for (let f = 0; f < NF; f++) fa[i * NF + f] = a[i] * fMask[i * NF + f]; fLive.needsUpdate = true; } } };
 }

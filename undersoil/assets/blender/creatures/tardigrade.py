@@ -21,14 +21,14 @@ BAKE = '--no-bake' not in args; PREVIEWS = '--no-preview' not in args
 # ---- 寸法（1 = 10µm）----
 L = 54.0                          # 体長 540µm（平均）
 RX, RZT, RZB = 7.5, 8.3, 6.7      # 幅の半分、背側の高さ、腹側の高さ（幅 150µm × 高さ 150µm △）
-ZB = 3.8                          # 腹の下の、地面からのすき間
+ZB = 5.6                          # 腹の下の、地面からのすき間（写真では脚がはっきり見える。2026-11-24 に 3.8 → 5.6）
 SEG = [0.125, 0.32, 0.525, 0.74]  # 体節の境（頭｜胴1｜胴2｜胴3｜胴4）
 LEG_S = [0.22, 0.42, 0.63]        # 1〜3対目の脚の位置（本種の横からの写真の目測）
 LEG_A = math.radians(42)          # 腹の真下から、わきへ 42°の所から生える
 LEG_OUT = math.radians(30)        # 脚は、真下から外へ 30°傾く
 HIND_S, HIND_A = 0.953, math.radians(42)
-RF, RF_HIND = 4.8, 3.6            # 脚のつけ根の広がり（半径）
-CLAW, CLAW_HIND = 1.15, 1.3       # 爪の長い枝の高さ 11.5µm、4対目は 13µm
+RF, RF_HIND = 4.5, 4.3            # 脚のつけ根の広がり（半径）。太く短い円柱の脚にする
+CLAW, CLAW_HIND = 2.0, 2.2        # 爪：写真で見える大きさ（20µm、4対目 22µm △。Paramacrobiotus の爪は 15〜25µm）
 TUN_L, TUN_RX, TUN_RZT, TUN_RZB = 22.0, 8.6, 6.3, 4.7   # 樽：長さ 220µm × 幅 172µm × 高さ 110µm（△ 写真の縦横比 170:140 から）
 TUN_FOLDS = 7                     # 樽のふくらみの数（横じわは 6本。仕様：5〜7本 △）
 STRIDE_DEG = 30.0                 # 脚の振れ幅（前後 ±30° △）
@@ -46,7 +46,7 @@ def prof(s):
     """体の太さ（最大を1とする）。頭は細く、胴の2〜3節目がいちばん太く、後ろへ細くなる"""
     s = np.asarray(s, float); p = np.interp(s, _x, _p)
     cf, cr = caps(s); p = p * cf * cr
-    for f in SEG: p = p * (1 - 0.028 * np.exp(-((s - f) / 0.012) ** 2))      # 体節の境の、浅いくびれ
+    for f in SEG: p = p * (1 - 0.075 * np.exp(-((s - f) / 0.022) ** 2))      # 体節の境のくびれ。体節ごとに、ふっくらふくらむ（写真・資料）
     return p
 
 class Active:
@@ -96,10 +96,10 @@ for side, sn in ((1, 'R'), (-1, 'L')):
     for j, s in enumerate(LEG_S):
         LEGS.append(dict(name=f'{sn}{j+1}', s=s, a=side * LEG_A, side=side, hind=False, rf=RF, claw=CLAW,
                          dir=np.array([side * math.sin(LEG_OUT), 0.0, -math.cos(LEG_OUT)])))
-    d = np.array([side * 0.22, -0.62, -0.75]); LEGS.append(dict(name=f'{sn}4', s=HIND_S, a=side * HIND_A, side=side, hind=True, rf=RF_HIND, claw=CLAW_HIND, dir=d / np.linalg.norm(d)))
+    d = np.array([side * 0.25, -0.40, -0.88]); LEGS.append(dict(name=f'{sn}4', s=HIND_S, a=side * HIND_A, side=side, hind=True, rf=RF_HIND, claw=CLAW_HIND, dir=d / np.linalg.norm(d)))
 for lg in LEGS:
     lg['c'] = REST.base(lg['s'], lg['a'])
-    lg['len'] = float(np.clip(lg['c'][2] / -lg['dir'][2], 3.5, 6.6))      # 足の先が z=0 に届く長さ
+    lg['len'] = float(np.clip(lg['c'][2] / -lg['dir'][2], 3.5, 6.5 if lg['hind'] else 9.0))      # 足の先が z=0 に届く長さ
     f = np.array([0.0, 1.0, 0.0]); d = lg['dir']
     if lg['hind']:   # 4対目：爪は前後に並び、かぎは下・前へ曲がる
         h = np.array([0.0, 0.55, -1.0]); h = h - d * h.dot(d); h /= np.linalg.norm(h); m = np.cross(d, h)
@@ -113,8 +113,9 @@ def rotx(v, th):
 
 def leg_w(t):
     """脚の形：つけ根（t=1）から先（t=0）へ。円すいと釣り鐘の中間で、先は丸い"""
-    t = np.clip(t, 0, 1); t = (np.sqrt(t * t + 0.05) - math.sqrt(0.05)) / (math.sqrt(1.05) - math.sqrt(0.05))
-    return 0.5 * (1 - t) + 0.5 * (1 - 3 * t * t + 2 * t ** 3)
+    t = np.clip(t, 0, 1)
+    # 先は丸い平ら（t<0.45）、横はほぼまっすぐな筒（0.45〜0.9）、つけ根で体になめらかにつながる
+    return np.clip(1 - 0.08 * (t / 0.5) ** 2, 0, 1) * (t < 0.5) + (t >= 0.5) * (0.92 * (1 - sstep(0.5, 0.9, t)) ** 0.6)
 
 def walk_leg(lg, phase):
     """歩きの1コマでの、脚の (回転角, 長さの倍率)。phase は 0..1"""
@@ -224,6 +225,10 @@ def inner(key, lod):
     else:
         M = body.pole(0) + np.array([0, -0.25, 0]); c = body.center(0.115); dn = c - M; gs = (0.2, 0.86); gr = 0.0
     dn = dn / np.linalg.norm(dn); xr = np.array([1.0, 0, 0]); up = np.cross(xr, dn)
+    if True:                                                                               # 口の輪（樽では、体の中に引き込まれた位置）：頭の先の、口のまわりの輪（写真・資料で見える）
+        n = 25 if hi else 11; th = np.linspace(0, 2 * np.pi * 1.04, n)[:, None]
+        pts = M + dn * 0.15 + (xr * np.cos(th) + up * np.sin(th)) * (0.6 if isinstance(body, Tun) else 1.05)
+        parts.append((tube(pts, np.full(n, 0.32), 6 if hi else 4, ref=dn), n, 6 if hi else 4, 1.0))
     n = 6 if hi else 3
     tb = M + dn * np.linspace(0, 4.8, n)[:, None]                                        # 口の管：長さ 48µm、太さ 10µm
     parts.append((tube(tb, np.full(n, 0.5), 8 if hi else 5, ref=up), n, 8 if hi else 5, 1.0))

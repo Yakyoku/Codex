@@ -89,7 +89,7 @@ async function main() {
   ($('loadBar') as HTMLElement).style.width = '100%';
   const begin = () => { started = true; audio.start(); setTimeout(() => $('loading').classList.add('hide'), 250); stopFacts(); if (wetQ === null && !testing) setTimeout(() => demo.start(), 2500); };
   // 確認用：?card=<id> で紹介カードをすぐ出す
-  const cardQ = Q.get('card'); if (cardQ && SPECIES[cardQ]) setTimeout(() => { const T: Record<string, () => Target> = { sand: grain('quartz'), aggregate: grain('aggregate'), humus: grain('humus'), clay: grain('clay'), 'water-film': bridge, 'bacillus-subtilis': bacteria, 'pseudomonas-fluorescens': pseudo, colpoda, 'trifolium-repens': seedling, 'paramacrobiotus-metropolitanus': tardi }; const t = T[cardQ]; showCard(SPECIES[cardQ], { narration: false, holdMs: 600000, pointing: !!t }); pointer.show(t ?? null, SPECIES[cardQ].nameJa); if (ORGANISMS.includes(cardQ)) { beginVisit(cardQ, t ?? null); scope.show(cardQ, SPECIES[cardQ].nameJa); } }, 1500);
+  const cardQ = Q.get('card'); if (cardQ && SPECIES[cardQ]) setTimeout(() => { const T: Record<string, () => Target> = { sand: grain('quartz'), aggregate: grain('aggregate'), humus: grain('humus'), clay: grain('clay'), 'water-film': bridge, 'bacillus-subtilis': bacteria, 'pseudomonas-fluorescens': pseudo, colpoda, 'trifolium-repens': seedling, 'paramacrobiotus-metropolitanus': tardi }; const t = T[cardQ]; showCard(SPECIES[cardQ], { narration: false, holdMs: 600000, pointing: !!t }); pointer.show(t ?? null, SPECIES[cardQ].nameJa); if (ORGANISMS.includes(cardQ)) beginVisit(cardQ, t ?? null); scope.show(cardQ, SPECIES[cardQ].nameJa); }, 1500);
   if (testing) begin(); else { const b = $('start') as HTMLButtonElement; b.hidden = false; b.addEventListener('click', begin, { once: true }); }
 
   // 出会いの順番（M1 の自動の流れ用。M3 で、プレイヤーの位置と行動に結び付ける）
@@ -155,7 +155,7 @@ async function main() {
     { id: 'paramacrobiotus-metropolitanus', when: () => mode === 'soil' && game.tardigrade.active(), target: tardi },
     { id: 'clay', when: () => mode === 'soil' && cellW(8) > 0.4 && !!grain('clay')(), target: grain('clay') },
     { id: 'trifolium-repens', when: () => mode === 'surface' && surface.growth > 0.75, target: seedling },
-  ], { gapSec: 4, onShow: (id, t) => { audio.chime(); pointer.show(t, SPECIES[id]?.nameJa ?? ''); if (ORGANISMS.includes(id)) { beginVisit(id, t); scope.show(id, SPECIES[id].nameJa); } }, onHide: () => { pointer.hide(); focusT = null; endVisit(); scope.hide(); } });
+  ], { gapSec: 4, onShow: (id, t) => { audio.chime(); pointer.show(t, SPECIES[id]?.nameJa ?? ''); if (ORGANISMS.includes(id)) beginVisit(id, t); scope.show(id, SPECIES[id]?.nameJa ?? ''); }, onHide: () => { pointer.hide(); focusT = null; endVisit(); scope.hide(); } });
   $('meet').addEventListener('click', () => { enc.replay(ORGANISMS); if (!touring) $('tour').click(); });
   $('water').addEventListener('click', () => demo.start());
   $('dry').addEventListener('click', () => demo.dry());
@@ -198,7 +198,7 @@ async function main() {
       surface.update(dt, t);
       if (postSurface) postSurface.render(); else renderer.render(surface.scene, surface.camera);
     } else if (post) post.render(); else renderer.render(scene, camera);
-    if (mode === 'soil') scope.render(renderer, dt);
+    scope.tick(dt); if (mode === 'soil') scope.render(renderer, dt);
     if (!testing) enc.update(dt);
     pointer.update(dt);
     { // ピント：説明している物があればそこ、なければ画面中央の粒まで

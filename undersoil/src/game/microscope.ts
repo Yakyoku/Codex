@@ -4,6 +4,9 @@
 import * as THREE from 'three/webgpu';
 import { abs, attribute, dot, float, mix, mx_noise_float, normalView, oneMinus, positionLocal, positionViewDirection, pow, saturate, smoothstep, vec3 } from 'three/tsl';
 import { loadGLB } from '../core/assets';
+import PHOTOS from '../data/photos.json';
+
+type Photo = { src: string; caption: string; credit: string };
 
 const BG = new THREE.Color(0.86, 0.86, 0.84);   // 明視野の背景（sRGB #F0F0EE を少し落とした値）
 
@@ -51,7 +54,7 @@ export async function buildMicroscope(base: string) {
     }
     groups['bacillus-subtilis'] = g;
   }
-  // シュードモナス：やや短い棒（1.9 µm）。わずかに黄緑。片方の端から、長く波打つ鞭毛が 1 本
+  // シュードモナス：やや短い棒（1.9 µm）。わずかに黄緑。片方の端から、長く波打つ鞭毛が数本の束
   {
     const g = new THREE.Group(); const cell = bf([0.58, 0.56, 0.42], { speck: 0.8, speckScale: 9, speckCol: [0.52, 0.52, 0.4], opacity: 0.75 });
     const L = 2.7, R = 0.55;
@@ -59,7 +62,10 @@ export async function buildMicroscope(base: string) {
     for (const [x, y, a] of layout) {
       const c = rod(L, R, cell); c.position.set(x, y, 0); c.rotation.z = a + Math.PI / 2; g.add(c);
       const d = new THREE.Vector3(Math.cos(a), Math.sin(a), 0).multiplyScalar(-1);
-      g.add(new THREE.Mesh(flagellum(new THREE.Vector3(x, y, -0.1).addScaledVector(d, L / 2), d, 5.5 + Math.random() * 1.5, 0.35, 2.2), flagMat));
+      const nk = 1 + (Math.round(x * 7 + y * 3) & 1) + (x > 2 ? 1 : 0);   // 片方の端だけから 1〜3 本（本数は株で違う。SBW25 株は平均 1.5 本）
+      for (let k = 0; k < nk; k++) {
+        const dk = d.clone().applyAxisAngle(new THREE.Vector3(0, 0, 1), (k - 1) * 0.22); const side = new THREE.Vector3(-d.y, d.x, 0);
+        g.add(new THREE.Mesh(flagellum(new THREE.Vector3(x, y, -0.1).addScaledVector(d, L / 2 - 0.1).addScaledVector(side, (k - 1) * 0.18), dk, 5.0 + Math.random() * 1.5, 0.3, 2.2), flagMat)); }
     }
     groups['pseudomonas-fluorescens'] = g;
   }
@@ -91,13 +97,28 @@ export async function buildMicroscope(base: string) {
   }
   for (const g of Object.values(groups)) { g.visible = false; scene.add(g); }
 
-  const frame = document.createElement('div'); frame.className = 'scope'; frame.innerHTML = '<div class="scope-tag">拡大像<small>光学顕微鏡で見た姿</small></div><div class="scope-name"></div><div class="scope-scale"></div>'; document.body.append(frame);
-  let cur: string | null = null, t = 0;
+  // 左：本物の顕微鏡写真（許諾つき、出典を表示）。右：ゲームの拡大像（この枠の位置に WebGL で描き足す）
+  const frame = document.createElement('div'); frame.className = 'scope';
+  frame.innerHTML = '<div class="scope-photo"><img alt=""><div class="scope-tag">本物（ほんもの）の写真（しゃしん）<small></small></div><div class="scope-credit"></div></div>'
+    + '<div class="scope-3d"><div class="scope-tag">ゲームの拡大像（かくだいぞう）<small>光学顕微鏡で見た姿</small></div><div class="scope-scale"></div></div><div class="scope-name"></div>';
+  document.body.append(frame);
+  const pane3d = frame.querySelector('.scope-3d') as HTMLElement, img = frame.querySelector('.scope-photo img') as HTMLImageElement;
+  let cur: string | null = null, t = 0, photoI = 0, photoT = 0; let photos: Photo[] = [];
+  const setPhoto = (i: number) => { const ph = photos[i]; if (!ph) return; img.src = base + ph.src; frame.querySelector('.scope-photo small')!.textContent = ph.caption; frame.querySelector('.scope-credit')!.textContent = '出典：' + ph.credit; };
   const SCALE: Record<string, string> = { 'bacillus-subtilis': '― 5 µm', 'pseudomonas-fluorescens': '― 5 µm', colpoda: '― 20 µm', 'paramacrobiotus-metropolitanus': '― 100 µm' };
   return {
-    has: (id: string) => id in groups,
-    show(id: string, name: string) { if (!(id in groups)) return; cur = id; t = 0; for (const [k, g] of Object.entries(groups)) g.visible = k === id; frame.querySelector('.scope-name')!.textContent = name; frame.querySelector('.scope-scale')!.textContent = SCALE[id] ?? ''; frame.classList.add('on'); },
-    hide() { cur = null; frame.classList.remove('on'); for (const g of Object.values(groups)) g.visible = false; },
+    has: (id: string) => id in groups || id in PHOTOS,
+    /** 写真だけ（3D の拡大像なし）のときは、枠を半分の幅にする。地上の場面のシロツメクサなど */
+    show(id: string, name: string) {
+      if (!(id in groups) && !(id in PHOTOS)) return;
+      cur = id in groups ? id : null; t = 0; for (const [k, g] of Object.entries(groups)) g.visible = k === id;
+      photos = (PHOTOS as Record<string, Photo[]>)[id] ?? []; photoI = 0; photoT = 0; setPhoto(0);
+      frame.classList.toggle('photo-only', !(id in groups)); frame.classList.toggle('no-photo', photos.length === 0);
+      frame.querySelector('.scope-name')!.textContent = name; frame.querySelector('.scope-scale')!.textContent = SCALE[id] ?? ''; frame.classList.add('on');
+    },
+    hide() { cur = null; photos = []; frame.classList.remove('on'); for (const g of Object.values(groups)) g.visible = false; },
+    /** 写真を数秒ごとに切り替える（本体の描画の有無に関係なく呼ぶ） */
+    tick(dt: number) { if (photos.length < 2 || !frame.classList.contains('on')) return; photoT += dt; if (photoT > 7) { photoT = 0; photoI = (photoI + 1) % photos.length; setPhoto(photoI); } },
     /** 本体を描いたあとに呼ぶ。画面の右上に、枠の中だけ描き足す */
     render(renderer: THREE.WebGPURenderer, dt: number) {
       if (!cur) return; t += dt; const g = groups[cur];
@@ -106,8 +127,9 @@ export async function buildMicroscope(base: string) {
         for (const m of g.userData.meshes as THREE.Mesh[]) { const d = m.morphTargetDictionary!, inf = m.morphTargetInfluences!; inf.fill(0); const x = ph % 4, i = Math.floor(x), f = x - i; inf[d[KEYS[i]]] = 1 - f; inf[d[KEYS[(i + 1) % 4]]] = f; }
         g.rotation.y = Math.sin(t * 0.3) * 0.35;
       } else if (cur === 'colpoda') g.rotation.z = Math.sin(t * 0.25) * 0.15; else g.rotation.z = Math.sin(t * 0.2) * 0.06;
-      const r = frame.getBoundingClientRect(), dpr = renderer.getPixelRatio(), H = renderer.domElement.height / dpr;
-      const x = r.left, y = r.top, w = r.width, h = r.height;   // WebGPURenderer の表示領域は左上が原点（WebGL 2 で動いているときも同じ） if (w < 10) return;
+      const r = pane3d.getBoundingClientRect(), dpr = renderer.getPixelRatio(), H = renderer.domElement.height / dpr;
+      const x = r.left, y = r.top, w = r.width, h = r.height;   // WebGPURenderer の表示領域は左上が原点（WebGL 2 で動いているときも同じ）
+      if (w < 10) return;
       camera.aspect = w / h; camera.updateProjectionMatrix();
       const ac = renderer.autoClear, cc = renderer.getClearColor(new THREE.Color()), ca = renderer.getClearAlpha();
       renderer.setScissorTest(true); renderer.setScissor(x, y, w, h); renderer.setViewport(x, y, w, h);

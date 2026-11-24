@@ -1,0 +1,22 @@
+{
+  "paramacrobiotus-metropolitanus": [
+    { "src": "photos/tardigrade-1.webp", "caption": "同じ属（ぞく）のクマムシ Paramacrobiotus sp.（明視野）", "credit": "Pete Lypkie / iNaturalist / CC BY" },
+    { "src": "photos/tardigrade-2.webp", "caption": "近い仲間のクマムシ（同じチョウメイムシ科）", "credit": "iNaturalist / CC0" }
+  ],
+  "colpoda": [
+    { "src": "photos/colpoda-1.webp", "caption": "コルポダ（右）と、分裂中のシスト（左）", "credit": "crseaquist / iNaturalist / CC BY" },
+    { "src": "photos/colpoda-2.webp", "caption": "Colpoda cucullus（微分干渉、400 倍）", "credit": "Picturepest / Wikimedia Commons / CC BY 2.0" }
+  ],
+  "bacillus-subtilis": [
+    { "src": "photos/bacillus-2.webp", "caption": "枯草菌の鎖（位相差顕微鏡）", "credit": "Pandey et al. 2013, PLoS ONE / CC BY" },
+    { "src": "photos/bacillus-1.webp", "caption": "枯草菌（暗い背景で光って見える撮り方）", "credit": "Josef Reischig / Wikimedia Commons / CC BY-SA 3.0" }
+  ],
+  "pseudomonas-fluorescens": [
+    { "src": "photos/pseudomonas-1.webp", "caption": "Pseudomonas fluorescens SBW25（位相差顕微鏡）", "credit": "eLife 98218 / CC BY 4.0" },
+    { "src": "photos/pseudomonas-2.webp", "caption": "シュードモナスの仲間の鞭毛（電子顕微鏡）", "credit": "Jorgevielmasalazar / Wikimedia Commons / CC BY 4.0" }
+  ],
+  "trifolium-repens": [
+    { "src": "photos/clover-1.webp", "caption": "シロツメクサの芽生え（子葉と最初の本葉）", "credit": "Krzysztof Ziarnek, Kenraiz / Wikimedia Commons / CC BY-SA 4.0" },
+    { "src": "photos/clover-2.webp", "caption": "シロツメクサの芽生え", "credit": "Salicyna / Wikimedia Commons / CC BY-SA 4.0" }
+  ]
+}
