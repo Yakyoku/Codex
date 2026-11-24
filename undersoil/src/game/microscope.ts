@@ -42,7 +42,7 @@ export async function buildMicroscope(base: string) {
 
   // 枯草菌：両端の丸い棒（2.5 µm）。鎖と単独。多くは中に楕円の芽胞。まわりに細い鞭毛が数本
   {
-    const g = new THREE.Group(); const cell = bf([0.30, 0.30, 0.28], { speck: 0.6, speckScale: 9, speckCol: [0.22, 0.22, 0.2], opacity: 0.88 });   // 位相差の写真では、生きた細胞は暗い灰色の棒に見える
+    const g = new THREE.Group(); const cell = bf([0.18, 0.18, 0.17], { speck: 0.5, speckScale: 9, speckCol: [0.12, 0.12, 0.11], opacity: 0.93 });   // 位相差の写真では、生きた細胞は暗い灰色の棒に見える
     const spore = bf([0.93, 0.92, 0.86], { edge: 1.0, opacity: 0.95 });   // 芽胞は光をよく曲げ、明るく光って見える（位相差・明視野の写真）
     // 写真（位相差）に合わせる：細長い棒（長さ:太さ ≒ 4:1）が、端どうしでつながって鎖になる。芽胞は一部の細胞だけで、光を強く返す小さなだ円
     const L = 3.4, R = 0.42;
@@ -62,7 +62,7 @@ export async function buildMicroscope(base: string) {
   }
   // シュードモナス：やや短い棒（1.9 µm）。わずかに黄緑。片方の端から、長く波打つ鞭毛が数本の束
   {
-    const g = new THREE.Group(); const cell = bf([0.27, 0.27, 0.23], { speck: 0.6, speckScale: 9, speckCol: [0.2, 0.2, 0.17], opacity: 0.9 });   // 位相差の写真では、暗い灰色の短い棒
+    const g = new THREE.Group(); const cell = bf([0.15, 0.15, 0.13], { speck: 0.5, speckScale: 9, speckCol: [0.1, 0.1, 0.09], opacity: 0.95 });   // 位相差の写真では、暗い灰色の短い棒
     const L = 2.7, R = 0.55;
     const layout: [number, number, number][] = [[-4.6, -0.6, 1.2], [-1.0, 3.4, 0.0], [-0.6, 0.7, 0.35], [1.3, -0.6, 1.3], [2.3, -0.4, 1.4], [3.0, 2.2, 1.2], [3.6, -1.6, 0.9], [4.6, 1.2, 0.5]];
     for (const [x, y, a] of layout) {
