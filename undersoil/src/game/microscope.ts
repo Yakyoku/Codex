@@ -78,8 +78,8 @@ export async function buildMicroscope(base: string) {
   // コルポダ：腎臓形。中は粒々で、黄褐色の食胞がたくさん、灰色の大核が 1 つ、口のくぼみ。縁に細かい繊毛
   {
     const gl = await loadGLB(base, 'models/creatures/colpoda.glb'); const g = new THREE.Group();
-    const body = bf([0.56, 0.48, 0.38], { speck: 1.0, speckScale: 30, speckCol: [0.36, 0.28, 0.16], opacity: 0.6 });
-    const vac = bf([0.40, 0.30, 0.13], { speck: 0.8, speckScale: 40, speckCol: [0.22, 0.16, 0.06], edge: 1.0, opacity: 0.85 });
+    const body = bf([0.50, 0.45, 0.36], { speck: 1.0, speckScale: 75, speckCol: [0.26, 0.22, 0.15], edge: 1.0, opacity: 0.82 });   // 写真：中は細かい粒がぎっしり、輪郭は太く暗い
+    const vac = bf([0.42, 0.37, 0.26], { speck: 0.8, speckScale: 60, speckCol: [0.28, 0.24, 0.16], edge: 0.7, opacity: 0.45 });   // 食胞は、粒の中に溶けこむ程度（写真）
     const nuc = bf([0.42, 0.38, 0.29], { speck: 0.9, speckScale: 50, speckCol: [0.28, 0.25, 0.18], edge: 0.8, opacity: 0.7 });
     const cil = new THREE.MeshBasicNodeMaterial({ transparent: true, depthWrite: false, side: THREE.DoubleSide });
     { const rim = oneMinus(saturate(abs(dot(normalView, positionViewDirection)))); const u = attribute('uv', 'vec2'); const row = u.x.mul(80.0).fract();
