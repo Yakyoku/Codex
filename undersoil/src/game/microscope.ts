@@ -43,14 +43,20 @@ export async function buildMicroscope(base: string) {
   // 枯草菌：両端の丸い棒（2.5 µm）。鎖と単独。多くは中に楕円の芽胞。まわりに細い鞭毛が数本
   {
     const g = new THREE.Group(); const cell = bf([0.66, 0.63, 0.62], { speck: 0.9, speckScale: 9, speckCol: [0.5, 0.48, 0.44], opacity: 0.75 });
-    const spore = bf([0.46, 0.42, 0.33], { edge: 1.0, opacity: 0.9 });
-    const L = 3.4, R = 0.62;
-    const layout: [number, number, number, boolean][] = [[-5.4, 1.2, 0.5, true], [-2.6, 3.8, 1.25, true], [1.8, 4.2, 1.0, true], [-3.2, -1.6, 0.25, false], [-0.4, -0.4, 0.62, true], [1.8, 1.1, 0.62, false], [0.6, -1.5, 0.35, true], [4.3, -0.9, 0.15, true], [3.0, -3.6, -0.45, true]];
-    for (const [x, y, a, sp] of layout) {
-      const c = rod(L, R, cell); c.position.set(x, y, 0); c.rotation.z = a + Math.PI / 2; g.add(c);
-      if (sp) { const s = new THREE.Mesh(new THREE.SphereGeometry(1, 20, 12), spore); s.scale.set(R * 0.62, L * 0.2, R * 0.62); s.position.copy(c.position).add(new THREE.Vector3(Math.cos(a), Math.sin(a), 0).multiplyScalar((Math.random() - 0.3) * 0.6)); s.rotation.z = c.rotation.z; s.renderOrder = 2; g.add(s); }
-      for (let k = 0; k < 3; k++) { const ang = a + Math.PI / 2 + (k - 1) * 1.1 + 0.4; const d = new THREE.Vector3(Math.cos(ang), Math.sin(ang), 0); const p0 = new THREE.Vector3(x, y, -0.1).addScaledVector(new THREE.Vector3(Math.cos(a), Math.sin(a), 0), (k - 1) * L * 0.35).addScaledVector(d, R * 0.9);
-        g.add(new THREE.Mesh(flagellum(p0, d, 2.6 + Math.random(), 0.25, 1.6), flagMat)); }
+    const spore = bf([0.93, 0.92, 0.86], { edge: 1.0, opacity: 0.95 });   // 芽胞は光をよく曲げ、明るく光って見える（位相差・明視野の写真）
+    // 写真（位相差）に合わせる：細長い棒（長さ:太さ ≒ 4:1）が、端どうしでつながって鎖になる。芽胞は一部の細胞だけで、光を強く返す小さなだ円
+    const L = 3.4, R = 0.42;
+    const chains: [number, number, number, number][] = [[-6.2, 2.6, -0.35, 3], [-1.2, 3.6, 0.15, 2], [2.6, 4.0, -0.6, 2], [-4.8, -1.4, 0.5, 2], [-0.6, -0.2, -0.15, 4], [3.6, 0.6, 0.9, 3], [1.2, -3.4, 0.05, 1], [5.6, -2.6, 0.35, 1]];
+    let ci = 0;
+    for (const [x0, y0, a0, n] of chains) {
+      let x = x0, y = y0, a = a0;
+      for (let k = 0; k < n; k++, ci++) {
+        const c = rod(L, R, cell); c.position.set(x, y, 0); c.rotation.z = a + Math.PI / 2; g.add(c);
+        if (ci % 3 === 1) { const s = new THREE.Mesh(new THREE.SphereGeometry(1, 20, 12), spore); s.scale.set(R * 0.7, L * 0.18, R * 0.7); s.position.copy(c.position).add(new THREE.Vector3(Math.cos(a), Math.sin(a), 0).multiplyScalar(L * 0.22)); s.rotation.z = c.rotation.z; s.renderOrder = 2; g.add(s); }
+        if (k === 0 || ci % 2 === 0) for (let f = 0; f < 2; f++) { const ang = a + Math.PI / 2 + (f ? 1 : -1) * 1.2; const d = new THREE.Vector3(Math.cos(ang), Math.sin(ang), 0); const p0 = new THREE.Vector3(x, y, -0.1).addScaledVector(new THREE.Vector3(Math.cos(a), Math.sin(a), 0), (f - 0.5) * L * 0.5).addScaledVector(d, R * 0.9);
+          g.add(new THREE.Mesh(flagellum(p0, d, 2.4 + (ci % 3) * 0.4, 0.22, 1.6, 0.025), flagMat)); }
+        const na = a + ((ci * 37) % 7 - 3) * 0.06; x += Math.cos(a) * (L * 0.5 + 0.04) + Math.cos(na) * (L * 0.5); y += Math.sin(a) * (L * 0.5 + 0.04) + Math.sin(na) * (L * 0.5); a = na;
+      }
     }
     groups['bacillus-subtilis'] = g;
   }

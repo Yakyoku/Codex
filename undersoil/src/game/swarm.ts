@@ -72,7 +72,7 @@ export function buildSwarm(colliders: Collider[], cellOf: (p: THREE.Vector3) => 
   //   枯草菌：多くは細胞の中に楕円の芽胞（くすんだ灰緑色で、縁がくっきり）。まわりに細く波打つ鞭毛が数本
   //   シュードモナス：やや短く、わずかに黄緑がかる。片方の端から長く波打つ鞭毛が数本の束（P. fluorescens は 1 本より多い極鞭毛。電子顕微鏡の写真で確認）
   const rim = pow(oneMinus(saturate(dot(normalView, positionViewDirection))), 2.0);
-  const R0 = species === 'bacillus' ? 0.04 : 0.035, HL = species === 'bacillus' ? 0.085 : 0.06;
+  const R0 = species === 'bacillus' ? 0.04 : 0.035, HL = species === 'bacillus' ? 0.11 : 0.06;   // 枯草菌は長さ約 3µm・太さ 0.8µm（写真の細長さ）
   const grain = smoothstep(0.55, 0.85, mx_noise_float(lp.mul(90.0).add(aPh.mul(13.0))).add(0.5));
   const base = species === 'bacillus' ? vec3(0.46, 0.45, 0.44) : vec3(0.44, 0.44, 0.36);
   let col = base.mul(mix(float(1.0), float(0.72), grain));
