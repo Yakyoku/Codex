@@ -6,9 +6,9 @@ import type { Collider } from './world';
 export interface WaterBridges { mesh: THREE.InstancedMesh; count: number; sync(waterOfCell: (cell: number) => number): void; centers: THREE.Vector3[]; cells: number[]; }
 
 /** 鼓形（両端が広く、まん中がくびれた回転体）。両端は粒の表面に沿って広がる */
-function bridgeGeometry(seg = 20, rings = 10) {
+function bridgeGeometry(seg = 28, rings = 18) {
   const pts: THREE.Vector2[] = [];
-  for (let i = 0; i <= rings; i++) { const t = (i / rings) * 2 - 1; pts.push(new THREE.Vector2(0.42 + 0.58 * Math.pow(Math.abs(t), 2.2), t * 0.5)); }
+  for (let i = 0; i <= rings; i++) { const t = (i / rings) * 2 - 1, a = Math.abs(t); pts.push(new THREE.Vector2(0.35 + 0.7 * Math.pow(a, 2.4), t * 0.5)); }
   return new THREE.LatheGeometry(pts, seg);
 }
 
@@ -19,10 +19,10 @@ export function buildBridges(colliders: Collider[], pathSamples: THREE.Vector3[]
     const a = colliders[i], b = colliders[j]; if (a.r < 1.4 && b.r < 1.4) continue;
     const dx = b.x - a.x, dy = b.y - a.y, dz = b.z - a.z, d = Math.hypot(dx, dy, dz), gap = d - a.r - b.r;
     const small = Math.min(a.r, b.r);
-    if (gap > small * 0.45 || gap < -small * 0.9) continue;
+    if (gap > small * 0.12 || gap < -small * 0.9) continue;   // 接している所だけ
     const t = (a.r + gap * 0.5) / d; const p = new THREE.Vector3(a.x + dx * t, a.y + dy * t, a.z + dz * t);
     const dp = nearPath(p); if (dp > 20) continue;
-    found.push({ p, axis: new THREE.Vector3(dx, dy, dz).divideScalar(d), r: small * 0.62, len: Math.max(small * 0.5, gap + small * 0.7), cell: cellOf(p) });
+    found.push({ p, axis: new THREE.Vector3(dx, dy, dz).divideScalar(d), r: small * 0.55, len: Math.max(small * 0.35, gap + small * 0.45), cell: cellOf(p) });
   }
   found.sort((x, y) => y.r - x.r); found.length = Math.min(found.length, opts.max);
   const geo = bridgeGeometry();
@@ -35,18 +35,13 @@ export function buildBridges(colliders: Collider[], pathSamples: THREE.Vector3[]
   const wob = sin(time.mul(1.3).add(positionLocal.y.mul(6.0))).mul(0.012);
   m.positionNode = vec3(positionLocal.x.mul(waist.add(wob)), positionLocal.y, positionLocal.z.mul(waist.add(wob)));
   const fres = pow(oneMinus(saturate(dot(normalView, positionViewDirection).abs())), 3.0);
-  m.roughnessNode = float(0.04); m.metalnessNode = float(0);
-  m.ior = 1.333; m.clearcoat = 1; m.clearcoatRoughness = 0.03;
-  if (opts.refraction.startsWith('screen')) {
-    // 水を通して向こう側がゆがんで見える（画面の写し取りを、法線でずらして読む）
-    const uvR = screenUV.add(normalView.xy.mul(0.045).mul(a));
-    m.colorNode = vec3(0.02, 0.025, 0.03);
-    m.backdropNode = viewportSharedTexture(uvR).rgb.mul(vec3(0.93, 0.97, 1.0));
-    m.opacityNode = saturate(a.mul(4.0)).mul(mix(float(0.92), float(1.0), fres));
-  } else {
-    m.colorNode = vec3(0.10, 0.12, 0.13);
-    m.opacityNode = saturate(a.mul(4.0)).mul(mix(float(0.16), float(0.85), fres));
-  }
+  m.roughnessNode = float(0.02); m.metalnessNode = float(0);
+  m.ior = 1.333; m.clearcoat = 1; m.clearcoatRoughness = 0.0; m.envMapIntensity = 2.5;
+  m.colorNode = vec3(0.02, 0.025, 0.03);
+  const edge = pow(fres, float(2.5));
+  m.emissiveNode = vec3(0.16, 0.18, 0.2).mul(edge).mul(saturate(a.mul(3.0)));        // 縁の明るい線（水面が光を受ける所）
+  m.opacityNode = saturate(a.mul(4.0)).mul(mix(float(0.05), float(0.7), fres));
+  void viewportSharedTexture; void screenUV;
   void normalLocal;
   const mesh = new THREE.InstancedMesh(geo, m, found.length); mesh.name = 'waterBridges'; mesh.renderOrder = 5;
   const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), up = new THREE.Vector3(0, 1, 0);

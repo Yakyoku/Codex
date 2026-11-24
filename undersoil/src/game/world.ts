@@ -8,7 +8,7 @@ import layout from '../data/stage1.layout.json';
 
 export interface Collider { x: number; y: number; z: number; r: number; }
 interface Placement { variant: string; lod: 0 | 1 | 2; pos: THREE.Vector3; quat: THREE.Quaternion; scale: THREE.Vector3; cell: number; seed: number; }
-const VARIANTS: Record<GrainKind, string[]> = { quartz: ['quartz_a', 'quartz_b', 'quartz_c'], aggregate: ['aggregate_a', 'aggregate_b', 'aggregate_c'], humus: ['humus_a', 'humus_b'], clay: ['clay_a'] };
+const VARIANTS: Record<GrainKind, string[]> = { quartz: ['quartz_a', 'quartz_b', 'quartz_c'], aggregate: ['aggregate_a', 'aggregate_b', 'aggregate_c'], humus: ['humus_a', 'humus_b', 'humus_c'], clay: ['clay_a'] };
 const kindOf = (v: string) => v.split('_')[0] as GrainKind;
 
 export interface World {
@@ -17,6 +17,7 @@ export interface World {
   /** 区画の状態（水・活力）を粒の見た目に反映する */
   syncWetness(): void;
   stats: { instances: number; triangles: number; drawCalls: number };
+  cavern: { center: THREE.Vector3; radius: number };
   /** カメラの前にある、その種類の粒（紹介カードで指し示すため） */
   find(kind: GrainKind, from: THREE.Vector3, fwd: THREE.Vector3): { p: THREE.Vector3; r: number; geo?: THREE.BufferGeometry; matrix?: THREE.Matrix4 } | null;
 }
@@ -29,6 +30,9 @@ export async function buildWorld(base: string, opts: { grainLod: 0 | 1; density:
   const nearest = (p: THREE.Vector3) => { let bi = 0, bd = 1e9; for (let i = 0; i < samples.length; i++) { const d = samples[i].distanceToSquared(p); if (d < bd) { bd = d; bi = i; } } return { i: bi, d: Math.sqrt(bd) }; };
   const cellOfSample = (i: number) => Math.min(N - 1, Math.floor((i / (samples.length - 1)) * N));
   const seedC = new THREE.Vector3(...(layout.seedCenter as [number, number, number])), seedR = new THREE.Vector3(...(layout.seedRadii as [number, number, number]));
+  const cav = layout.cavern as { center: [number, number, number]; radius: number };
+  const cavC = new THREE.Vector3(...cav.center);
+  const inCavern = (p: THREE.Vector3, pad: number) => p.distanceTo(cavC) < cav.radius + pad;
   const inSeed = (p: THREE.Vector3, pad: number) => { const dx = (p.x - seedC.x) / (seedR.x + pad), dy = (p.y - seedC.y) / (seedR.y + pad), dz = (p.z - seedC.z) / (seedR.z + pad); return dx * dx + dy * dy + dz * dz < 1; };
 
   const placements: Placement[] = []; const colliders: Collider[] = [];
@@ -38,11 +42,11 @@ export async function buildWorld(base: string, opts: { grainLod: 0 | 1; density:
   const big: Collider[] = [];
   const B = layout.box;
   for (let k = 0; k < layout.bigTries; k++) {
-    const r = rng.range(layout.bigRadius[0], layout.bigRadius[1]) * (k < layout.bigTries * 0.5 ? 1 : 0.6);
+    const r = rng.range(layout.bigRadius[0], layout.bigRadius[1]) * (k < layout.bigTries * 0.4 ? 1 : k < layout.bigTries * 0.75 ? 0.6 : 0.33);   // 大→中→小の順に、すき間を埋める
     const p = new THREE.Vector3(rng.range(B[0], B[1]), rng.range(B[2], B[3]), rng.range(B[4], B[5]));
     const n = nearest(p);
     const rc = layout.corridor * (0.8 + 0.5 * Math.sin(n.i * 0.21) ** 2);
-    if (n.d < r * 0.92 + rc || inSeed(p, r * 0.7)) continue;
+    if (n.d < r * 0.92 + rc || inSeed(p, r * 0.7) || inCavern(p, r * 0.6)) continue;
     if (n.d > layout.shell + r) continue; // 道から遠すぎる粒は見えないので置かない
     if (big.some((o) => Math.hypot(o.x - p.x, o.y - p.y, o.z - p.z) < (o.r + r) * 0.72)) continue;
     big.push({ x: p.x, y: p.y, z: p.z, r });
@@ -50,6 +54,24 @@ export async function buildWorld(base: string, opts: { grainLod: 0 | 1; density:
     placements.push({ variant: rng.pick(isAgg ? VARIANTS.aggregate : VARIANTS.quartz), lod: n.d < r + 14 ? opts.grainLod : 1, pos: p, quat: rq(),
       scale: new THREE.Vector3(r * rng.range(0.95, 1.12), r * rng.range(0.85, 1.05), r * rng.range(0.95, 1.12)), cell: cellOfSample(n.i), seed: rng.next() });
     colliders.push({ x: p.x, y: p.y, z: p.z, r: r * 0.9 });
+  }
+  // 1b) 寄せる：一番近い粒とのすき間が空いていたら、道をふさがない範囲で、接するまで寄せる
+  const bigPl = placements.slice();
+  for (let pass = 0; pass < 3; pass++) for (let i = 0; i < big.length; i++) {
+    const a = big[i]; let bj = -1, bg = 1e9;
+    for (let j = 0; j < big.length; j++) { if (j === i) continue; const b = big[j]; const g = Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z) - (a.r + b.r) * 0.95; if (g < bg) { bg = g; bj = j; } }
+    if (bj < 0 || bg <= 0 || bg > a.r) continue;
+    const b = big[bj], d = Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z), k = bg / d;
+    const np = new THREE.Vector3(a.x + (b.x - a.x) * k, a.y + (b.y - a.y) * k, a.z + (b.z - a.z) * k);
+    const nn = nearest(np); if (nn.d < a.r * 0.92 + layout.corridor * 0.8 || inCavern(np, a.r * 0.6)) continue;
+    a.x = np.x; a.y = np.y; a.z = np.z; bigPl[i].pos.copy(np); colliders[i].x = np.x; colliders[i].y = np.y; colliders[i].z = np.z;
+  }
+  // 1c) 奥の壁：見える範囲の外にも粒を詰めて、真っ黒な空間をなくす（軽い LOD2、当たり判定なし）
+  for (let k = 0; k < layout.wallTries; k++) {
+    const r = rng.range(layout.bigRadius[0], layout.bigRadius[1]) * 0.8;
+    const p = new THREE.Vector3(rng.range(B[0] - 30, B[1] + 20), rng.range(B[2] - 30, B[3] + 30), rng.range(B[4] - 30, B[5] + 30));
+    const n = nearest(p); if (n.d < layout.shell + r * 0.5 || n.d > layout.shell + 45 || inSeed(p, r * 0.5)) continue;
+    placements.push({ variant: rng.pick(rng.next() < 0.3 ? VARIANTS.aggregate : VARIANTS.quartz), lod: 2, pos: p, quat: rq(), scale: new THREE.Vector3(r, r * 0.9, r), cell: cellOfSample(n.i), seed: rng.next() });
   }
   // 2) シルト・団粒・腐植：道から外へ向かって進み、最初に当たった砂粒の表面に置く（下向きを多めに＝積もる）
   const dir = new THREE.Vector3(), q = new THREE.Vector3();
@@ -68,6 +90,18 @@ export async function buildWorld(base: string, opts: { grainLod: 0 | 1; density:
       if (collide && r > 1.6) colliders.push({ x: pos.x, y: pos.y, z: pos.z, r: r * 0.85 });
     }
   };
+  // 2b) 接点：粒と粒が接している所には、細かい粒と団粒がたまる
+  for (let i = 0; i < big.length; i++) for (let j = i + 1; j < big.length; j++) {
+    const a = big[i], b = big[j], d = Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z); if (d > (a.r + b.r) * 1.02) continue;
+    const t = a.r / (a.r + b.r), c = new THREE.Vector3(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t, a.z + (b.z - a.z) * t);
+    if (nearest(c).d > 22) continue;
+    const ax = new THREE.Vector3(b.x - a.x, b.y - a.y, b.z - a.z).normalize(), u = new THREE.Vector3(rng.range(-1, 1), rng.range(-1, 1), rng.range(-1, 1)).cross(ax).normalize(), w = ax.clone().cross(u);
+    const ring = Math.min(a.r, b.r) * 0.45, cnt = Math.round(rng.range(4, 9) * opts.density);
+    for (let k = 0; k < cnt; k++) { const ang = rng.range(0, 6.28), rr = ring * rng.range(0.8, 1.15), r = rng.range(0.4, 1.6) * (rng.next() < 0.2 ? 1.8 : 1);
+      const pos = c.clone().addScaledVector(u, Math.cos(ang) * rr).addScaledVector(w, Math.sin(ang) * rr);
+      const kind: GrainKind = rng.next() < 0.6 ? 'aggregate' : rng.next() < 0.6 ? 'quartz' : 'humus';
+      placements.push({ variant: rng.pick(VARIANTS[kind]), lod: r > 1.4 && nearest(pos).d < 10 ? 1 : 2, pos, quat: rq(), scale: new THREE.Vector3(r, r * 0.85, r), cell: cellOfSample(nearest(pos).i), seed: rng.next() }); }
+  }
   scatter(Math.round(layout.midCount * opts.density), [['aggregate', 0.5], ['quartz', 0.3], ['humus', 0.2]], layout.midRadius as [number, number], 0.35, true);
   scatter(Math.round(layout.smallCount * opts.density), [['aggregate', 0.45], ['humus', 0.25], ['quartz', 0.3]], layout.smallRadius as [number, number], 0.2, false);
   scatter(Math.round(layout.clayCount * opts.density), [['clay', 1]], layout.clayRadius as [number, number], -0.05, false, true);
@@ -91,7 +125,7 @@ export async function buildWorld(base: string, opts: { grainLod: 0 | 1; density:
     const L = loaded.get(nm)!;
     const wet = new THREE.InstancedBufferAttribute(new Float32Array(list.length), 1); wet.setUsage(THREE.DynamicDrawUsage);
     const seedA = new THREE.InstancedBufferAttribute(new Float32Array(list.map((p) => p.seed)), 1);
-    const mesh = new THREE.InstancedMesh(L.geo[lod], makeSoilMaterial(kindOf(nm), L.na[lod], detail, wet, seedA, { cheap: opts.cheap }), list.length);
+    const mesh = new THREE.InstancedMesh(L.geo[lod], makeSoilMaterial(kindOf(nm), L.na[lod], detail, wet, seedA, { cheap: opts.cheap, style: nm === 'humus_a' ? 'charcoal' : nm === 'humus_b' ? 'tissue' : nm === 'humus_c' ? 'pellet' : undefined }), list.length);
     list.forEach((p, i) => mesh.setMatrixAt(i, m4.compose(p.pos, p.quat, p.scale)));
     mesh.instanceMatrix.needsUpdate = true; mesh.computeBoundingSphere(); mesh.name = `${nm}_L${lod}`;
     mesh.castShadow = lod === 0; mesh.receiveShadow = true;
@@ -102,7 +136,7 @@ export async function buildWorld(base: string, opts: { grainLod: 0 | 1; density:
   const grid = new SoilGrid(N);
   const centers = Array.from({ length: N }, (_, i) => path.getPointAt((i + 0.5) / N));
   const world: World = {
-    group, samples, distToPath: (p) => nearest(p).d, path, colliders, grid, cellCount: N, stats,
+    cavern: { center: cavC, radius: cav.radius }, group, samples, distToPath: (p) => nearest(p).d, path, colliders, grid, cellCount: N, stats,
     cellAt: (p) => cellOfSample(nearest(p).i), cellCenter: (i) => centers[i],
     find(kind, from, fwd) {
       let best: Placement | null = null, bs = -1; const d = new THREE.Vector3();

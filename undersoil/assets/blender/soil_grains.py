@@ -60,25 +60,53 @@ def make_quartz(seed):
     return o
 
 def make_aggregate(seed):
-    """団粒：シルトや粘土の細かい粒が、有機物の糊でゆるく固まった塊。大小の粒と、すき間（孔）がある"""
+    """団粒：シルトと粘土の細かい粒が、有機物の糊でゆるく固まった塊。輪郭はけば立ち、孔が多く、角ばったシルトの粒が混じる（写真で確認）"""
     rng = random.Random(seed); parts = []
-    core = ico(3, 0.5); core.scale = (1.0, 0.9, 0.8); parts.append(core)
-    for i in range(rng.randint(70, 84)):
-        d = Vector((rng.gauss(0, 1), rng.gauss(0, 1), rng.gauss(0, 0.85))).normalized() * (0.28 + 0.38 * rng.random() ** 0.7)
-        big = rng.random() < 0.18
-        p = ico(2, rng.uniform(0.2, 0.28) if big else rng.uniform(0.09, 0.17)); p.location = d
-        p.scale = (rng.uniform(0.6, 1.3), rng.uniform(0.6, 1.3), rng.uniform(0.5, 1.1))
-        p.rotation_euler = (rng.uniform(0, 3), rng.uniform(0, 3), rng.uniform(0, 3)); parts.append(p)
+    core = ico(3, 0.45); core.scale = (1.0, 0.85, 0.75); parts.append(core)
+    for i in range(rng.randint(150, 190)):
+        d = Vector((rng.gauss(0, 1), rng.gauss(0, 1), rng.gauss(0, 0.85))).normalized() * (0.25 + 0.5 * rng.random() ** 0.6)
+        r = 0.03 + 0.2 * rng.random() ** 2.5                                   # 大きさの幅が広い（小さい粒が多い）
+        angular = rng.random() < 0.3                                           # 角ばったシルトの粒
+        p = ico(1 if angular else 2, r); p.location = d
+        p.scale = (rng.uniform(0.6, 1.4), rng.uniform(0.6, 1.4), rng.uniform(0.5, 1.2)); p.rotation_euler = (rng.uniform(0, 3), rng.uniform(0, 3), rng.uniform(0, 3)); parts.append(p)
     o = join(parts); bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
-    remesh(o, 0.02); smooth(o, 1, 0.4)
-    displace_noise(o, [(2.2, 0.07, 'n'), (7.0, 0.035, 'ridge'), (18.0, 0.02, 'n'), (45.0, 0.008, 'ridge'), (90.0, 0.003, 'n')], seed)
+    remesh(o, 0.016); smooth(o, 1, 0.25)
+    # 孔：セル模様で表面をえぐる。けば：細かい凹凸を強く
+    displace_noise(o, [(2.0, 0.05, 'n'), (6.0, -0.06, 'cell'), (14.0, 0.025, 'ridge'), (40.0, 0.012, 'n'), (95.0, 0.005, 'n')], seed)
     return o
 
 def make_humus(seed):
-    """腐植：分解の進んだ有機物のかけら。平たく、ぼろぼろで、穴の多い形"""
+    """腐植その1：炭のかけら。黒く、角ばり、細かい孔が多い"""
     rng = random.Random(seed)
-    o = ico(6); o.scale = (1.0, rng.uniform(0.6, 0.8), rng.uniform(0.3, 0.42)); bpy.ops.object.transform_apply(scale=True)
-    displace_noise(o, [(1.6, 0.22, 'n'), (4.5, 0.1, 'ridge'), (12.0, 0.05, 'ridge'), (34.0, 0.016, 'n'), (80.0, 0.005, 'n')], seed)
+    o = ico(5); o.scale = (1.0, rng.uniform(0.5, 0.7), rng.uniform(0.35, 0.5)); bpy.ops.object.transform_apply(scale=True)
+    plane_cuts(o, 7, rng, depth=(0.45, 0.85)); remesh(o, 0.018)
+    displace_noise(o, [(3.0, 0.03, 'n'), (9.0, -0.05, 'cell'), (30.0, 0.012, 'ridge')], seed)
+    return o
+
+def make_humus_tissue(seed):
+    """腐植その2：分解途中の植物のかけら。薄く、丸まった帯。細胞の網目が見える（模様はマテリアルで描く）"""
+    rng = random.Random(seed)
+    bpy.ops.mesh.primitive_grid_add(x_subdivisions=48, y_subdivisions=16, size=2)
+    o = bpy.context.object; o.scale = (1.0, 0.32, 1); bpy.ops.object.transform_apply(scale=True)
+    for v in o.data.vertices:
+        x, y = v.co.x, v.co.y
+        v.co.z = 0.18 * math.sin(x * 1.7 + 0.5) + 0.25 * (y / 0.32) ** 2 * 0.4 + 0.03 * math.sin(x * 9) * math.sin(y * 20)
+        if abs(y) > 0.3 * (0.75 + 0.25 * math.sin(x * 5 + seed)): v.co.y *= 0.92   # ぼろぼろの縁
+    m = o.modifiers.new('s', 'SOLIDIFY'); m.thickness = 0.06
+    bpy.context.view_layer.objects.active = o; bpy.ops.object.modifier_apply(modifier='s')
+    remesh(o, 0.014); smooth(o, 2, 0.4)
+    displace_noise(o, [(12.0, 0.01, 'n'), (35.0, 0.006, 'n')], seed)
+    return o
+
+def make_humus_pellet(seed):
+    """腐植その3：小さな動物（トビムシ・ダニ）のふん。丸いつぶが集まったもの"""
+    rng = random.Random(seed); parts = []
+    for i in range(rng.randint(5, 9)):
+        p = ico(3, rng.uniform(0.24, 0.34)); p.location = (rng.gauss(0, 0.17), rng.gauss(0, 0.15), rng.gauss(0, 0.12))
+        p.scale = (1.0, rng.uniform(0.75, 0.95), rng.uniform(0.75, 0.95)); parts.append(p)
+    o = join(parts); bpy.ops.object.transform_apply(location=True, scale=True)
+    remesh(o, 0.016); smooth(o, 2, 0.4)
+    displace_noise(o, [(8.0, 0.02, 'n'), (25.0, 0.008, 'n')], seed)
     return o
 
 def make_clay(seed):
@@ -98,7 +126,7 @@ def make_clay(seed):
 SPECS = [  # 名前, 作る関数, 種, LOD0 の面数, LOD1 の面数
     ('quartz_a', make_quartz, 1, 2200, 420, 110), ('quartz_b', make_quartz, 2, 2200, 420, 110), ('quartz_c', make_quartz, 5, 2200, 420, 110),
     ('aggregate_a', make_aggregate, 3, 3000, 600, 150), ('aggregate_b', make_aggregate, 8, 3000, 600, 150), ('aggregate_c', make_aggregate, 11, 3000, 600, 150),
-    ('humus_a', make_humus, 4, 2400, 480, 130), ('humus_b', make_humus, 9, 2400, 480, 130),
+    ('humus_a', make_humus, 4, 2400, 480, 130), ('humus_b', make_humus_tissue, 9, 2400, 480, 130), ('humus_c', make_humus_pellet, 12, 2000, 420, 120),
     ('clay_a', make_clay, 6, 900, 220, 48),
 ]
 
@@ -137,7 +165,7 @@ for name, fn, seed, t0n, t1n, t2n in SPECS:
     if PREVIEW:
         # 確認用：高解像度の形を4方向から描く（焼き込み元の形そのもの）
         b = mat.node_tree.nodes['Principled BSDF']
-        col = {'q': (0.55, 0.52, 0.47, 1), 'a': (0.16, 0.10, 0.06, 1), 'h': (0.035, 0.025, 0.018, 1), 'c': (0.42, 0.36, 0.28, 1)}[name[0]]
+        col = {'q': (0.55, 0.52, 0.47, 1), 'a': (0.16, 0.10, 0.06, 1), 'h': (0.08, 0.04, 0.02, 1), 'c': (0.42, 0.36, 0.28, 1)}[name[0]]
         b.inputs['Base Color'].default_value = col; b.inputs['Roughness'].default_value = 0.35 if name[0] == 'q' else 0.8
         lod0.hide_render = True; lod1.hide_render = True; lod2.hide_render = True
         from common import PREVIEW as PV

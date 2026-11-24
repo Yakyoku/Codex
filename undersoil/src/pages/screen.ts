@@ -88,7 +88,7 @@ async function main() {
   ($('loadBar') as HTMLElement).style.width = '100%';
   const begin = () => { started = true; audio.start(); setTimeout(() => $('loading').classList.add('hide'), 250); stopFacts(); if (wetQ === null && !testing) setTimeout(() => demo.start(), 2500); };
   // 確認用：?card=<id> で紹介カードをすぐ出す
-  const cardQ = Q.get('card'); if (cardQ && SPECIES[cardQ]) setTimeout(() => { const T: Record<string, () => Target> = { sand: grain('quartz'), aggregate: grain('aggregate'), humus: grain('humus'), clay: grain('clay'), 'water-film': bridge, 'bacillus-subtilis': bacteria, 'pseudomonas-fluorescens': bacteria, colpoda, 'trifolium-repens': seedling }; const t = T[cardQ]; showCard(SPECIES[cardQ], { narration: false, holdMs: 600000, pointing: !!t }); pointer.show(t ?? null); }, 50);
+  const cardQ = Q.get('card'); if (cardQ && SPECIES[cardQ]) setTimeout(() => { const T: Record<string, () => Target> = { sand: grain('quartz'), aggregate: grain('aggregate'), humus: grain('humus'), clay: grain('clay'), 'water-film': bridge, 'bacillus-subtilis': bacteria, 'pseudomonas-fluorescens': pseudo, colpoda, 'trifolium-repens': seedling, 'paramacrobiotus-metropolitanus': tardi }; const t = T[cardQ]; showCard(SPECIES[cardQ], { narration: false, holdMs: 600000, pointing: !!t }); pointer.show(t ?? null); }, 50);
   if (testing) begin(); else { const b = $('start') as HTMLButtonElement; b.hidden = false; b.addEventListener('click', begin, { once: true }); }
 
   // 出会いの順番（M1 の自動の流れ用。M3 で、プレイヤーの位置と行動に結び付ける）
@@ -101,7 +101,9 @@ async function main() {
     game.bridges.centers.forEach((c, i) => { if (world.grid.cells[game.bridges.cells[i]].water < 0.3) return; d.subVectors(c, camera.position); const dist = d.length(); if (dist < 3 || dist > 30) return; const cs = d.dot(f) / dist; if (cs < 0.85) return; const sc = cs / (1 + dist * 0.06); if (sc > bs) { bs = sc; best = c; } });
     return best ? { p: (best as THREE.Vector3).clone(), r: 2.5 } : null; };
   const bacteria = (): Target => game.swarm.find(camera.position, fwd());
+  const pseudo = (): Target => game.swarm2.find(camera.position, fwd());
   const colpoda = (): Target => { const p = game.creatures.nearest(camera.position); return p ? { p: p.clone(), r: 4.5 } : null; };
+  const tardi = (): Target => game.tardigrade.target();
   const seedling = (): Target => mode === 'surface' ? { p: new THREE.Vector3(0.3, surface.groundY + 1.2, 0.2), r: 3.2 } : null;
   let focusT: THREE.Vector3 | null = null;
   const enc = makeEncounters([
@@ -110,8 +112,9 @@ async function main() {
     { id: 'water-film', when: () => mode === 'soil' && cellW(1) > 0.4 && !!bridge(), target: bridge },
     { id: 'bacillus-subtilis', when: () => mode === 'soil' && cellM(2) > 0.3 && !!bacteria(), target: bacteria },
     { id: 'humus', when: () => mode === 'soil' && cellW(4) > 0.4 && !!grain('humus')(), target: grain('humus') },
-    { id: 'pseudomonas-fluorescens', when: () => mode === 'soil' && cellM(6) > 0.3 && !!bacteria(), target: bacteria },
+    { id: 'pseudomonas-fluorescens', when: () => mode === 'soil' && cellM(6) > 0.3 && !!pseudo(), target: pseudo },
     { id: 'colpoda', when: () => mode === 'soil' && game.creatures.anyActive(), target: colpoda },
+    { id: 'paramacrobiotus-metropolitanus', when: () => mode === 'soil' && game.tardigrade.active() && camera.position.distanceTo(world.cavern.center) < 70, target: tardi },
     { id: 'clay', when: () => mode === 'soil' && cellW(8) > 0.4 && !!grain('clay')(), target: grain('clay') },
     { id: 'trifolium-repens', when: () => mode === 'surface' && surface.growth > 0.75, target: seedling },
   ], { gapSec: 4, onShow: (_id, t) => { audio.chime(); pointer.show(t); }, onHide: () => { pointer.hide(); focusT = null; } });

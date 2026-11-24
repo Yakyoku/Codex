@@ -1,7 +1,7 @@
 // 土の粒のマテリアル（TSL）。WebGPU と WebGL 2 で同じ記述が動く。
 // 「濡れ」（0=乾いて粉をふいた状態、1=水の膜に覆われた状態）を粒ごとに持ち、色・粗さ・クリアコートを同時に動かす。
 import * as THREE from 'three/webgpu';
-import { texture, uv, vec3, float, mix, normalMap, positionWorld, normalWorld, triplanarTexture, instancedBufferAttribute, saturate, uniform, positionViewDirection, normalView, dot, pow, oneMinus } from 'three/tsl';
+import { texture, uv, vec3, float, mix, normalMap, positionWorld, positionLocal, normalWorld, triplanarTexture, instancedBufferAttribute, saturate, uniform, positionViewDirection, normalView, dot, pow, oneMinus, smoothstep, fract, floor, min, mx_worley_noise_float } from 'three/tsl';
 
 export type GrainKind = 'quartz' | 'aggregate' | 'humus' | 'clay';
 interface Look { dry: [number, number, number]; wet: [number, number, number]; roughDry: number; roughWet: number; coat: number; detail: number; bump: number; }
@@ -23,7 +23,7 @@ export const soilUniforms = {
   detailStrength: uniform(1),
 };
 
-export function makeSoilMaterial(kind: GrainKind, na: THREE.Texture, detail: THREE.Texture, wetAttr: THREE.InstancedBufferAttribute, seedAttr: THREE.InstancedBufferAttribute, opts: { cheap?: boolean; mottle?: number; tint?: [number, number, number] } = {}) {
+export function makeSoilMaterial(kind: GrainKind, na: THREE.Texture, detail: THREE.Texture, wetAttr: THREE.InstancedBufferAttribute, seedAttr: THREE.InstancedBufferAttribute, opts: { cheap?: boolean; mottle?: number; tint?: [number, number, number]; style?: 'charcoal' | 'tissue' | 'pellet' } = {}) {
   const L = LOOKS[kind];
   const m = new THREE.MeshPhysicalNodeMaterial();
   type F = ReturnType<typeof float>;
@@ -45,7 +45,26 @@ export function makeSoilMaterial(kind: GrainKind, na: THREE.Texture, detail: THR
   const dusty = mix(dryCol, vec3(0.40, 0.35, 0.29), dust.mul(kind === 'quartz' ? 0.3 : 0.55));
   const wetCol = vec3(...L.wet).mul(mix(float(0.7), float(1.25), d.g)).mul(tint);
   const col = mix(dusty, wetCol, wet).mul(mix(float(1), float(0.55), d.b.mul(kind === 'quartz' ? 0.2 : 1)));
-  m.colorNode = opts.tint ? col.mul(vec3(...opts.tint)) : col;
+  let colF = opts.tint ? col.mul(vec3(...opts.tint)) : col;
+  const pl = positionLocal;
+  if (opts.style === 'charcoal') {
+    // 炭：黒く、細かい孔の格子（木の細胞の名残）。孔はさらに暗い
+    const pores = smoothstep(0.08, 0.02, mx_worley_noise_float(pl.mul(vec3(22.0, 22.0, 6.0))));
+    colF = mix(vec3(0.018, 0.016, 0.015), vec3(0.045, 0.04, 0.036), d.g).mul(oneMinus(pores.mul(0.8)));
+  } else if (opts.style === 'tissue') {
+    // 植物のかけら：赤茶色。細長い細胞の網目（細胞壁の線が明るい）
+    const cx = fract(pl.x.mul(14.0)), cy = fract(pl.z.mul(5.0).add(floor(pl.x.mul(14.0)).mul(0.37)));
+    const walls = smoothstep(0.08, 0.0, min(min(cx, oneMinus(cx)), min(cy, oneMinus(cy))));
+    colF = mix(mix(vec3(0.16, 0.07, 0.03), vec3(0.24, 0.12, 0.05), d.g), vec3(0.36, 0.22, 0.11), walls.mul(0.7));
+  } else if (opts.style === 'pellet') {
+    // ふん：黒褐色で、細かい粒が固まった表面
+    colF = mix(vec3(0.035, 0.024, 0.016), vec3(0.07, 0.05, 0.035), d.r);
+  } else if (kind === 'aggregate') {
+    // 団粒：中に明るいシルトの粒が点々と見える
+    const silt = smoothstep(0.06, 0.02, mx_worley_noise_float(positionWorld.mul(3.2)));
+    colF = mix(colF, vec3(0.42, 0.38, 0.32), silt.mul(0.7).mul(oneMinus(wet.mul(0.5))));
+  }
+  m.colorNode = colF;
   m.roughnessNode = saturate(mix(float(L.roughDry), float(L.roughWet), wet).add(d.r.sub(0.5).mul(0.25)));
   m.metalnessNode = float(0);
   const DBG = typeof location !== 'undefined' ? new URLSearchParams(location.search) : new URLSearchParams();
@@ -60,7 +79,7 @@ export function makeSoilMaterial(kind: GrainKind, na: THREE.Texture, detail: THR
     const rim = pow(oneMinus(saturate(dot(normalView, positionViewDirection))), 2.0);
     m.emissiveNode = vec3(0.40, 0.36, 0.28).mul(rim).mul(0.35);                   // 縁の暖かい透け
     const stain = saturate(oneMinus(ao).mul(2.2).sub(0.3)).mul(saturate(d.g.mul(1.5).sub(0.2)));
-    m.colorNode = mix(m.colorNode as typeof col, vec3(0.32, 0.20, 0.07), stain.mul(0.6));   // くぼみの鉄のしみ
+    m.colorNode = mix(colF, vec3(0.32, 0.20, 0.07), stain.mul(0.6));   // くぼみの鉄のしみ
     m.transmission = 0; m.thickness = 0;
     m.ior = 1.54;
   }

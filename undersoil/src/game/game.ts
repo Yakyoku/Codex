@@ -6,9 +6,10 @@ import { buildWorld, type World } from './world';
 import { buildBridges, type WaterBridges } from './water';
 import { buildSwarm, type Swarm } from './swarm';
 import { buildCreatures, type Creatures } from './creatures';
+import { buildTardigrade, type Tardigrade } from './tardigrade';
 import { addLights, makeEnvironment, type Lights } from './env';
 
-export interface Game { focus: { value: number }; scene: THREE.Scene; camera: THREE.PerspectiveCamera; world: World; lights: Lights; bridges: WaterBridges; swarm: Swarm; creatures: Creatures; tier: QualityTier; q: (typeof quality)['pc-high']; update(dt: number, t: number): void; setWetAll(v: number): void; }
+export interface Game { focus: { value: number }; scene: THREE.Scene; camera: THREE.PerspectiveCamera; world: World; lights: Lights; bridges: WaterBridges; swarm: Swarm; swarm2: Swarm; creatures: Creatures; tardigrade: Tardigrade; tier: QualityTier; q: (typeof quality)['pc-high']; update(dt: number, t: number): void; setWetAll(v: number): void; }
 
 export async function createGame(renderer: THREE.WebGPURenderer, base: string, tier: QualityTier): Promise<Game> {
   const q = (quality as Record<string, (typeof quality)['pc-high']>)[tier];
@@ -20,23 +21,28 @@ export async function createGame(renderer: THREE.WebGPURenderer, base: string, t
   scene.add(world.group);
   const bridges = buildBridges(world.colliders, world.samples, world.cellAt, { refraction: 'env', max: tier === 'vr' ? 60 : 220 });
   scene.add(bridges.mesh);
-  const swarm = buildSwarm(world.colliders, world.cellAt, world.distToPath, q.swarmGpu ? Math.min(q.swarm, 12000) : q.swarm);
-  scene.add(swarm.mesh);
+  const nSw = q.swarmGpu ? Math.min(q.swarm, 12000) : q.swarm;
+  const swarm = buildSwarm(world.colliders, world.cellAt, world.distToPath, Math.round(nSw * 0.65), 'bacillus');
+  const swarm2 = buildSwarm(world.colliders, world.cellAt, world.distToPath, Math.round(nSw * 0.35), 'pseudomonas');
+  scene.add(swarm.mesh, swarm2.mesh);
   const creatures = await buildCreatures(base, world, { lod: tier === 'vr' ? 1 : 0, count: tier === 'vr' ? 2 : 3 });
   scene.add(creatures.group); if (typeof location !== 'undefined' && new URLSearchParams(location.search).has('nocreatures')) creatures.group.visible = false;
-  const syncAll = () => { world.syncWetness(); bridges.sync((c) => world.grid.cells[c].water); swarm.sync((c) => world.grid.cells[c].microbes); };
+  const tardigrade = await buildTardigrade(base, world, tier === 'vr' ? 1 : 0);
+  scene.add(tardigrade.group);
+  { const hq = typeof location !== 'undefined' ? new URLSearchParams(location.search).get('hide') : null; if (hq) scene.traverse((o) => { if (hq.split(',').some((h) => o.name.startsWith(h))) o.visible = false; }); }
+  const syncAll = () => { world.syncWetness(); bridges.sync((c) => world.grid.cells[c].water); swarm.sync((c) => world.grid.cells[c].microbes); swarm2.sync((c) => world.grid.cells[c].microbes * (world.grid.cells[c].water > 0.6 ? 1 : 0)); };   // シュードモナスは、水が十分にあるときだけ泳ぐ
   scene.environment = makeEnvironment(renderer);
   scene.environmentIntensity = 0.55;
   const lights = addLights(scene, camera, { shadows: q.shadows });
   let acc = 0, syncT = 0;
   return {
-    scene, camera, world, lights, bridges, swarm, creatures, tier, q, focus: { value: 12 },
+    scene, camera, world, lights, bridges, swarm, swarm2, creatures, tardigrade, tier, q, focus: { value: 12 },
     update(dt, _t) {
-      creatures.update(dt, _t);
+      creatures.update(dt, _t); tardigrade.update(dt, _t);
       acc += Math.min(dt, 0.1);
       while (acc >= 0.1) { world.grid.step(0.1); acc -= 0.1; }
       syncT += dt; if (syncT > 0.1) { syncT = 0; syncAll(); }
     },
-    setWetAll(v) { for (const c of world.grid.cells) { c.water = v; c.structure = 0.15 + 0.85 * v; c.microbes = v; c.carbon = v; } for (let i = 0; i < 6; i++) syncAll(); for (let i = 0; i < 30; i++) creatures.update(0.2, 3); },
+    setWetAll(v) { for (const c of world.grid.cells) { c.water = v; c.structure = 0.15 + 0.85 * v; c.microbes = v; c.carbon = v; } for (let i = 0; i < 6; i++) syncAll(); for (let i = 0; i < 30; i++) creatures.update(0.2, 3); for (let i = 0; i < 80; i++) tardigrade.update(0.2, 3); },
   };
 }
