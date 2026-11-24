@@ -70,7 +70,7 @@ export async function buildWorld(base: string, opts: { grainLod: 0 | 1; density:
   for (let k = 0; k < layout.wallTries; k++) {
     const r = rng.range(layout.bigRadius[0], layout.bigRadius[1]) * 0.8;
     const p = new THREE.Vector3(rng.range(B[0] - 30, B[1] + 20), rng.range(B[2] - 30, B[3] + 30), rng.range(B[4] - 30, B[5] + 30));
-    const n = nearest(p); if (n.d < layout.shell + r * 0.5 || n.d > layout.shell + 45 || inSeed(p, r * 0.5)) continue;
+    const n = nearest(p); if (n.d < layout.shell + r * 0.5 || n.d > layout.shell + 45 || inSeed(p, r * 0.5) || inCavern(p, r * 0.8)) continue;
     placements.push({ variant: rng.pick(rng.next() < 0.3 ? VARIANTS.aggregate : VARIANTS.quartz), lod: 2, pos: p, quat: rq(), scale: new THREE.Vector3(r, r * 0.9, r), cell: cellOfSample(n.i), seed: rng.next() });
   }
   // 2) シルト・団粒・腐植：道から外へ向かって進み、最初に当たった砂粒の表面に置く（下向きを多めに＝積もる）
@@ -94,7 +94,7 @@ export async function buildWorld(base: string, opts: { grainLod: 0 | 1; density:
   for (let i = 0; i < big.length; i++) for (let j = i + 1; j < big.length; j++) {
     const a = big[i], b = big[j], d = Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z); if (d > (a.r + b.r) * 1.02) continue;
     const t = a.r / (a.r + b.r), c = new THREE.Vector3(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t, a.z + (b.z - a.z) * t);
-    if (nearest(c).d > 22) continue;
+    if (nearest(c).d > 22 || inCavern(c, 2)) continue;
     const ax = new THREE.Vector3(b.x - a.x, b.y - a.y, b.z - a.z).normalize(), u = new THREE.Vector3(rng.range(-1, 1), rng.range(-1, 1), rng.range(-1, 1)).cross(ax).normalize(), w = ax.clone().cross(u);
     const ring = Math.min(a.r, b.r) * 0.45, cnt = Math.round(rng.range(4, 9) * opts.density);
     for (let k = 0; k < cnt; k++) { const ang = rng.range(0, 6.28), rr = ring * rng.range(0.8, 1.15), r = rng.range(0.4, 1.6) * (rng.next() < 0.2 ? 1.8 : 1);

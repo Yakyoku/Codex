@@ -1,11 +1,11 @@
 // 細菌の群れ：桿菌（両端が丸い棒）をインスタンス描画し、動きは頂点シェーダーで作る。
 // 水の膜の中でだけ泳ぐ。乾いた区画では見えない（芽胞として休眠している）。
 import * as THREE from 'three/webgpu';
-import { float, vec3, instancedBufferAttribute, time, sin, cos, positionLocal, mix, saturate, normalView, positionViewDirection, dot, pow, oneMinus, hash, instanceIndex } from 'three/tsl';
+import { float, vec3, instancedBufferAttribute, time, sin, cos, positionLocal, mix, saturate, normalView, positionViewDirection, dot, pow, oneMinus, hash, instanceIndex , uniform, smoothstep } from 'three/tsl';
 import type { Collider } from './world';
 import { makeRng } from './rng';
 
-export interface Swarm { mesh: THREE.InstancedMesh; count: number; sync(microbesOfCell: (cell: number) => number): void; find(from: THREE.Vector3, fwd: THREE.Vector3): { p: THREE.Vector3; r: number } | null; }
+export interface Swarm { highlight(p: THREE.Vector3 | null): void; mesh: THREE.InstancedMesh; count: number; sync(microbesOfCell: (cell: number) => number): void; find(from: THREE.Vector3, fwd: THREE.Vector3): { p: THREE.Vector3; r: number } | null; }
 
 /** 1 単位 = 10 µm。枯草菌は太さ約 0.8 µm × 長さ 2〜3 µm → 0.08 × 0.25 単位 */
 export type Species = 'bacillus' | 'pseudomonas';
@@ -72,7 +72,11 @@ export function buildSwarm(colliders: Collider[], cellOf: (p: THREE.Vector3) => 
   const rim = pow(oneMinus(saturate(dot(normalView, positionViewDirection))), 2.0);
   m.colorNode = vec3(0.22, 0.23, 0.22);
   m.emissiveNode = vec3(0.06, 0.065, 0.06).mul(rim).add(vec3(0.30, 0.30, 0.26).mul(aBright));   // 芽胞は光を強く屈折して明るく見える
-  m.opacityNode = mix(mix(float(0.04), float(0.45), pow(rim, float(1.6))), float(0.9), aBright);
+  // 紹介中は、指し示した集落の細菌だけを、縁を金色に光らせて見分けやすくする
+  const uHi = uniform(new THREE.Vector3()), uHiOn = uniform(0);
+  const near = smoothstep(2.2, 0.8, aPos.distance(uHi)).mul(uHiOn);
+  m.emissiveNode = vec3(0.06, 0.065, 0.06).mul(rim).add(vec3(0.30, 0.30, 0.26).mul(aBright)).add(vec3(0.55, 0.38, 0.16).mul(rim.mul(0.7).add(0.3)).mul(near));
+  m.opacityNode = mix(mix(mix(float(0.04), float(0.45), pow(rim, float(1.6))), float(0.9), aBright), float(0.95), near.mul(0.7));
   m.roughnessNode = float(0.3); m.metalnessNode = float(0);
   void hash; void instanceIndex;
   const mesh = new THREE.InstancedMesh(geo, m, n2); mesh.name = 'swarm_' + species; mesh.frustumCulled = false;
@@ -82,11 +86,11 @@ export function buildSwarm(colliders: Collider[], cellOf: (p: THREE.Vector3) => 
     const c = new THREE.Vector3(), d = new THREE.Vector3(); let best: THREE.Vector3 | null = null, bs = 0;
     for (let i = 0; i < n2; i += 7) {
       if (liveArr[i] < 0.5) continue; c.set(pos[i * 3], pos[i * 3 + 1], pos[i * 3 + 2]); d.subVectors(c, from); const dist = d.length();
-      if (dist < 3 || dist > 22 || d.dot(fwd) / dist < 0.85) continue;
+      if (dist < 3 || dist > 22 || d.dot(fwd) / dist < 0.85 || nearPath(c) > 9) continue;
       let k = 0; for (let j = 0; j < n2; j += 3) if (liveArr[j] > 0.5 && (pos[j * 3] - c.x) ** 2 + (pos[j * 3 + 1] - c.y) ** 2 + (pos[j * 3 + 2] - c.z) ** 2 < 2.25) k++;
       const sc = k / (1 + dist * 0.05); if (sc > bs) { bs = sc; best = c.clone(); }
     }
     return best ? { p: best, r: 1.6 } : null;
   };
-  return { mesh, count: n2, find, sync(w) { const a = liveAttr.array as Float32Array; let ch = false; for (let i = 0; i < n2; i++) { const target = w(cells[i]) > (i % 97) / 97 * 0.9 + 0.05 ? 1 : 0; if (a[i] !== target) { a[i] += Math.sign(target - a[i]) * 0.2; if (Math.abs(a[i] - target) < 0.2) a[i] = target; ch = true; } } if (ch) liveAttr.needsUpdate = true; } };
+  return { highlight(p) { if (p) { uHi.value.copy(p); uHiOn.value = 1; } else uHiOn.value = 0; }, mesh, count: n2, find, sync(w) { const a = liveAttr.array as Float32Array; let ch = false; for (let i = 0; i < n2; i++) { const target = w(cells[i]) > (i % 97) / 97 * 0.9 + 0.05 ? 1 : 0; if (a[i] !== target) { a[i] += Math.sign(target - a[i]) * 0.2; if (Math.abs(a[i] - target) < 0.2) a[i] = target; ch = true; } } if (ch) liveAttr.needsUpdate = true; } };
 }

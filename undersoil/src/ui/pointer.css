@@ -5,3 +5,4 @@ svg.pointer .pr2 { fill: none; stroke: rgba(217, 164, 91, .45); stroke-width: 1;
 svg.pointer .pt { stroke: var(--accent); stroke-width: 1.6; }
 svg.pointer .pl { fill: none; stroke: rgba(217, 164, 91, .85); stroke-width: 1.2; filter: drop-shadow(0 0 3px rgba(0,0,0,.9)); }
 svg.pointer .pa { fill: var(--accent); filter: drop-shadow(0 0 4px rgba(0,0,0,.8)); }
+svg.pointer .ptag { fill: #fff2dc; font: 600 clamp(15px, 1.5vw, 28px) var(--font); text-anchor: middle; paint-order: stroke; stroke: rgba(0,0,0,.75); stroke-width: 4px; letter-spacing: .06em; }

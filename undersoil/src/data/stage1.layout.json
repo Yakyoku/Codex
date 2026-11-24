@@ -8,7 +8,7 @@
   "box": [-40, 140, -55, 45, -55, 55],
   "bigTries": 5200,
   "wallTries": 2600,
-  "cavern": { "center": [58, -10, -40], "radius": 30 },
+  "cavern": { "center": [58, -4, -66], "radius": 58 },
   "bigRadius": [10, 24],
   "midCount": 700, "midRadius": [1.6, 5.5],
   "smallCount": 2600, "smallRadius": [0.35, 1.5],

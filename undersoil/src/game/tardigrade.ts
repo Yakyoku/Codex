@@ -21,7 +21,7 @@ export async function buildTardigrade(base: string, world: World, lod: 0 | 1): P
     body.colorNode = mix(mix(vec3(0.42, 0.46, 0.58), vec3(0.52, 0.55, 0.66), tone), vec3(0.62, 0.58, 0.50), cellsN.mul(0.45)).mul(mix(float(1), float(0.55), claw));
     body.roughnessNode = float(0.35); body.metalnessNode = float(0); body.clearcoat = 0.4; body.clearcoatRoughness = 0.25;
     body.opacityNode = mix(mix(float(0.42), float(0.92), rim), float(1.0), claw);
-    body.emissiveNode = vec3(0.10, 0.11, 0.14).mul(rim); }
+    body.emissiveNode = vec3(0.10, 0.11, 0.14).mul(rim).add(vec3(0.05, 0.055, 0.07)); }
   // 中身：口の管と咽頭（硬い部分）は明るい灰、腸は橙褐色
   const inner = new THREE.MeshStandardNodeMaterial();
   { const hard = vc.g; inner.colorNode = mix(vec3(0.55, 0.36, 0.24), vec3(0.62, 0.62, 0.58), smoothstep(0.5, 0.9, hard)); inner.roughnessNode = float(0.6); }
@@ -33,7 +33,7 @@ export async function buildTardigrade(base: string, world: World, lod: 0 | 1): P
   });
   const group = new THREE.Group(); group.add(gltf.scene); group.name = 'tardigrade';
   // 空洞の底に置く
-  const C = world.cavern.center.clone(); const floorY = C.y - world.cavern.radius * 0.55;
+  const C = world.cavern.center.clone(); const floorY = C.y - world.cavern.radius * 0.78;   // 空洞の底（まわりの粒の上）
   group.position.set(C.x, floorY, C.z);
   const cellIdx = world.cellAt(C);
   let wake = 0, walkPh = 0, ang = 0;
@@ -49,7 +49,9 @@ export async function buildTardigrade(base: string, world: World, lod: 0 | 1): P
   return {
     group,
     active: () => wake > 0.8,
-    target: () => ({ p: group.position.clone().add(new THREE.Vector3(0, 8, 0)), r: 30 }),
+    // 見せる位置：空洞の中、道の側の少し上から見下ろす
+    target: () => { const R = world.cavern.radius, toPath = world.path.getPointAt(0.5).sub(C).setY(0).normalize();
+      return { p: group.position.clone().add(new THREE.Vector3(0, 4, 0)), r: 24, view: C.clone().addScaledVector(toPath, R * 0.93).add(new THREE.Vector3(0, -R * 0.12, 0)) }; },
     update(dt) {
       const c = world.grid.cells[cellIdx];
       // 水が戻ると、乾眠の樽から元の姿に戻る（実際は数十分〜数時間。ゲームでは早回し）
@@ -59,7 +61,7 @@ export async function buildTardigrade(base: string, world: World, lod: 0 | 1): P
       if (wake > 0.9) {
         // ゆっくり歩く：1 周期（約 1.6 秒）で約 9.4 単位進む。空洞の底を大きな円を描いて歩く
         walkPh += dt * 2.5; ang += dt * 0.12;
-        const R = world.cavern.radius * 0.35;
+        const R = world.cavern.radius * 0.12;
         group.position.set(C.x + Math.cos(ang) * R, floorY, C.z + Math.sin(ang) * R);
         group.rotation.y = -ang + Math.PI;   // 進む向き（円の接線）へ頭を向ける
       }

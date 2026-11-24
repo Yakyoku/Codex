@@ -28,12 +28,13 @@ export function makePointer(camera: THREE.PerspectiveCamera, scenes: THREE.Scene
   const ring2 = document.createElementNS(NS, 'circle'); ring2.classList.add('pr2');
   const ticks = document.createElementNS(NS, 'path'); ticks.classList.add('pt');
   const arrow = document.createElementNS(NS, 'path'); arrow.classList.add('pa');
-  svg.append(line, ring2, ring, ticks, arrow); document.body.append(svg);
+  const tag = document.createElementNS(NS, 'text'); tag.classList.add('ptag');
+  svg.append(line, ring2, ring, ticks, arrow, tag); document.body.append(svg);
   let get: (() => Target) | null = null, cached: Target = null, refresh = 0, t0 = 0;
   const v = new THREE.Vector3(), e = new THREE.Vector3(), right = new THREE.Vector3();
   return {
     /** 指し示し始める（相手が動くもののときは、毎フレーム位置を取り直す） */
-    show(fn: (() => Target) | null) { get = fn; cached = fn ? fn() : null; refresh = 0; t0 = performance.now(); svg.classList.toggle('on', !!cached); hl.forEach((h) => h.set(cached?.geo, cached?.matrix)); },
+    show(fn: (() => Target) | null, label = '') { tag.textContent = label; get = fn; cached = fn ? fn() : null; refresh = 0; t0 = performance.now(); svg.classList.toggle('on', !!cached); hl.forEach((h) => h.set(cached?.geo, cached?.matrix)); },
     hide() { get = null; cached = null; svg.classList.remove('on'); hl.forEach((h) => h.hide()); },
     /** カメラが向くべき位置（自動で巡っている間だけ使う） */
     focus(): THREE.Vector3 | null { return cached ? cached.p : null; },
@@ -58,11 +59,12 @@ export function makePointer(camera: THREE.PerspectiveCamera, scenes: THREE.Scene
         const cx = Math.max(40, Math.min(W - 40, x)), cy = Math.max(40, Math.min(H - 40, y)), a = Math.atan2(y - H / 2, x - W / 2);
         const tip = (d: number, s: number) => `${cx + Math.cos(a + s) * d},${cy + Math.sin(a + s) * d}`;
         arrow.setAttribute('d', `M${tip(18, 0)} L${tip(14, 2.5)} L${tip(14, -2.5)} Z`); arrow.style.display = '';
-        ring.style.display = ring2.style.display = ticks.style.display = 'none'; line.setAttribute('d', '');
+        ring.style.display = ring2.style.display = ticks.style.display = 'none'; line.setAttribute('d', ''); tag.setAttribute('x', String(cx)); tag.setAttribute('y', String(cy - 26));
         return;
       }
       arrow.style.display = 'none'; ring.style.display = ring2.style.display = cached.geo ? 'none' : ''; ticks.style.display = '';
       ring.setAttribute('cx', String(x)); ring.setAttribute('cy', String(y)); ring.setAttribute('r', String(r * pulse));
+      tag.setAttribute('x', String(x)); tag.setAttribute('y', String(Math.max(28, y - r * 1.22 - 16)));
       ring2.setAttribute('cx', String(x)); ring2.setAttribute('cy', String(y)); ring2.setAttribute('r', String(r * 1.22));
       const t = r * 1.22, k = 9;
       ticks.setAttribute('d', `M${x - t - k},${y} h${k} M${x + t},${y} h${k} M${x},${y - t - k} v${k} M${x},${y + t} v${k}`);
