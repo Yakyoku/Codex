@@ -90,9 +90,13 @@ export function buildLitter(height: Height, opts: { density: number; keepOut: nu
     const mat = new THREE.MeshStandardNodeMaterial();
     const tn = attribute('tone', 'float'); const z = uv().y.mul(8.0);
     const bark = mix(vec3(0.16, 0.10, 0.065), vec3(0.09, 0.06, 0.04), tn);
-    const peel = smoothstep(0.62, 0.7, fract(sin(z.mul(13.0).add(tn.mul(31.0))).mul(43758.5)));
-    const ridges = abs(sin(uv().x.mul(40.0).add(sin(z.mul(9.0))))).mul(0.25);
-    mat.colorNode = mix(bark.mul(oneMinus(ridges)), vec3(0.42, 0.33, 0.22), peel.mul(0.6));
+    // 樹皮：枝に沿った細い筋と、なだらかな色むら。ところどころ樹皮がはげて明るい木部がのぞく
+    // （以前は 1 画素ごとに乱数を使っていたため、砂粒をまぶした帯のように見えていた）
+    const u = uv();
+    const streak = smoothstep(0.55, 1.0, abs(sin(u.x.mul(44.0).add(mx_noise_float(vec3(u.x.mul(3.0), z.mul(0.6), tn.mul(7.0))).mul(2.0))))).mul(0.3);
+    const blotch = saturate(mx_noise_float(vec3(u.x.mul(2.0), z.mul(0.8), tn.mul(5.0))).mul(0.8).add(0.5));
+    const peel = smoothstep(0.62, 0.78, saturate(mx_noise_float(vec3(u.x.mul(1.5), z.mul(0.45), tn.mul(11.0))).add(0.5)));
+    mat.colorNode = mix(bark.mul(mix(float(0.75), float(1.15), blotch)).mul(oneMinus(streak)), vec3(0.36, 0.28, 0.18), peel.mul(0.55));
     mat.roughnessNode = float(0.88); mat.metalnessNode = float(0);
     const mesh = new THREE.InstancedMesh(geo, mat, n);
     for (let i = 0; i < n; i++) {
