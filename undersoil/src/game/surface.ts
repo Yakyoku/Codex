@@ -78,13 +78,14 @@ export async function buildSurface(renderer: THREE.WebGPURenderer, base: string,
     const edge = edgeU.add(edgeTip).min(1.0);
     const base = smoothstep(0.35, 0.1, alongCot);                                           // 付け根
     const midline = oneMinus(smoothstep(0.0, 0.08, abs(u2.x.sub(0.5)))).mul(topSide).mul(smoothstep(0.15, 0.4, alongCot));
-    let cotTop = mix(vec3(0.16, 0.20, 0.035), vec3(0.30, 0.33, 0.08), blot);                // ① まだら（日陰色〜黄緑）
-    cotTop = mix(cotTop, vec3(0.50, 0.50, 0.16), edge.mul(0.75));                             // ② 黄色みの縁
+    // 2026-11-24：拡大像の横に並べた実物の写真と比べ、黄色みが強すぎたので、新鮮な緑に寄せ、まだらと光の点を控えめにした
+    let cotTop = mix(vec3(0.11, 0.25, 0.045), vec3(0.20, 0.37, 0.07), blot.mul(0.7).add(0.15));   // ① まだら（日陰色〜明るい緑）
+    cotTop = mix(cotTop, vec3(0.32, 0.44, 0.12), edge.mul(0.5));                              // ② わずかに明るい縁
     cotTop = cotTop.mul(mix(float(1.0), float(0.78), base.mul(0.6).add(midline.mul(0.35))));   // ③ 付け根と溝
     // ④ 光の点：0.03〜0.06 mm 間隔の細かいセル。点そのものは銀白色で、鋭く光る
     const cellA = mx_worley_noise_float(pl.mul(17.0)), cellB = mx_worley_noise_float(pl.mul(29.0).add(vec3(3.1, 1.3, 2.2)));
     const dots = smoothstep(0.32, 0.12, cellA).add(smoothstep(0.26, 0.1, cellB).mul(0.7)).min(1.0).mul(topSide.mul(0.7).add(0.3));
-    cotTop = mix(cotTop, vec3(0.66, 0.68, 0.52), dots.mul(0.62));
+    cotTop = mix(cotTop, vec3(0.50, 0.60, 0.40), dots.mul(0.3));
     // ⑤ 付いた土の粒：まばらな茶色の小さな点
     const speck = smoothstep(0.06, 0.02, mx_worley_noise_float(pl.mul(6.0).add(vec3(7.0, 2.0, 5.0)))).mul(step(0.6, saturate(mx_noise_float(pl.mul(2.0)).add(0.5))));
     cotTop = mix(cotTop, vec3(0.16, 0.10, 0.06), speck.mul(0.85));
@@ -135,8 +136,8 @@ export async function buildSurface(renderer: THREE.WebGPURenderer, base: string,
     const veinNet = smoothstep(0.45, 0.8, net).mul(0.75).add(smoothstep(0.55, 0.85, net2).mul(0.4)).mul(smoothstep(0.08, 0.2, fromMid));
     const mid = oneMinus(smoothstep(0.0, 0.05, fromMid)).mul(smoothstep(0.02, 0.2, along));
     const blotL = saturate(mx_noise_float(lp.mul(1.2)).mul(0.9).add(0.5));
-    let bladeCol = mix(vec3(0.09, 0.20, 0.07), vec3(0.14, 0.28, 0.10), blotL);                 // 灰緑のまだら
-    bladeCol = mix(bladeCol, vec3(0.34, 0.48, 0.30), veinNet.mul(0.55).add(mid.mul(0.6)).min(1.0));  // 白っぽい葉脈
+    let bladeCol = mix(vec3(0.10, 0.25, 0.07), vec3(0.15, 0.33, 0.09), blotL);                 // 緑（実物の写真に合わせ、まだらは控えめ）
+    bladeCol = mix(bladeCol, vec3(0.30, 0.46, 0.24), veinNet.mul(0.2).add(mid.mul(0.5)).min(1.0));   // 白っぽい葉脈（網目は細く弱い）
     bladeCol = mix(bladeCol, vec3(0.30, 0.42, 0.20), smoothstep(0.85, 1.0, fromMid).mul(0.5));    // 縁
     const fine = saturate(mx_noise_float(lp.mul(40.0)).add(0.5));
     bladeCol = bladeCol.mul(mix(float(0.92), float(1.06), fine));
