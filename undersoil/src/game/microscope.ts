@@ -98,7 +98,7 @@ export async function buildMicroscope(base: string) {
     const meshes: THREE.Mesh[] = [];
     gl.scene.traverse((o) => { const m = o as THREE.Mesh; if (!m.isMesh) return; if (m.name.endsWith('_LOD1')) { m.visible = false; return; }
       m.material = m.name.startsWith('tardigrade_body') ? body : inner; m.renderOrder = m.name.startsWith('tardigrade_body') ? 2 : 1; meshes.push(m); });
-    const s = 9.5 / 56; gl.scene.scale.setScalar(s); gl.scene.rotation.set(0.25, Math.PI / 2 - 0.35, 0); gl.scene.position.set(0, -1.0, 0);   // 横から見る（頭が右）
+    const s = 11.5 / 56; gl.scene.scale.setScalar(s); gl.scene.rotation.set(0.25, Math.PI / 2 - 0.35, 0); gl.scene.position.set(0, -1.0, 0);   // 横から見る（頭が右）
     g.add(gl.scene); g.userData.meshes = meshes; groups['paramacrobiotus-metropolitanus'] = g;
   }
   for (const g of Object.values(groups)) { g.visible = false; scene.add(g); }
