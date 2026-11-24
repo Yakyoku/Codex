@@ -108,6 +108,8 @@ export async function buildMicroscope(base: string) {
   const SCALE: Record<string, string> = { 'bacillus-subtilis': '― 5 µm', 'pseudomonas-fluorescens': '― 5 µm', colpoda: '― 20 µm', 'paramacrobiotus-metropolitanus': '― 100 µm' };
   return {
     has: (id: string) => id in groups || id in PHOTOS,
+    /** 拡大像（3D）が出ているか。出ている間は、本体の画面を左へずらして、枠が生き物に重ならないようにする */
+    get on3d() { return cur !== null && frame.classList.contains('on'); },
     /** 写真だけ（3D の拡大像なし）のときは、枠を半分の幅にする。地上の場面のシロツメクサなど */
     show(id: string, name: string) {
       if (!(id in groups) && !(id in PHOTOS)) return;

@@ -182,7 +182,7 @@ async function main() {
   for (const ev of ['pointerdown', 'pointermove', 'keydown', 'touchstart']) addEventListener(ev, wake, { passive: true }); wake();
   let hidden = false; document.addEventListener('visibilitychange', () => { hidden = document.hidden; last = 0; });
 
-  let frames = 0, last = 0, tourU = 0.02, vitShown = -1;
+  let frames = 0, last = 0, tourU = 0.02, vitShown = -1, viewShift = 0;
   const frame = (now: number) => {
     if (hidden) return;
     const t = fixedT !== null ? Number(fixedT) : now / 1000; const dt = last ? Math.min(0.1, (now - last) / 1000) : 0; last = now;
@@ -197,7 +197,12 @@ async function main() {
       if (Q.get('g') === null) { growT += dt; surface.setGrowth(Math.min(1, growT / GROW_SEC)); }
       surface.update(dt, t);
       if (postSurface) postSurface.render(); else renderer.render(surface.scene, surface.camera);
-    } else if (post) post.render(); else renderer.render(scene, camera);
+    } else {
+      // 拡大像の枠（右上）が出ている間は、映像を左へずらし、紹介している生き物が枠に隠れないようにする
+      viewShift += ((scope.on3d ? 0.15 : 0) - viewShift) * (1 - Math.exp(-dt * 3));
+      if (viewShift > 0.002) camera.setViewOffset(innerWidth, innerHeight, innerWidth * viewShift, 0, innerWidth, innerHeight); else if (camera.view) camera.clearViewOffset();
+      if (post) post.render(); else renderer.render(scene, camera);
+    }
     scope.tick(dt); if (mode === 'soil') scope.render(renderer, dt);
     if (!testing) enc.update(dt);
     pointer.update(dt);

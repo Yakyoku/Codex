@@ -41,9 +41,9 @@ body.idle .nav, body.idle .actions, body.idle .hud, body.idle .scale-tag, body.i
 }
 dialog.settings ol.steps { margin: .6em 0; padding-left: 1.3em; line-height: 1.9; font-size: .9em; }
 /* 拡大像の枠（右上）。左に本物の顕微鏡写真、右にゲームの拡大像（中身は WebGL で、右の枠の位置に描き足す） */
-.scope { position: fixed; right: max(16px, env(safe-area-inset-right)); top: max(70px, calc(env(safe-area-inset-top) + 60px)); width: min(62vw, 860px); aspect-ratio: 8 / 3;
+.scope { position: fixed; right: max(16px, env(safe-area-inset-right)); top: max(70px, calc(env(safe-area-inset-top) + 60px)); width: min(46vw, 700px); aspect-ratio: 8 / 3;
   display: grid; grid-template-columns: 1fr 1fr; gap: 0; border-radius: 14px; overflow: hidden; border: 1px solid rgba(239, 230, 216, .35);
-  box-shadow: 0 10px 40px rgba(0,0,0,.5); pointer-events: none; opacity: 0; transition: opacity .5s ease; z-index: 6; }
+  box-shadow: 0 10px 40px rgba(0,0,0,.5); pointer-events: none; opacity: 0; transition: opacity .5s ease; z-index: 30; }
 .scope.on { opacity: 1; }
 .scope.photo-only { width: min(34vw, 460px); aspect-ratio: 4 / 3; grid-template-columns: 1fr; }
 .scope.photo-only .scope-3d { display: none; }
@@ -59,5 +59,5 @@ dialog.settings ol.steps { margin: .6em 0; padding-left: 1.3em; line-height: 1.9
 .scope-name { position: absolute; right: 12px; bottom: 30px; color: #2a2116; font-size: clamp(13px, 1.3vw, 22px); font-weight: 700; text-shadow: 0 0 8px rgba(255,255,255,.9); }
 .scope.photo-only .scope-name { color: #fff; text-shadow: 0 0 6px #000; bottom: 26px; }
 .scope-scale { position: absolute; right: 12px; bottom: 8px; color: #2a2116; font-size: clamp(10px, .95vw, 15px); font-weight: 600; }
-@media (max-width: 720px), (max-height: 500px) { .scope { width: min(78vw, 640px); top: 52px; } .scope.photo-only, .scope.no-photo { width: 46vw; } }
+@media (max-width: 720px), (max-height: 500px) { .scope { width: min(60vw, 560px); top: 52px; } .scope.photo-only, .scope.no-photo { width: 46vw; } }
 body.surface .scope:not(.photo-only) { display: none; }
