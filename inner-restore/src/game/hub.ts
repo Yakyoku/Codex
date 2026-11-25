@@ -3,7 +3,7 @@
 import * as THREE from 'three/webgpu';
 import { tsl } from '../core/tsl';
 import { loadGLB, makeEnvironment } from '../core/assets';
-import { ZONES } from '../stages/zone';
+import { stageZones, stageProgress } from '../stages/zone';
 import type { Save } from '../core/save';
 const { uniform, color, float, mix, pow, saturate, dot, normalView, positionViewDirection, sin, positionWorld, uv, length, smoothstep } = tsl;
 
@@ -16,7 +16,7 @@ export function organs(j: J): Organ[] {
   const chest = v('spine-3').lerp(v('neck'), 0.55);
   return [
     { id: 'eye', ja: '目', stage: 1, ready: true, at: eye, r: 0.035, note: '水晶体の濁りを晴らし、網膜の血流と視細胞を治す' },
-    { id: 'nose', ja: '鼻', stage: 2, ready: false, at: eye.clone().add(new THREE.Vector3(0, -0.045, 0.02)), r: 0.025, note: '線毛の波と粘液の流れを取り戻す' },
+    { id: 'nose', ja: '鼻', stage: 2, ready: stageZones('nose').length > 0, at: eye.clone().add(new THREE.Vector3(0, -0.045, 0.02)), r: 0.025, note: '線毛の波と粘液の流れを取り戻す' },
     { id: 'lung', ja: '肺', stage: 3, ready: false, at: chest.clone().add(new THREE.Vector3(0, 0.02, 0.02)), r: 0.11, note: '肺胞に沈着した粒子を取り除き、ガス交換を再開させる' },
     { id: 'gut', ja: '腸', stage: 4, ready: false, at: v('spine-1').lerp(v('pelvis'), 0.3).add(new THREE.Vector3(0, 0, 0.05)), r: 0.09, note: '腸内細菌の勢力図を塗り替える' },
     { id: 'vessel', ja: '血管', stage: 5, ready: false, at: v('l-elbow').lerp(v('l-shoulder'), 0.4), r: 0.03, note: 'プラークと血栓を取り除く（器官どうしをつなぐ道）' },
@@ -25,14 +25,16 @@ export function organs(j: J): Organ[] {
   ];
 }
 /** 目の進み具合（0〜1）：治しきった区域の数 */
-export const eyeProgress = (s: Save) => ZONES.filter((z) => s.done?.includes(z.id)).length / ZONES.length;
+export const eyeProgress = (s: Save) => stageProgress(s.done, 'eye');
+export const noseProgress = (s: Save) => stageProgress(s.done, 'nose');
 
 /** バイタル（ゲーム上の目安の数値。治した器官に応じて戻る）。目は視力の目安だけが変わる */
 export function vitals(s: Save) {
-  const e = eyeProgress(s);
+  const e = eyeProgress(s), n = noseProgress(s);
   return [
     { k: '視力（目安）', v: (0.1 + 0.9 * e).toFixed(1), ok: e >= 1 },
-    { k: '心拍', v: `${Math.round(96 - 4 * e)} 回/分`, ok: false },
+    { k: '嗅覚（目安）', v: n >= 1 ? 'ほぼ正常' : n > 0 ? '少し戻った' : 'ほとんど感じない', ok: n >= 1 },
+    { k: '心拍', v: `${Math.round(96 - 4 * e - 2 * n)} 回/分`, ok: false },
     { k: '血中の酸素', v: '91 %', ok: false },
     { k: '呼吸', v: '22 回/分', ok: false },
   ];
@@ -54,7 +56,8 @@ export async function buildHubModel(save: Save) {
   const list = organs(j.joints);
   const marks: { o: Organ; mesh: THREE.Mesh; state: 'done' | 'active' | 'locked' }[] = [];
   for (const o of list) {
-    const state = o.id === 'eye' ? (e >= 1 ? 'done' : 'active') : 'locked';
+    const pr = o.id === 'eye' ? e : o.id === 'nose' ? noseProgress(save) : 0;
+    const state = !o.ready ? 'locked' : pr >= 1 ? 'done' : 'active';
     const m = new THREE.MeshBasicNodeMaterial({ transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
     const d = length(uv().sub(0.5)).mul(2);
     const col = state === 'done' ? color(0xffc890) : state === 'active' ? color(0x7fe0d2) : color(0x56606a);

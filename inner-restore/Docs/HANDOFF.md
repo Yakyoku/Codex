@@ -1,4 +1,4 @@
-# HANDOFF（引き継ぎ）— 2026-11-24 更新
+# HANDOFF（引き継ぎ）— 2026-11-25 更新
 
 ## 公開 URL
 - 本番：https://inner-restore-web-20261122.netlify.app/ （VR：/vr/、進捗：/progress/、診断：/diag/）
@@ -131,3 +131,14 @@
 - 画面版と VR 版の行き来：localStorage を共有。タイトル・一時停止に VR 版への入口、VR 版に区域の選択と「画面版に戻る」。
 - 例外：音声会話の先生だけは外部サイトから読み込む（持ち主の指示）。LICENSES.md に記載。
 - 次：M5 以降はステージ追加（持ち主の指示を受けてから。PROMPTS の「ステージ追加」）。それまでの間は、ステージ1の品質の底上げ（実機確認の結果の反映、動画、図鑑の画像）。
+
+## 2026-11-25 ステージ1の品質の底上げ
+- 図鑑：模型のなかった6項目（ミトコンドリア・血小板・内皮細胞・周皮細胞・ミュラー細胞・硝子体）を `tools/blender/make_atlas_extra.py` で作成。図鑑の画像は3D表示を撮って作る（`node scripts/atlas-images.mjs` → `public/static/img/atlas/<id>.jpg`）。
+- 見どころの動画：`node scripts/video-highlights.mjs <出力.mp4>`（3区域。この環境では1コマ数秒かかるので、背景で動かす）。
+
+## 2026-11-25 ステージ2「鼻」（M5）
+- 区域：`src/stages/nose/airway.ts`（区域A 線毛の森 `cilia`、区域B 粘液の川 `mucus`）、`src/stages/nose/olfactory.ts`（区域C 嗅上皮 `olfactory`＋病巣の核）、共通部品 `common.ts`（線毛の森：1枚の形にまとめ、頂点の計算で有効打・回復打・波を作る）。
+- ステージの仕組み：`ZONES` に `stage`、`STAGES`、`stageZones()`。区域の meta に `perception`（知覚加速。鼻は ×20）、`scaleNote`、`patient: 'smell'`。区域の `drift`（流れに乗る）、`beat`（拍子。照準の輪が脈打ち、拍子に合わせると治りやすい）、`setDiver`。
+- 模型：`tools/blender/make_nose.py`（粘液栓・ほこり・黄色ブドウ球菌の房・好中球と核・嗅細胞の先・図鑑用の線毛細胞・杯細胞・線毛の断面・支持細胞）。音：`make_audio.py` に cilia・mucus・olfactory。
+- 台帳：鼻の8項目（事実確認：誤り4・削除2・言い換え14）。GDD 6-2 に設計。
+- 未確認：実機での線毛の森の重さ（頂点 約70万＝PC 高画質）、VR の拍子の分かりやすさ。

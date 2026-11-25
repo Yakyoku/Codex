@@ -11,8 +11,8 @@ export function buildUI() {
   const ui = document.createElement('div'); ui.id = 'ui';
   ui.innerHTML = `
   <div id="hud" class="hide"><div class="lab">網膜・内側の面　血流の回復</div><div class="val"><span id="hv">0</span><small>%</small></div><div class="meter"><i id="hm"></i></div>
-    <div class="small">知覚加速 ×<span id="pf"></span>（体内の時間をゆっくり見ています）<br>潜行士の身長 2µm ／ 赤血球の直径 7.8µm</div></div>
-  <div id="patient" class="hide"><img src="/static/img/patient_view.jpg" alt=""><div class="spot"></div><div class="cap">患者の視界</div></div>
+    <div class="small">知覚加速 ×<span id="pf"></span>（体内の時間をゆっくり見ています）<br><span id="scalenote">潜行士の身長 2µm ／ 赤血球の直径 7.8µm</span></div></div>
+  <div id="patient" class="hide"><img src="/static/img/patient_view.jpg" alt=""><canvas class="wisps"></canvas><div class="spot"></div><div class="cap">患者の視界</div></div>
   <div id="reticle" class="hide"></div><div id="hint" class="hide"></div><div id="subs"></div>
   <div id="card"><div class="k">初めて出会ったもの</div><div class="n"></div><div class="e"></div><div class="s"></div><div class="d"></div><div class="p"><i></i></div><div class="h"></div></div>
   <div id="hubui" class="hide"><div class="hh"><b>全身マップ</b><span>患者：灯（あかり）— ナノスーツの基礎理論を作った研究者。全身の器官が、順に働きを失っている。</span></div>
@@ -65,7 +65,7 @@ export function buildUI() {
 export function renderAtlas(grid: HTMLElement, known: Set<string>, onView?: (id: string) => void, has3d: (id: string) => boolean = () => false) {
   grid.innerHTML = ATLAS.map((e) => {
     const k = known.has(e.id);
-    return `<div class="it ${k ? '' : 'unk'}">${k && has3d(e.id) ? `<button class="btn v3d" data-id="${e.id}">3Dで回して見る</button>` : ''}<h3>${k ? e.ja : '？？？'}</h3><div class="e">${k ? e.en : 'まだ出会っていません'}</div>${
+    return `<div class="it ${k ? '' : 'unk'}"><img src="/static/img/atlas/${e.id}.jpg" alt="" loading="lazy" onerror="this.remove()">${k && has3d(e.id) ? `<button class="btn v3d" data-id="${e.id}">3Dで回して見る</button>` : ''}<h3>${k ? e.ja : '？？？'}</h3><div class="e">${k ? e.en : 'まだ出会っていません'}</div>${
       k ? `<dl><dt>種類・大きさ</dt><dd>${e.kind}　${e.size}（${e.compare}）</dd><dt>姿</dt><dd>${e.look}</dd><dt>動き</dt><dd>${e.move}</dd><dt>働き</dt><dd>${e.role}</dd><dt>ほかとの関係</dt><dd>${e.relation}</dd></dl>` : ''}</div>`;
   }).join('');
   if (onView) grid.querySelectorAll<HTMLButtonElement>('.v3d').forEach((b) => (b.onclick = () => onView(b.dataset.id!)));

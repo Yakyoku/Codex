@@ -3,7 +3,7 @@
 import * as THREE from 'three/webgpu';
 import { loadGLB, makeEnvironment } from '../core/assets';
 
-type Src = { url: string; mesh: string; scale?: number; tilt?: number; many?: number };
+type Src = { url: string; mesh: string; scale?: number; tilt?: number; many?: number; ghost?: string; col?: number; noBar?: string };
 // 模型のある項目（Blender で作った模型を使う）
 const MODELS: Record<string, Src> = {
   rbc: { url: '/static/models/rbc.glb', mesh: 'rbc_lod0' },
@@ -14,12 +14,25 @@ const MODELS: Record<string, Src> = {
   fovea: { url: '/static/models/photo.glb', mesh: 'fcone', many: 19 },
   rpe: { url: '/static/models/photo.glb', mesh: 'rpe' },
   drusen: { url: '/static/models/photo.glb', mesh: 'drusen', scale: 8 },
+  mitochondrion: { url: '/static/models/atlas_extra.glb', mesh: 'mito', col: 0xe8b896 },
+  platelet: { url: '/static/models/atlas_extra.glb', mesh: 'platelet', col: 0xe8dcc8 },
+  endothelial: { url: '/static/models/atlas_extra.glb', mesh: 'endo', col: 0xdcc4b8 },
+  pericyte: { url: '/static/models/atlas_extra.glb', mesh: 'pericyte', ghost: 'pericyte_tube', col: 0xd8b8a8 },
+  muller: { url: '/static/models/atlas_extra.glb', mesh: 'muller', col: 0xdcd8e4 },
+  vitreous: { url: '/static/models/atlas_extra.glb', mesh: 'vitreous', col: 0xd8e8f0 },
+  ciliated_cell: { url: '/static/models/nose.glb', mesh: 'ciliated', col: 0xe8c8c0 },
+  cilium: { url: '/static/models/nose.glb', mesh: 'axoneme', col: 0xe8e0d8, noBar: '断面（9+2）を 約40倍に拡大して表示' },
+  goblet_cell: { url: '/static/models/nose.glb', mesh: 'goblet', col: 0xe8e4e0 },
+  mucus: { url: '/static/models/nose.glb', mesh: 'plug', col: 0xdde8ea },
+  olfactory_neuron: { url: '/static/models/nose.glb', mesh: 'olfknob', col: 0xf0e2d2 },
+  sustentacular_cell: { url: '/static/models/nose.glb', mesh: 'sustentacular', col: 0xc8a07a },
+  neutrophil: { url: '/static/models/nose.glb', mesh: 'neutro', ghost: 'neutro_nucleus', col: 0xece4dc },
 };
 export const hasModel = (id: string) => id in MODELS;
 
 export class AtlasViewer {
   scene = new THREE.Scene(); camera = new THREE.PerspectiveCamera(35, 1, 0.05, 2000);
-  active = false; private obj: THREE.Object3D | null = null; private yaw = 0.6; private pitch = 0.35; private dist = 20; private auto = true;
+  note = ''; active = false; private obj: THREE.Object3D | null = null; private yaw = 0.6; private pitch = 0.35; private dist = 20; private auto = true;
   private bar: THREE.Group;
   constructor(renderer: THREE.WebGPURenderer, el: HTMLElement) {
     this.scene.background = new THREE.Color(0x0b0f12);
@@ -43,8 +56,8 @@ export class AtlasViewer {
     const g = await loadGLB(src.url); let geo: THREE.BufferGeometry | null = null; let mat: THREE.Material | null = null;
     g.scene.traverse((o) => { const mm = o as THREE.Mesh; if (mm.isMesh && mm.name === src.mesh) { mm.updateWorldMatrix(true, false); geo = mm.geometry.clone().applyMatrix4(mm.matrixWorld); } });
     if (!geo) return;
-    mat = new THREE.MeshPhysicalMaterial({ color: id === 'rbc' ? 0x9a1c18 : id === 'rpe' ? 0x4a2a1c : id === 'drusen' ? 0xe8d6a0 : id === 'rod' ? 0xd8c0cc : 0xe4e0dc,
-      roughness: 0.35, clearcoat: 0.4, transparent: id === 'lens_fiber', opacity: id === 'lens_fiber' ? 0.7 : 1 });
+    mat = new THREE.MeshPhysicalMaterial({ color: src.col ?? (id === 'rbc' ? 0x9a1c18 : id === 'rpe' ? 0x4a2a1c : id === 'drusen' ? 0xe8d6a0 : id === 'rod' ? 0xd8c0cc : 0xe4e0dc),
+      roughness: 0.35, clearcoat: 0.4, transparent: id === 'lens_fiber' || id === 'neutrophil', opacity: id === 'lens_fiber' ? 0.7 : id === 'neutrophil' ? 0.4 : 1, depthWrite: id !== 'neutrophil' });
     const grp = new THREE.Group();
     const n = src.many ?? 1;
     for (let i = 0; i < n; i++) {
@@ -52,12 +65,17 @@ export class AtlasViewer {
       if (n > 1) { const a = i * 2.4, r = Math.sqrt(i) * (id === 'fovea' ? 2.2 : 0.45); m.position.set(Math.cos(a) * r, id === 'fovea' ? 0 : Math.sin(i * 1.7) * 0.4, Math.sin(a) * r); if (id !== 'fovea') m.scale.multiplyScalar(0.5 + ((i * 37) % 10) / 10); }
       grp.add(m);
     }
+    if (src.ghost) {   // 相手（毛細血管など）を半透明で添える
+      let gg: THREE.BufferGeometry | null = null; g.scene.traverse((o) => { const mm = o as THREE.Mesh; if (mm.isMesh && mm.name === src.ghost) { mm.updateWorldMatrix(true, false); gg = mm.geometry.clone().applyMatrix4(mm.matrixWorld); } });
+      if (gg) grp.add(new THREE.Mesh(gg, new THREE.MeshPhysicalMaterial({ color: 0xc89080, transparent: true, opacity: 0.22, roughness: 0.3, side: THREE.DoubleSide, depthWrite: false })));
+    }
     const box = new THREE.Box3().setFromObject(grp), c = box.getCenter(new THREE.Vector3()), sz = box.getSize(new THREE.Vector3());
     grp.position.sub(c); grp.position.y += sz.y / 2; this.obj = grp; this.scene.add(grp);
     // 物差しは実寸（2µm）のまま。大きな模型の横でも見えるよう、太さだけ見やすくする
     const th = Math.max(1, Math.max(sz.x, sz.y, sz.z) / 12); this.bar.children.forEach((c, i) => c.scale.set(th, i === 0 ? 1 : 1, th));
+    this.bar.visible = !src.noBar; this.note = src.noBar ?? '';
     this.bar.position.set(-Math.max(sz.x, sz.z) * 0.5 - 1.2 - th * 0.3, 0, 0);
-    this.dist = Math.max(sz.x, sz.y, sz.z) * 2.4 + 4; this.auto = true; this.active = true;
+    this.dist = Math.max(sz.x, sz.y, sz.z) * (document.body.classList.contains("shot") ? 1.5 : 2.4) + (document.body.classList.contains("shot") ? 1 : 4); this.auto = true; this.active = true;
   }
   hide() { this.active = false; }
   render(renderer: THREE.WebGPURenderer, dt: number) {

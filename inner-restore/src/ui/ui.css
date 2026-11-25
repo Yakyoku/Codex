@@ -125,3 +125,6 @@ body.vb-off voice-buddy, body.vb-off [data-voice-buddy] { display:none !importan
 #hubui .hn { position:absolute; left:0; right:0; bottom:max(18px,env(safe-area-inset-bottom)); text-align:center; color:#9fb3bc; font-size:clamp(13px,1.4vw,16px); }
 body.hubbing #hud, body.hubbing #subs, body.hubbing #hint, body.hubbing #topbtns, body.hubbing #patient, body.hubbing #dx, body.hubbing #tags, body.hubbing #reticle, body.hubbing #card, body.hubbing #touch, body.hubbing #title { visibility:hidden; }
 @media (max-width:700px) { #hubui .org { top:auto; bottom:max(60px,env(safe-area-inset-bottom)); transform:none; width:auto; left:12px; right:12px; } #hubui .vit { display:none; } }
+body.shot #viewer, body.shot #errline, body.shot .ir-hud { visibility:hidden; } body.shot voice-buddy { display:none; }
+#patient .wisps { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; mix-blend-mode:screen; }
+#reticle.beat { border-color:#ffd0a0; box-shadow:0 0 10px #ffb07a99; }

@@ -1,0 +1,203 @@
+{
+ "entries": [
+  {
+   "id": "ciliated_cell",
+   "ja": "線毛細胞",
+   "en": "Ciliated cell",
+   "kind": "細胞",
+   "stage": "鼻",
+   "size": "高さ 約15〜20µm。頭の面に、長さ5〜7µmの線毛が200〜300本",
+   "compare": "高さは赤血球（約7.8µm）2個分ほど、髪の毛の太さの約4分の1",
+   "intro": "鼻の内側の壁をつくる、背の高い柱のような細胞です。頭に生えた線毛（細い毛）をそろえて打ち、粘液の流れを生み出します。",
+   "look": "柱の頭に、細い毛がじゅうたんのようにびっしり生え、毛並みのように同じ向きに寝ています。線毛のあいだには、ごく短い突起（微絨毛）がのぞきます。",
+   "move": "細胞そのものは動きません。頭の線毛が、1秒に約10回の速さで打ち続けます。",
+   "role": "線毛を打って、ちりや細菌を捕まえた粘液を喉のほうへ送り出します。",
+   "relation": "杯細胞（粘液をつくる細胞）とまだらに並び、その粘液を運びます。傷ついたときは、底にいる基底細胞（ほかの細胞のもとになる細胞）から作り直されます。",
+   "image": "ciliated_cell.jpg"
+  },
+  {
+   "id": "cilium",
+   "ja": "線毛",
+   "en": "Cilium (motile cilium)",
+   "kind": "小器官",
+   "stage": "鼻",
+   "size": "長さ 約5〜7µm、太さ 約0.2〜0.3µm",
+   "compare": "長さは赤血球の直径（約7.8µm）とほぼ同じ。太さは髪の毛の約300分の1",
+   "intro": "細胞の表面に生えた、細い毛のような突起です。中には微小管（細い管）が「9+2」の形に並び、そのあいだのモーターのたんぱくが毛を曲げます。",
+   "look": "先の丸い、細くなめらかな円柱。1つの細胞に200〜300本が、すき間なく立ち並びます。",
+   "move": "1秒に約10回（およそ7〜15回）打ちます。まっすぐ伸びて速く振り下ろし（有効打）、曲がって身をかがめながらゆっくり戻ります（回復打）。隣どうしが少しずつ遅れて打つので、表面に波が走ります。",
+   "role": "上に乗った粘液を押して、1分に数ミリの速さで喉のほうへ運びます。",
+   "relation": "線毛細胞の頭から生え、粘液の下の、さらさらした層の中で打ちます。ウイルス感染のあとは、短くなったり、抜け落ちたり、打ち方が乱れたりし、元に戻るまで数週間かかることがあります。",
+   "image": "cilium.jpg"
+  },
+  {
+   "id": "goblet_cell",
+   "ja": "杯細胞",
+   "en": "Goblet cell",
+   "kind": "細胞",
+   "stage": "鼻",
+   "size": "高さは幅の約4倍。中の粘液の粒は直径 最大 約1µm",
+   "compare": "粘液の粒1つは、赤血球の約8分の1",
+   "intro": "上半分が粘液の粒でふくらんだ、杯（さかずき）のような形の細胞です。粘液の材料であるムチン（水を含んでゲルになるたんぱく）を出します。",
+   "look": "ワイングラスの器のようにふくらんだ頭と、細い茎。頭には線毛がなく、粒がぎっしり詰まっています。核は根元に押しやられています。",
+   "move": "細胞は動きません。粒の中身を、表面から少しずつ外へ出します。ちりや煙などの刺激で、出す量が増えます。",
+   "role": "粘液の材料を出し、ちりや細菌を捕まえる粘液の層をつくります。",
+   "relation": "線毛細胞のあいだに点々と並び、出した粘液は線毛が運びます。炎症が長く続くと、線毛細胞の代わりに杯細胞が増えることがあります。",
+   "image": "goblet_cell.jpg"
+  },
+  {
+   "id": "mucus",
+   "ja": "粘液",
+   "en": "Mucus",
+   "kind": "物質",
+   "stage": "鼻",
+   "size": "鼻の粘膜をおおう厚み 約10〜15µm（そのうち線毛のまわりのさらさらした層が約6〜7µm）",
+   "compare": "層の厚みは赤血球（約7.8µm）1.5〜2個分、髪の毛の太さの約6分の1",
+   "intro": "鼻の内側を薄くおおう、9割以上が水のゲルです。線毛のまわりのさらさらした層と、その上に浮くねばりのある層の、二層になっています。",
+   "look": "健康なときは透明でさらさら。感染のときは、集まった白血球の酵素のために、黄色や緑色に濁ることがあります。",
+   "move": "線毛に押されて、1分に約5〜10mm（範囲2〜25mm）の速さで喉のほうへ流れます。鼻の粘液は20〜30分ほどで新しく入れ替わります。",
+   "role": "吸い込んだちり、花粉、細菌、ウイルスを捕まえ、喉へ運んで飲み込ませます。抗体などで、上皮を守り、乾燥を防ぎます。",
+   "relation": "杯細胞と、粘膜の下の腺（粘膜下腺）がつくり、線毛細胞が運びます。ねばりが強くなりすぎると、線毛が押せなくなって流れが止まります。",
+   "image": "mucus.jpg"
+  },
+  {
+   "id": "olfactory_neuron",
+   "ja": "嗅細胞",
+   "en": "Olfactory sensory neuron",
+   "kind": "細胞",
+   "stage": "鼻",
+   "size": "突起の先の玉から、動かない毛（嗅線毛）が10〜30本、長いもので約100µmまでのびる",
+   "compare": "長い嗅線毛は、髪の毛の太さ（約70〜80µm）よりも長い",
+   "intro": "においを感じる神経細胞（嗅神経細胞）で、鼻の天井の、切手ほどの広さの嗅上皮に約1,000万個が並びます。神経細胞なのに、1〜3か月ほどで新しく作り替えられ続けるという、珍しい性質を持っています。",
+   "look": "細い突起の先が小さな玉のようにふくらみ、そこから細く長い毛が粘液の中へ広がります。隣の細胞の毛と網目をつくります。",
+   "move": "細胞は動きません。嗅線毛は、運動する線毛とちがって自分では打ちません。",
+   "role": "嗅線毛の表面にある受け手（嗅覚受容体、ヒトで約400種類）が、粘液に溶けたにおいの分子を受け取り、その信号を脳へ送ります。",
+   "relation": "1本ずつ支持細胞に包まれて支えられ、底の基底細胞から作り直されます。脳の嗅球へ、細い軸索（信号を送る線）をのばします。",
+   "image": "olfactory_neuron.jpg"
+  },
+  {
+   "id": "sustentacular_cell",
+   "ja": "支持細胞",
+   "en": "Sustentacular cell",
+   "kind": "細胞",
+   "stage": "鼻",
+   "size": "嗅上皮の表面から底までを貫く、背の高い柱の形。数は嗅細胞とほぼ同じ約1,000万個",
+   "compare": "（実寸の数値は確かめられていません）",
+   "intro": "嗅上皮で、嗅細胞を1本ずつ包み込んで支える細胞です。においを溶かす粘液を整え、嗅細胞の毛に栄養（ブドウ糖）を届けていると考えられています。",
+   "look": "背の高い柱で、表面には短い突起（微絨毛）が芝生のように生え、嗅細胞の毛と入り混じります。",
+   "move": "細胞は動きません。傷つくと、底の基底細胞から数日で作り直されます。",
+   "role": "嗅細胞を支え、粘液の成分を整え、においの分子を運ぶたんぱくをつくり、入ってきた異物を片付けます。",
+   "relation": "新型コロナウイルスの感染では、嗅細胞ではなく主にこの細胞が感染します。支持細胞が傷むと、包まれていた嗅細胞の毛が縮み、においが消えるという説が有力です。",
+   "image": "sustentacular_cell.jpg"
+  },
+  {
+   "id": "neutrophil",
+   "ja": "好中球",
+   "en": "Neutrophil",
+   "kind": "細胞",
+   "stage": "鼻",
+   "size": "面に広がったとき直径 約12〜15µm",
+   "compare": "赤血球（約7.8µm）の約1.5〜2倍。髪の毛の太さの約5分の1",
+   "intro": "血液から駆けつける白血球の一種で、白血球の4〜7割を占めます。炎症の場所に集まり、細菌を飲み込んで退治します。",
+   "look": "表面にひだの多い、やわらかな塊。核はいくつかの丸い部分（2〜5個）にくびれています。動くときは前に薄い膜を広げ、後ろに細い尾を引きます。",
+   "move": "炎症の場所から出る物質をたどって、組織の中を這って進みます（1分に十数µmほど）。組織に出てからの寿命は1〜2日です。",
+   "role": "細菌などを飲み込んで分解します。網のような DNA を放って細菌を捕まえることもあります。",
+   "relation": "感染した上皮が出す物質に呼ばれて集まります。たくさん集まると、粘液や膿が黄色〜緑色に濁ります（緑色は好中球の酵素の色です）。",
+   "image": "neutrophil.jpg"
+  },
+  {
+   "id": "odorant",
+   "ja": "においの分子",
+   "en": "Odorant molecule",
+   "kind": "分子",
+   "stage": "鼻",
+   "size": "多くは分子量300ほどまでの、小さな分子（目安）",
+   "compare": "細胞や線毛よりはるかに小さく、顕微鏡でも見えません",
+   "intro": "空気にただよう、揮発しやすい小さな化学物質です。鼻の奥の粘液に溶け込み、嗅細胞の毛にある受け手に結びつくと、においとして感じられます。",
+   "look": "目には見えません。",
+   "move": "吸い込んだ空気とともに鼻の天井へ届き、粘液に溶けて広がります。水に溶けにくい分子は、粘液の中のたんぱく（におい分子結合たんぱく）に運ばれると考えられています。",
+   "role": "においを伝えるもとです。1つの分子は何種類もの受け手に結びつき、どの受け手の組み合わせが反応したかで、においが区別されます。",
+   "relation": "嗅細胞の嗅線毛にある受け手に結びつきます。支持細胞が、使い終わった分子の片付けを手伝います。",
+   "image": "odorant.jpg"
+  }
+ ],
+ "sources": {
+  "ciliated_cell": [
+   "Docs/REFERENCE/atlas/ciliated_cell.md",
+   "Beule AG. GMS Curr Top Otorhinolaryngol 2010;9:Doc07 https://pmc.ncbi.nlm.nih.gov/articles/PMC3199822/",
+   "Tilley AE et al. Annu Rev Physiol 2015 https://pmc.ncbi.nlm.nih.gov/articles/PMC4465242/",
+   "Chen Q et al. Front Cell Dev Biol 2020 https://pmc.ncbi.nlm.nih.gov/articles/PMC7779769/",
+   "https://en.wikipedia.org/wiki/Respiratory_epithelium",
+   "https://commons.wikimedia.org/wiki/File:Bronchiolar_epithelium_4_-_SEM.jpg"
+  ],
+  "cilium": [
+   "Docs/REFERENCE/atlas/cilium.md",
+   "Tilley AE et al. Annu Rev Physiol 2015 https://pmc.ncbi.nlm.nih.gov/articles/PMC4465242/",
+   "Beule AG. 2010 https://pmc.ncbi.nlm.nih.gov/articles/PMC3199822/",
+   "Chilvers MA et al. Thorax 2003 https://pubmed.ncbi.nlm.nih.gov/12668798/",
+   "Burn A et al. Eur Biophys J 2022 https://pmc.ncbi.nlm.nih.gov/articles/PMC8827335/",
+   "Xu L, Jiang Y. Cells 2019 https://pmc.ncbi.nlm.nih.gov/articles/PMC6678682/",
+   "Carson JL et al. N Engl J Med 1985 https://pubmed.ncbi.nlm.nih.gov/3969108/",
+   "Wong JY et al. Thorax 2005 https://pubmed.ncbi.nlm.nih.gov/15994267/"
+  ],
+  "goblet_cell": [
+   "Docs/REFERENCE/atlas/goblet_cell.md",
+   "https://en.wikipedia.org/wiki/Goblet_cell",
+   "Fahy JV, Dickey BF. N Engl J Med 2010 https://pmc.ncbi.nlm.nih.gov/articles/PMC4048736/",
+   "Berger G et al. Am J Rhinol 1997 https://pubmed.ncbi.nlm.nih.gov/9209597/",
+   "Tilley AE et al. 2015 https://pmc.ncbi.nlm.nih.gov/articles/PMC4465242/"
+  ],
+  "mucus": [
+   "Docs/REFERENCE/atlas/mucus.md",
+   "Beule AG. 2010 https://pmc.ncbi.nlm.nih.gov/articles/PMC3199822/",
+   "Gizurarson S. Biol Pharm Bull 2015 https://www.jstage.jst.go.jp/article/bpb/38/4/38_b14-00398/_html",
+   "Button B et al. Science 2012 https://pmc.ncbi.nlm.nih.gov/articles/PMC3633213/",
+   "Fahy JV, Dickey BF. 2010 https://pmc.ncbi.nlm.nih.gov/articles/PMC4048736/",
+   "https://en.wikipedia.org/wiki/Mucus",
+   "https://en.wikipedia.org/wiki/Mucociliary_clearance"
+  ],
+  "olfactory_neuron": [
+   "Docs/REFERENCE/atlas/olfactory_neuron.md",
+   "Moran DT et al. J Neurocytol 1982 https://pubmed.ncbi.nlm.nih.gov/7143026/",
+   "Butowt R et al. Trends Neurosci 2023 https://pmc.ncbi.nlm.nih.gov/articles/PMC9666374/",
+   "McClintock TS et al. Chem Senses 2020 https://pmc.ncbi.nlm.nih.gov/articles/PMC8133333/",
+   "https://en.wikipedia.org/wiki/Olfactory_receptor_neuron",
+   "https://en.wikipedia.org/wiki/Olfactory_epithelium"
+  ],
+  "sustentacular_cell": [
+   "Docs/REFERENCE/atlas/sustentacular_cell.md",
+   "Butowt R et al. Trends Neurosci 2023 https://pmc.ncbi.nlm.nih.gov/articles/PMC9666374/",
+   "Brann DH et al. Sci Adv 2020 https://pmc.ncbi.nlm.nih.gov/articles/PMC10715684/",
+   "Khan M et al. Cell 2021 https://pubmed.ncbi.nlm.nih.gov/34798069/",
+   "Moran DT et al. 1982 https://pubmed.ncbi.nlm.nih.gov/7143026/"
+  ],
+  "neutrophil": [
+   "Docs/REFERENCE/atlas/neutrophil.md",
+   "https://en.wikipedia.org/wiki/Neutrophil",
+   "https://en.wikipedia.org/wiki/Mucus",
+   "Jarjour NN et al. J Allergy Clin Immunol 2000 https://pubmed.ncbi.nlm.nih.gov/10856152/",
+   "https://commons.wikimedia.org/wiki/File:Neutrophil_with_anthrax_copy.jpg"
+  ],
+  "odorant": [
+   "Docs/REFERENCE/nose.md 6.2",
+   "https://en.wikipedia.org/wiki/Odor",
+   "https://en.wikipedia.org/wiki/Odorant-binding_protein",
+   "https://en.wikipedia.org/wiki/Olfactory_receptor_neuron",
+   "Butowt R et al. 2023 https://pmc.ncbi.nlm.nih.gov/articles/PMC9666374/"
+  ]
+ },
+ "uncertain": [
+  "cilium: kind を『小器官』とした（細胞の一部。既存の mitochondrion と同じ扱い）。拍動数は鼻の大人 平均11.5Hz（Chilvers 2003、要旨）と総説の7〜15Hzから『約10回（およそ7〜15回）』とした。有効打と回復打の時間の割合は未確認なので入れていない。メタクロナール波の波長は 6µm と 50µm で食い違うため数値を入れていない。",
+  "cilium: relation の『元に戻るまで数週間』は、子どものウイルス性上気道炎で 2〜10週（Carson 1985、要旨）、乳児の細気管支炎で平均13〜17週（Wong 2005、要旨）による。",
+  "ciliated_cell: 高さ15〜20µm は鼻の総説（Beule 2010）の値だが、同じ総説の上皮の高さ 40〜100µm と整合しない（多列上皮では細胞は上皮の全高に近いはず）。幅（15µm と、線毛の密度からの計算 6〜8µm）も食い違うため、size に幅を書いていない。",
+  "goblet_cell: 鼻の杯細胞の実寸は未確認。『高さは幅の約4倍』は Wikipedia の一般的な記述。顆粒径『最大 約1µm』は NEJM 総説（Fahy 2010）の気道の図の説明による。炎症で増えるかどうかは資料で食い違う（培養・気道では増える／通年性鼻炎の下鼻甲介では密度に差なし、Berger 1997 要旨）ため、relation は『増えることがあります』にとどめた。",
+  "mucus: 厚み 10〜15µm は鼻の値（Beule 2010、Gizurarson 2015）。気道全体では 0.5〜70µm と幅が大きい。速さ 5〜10mm/分は代表値で、Beule 2010 の 2〜25mm/分の範囲と、平均 6〜8mm/分の報告（検索の抜粋のみ）による。Gizurarson 2015 の『mm/時』の記述は単位の誤りと判断して不採用。kind『物質』は既存の種類にない語。",
+  "mucus: look の色（黄〜緑、緑は好中球のミエロペルオキシダーゼ）は Wikipedia による。色だけではウイルスか細菌か区別できない点は本文に入れていない。",
+  "olfactory_neuron: 『切手ほどの広さ』は嗅上皮 約5cm²（Wikipedia）による言い換え。資料により 2.5〜10cm² と幅がある。数は 約1,000万（Butowt 2023）、Wikipedia は 1,000万〜2,000万。嗅線毛の本数は 10〜30本（Moran 1982 要旨）を採用（ほかに 10〜15、20〜35）。長さ『約100µmまで』は Butowt 2023 と Wikipedia。5〜20µm という値も抜粋にある。作り替わり『1〜3か月ほど』は 30〜90日（Butowt 2023）と 6〜8週（Wikipedia）による。ノブと細胞体の寸法は未確認。ja は『嗅細胞』、別名として嗅神経細胞を intro に入れた。",
+  "sustentacular_cell: 寸法は未確認のため compare に『確かめられていません』と書いた。台帳の様式上、空欄にするか別の比較に替えるか要判断。ブドウ糖を届ける働きと、においが消える仕組みは Butowt 2023 の総説の説（仮説）であり、本文でも『考えられています』『説が有力』とした。感染の主な標的が支持細胞であることは Brann 2020（全文）と Khan 2021（要旨）で確認。",
+  "neutrophil: 移動の速さ『1分に十数µm』は、検索の抜粋のみ（10〜20µm/分、最大 約30µm/分、測定法で違う）。本文未読。直径 12〜15µm は面に広がったとき、浮いているときは 約8.85µm（Wikipedia）。鼻の粘膜の中の数は未確認。",
+  "odorant: 『分子量300ほどまで』は検索の抜粋のみの目安で、例外（大きなじゃこうの分子、硫化水素などの無機の気体）がある。『1兆種類のにおいを区別』は計算方法に批判があるため使っていない。kind『分子』は既存の種類にない語。image は分子模型などの図が必要。",
+  "全体: 生体での細胞1個ずつの色の資料は見つからなかった。look は形を中心にし、色は資料のあるもの（粘液の色）だけに書いた。呼吸粘膜は桃色、嗅粘膜は淡い黄褐色（Wikipedia の Olfactory mucosa）で、背景の色として使える。",
+  "全体: basal_cell（基底細胞）は仕様書（atlas/basal_cell.md）のみ作成し、寸法が未確認のため台帳の下書きには入れていない。"
+ ]
+}

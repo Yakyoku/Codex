@@ -4,7 +4,7 @@ import { createRenderer, fitRenderer } from '../core/renderer';
 import { detectDevice, DEVICE_LABEL } from '../core/device';
 import { Hud } from '../core/hud';
 import { GameAudio } from '../core/audio';
-import { ZONES } from '../stages/zone';
+import { ZONES, stageZones } from '../stages/zone';
 import { loadSave, writeSave } from '../core/save';
 import { ATLAS } from '../game/ui';
 import { PurifyBeam } from '../game/beam';
@@ -94,7 +94,7 @@ async function main() {
   }
   const known = new Set<string>(); const queue: { id: string; at: THREE.Vector3 | null }[] = []; let cardT = 0, subT = 0, cardOn = false;
   function showCard(id: string, at: THREE.Vector3 | null) {
-    const e = ATLAS.find((x) => x.id === id)!; const c = cardP.ctx; cardP.clear(); known.add(id); audio.chime();
+    const e = ATLAS.find((x) => x.id === id); if (!e) { known.add(id); return; } const c = cardP.ctx; cardP.clear(); known.add(id); audio.chime();
     c.fillStyle = '#7fe0d2'; c.fillRect(0, 0, 8, cardP.h); c.font = `26px ${FONT}`; c.fillText('初めて出会ったもの', 48, 60);
     c.fillStyle = '#e9eef2'; c.font = `600 76px ${FONT}`; c.fillText(e.ja, 48, 150); c.fillStyle = '#8fa3ad'; c.font = `30px ${FONT}`; c.fillText(e.en, 48, 198);
     c.fillStyle = '#f2b36b'; c.font = `34px ${FONT}`; let y = cardP.wrap(`${e.size}（${e.compare}）`, 48, 262, 930, 46);
@@ -114,7 +114,7 @@ async function main() {
     const g = c.createLinearGradient(28, 0, 484, 0); g.addColorStop(0, '#f2b36b'); g.addColorStop(1, '#7fe0d2'); c.fillStyle = g; c.fillRect(28, 222, 456 * prog, 10);
     c.fillStyle = scan ? '#7fe0d2' : '#8fa3ad'; c.font = `28px ${FONT}`; c.fillText(scan ? 'スキャン中' : '端末を見るとスキャン', 28, 290);
     if (scan && diag.findings.length) { c.fillStyle = '#ffc070'; c.font = `26px ${FONT}`; diag.findings.slice(0, 2).forEach((f, i) => c.fillText(`病巣${i + 1} ${f.short} ${Math.round(f.dist)}µm`, 28, 332 + i * 34)); }
-    else c.fillText(`知覚加速 ×${tuning.flow.perceptionFactor}`, 28, 340);
+    else c.fillText(`知覚加速 ×${M.perception ?? tuning.flow.perceptionFactor}`, 28, 340);
     wrist.tex.needsUpdate = true;
   }
 
@@ -196,6 +196,10 @@ async function main() {
     v.set(d.x * my - d.z * mx, 0, d.z * my + d.x * mx);
     if (moveMode() === 'step' && session) { if (v.length() > 0.7 && stepReady) { rig.position.addScaledVector(v.normalize(), 2.2); stepReady = false; } if (v.length() < 0.3) stepReady = true; vel.set(0, 0, 0); }
     else { vel.lerp(v.multiplyScalar(tuning.vr.moveSpeed * K * 1.6), Math.min(1, dt * 4)); rig.position.addScaledVector(vel, dt); }
+    // 鼻：流れ（粘液の川）に乗ると運ばれる。拍子は手の道具の光で示す
+    if (stage.drift) rig.position.addScaledVector(stage.drift(rig.position), dt);
+    if (stage.beat) { const b = stage.beat(); (emitter.material as THREE.MeshBasicMaterial).color.setRGB(0.79 + 0.21 * Math.exp(-b * 9), 0.66 + 0.3 * Math.exp(-b * 9), 1); emitter.scale.setScalar(1 + 0.8 * Math.exp(-b * 9)); }
+    stage.setDiver?.(rig.position);
     stage.collide?.(rig.position, 0.45 * K);
     rig.position.x = Math.max(-SX / 2 + 14, Math.min(SX / 2 - 14, rig.position.x)); rig.position.z = Math.max(-SZ / 2 + 12, Math.min(SZ / 2 - 12, rig.position.z));
     // 手で水をかく：握っている手の動き（世界の中での移動量）の反対へ、体を押し出す。離すと水の抵抗でゆっくり止まる
@@ -250,7 +254,7 @@ async function main() {
     drawPatient(prog);
     if (!finished && prog >= 1) {
       finished = true; stage.health.setAll(1); audio.resolve();
-      const next = ZONES[zi + 1]; writeSave({ done: [...new Set([...(loadSave().done ?? []), M.id])], zone: next ? next.id : M.id });
+      const SZS = stageZones(ZONES[zi].stage), next = SZS[SZS.indexOf(ZONES[zi]) + 1]; writeSave({ done: [...new Set([...(loadSave().done ?? []), M.id])], zone: next ? next.id : M.id });
       say(`${M.done}目の前の窓は、患者の視界です。` + (next ? `次は ${next.name}。VR を終えて「次の区域へ」を押してください。` : 'ステージ1の治療が終わりました。'), 14);
       // 全身マップ：目の前に、立体の人体を浮かべる（治した器官が脈打つ）。のぞき込める大きさで
       void buildHubModel(loadSave()).then((hm) => {

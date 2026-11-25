@@ -9,7 +9,7 @@ import { createPost } from '../core/post';
 import { rumble, buzz } from '../core/feel';
 import { Input } from '../core/input';
 import { GameAudio, speak } from '../core/audio';
-import { ZONES } from '../stages/zone';
+import { ZONES, STAGES, stageZones } from '../stages/zone';
 import { loadSave, writeSave } from '../core/save';
 import { Diver } from '../game/diver';
 import { PurifyBeam } from '../game/beam';
@@ -71,8 +71,12 @@ async function main() {
   // 区域：URL の ?zone= か、保存した続きから。区域ごとに別のファイルを後から読み込む
   const save = loadSave();
   let zi = ZONES.findIndex((z) => z.id === (Q.get('zone') ?? save.zone ?? 'retina')); if (zi < 0) zi = 0;
-  const entrance = zi === 0 && !save.arrived && !Q.has('h') && !Q.has('noentry') && !debugCam && sim === null;
+  // 入口：そのステージの最初の区域で、まだ治していなければ（網膜は一度着いたら省く）
+  const firstOfStage = ZONES.findIndex((z) => z.stage === ZONES[zi].stage) === zi;
+  const entrance = firstOfStage && !(save.done ?? []).includes(ZONES[zi].id) && !(zi === 0 && save.arrived) && !Q.has('h') && !Q.has('noentry') && !debugCam && sim === null;
   const stage = await (await ZONES[zi].load()).build(renderer, tier, { entrance });
+  // 同じステージ（器官）の区域の並び。区域を治しきると、この中の次へ進む
+  const SZS = stageZones(ZONES[zi].stage), si = SZS.indexOf(ZONES[zi]);
   const M = stage.meta;
   progress(0.7);
   const diver = await Diver.load(tier === 'pc-high' || tier === 'mobile-high');
@@ -104,14 +108,15 @@ async function main() {
   const F = tuning.feel; let hitStop = 0, shake = 0, rumbleT = 0, wasHitting = false, lastStep = -1;
   let focusAmt = 0; let focusOn = false; let scanT = 0; let curSpeed = 0;
   const hud = new Hud(`${backendLabel} · ${TIER_LABEL[tier]} · ${DEVICE_LABEL[device]}`, () => dyn ? `解像度 ×${dyn.scale.toFixed(2)}` : '');
-  $('pf').textContent = String(tuning.flow.perceptionFactor);
+  $('pf').textContent = String(M.perception ?? tuning.flow.perceptionFactor); if (M.scaleNote) $('scalenote').textContent = M.scaleNote;
 
   // ---- 紹介カード ----
   const card = $('card'); let cardT = 0, cardDur = 0, cardCur: string | null = null, lastCard: string | null = null; const queue: { id: string; at: THREE.Vector3 | null }[] = [];
   const subs = $('subs'); let subT = 0;
   const say = (text: string, dur = 6, voice = true) => { subs.textContent = text; subs.classList.add('on'); subT = dur; if (voice) speak(text, ttsSel.value === 'on' && sim === null); };
   function showCard(id: string, at: THREE.Vector3 | null, replay = false) {
-    const e = ATLAS.find((x) => x.id === id)!; const mode = introSel.value;
+    const e = ATLAS.find((x) => x.id === id); const mode = introSel.value;
+    if (!e) { known.add(id); return; }   // 台帳にまだない項目は出さない
     if (!replay) { known.add(id); store.set('ir.known', [...known].join(',')); audio.chime(); }
     if (mode === 'off') return;
     card.querySelector('.n')!.textContent = e.ja; card.querySelector('.e')!.textContent = e.en;
@@ -156,7 +161,7 @@ async function main() {
   // ---- 図鑑の3Dビューア ----
   const viewer = new AtlasViewer(renderer, canvas);
   const openViewer = (id: string) => { const e = ATLAS.find((x) => x.id === id)!; $('viewer').classList.remove('hide'); $('atlas').classList.add('hide'); input.blocked = true; document.body.classList.add('viewing');
-    ($('viewer').querySelector('.vt b') as HTMLElement).textContent = e.ja; ($('viewer').querySelector('.vt span') as HTMLElement).textContent = `${e.en}　${e.size}（${e.compare}）`; void viewer.show(id); };
+    ($('viewer').querySelector('.vt b') as HTMLElement).textContent = e.ja; ($('viewer').querySelector('.vt span') as HTMLElement).textContent = `${e.en}　${e.size}（${e.compare}）`; void viewer.show(id).then(() => { if (viewer.note) ($('viewer').querySelector('.vt span') as HTMLElement).textContent += `　※${viewer.note}`; }); };
   $('v-close').onclick = () => { viewer.hide(); input.blocked = false; document.body.classList.remove('viewing'); $('viewer').classList.add('hide'); openAtlas(true); };
   // ---- 全身マップ（ハブ）----
   const hub = new HubView(renderer, canvas); let hubWasPaused = false;
@@ -175,7 +180,7 @@ async function main() {
     orgEl.querySelector('h3')!.textContent = `${o.ja}（ステージ${o.stage}）`;
     (orgEl.querySelector('p') as HTMLElement).textContent = o.ready ? o.note : `${o.note}。（これから作るステージです）`;
     const zl = orgEl.querySelector('.zl') as HTMLElement;
-    zl.innerHTML = o.ready ? ZONES.map((z) => `<button class="btn ${sv.done?.includes(z.id) ? 'done' : ''}" data-z="${z.id}">${z.name}</button>`).join('') : '';
+    zl.innerHTML = o.ready ? stageZones(o.id).map((z) => `<button class="btn ${sv.done?.includes(z.id) ? 'done' : ''}" data-z="${z.id}">${z.name}</button>`).join('') : '';
     zl.querySelectorAll<HTMLButtonElement>('[data-z]').forEach((b) => (b.onclick = () => {
       const zid = b.dataset.z!;
       if (zid === M.id && !finished) { closeHub(); if (!started) begin(); return; }
@@ -204,7 +209,21 @@ async function main() {
   };
   // ---- 患者の視界 ----
   const pImg = $('patient').querySelector('img') as HTMLImageElement, pSpot = $('patient').querySelector('.spot') as HTMLElement;
+  // におい（鼻のステージ）：部屋の景色の色と、ただよう香りの帯で見せる。病のあいだは灰色で、香りの帯がない
+  const smell = M.patient === 'smell', wc = $('patient').querySelector('.wisps') as HTMLCanvasElement, wx = wc.getContext('2d')!;
+  if (smell) $('patient').querySelector('.cap')!.textContent = '患者の感じる におい';
+  let wispM = 0;
+  const drawWisps = (time: number) => {
+    if (!smell) return; const w = (wc.width = wc.clientWidth || 300), h = (wc.height = wc.clientHeight || 170); wx.clearRect(0, 0, w, h);
+    const cols = ['255,190,120', '255,150,170', '190,230,140', '255,225,150'];
+    for (let i = 0; i < 7; i++) {
+      wx.beginPath(); const y0 = h * (0.25 + i * 0.09);
+      for (let x = 0; x <= w; x += 6) { const y = y0 + Math.sin(x * 0.02 + time * (0.6 + i * 0.1) + i) * h * 0.06 + Math.sin(x * 0.007 - time * 0.4) * h * 0.04; if (x === 0) wx.moveTo(x, y); else wx.lineTo(x, y); }
+      wx.strokeStyle = `rgba(${cols[i % 4]},${(0.5 * wispM).toFixed(3)})`; wx.lineWidth = h * (0.02 + 0.015 * Math.sin(time + i)); wx.shadowBlur = h * 0.06; wx.shadowColor = `rgba(${cols[i % 4]},${wispM.toFixed(2)})`; wx.stroke();
+    }
+  };
   function patientView(m: number) {
+    if (smell) { wispM = m; pImg.style.filter = `grayscale(${(1 - m).toFixed(2)}) brightness(${(0.6 + 0.4 * m).toFixed(2)})`; return; }
     if ($('patient').classList.contains('waking')) return;
     const k = 1 - m;
     pImg.style.filter = `blur(${(k * 0.9).toFixed(2)}em) brightness(${(0.4 + 0.6 * m).toFixed(2)}) saturate(${(0.35 + 0.65 * m).toFixed(2)}) contrast(${(0.75 + 0.25 * m).toFixed(2)})`;
@@ -292,6 +311,9 @@ async function main() {
     pos.y = stage.floorHeight(pos.x, pos.z);
     diver.setSwim(false, 0, 0);
     }
+    // 流れ（粘液の川など）に乗ると、体ごと運ばれる
+    if (stage.drift && !swimming) { const dv = stage.drift(pos); pos.addScaledVector(dv, dt); }
+    stage.setDiver?.(pos);
     stage.collide?.(pos, 0.45);
     const px0 = pos.x, pz0 = pos.z;
     pos.x = Math.max(-SX / 2 + 14, Math.min(SX / 2 - 14, pos.x)); pos.z = Math.max(-SZ / 2 + 12, Math.min(SZ / 2 - 12, pos.z));
@@ -353,7 +375,9 @@ async function main() {
     if (stepNow > lastStep && lastStep >= 0 && !finished) { audio.restored(stepNow); rumble(0.5 * F.rumble, 0.5 * F.rumble, 180); buzz(30); purify.burst(); shake = Math.max(shake, 0.6); }
     lastStep = Math.max(lastStep, stepNow);
     $('hv').textContent = String(Math.round(prog * 100)); $('hm').style.width = `${prog * 100}%`;
-    if (!patientDone) patientView((zi + prog) / ZONES.length); $('reticle').classList.toggle('on', firing);
+    // 拍子（線毛の波）：照準の輪が脈打つ
+    if (stage.beat) { const b = stage.beat(); $('reticle').style.transform = `scale(${(1 + 0.45 * Math.exp(-b * 9)).toFixed(3)})`; $('reticle').classList.toggle('beat', b < 0.3); }
+    if (!patientDone) patientView((si + prog) / SZS.length); $('reticle').classList.toggle('on', firing);
     audio.update(mean, stage.flowing(), firing, stage.u.heartPhase.value as number);
     if (!finished && prog >= 1 && !debugCam) finish();
   }
@@ -362,29 +386,30 @@ async function main() {
     finished = true; audio.resolve(); stage.health.setAll(1); hideCard(); queue.length = 0;
     say(M.done, 5);
     vbNotify('all_clear', { total: stage.plugs.length, firstTry: stage.plugs.length, miss: 0 });   /* voice-buddy */
-    const done = [...new Set([...(loadSave().done ?? []), M.id])]; const next = ZONES[zi + 1];
+    const done = [...new Set([...(loadSave().done ?? []), M.id])]; const next = SZS[si + 1];
     writeSave({ done, zone: next ? next.id : M.id });
     if (sim !== null) return;
     const last = !next;
     setTimeout(() => {
       // 目が開くように：まぶしい光でにじんだ状態から、ゆっくりピントが合っていく（途中の区域では、少しずつ晴れる）
       const pv = $('patient'); pv.classList.add('full', 'waking');
-      const m = (zi + 1) / ZONES.length, blur = (1 - m) * 22;
+      const m = (si + 1) / SZS.length, blur = (1 - m) * 22;
       pImg.style.transition = 'none'; pImg.style.filter = 'blur(28px) brightness(2.1) saturate(0.4)'; pImg.style.transform = 'scale(1.06)';
       requestAnimationFrame(() => requestAnimationFrame(() => {
         pImg.style.transition = 'filter 6s cubic-bezier(.2,.6,.2,1), transform 9s ease-out';
-        pImg.style.filter = `blur(${blur.toFixed(1)}px) brightness(${(0.55 + 0.45 * m).toFixed(2)}) saturate(${(0.45 + 0.55 * m).toFixed(2)})`; pImg.style.transform = 'scale(1)';
+        pImg.style.filter = smell ? `grayscale(${(1 - m).toFixed(2)})` : `blur(${blur.toFixed(1)}px) brightness(${(0.55 + 0.45 * m).toFixed(2)}) saturate(${(0.45 + 0.55 * m).toFixed(2)})`; pImg.style.transform = 'scale(1)'; if (smell) wispM = m;
       }));
-      say(last ? '患者の視界です。ぼやけていた光が、くっきりと形を結びました。' : '患者の視界です。ぼやけていた光が、少しずつ形を結びはじめました。', 7);
+      say(smell ? (last ? '患者が、深く息を吸いこみました。朝の空気の匂いが、色をともなって戻ってきます。' : '患者の感じる匂いが、少しずつ戻ってきました。') : last ? '患者の視界です。ぼやけていた光が、くっきりと形を結びました。' : '患者の視界です。ぼやけていた光が、少しずつ形を結びはじめました。', 7);
     }, 4500);
     setTimeout(() => {
       $('patient').classList.remove('full', 'waking'); pImg.style.transition = ''; pImg.style.transform = ''; patientDone = true;
       $('done').classList.remove('hide'); $('done').querySelector('h2')!.textContent = M.doneTitle;
-      $('donetext').textContent = next ? `次は ${next.name} です。` : 'ステージ1「目」の治療が終わりました。';
+      const st = STAGES.find((x) => x.id === ZONES[zi].stage); const sn = STAGES.indexOf(st!) + 1;
+      $('donetext').textContent = next ? `次は ${next.name} です。` : `ステージ${sn}「${st?.ja}」の治療が終わりました。全身マップで、次の器官を選べます。`;
       $('b-next').classList.toggle('hide', !next); document.exitPointerLock?.();
     }, 13000);
   }
-  $('b-next').onclick = () => { const next = ZONES[zi + 1]; if (next) location.href = `${location.pathname}?zone=${next.id}`; };
+  $('b-next').onclick = () => { const next = SZS[si + 1]; if (next) location.href = `${location.pathname}?zone=${next.id}`; };
   $('b-cont').onclick = () => { $('done').classList.add('hide'); finished = true; };
 
   // ---- 開始 ----
@@ -440,6 +465,7 @@ async function main() {
       try { post.render(); } catch (e) { report('post', e); post = null; renderer.render(stage.scene, camera); }
     } else renderer.render(stage.scene, camera);
     if (live) camera.position.sub(sway);
+    drawWisps(now / 1000);
     hud.tick();
     W.__irFrames = ((W.__irFrames as number) || 0) + 1;
     if (Q.has('frames') && (W.__irFrames as number) >= Number(Q.get('frames'))) { renderer.setAnimationLoop(null); W.__irDone = true; }
