@@ -1,7 +1,7 @@
 // 細菌の群れ：桿菌（両端が丸い棒）をインスタンス描画し、動きは頂点シェーダーで作る。
 // 水の膜の中でだけ泳ぐ。乾いた区画では見えない（芽胞として休眠している）。
 import * as THREE from 'three/webgpu';
-import { float, vec3, instancedBufferAttribute, time, sin, cos, positionLocal, mix, saturate, normalView, positionViewDirection, dot, pow, oneMinus, hash, instanceIndex , uniform, smoothstep, mx_noise_float } from 'three/tsl';
+import { float, vec3, instancedBufferAttribute, time, sin, cos, positionLocal, mix, saturate, normalView, positionViewDirection, dot, pow, oneMinus, hash, instanceIndex , uniform, smoothstep, mx_noise_float, positionWorld, cameraPosition } from 'three/tsl';
 import type { Collider } from './world';
 import { makeRng } from './rng';
 
@@ -119,7 +119,10 @@ export function buildSwarm(colliders: Collider[], cellOf: (p: THREE.Vector3) => 
     const perp = dir.cross(radial.add(vec3(0.01, 0.02, 0.0))).normalize();
     const sv = positionLocal.y, wave = sin(sv.mul(12.0).sub(time.mul(species === 'pseudomonas' ? 30.0 : 14.0)).add(fPh.mul(20.0))).mul(0.045).mul(sv.add(0.15));
     fm.positionNode = root.add(dir.mul(sv.mul(FL))).add(perp.mul(wave)).add(perp.cross(dir).mul(positionLocal.x.mul(0.006))).mul(fL).add(center.mul(oneMinus(fL)));
-    fm.colorNode = vec3(0.62, 0.62, 0.58); fm.opacityNode = float(0.38).mul(oneMinus(sv.mul(0.6))).mul(fL); }
+    // 鞭毛の太さは 0.02µm で、本物では光学顕微鏡でもほぼ見えない。遠くでは消し、すぐそば（約 20µm 以内）でだけ、ごく淡く見せる
+    // （2026-11-25：iPad で、粒のまわりに白い糸くずが大量に見えるとの指摘。前は距離に関係なく不透明度 0.38 だった）
+    const near = smoothstep(2.0, 0.6, positionWorld.sub(cameraPosition).length());
+    fm.colorNode = vec3(0.42, 0.42, 0.40); fm.opacityNode = float(0.12).mul(oneMinus(sv.mul(0.6))).mul(fL).mul(near); }
   const flag = new THREE.InstancedMesh(fg, fm, n2 * NF); flag.name = 'swarm_flagella_' + species; flag.frustumCulled = false; mesh.add(flag);
   const liveArr = liveAttr.array as Float32Array;
   const find = (from: THREE.Vector3, fwd: THREE.Vector3) => {

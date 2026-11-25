@@ -143,7 +143,21 @@ def make_seedling():
     return ob
 
 # ---- 最初の本葉 ----
-LU, LV, LP, LSIDES = 16, 18, 10, 6
+# 形（2026-11-25 作り直し）：写真（Wikimedia Commons の芽生え）の最初の本葉は、丸いハート形（倒心形）。先の中央が浅くくぼみ、
+# つけ根は少しとがって葉柄につながる。以前は両端のとがったレンズ形で、画面では半月形に見えていた。
+# 格子は葉の中心から放射状：列 u（0＝先、±1＝つけ根）、行 x（中心→ふち）
+def _leaf_r(th):
+    r = 1.0 - 0.17 * math.exp(-(th / 0.32) ** 2)                      # 先の中央の浅いくぼみ
+    r *= 1.0 + 0.10 * math.exp(-((abs(th) - math.pi) / 0.45) ** 2)    # つけ根は少しとがる
+    return r * (1.0 + 0.05 * math.cos(2 * th))
+_LB = -_leaf_r(math.pi)
+_LT = max(math.cos(math.pi * k / 400) * _leaf_r(math.pi * k / 400) for k in range(-400, 401))
+_LW = max(abs(math.sin(math.pi * k / 400) * _leaf_r(math.pi * k / 400)) for k in range(-400, 401))
+def leaf_shape(x, u, Ls, Ws):
+    """返り値：(つけ根からの長さ方向の距離, 横の距離)"""
+    th = math.pi * u; r = _leaf_r(th)
+    return (math.cos(th) * r * x - _LB) * Ls / (_LT - _LB), math.sin(th) * r * x * Ws / _LW
+LU, LV, LP, LSIDES = 24, 10, 10, 6
 def build_leaf(grow, unfold):
     """grow: 0=まだない、1=伸びきった。unfold: 0=中央の葉脈で二つ折り、1=開いた（浅い折れ目は残る）"""
     pts, _, frames = axis(1, HYP_FINAL, 0.0, 1.0); node, (td, tn, tb) = pts[-1], frames[-1]
@@ -163,13 +177,9 @@ def build_leaf(grow, unfold):
     fold = math.radians(86 - 64 * unfold)                                        # 片側の持ち上がり角（閉じ 86° → 開き 16°）
     for j in range(LV + 1):
         x = j / LV
-        outline = (max(0.0, 1 - abs(2 * x - 1) ** 1.8) ** 0.5) * (0.9 + 0.2 * (1 - x))   # 腎臓形（幅が長さより広い）
-        notch = 0.10 * Ls
         for i in range(LU + 1):
             u = i / LU * 2 - 1
-            a_long = Ls * x - notch * (1 - abs(u)) ** 2 * (1 - x) ** 3 * 4 * 0 + notch * (abs(u) ** 1.5) * (1 - x) ** 2 * 1.2 * -1  # つけ根はまっすぐ〜浅いハート形
-            lat = u * Ws * outline
-            a_long -= Ls * 0.10 * (1 - abs(u)) ** 3 * x ** 6               # 先の中央が浅くくぼむ
+            a_long, lat = leaf_shape(x, u, Ls, Ws)
             V.append(top + bd * a_long + tn * (lat * math.cos(fold)) + bn * (abs(lat) * math.sin(fold) + 0.03 * math.sin(x * 9 + u * 4) * grow))
     return V
 
@@ -191,13 +201,15 @@ def make_leaf():
     col = me.color_attributes.new('Color', 'FLOAT_COLOR', 'POINT'); o = (LP + 1) * LSIDES   # R=葉身(1)/葉柄(0)、G=中央の葉脈からの距離、B=長さ方向
     for i in range(len(me.vertices)):
         if i < o: col.data[i].color = (0, 0, (i // LSIDES) / LP, 1)
-        else: k = i - o; col.data[i].color = (1, abs((k % (LU + 1)) / LU * 2 - 1), (k // (LU + 1)) / LV, 1)
+        else:   # G＝中央の葉脈からの距離（0〜1）、B＝つけ根→先の位置（0〜1）
+            k = i - o; al, la = leaf_shape((k // (LU + 1)) / LV, (k % (LU + 1)) / LU * 2 - 1, 1.0, 1.0)
+            col.data[i].color = (1, min(1.0, abs(la)), al, 1)
     uvl = me.uv_layers.new(name='UVMap')
     for poly in me.polygons:
         for li in poly.loop_indices:
             vi = me.loops[li].vertex_index
             if vi < o: uvl.data[li].uv = ((vi % LSIDES) / LSIDES, (vi // LSIDES) / LP)
-            else: k = vi - o; uvl.data[li].uv = ((k % (LU + 1)) / LU, (k // (LU + 1)) / LV)
+            else: k = vi - o; al, la = leaf_shape((k // (LU + 1)) / LV, (k % (LU + 1)) / LU * 2 - 1, 1.0, 1.0); uvl.data[li].uv = (0.5 + 0.5 * la, al)   # 平らに投影した UV（模様がゆがまない）
     ob.shape_key_add(name='Basis')
     for name, g, un in (('L0_none', 0.0, 0.0), ('L1_bud', 0.3, 0.0), ('L2_rise', 0.75, 0.25)):
         sk = ob.shape_key_add(name=name)
