@@ -76,7 +76,7 @@ async function build(renderer: THREE.WebGPURenderer, tier: string, variant: 'A' 
   plugMat.colorNode = color(0xd8c48a); plugMat.roughnessNode = float(0.3); plugMat.opacityNode = float(0.8); plugMat.clearcoatNode = float(0.7); plugMat.clearcoatRoughnessNode = float(0.25);
   plugMat.emissiveNode = color(0xfff0c0).mul(sin(u.time.mul(2)).mul(0.03).add(0.05));
   const plugMesh = new THREE.InstancedMesh(geos.plug, plugMat, plugs.length); plugMesh.frustumCulled = false; scene.add(plugMesh);
-  const NP = vr ? 40 : 90;
+  const NP = vr ? 30 : 60;
   const parts: { p: THREE.Vector3; kind: 0 | 1; s: number; r: number; stuck: number }[] = [];
   let sd = 31; const rnd = () => { sd = (sd * 16807) % 2147483647; return sd / 2147483647; };
   for (let i = 0; i < NP; i++) {
@@ -156,7 +156,7 @@ async function build(renderer: THREE.WebGPURenderer, tier: string, variant: 'A' 
         dust.setMatrixAt(i, m4.compose(v, q, sv.set(s, s, s))); bac.setMatrixAt(i, m4.compose(v, q, sv.set(sb, sb, sb)));
       });
       dust.instanceMatrix.needsUpdate = bac.instanceMatrix.needsUpdate = true;
-      neuts.forEach((n, i) => { const k = Math.max(0, 1 - prog * 1.2); n.p.x += Math.sin(t * 0.3 + i) * dt * 0.6; v.copy(n.p); v.y = 2.2 + 0.2 * Math.sin(t * 0.7 + i); neu.setMatrixAt(i, m4.compose(v, q.setFromEuler(new THREE.Euler(-Math.PI / 2, n.r + t * 0.05, 0)), sv.set(0.5 * k + 0.001, 0.5 * k + 0.001, 0.5 * k + 0.001))); });
+      neuts.forEach((n, i) => { const k = Math.max(0, 1 - prog * 1.2); n.p.x += Math.sin(t * 0.3 + i) * dt * 0.6; v.copy(n.p); v.y = 2.2 + 0.2 * Math.sin(t * 0.7 + i); neu.setMatrixAt(i, m4.compose(v, q.setFromEuler(new THREE.Euler(0, n.r + t * 0.05, 0)), sv.set(0.5 * k + 0.001, 0.5 * k + 0.001, 0.5 * k + 0.001))); });
       neu.instanceMatrix.needsUpdate = true;
       sun.intensity = 1.2 + 1.2 * u.lightIn.value;
       (scene.fog as THREE.FogExp2).color.setRGB(0.5 + 0.12 * prog, 0.38 + 0.08 * prog, 0.36 + 0.06 * prog);

@@ -142,3 +142,8 @@
 - 模型：`tools/blender/make_nose.py`（粘液栓・ほこり・黄色ブドウ球菌の房・好中球と核・嗅細胞の先・図鑑用の線毛細胞・杯細胞・線毛の断面・支持細胞）。音：`make_audio.py` に cilia・mucus・olfactory。
 - 台帳：鼻の8項目（事実確認：誤り4・削除2・言い換え14）。GDD 6-2 に設計。
 - 未確認：実機での線毛の森の重さ（頂点 約70万＝PC 高画質）、VR の拍子の分かりやすさ。
+
+## 2026-11-25 鼻の見た目の直し・AI の声
+- 持ち主「ギザギザ感が多い」→ 走査電顕の写真と見比べ：線毛を丸い管（`common.ts` の ciliaField、断面5角・法線つき）、ほこりを丸い粒、好中球をひだ＋偽足の平たい細胞（細い突起は取りやめ）、粘液を濡れたつやの面（うねり）に。
+- 先生と話すボタン（voice-buddy）は外した。ナレーションは AI の声：`node scripts/record-voices.mjs`（voice-buddy の /api/realtime-token で短命の鍵 → OpenAI のリアルタイム音声に一字一句読ませる → 書き起こしで照合 → `public/static/voice/<声>/<識別子>.m4a`、`manifest.json`）。台本は `?narration`（`src/core/narration.ts`）。言葉を変えたら再実行（変わった行だけ録る）。1回の実行で鍵を4〜8回使う（1日100回まで）。
+- 再生：`src/core/voice.ts`（`ai:<声>` を選ぶと録った音、なければ端末の声）。速さは再生速度（音の高さは保つ）。

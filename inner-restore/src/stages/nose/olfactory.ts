@@ -153,7 +153,7 @@ export async function buildOlfactory(renderer: THREE.WebGPURenderer, tier: strin
       knobs.instanceMatrix.needsUpdate = flashes.instanceMatrix.needsUpdate = true;
       plugs.forEach((pl, i) => { const k = 1 - pl.gone; v.copy(pl.p).setY(floorY + 0.5); v.x += Math.sin(t * 40 + i) * pl.shake * 0.12; sw.setMatrixAt(i, m4.compose(v, q.identity(), sv.set(6 * k + 0.01, 6 * k + 0.01, 3 * k + 0.01))); });
       sw.instanceMatrix.needsUpdate = true;
-      for (let i = 0; i < 6; i++) { const pl = plugs[i % 3], k = pl.cleared ? Math.max(0, 1 - pl.gone * 1.5) : 1; v.copy(pl.p).add(sv.set(Math.cos(i * 2.1 + t * 0.1) * 6, 1.5, Math.sin(i * 2.1 + t * 0.1) * 6)); neu.setMatrixAt(i, m4.compose(v, q.setFromEuler(new THREE.Euler(-Math.PI / 2, i, 0)), sv.set(0.45 * k + 0.001, 0.45 * k + 0.001, 0.45 * k + 0.001))); }
+      for (let i = 0; i < 6; i++) { const pl = plugs[i % 3], k = pl.cleared ? Math.max(0, 1 - pl.gone * 1.5) : 1; v.copy(pl.p).add(sv.set(Math.cos(i * 2.1 + t * 0.1) * 6, 1.5, Math.sin(i * 2.1 + t * 0.1) * 6)); neu.setMatrixAt(i, m4.compose(v, q.setFromEuler(new THREE.Euler(0, i, 0)), sv.set(0.45 * k + 0.001, 0.45 * k + 0.001, 0.45 * k + 0.001))); }
       neu.instanceMatrix.needsUpdate = true;
       litU.value = prog; sun.intensity = 1.1 + 1.3 * u.lightIn.value;
       (scene.fog as THREE.FogExp2).color.setRGB(0.44 + 0.14 * prog, 0.38 + 0.1 * prog, 0.3 + 0.06 * prog);

@@ -43,10 +43,6 @@ for v in c.data.vertices:
     v.co.x *= 1 + pod; v.co.y *= 1 + pod * 0.6; v.co *= 1 + ruff
 c.name = "neutro"; bpy.ops.object.shade_smooth()
 parts = [c]
-for i in range(16):   # 細い糸状の突起
-    a = rng.uniform(0, 6.28); r0 = 5.6; ln = rng.uniform(1.5, 3.5)
-    bpy.ops.mesh.primitive_cone_add(vertices=8, radius1=0.25, radius2=0.04, depth=ln, location=(math.cos(a) * (r0 + ln / 2), math.sin(a) * (r0 + ln / 2), rng.uniform(-0.6, 0.6)))
-    o = bpy.context.object; o.rotation_euler = (0, math.pi / 2, a); parts.append(o)
 c = join(parts, "neutro"); objs.append(c)
 parts = []; lob = [Vector((-2.2, 0.4, 0)), Vector((-0.7, 1.3, 0.2)), Vector((0.9, 0.9, -0.1)), Vector((2.1, -0.5, 0.1))]
 for q in lob:
