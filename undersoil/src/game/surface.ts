@@ -8,6 +8,7 @@ import { makeSoilMaterial } from './soilMaterial';
 import { buildLitter } from './litter';
 import { buildGround, makeHeight } from './ground';
 import { buildSand, buildSpill } from './sand';
+import { buildDew, spotsOnInstances, spotsOnMesh } from './dew';
 
 export interface Surface { groundY: number; scene: THREE.Scene; camera: THREE.PerspectiveCamera; focusDistance: { value: number }; setGrowth(g: number): void; update(dt: number, t: number): void; growth: number; }
 const STAGES = ['S0_seed', 'S1_radicle', 'S2_hook', 'S3_lift', 'S4_half', 'S5_open'];
@@ -54,7 +55,7 @@ export async function buildSurface(renderer: THREE.WebGPURenderer, base: string,
     for (let i = 0; i < n; i++) { const a = rngS.range(0, 6.28), r = 3 + 26 * rngS.next() ** 0.8, sz = (0.2 + 0.4 * rngS.next() ** 2) * (1 + r * 0.03); p.set(Math.cos(a) * r, 0, Math.sin(a) * r); p.y = height(p.x, p.z) - sz * 0.35;
       mesh.setMatrixAt(i, m4.compose(p, q.setFromEuler(e.set(rngS.range(0, 6), rngS.range(0, 6), rngS.range(0, 6))), sc.set(sz, sz * 0.7, sz))); (seedA.array as Float32Array)[i] = rngS.next(); }
     mesh.castShadow = true; mesh.receiveShadow = true; mesh.computeBoundingSphere(); scene.add(mesh); }
-  scene.add(buildLitter(height, { density: opts.density, keepOut: 1.6, radius: 30, sunDir }));
+  const litter = buildLitter(height, { density: opts.density, keepOut: 1.6, radius: 30, sunDir }); scene.add(litter);
 
   // 芽生え（子葉・胚軸・根）と、最初の本葉
   const gltf = await loadGLB(base, 'models/plants/clover_seedling.glb');
@@ -170,12 +171,21 @@ export async function buildSurface(renderer: THREE.WebGPURenderer, base: string,
   holder.updateMatrixWorld(true);
   const spill = buildSpill(height, sand.geos, sand.mats, plant, pose, { growSec: 26, count: Math.round(2600 * Math.max(0.6, opts.density)), stuck: 80 });
   scene.add(spill.group); const dq = new URLSearchParams(location.search); if (dq.has('nospill')) spill.group.visible = false; if (dq.has('noplant')) holder.visible = false;
+  // 朝露：子葉の表側と本葉、まわりの枯れ草に。芽が開ききるころ（夜明け）に現れる
+  holder.updateMatrixWorld(true);
+  const pc = plant.geometry.attributes.color as THREE.BufferAttribute;
+  const dewSpots = [
+    ...spotsOnMesh(plant, 14, 31, 0.07, 0.24, (i) => pc.getX(i) > 0.5 && pc.getZ(i) > 0.5),
+    ...spotsOnMesh(leaf, 8, 32, 0.08, 0.28),
+    ...spotsOnInstances(litter.children[0] as THREE.InstancedMesh, 3, 33, 0.06, 0.32),
+  ];
+  const dew = buildDew(dewSpots, { max: 260, sun: sunDir }); scene.add(dew.mesh); dew.set(0);
   const focusDistance = uniform(16);
   const surf: Surface = {
     scene, camera, growth: 0, focusDistance, groundY: gy,
     setGrowth(g) {
       surf.growth = g = Math.max(0, Math.min(1, g));
-      pose(g); spill.update(g);
+      pose(g); spill.update(g); dew.set(Math.max(0, Math.min(1, (g - 0.86) / 0.1)));
     },
     update(_dt, t) {
       // カメラ：写真のように 55°で見下ろし、固定（早回しの間、カメラは動かさない）。画面の幅は約 20 mm。地平線と空は写さない
