@@ -31,15 +31,13 @@ export function buildUI() {
         <label>読み上げ <select id="o-tts"><option value="on">あり</option><option value="off">なし</option></select></label>
         <label>声 <select id="o-voice"><option value="">おすすめ（やさしい女性の声）</option></select></label>
         <label>速さ <input type="range" id="o-rate" min="0.6" max="1.5" step="0.05"><output id="o-rate-v"></output></label>
-        <label>声の高さ <input type="range" id="o-pitch" min="0.6" max="1.5" step="0.05"><output id="o-pitch-v"></output></label>
+        <label>声の高さ（端末の声） <input type="range" id="o-pitch" min="0.6" max="1.5" step="0.05"><output id="o-pitch-v"></output></label>
         <label>声の大きさ <input type="range" id="o-vol" min="0.1" max="1" step="0.05"><output id="o-vol-v"></output></label>
         <button class="btn" id="o-test">試しに聞く</button>
-        <div class="snote">声の種類は、お使いの端末に入っている声から選べます。iPhone・iPad は「設定 → アクセシビリティ → 読み上げコンテンツ → 声 → 日本語」で声を追加すると、ここに増えます。</div></section>
+        <div class="snote">「AI の声」は、ゲームのナレーションを前もって4種類の声で録ったものです（速さも変えられます）。「端末の声」は、お使いの端末に入っている声です。iPhone・iPad は「設定 → アクセシビリティ → 読み上げコンテンツ → 声 → 日本語」で声を追加すると、ここに増えます。</div></section>
       <section><h3>表示</h3>
         <label>字幕 <select id="o-subs"><option value="on">表示する</option><option value="off">表示しない</option></select></label>
-        <label>初登場の紹介 <select id="o-intro"><option value="all">すべて表示</option><option value="name">名前だけ</option><option value="off">表示しない</option></select></label>
-        <label>音声会話の先生 <select id="o-vb"><option value="on">ボタンを出す</option><option value="off">出さない</option></select></label>
-        <div class="snote">音声会話の先生：画面右下の「先生と はなす」を押すと、声で質問したり、ヒントをもらったりできます（マイクを使います）。先生の声と速さは、先生のパネルの中で選べます。</div></section>
+        <label>初登場の紹介 <select id="o-intro"><option value="all">すべて表示</option><option value="name">名前だけ</option><option value="off">表示しない</option></select></label></section>
       <section><h3>進み具合（セーブ）</h3>
         <div class="snote">進み具合と図鑑は、このブラウザの中だけに保存されます。別のブラウザや端末には引き継がれません。続きを別の端末で遊ぶときは、下の「書き出す」で出た文字列を、その端末の「読み込む」に貼り付けてください。</div>
         <button class="btn" id="o-export">書き出す（文字列をコピー）</button>

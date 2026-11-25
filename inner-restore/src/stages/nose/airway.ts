@@ -18,18 +18,18 @@ const WAVE = 50;            // 波の長さ（µm）
 const common = { perception: 20, scaleNote: '潜行士の身長 2µm ／ 線毛の長さ 約6µm', patient: 'smell' as const, swimCeil: 18,
   plugName: '粘液栓', plugHit: '水分を失って固まった粘液の塊、粘液栓です。光を当て続けて、水分を取り戻してください。',
   plugDiag: { short: '粘液栓（固まった粘液の塊）', cause: '炎症で粘液が濃くなり、固まって線毛の動きを止めています。光を当て続けてほどいてください' } };
-const META_A: ZoneMeta = { ...common, id: 'cilia', hud: '鼻・呼吸上皮　線毛の波の回復',
+export const CILIA_META: ZoneMeta = { ...common, id: 'cilia', hud: '鼻・呼吸上皮　線毛の波の回復',
   enter: 'こちらオペレーター。鼻の中に入りました。吸いこんだ空気の流れに乗って、粘膜へ降ります。',
   arrive: 'こちらオペレーター。鼻の粘膜の上です。足もとは粘液の層、その下に線毛の森があります。炎症で線毛が寝て止まっています。照準の輪が脈打つ拍子に合わせて光を当てると、線毛の波がよくそろいます。',
   plugCleared: (l) => (l ? `粘液栓がほどけました。線毛が打ちはじめます。残りは ${l} か所です。` : 'すべての粘液栓がほどけました。線毛の波がそろいはじめます。'),
   done: '線毛の波がそろいました。粘液が、喉の向きへ流れはじめます。', doneTitle: '線毛の波が戻りました', causeMain: '炎症による線毛の停止と、粘液の固まり' };
-const META_B: ZoneMeta = { ...common, id: 'mucus', hud: '鼻・粘液の川　流れの回復',
+export const MUCUS_META: ZoneMeta = { ...common, id: 'mucus', hud: '鼻・粘液の川　流れの回復',
   arrive: 'こちらオペレーター。粘液の川です。そろった線毛の波が、粘液を喉の向きへ運びます。流れをせき止めている粘液栓をほどき、喉までの流れを通してください。流れに乗ると、体ごと運ばれます。',
   plugCleared: (l) => (l ? `せき止めがほどけ、流れが先へ進みました。残りは ${l} か所です。` : 'せき止めがすべてほどけました。粘液が、喉まで流れます。'),
   done: '粘液の川が流れはじめました。ほこりも細菌も、喉へ運ばれていきます。', doneTitle: '粘液の流れが戻りました', causeMain: '粘液栓による流れのせき止め' };
 
 async function build(renderer: THREE.WebGPURenderer, tier: string, variant: 'A' | 'B', opts: { entrance?: boolean } = {}): Promise<ZoneStage> {
-  const W = 110, D = 70, M = variant === 'A' ? META_A : META_B;
+  const W = 110, D = 70, M = variant === 'A' ? CILIA_META : MUCUS_META;
   const rich = tier === 'pc-high', vr = tier === 'vr';
   const noiseTex = new THREE.TextureLoader().load('/static/img/noise.png');
   noiseTex.wrapS = noiseTex.wrapT = THREE.RepeatWrapping; noiseTex.colorSpace = THREE.NoColorSpace;
@@ -54,7 +54,7 @@ async function build(renderer: THREE.WebGPURenderer, tier: string, variant: 'A' 
   const floorY = -(PCL + GEL);
   const epi = epithelium(W, D, H, noiseTex); epi.position.y = floorY - 0.05; scene.add(epi);
   const goblet = (x: number, z: number) => { const gx = Math.round(x / 9), gz = Math.round(z / 9); return (gx * 7 + gz * 3) % 6 === 0 && Math.hypot(x - gx * 9, z - gz * 9) < 2.6; };
-  const dens = vr ? 1.2 : rich ? 3.2 : 2.0;   // 1µm² あたり（実物 6〜8本）
+  const dens = vr ? 1.0 : rich ? 2.6 : 1.6;   // 1µm² あたり（実物 6〜8本）
   const diverLocal = vec3(diverU.x, diverU.y.sub(floorY), diverU.z);
   const cil = ciliaField({ W, D, density: dens, Hat, time: u.time, wave: float(WAVE), diver: diverLocal, beatHz: BEAT, goblet });
   cil.mesh.position.y = floorY; scene.add(cil.mesh);
@@ -73,7 +73,7 @@ async function build(renderer: THREE.WebGPURenderer, tier: string, variant: 'A' 
   const cores = variant === 'A' ? [[-0.25, -0.2], [0.05, 0.22], [0.3, -0.05]] : [[-0.2, 0.0], [0.08, 0.05], [0.33, -0.02]];
   const plugs: (Plug & { gone: number; shake: number })[] = cores.map(([fx, fz]) => ({ p: new THREE.Vector3(fx * W, 0, fz * D), hp: 1, cleared: false, gone: 0, shake: 0 }));
   const plugMat = new THREE.MeshPhysicalNodeMaterial({ transparent: true });
-  plugMat.colorNode = color(0xd8c890); plugMat.roughnessNode = float(0.55); plugMat.opacityNode = float(0.88);
+  plugMat.colorNode = color(0xd8c48a); plugMat.roughnessNode = float(0.3); plugMat.opacityNode = float(0.8); plugMat.clearcoatNode = float(0.7); plugMat.clearcoatRoughnessNode = float(0.25);
   plugMat.emissiveNode = color(0xfff0c0).mul(sin(u.time.mul(2)).mul(0.03).add(0.05));
   const plugMesh = new THREE.InstancedMesh(geos.plug, plugMat, plugs.length); plugMesh.frustumCulled = false; scene.add(plugMesh);
   const NP = vr ? 40 : 90;
@@ -82,9 +82,9 @@ async function build(renderer: THREE.WebGPURenderer, tier: string, variant: 'A' 
   for (let i = 0; i < NP; i++) {
     const near = i < NP * 0.4 ? plugs[i % 3].p : null;
     const x = near ? near.x + (rnd() - 0.5) * 12 : (rnd() - 0.5) * W, z = near ? near.z + (rnd() - 0.5) * 12 : (rnd() - 0.5) * D;
-    parts.push({ p: new THREE.Vector3(x, 0.2, z), kind: rnd() < 0.55 ? 0 : 1, s: 1 + rnd() * 1.5, r: rnd() * 6.28, stuck: near ? (i % 3) : -1 });
+    parts.push({ p: new THREE.Vector3(x, 0.2, z), kind: rnd() < 0.55 ? 0 : 1, s: 0.6 + rnd() * rnd() * 1.1, r: rnd() * 6.28, stuck: near ? (i % 3) : -1 });
   }
-  const dustMat = new THREE.MeshStandardNodeMaterial(); dustMat.colorNode = color(0x8a7a6a); dustMat.roughnessNode = float(0.9);
+  const dustMat = new THREE.MeshPhysicalNodeMaterial(); dustMat.colorNode = color(0x9a8a7a); dustMat.roughnessNode = float(0.6); dustMat.clearcoatNode = float(0.6); dustMat.clearcoatRoughnessNode = float(0.2);   // 粘液の膜をまとって、つやがある
   const bacMat = new THREE.MeshStandardNodeMaterial(); bacMat.colorNode = color(0xd8c8a0); bacMat.roughnessNode = float(0.5);
   const dust = new THREE.InstancedMesh(geos.dust, dustMat, NP), bac = new THREE.InstancedMesh(geos.staph, bacMat, NP);
   dust.frustumCulled = bac.frustumCulled = false; scene.add(dust, bac);
@@ -146,12 +146,12 @@ async function build(renderer: THREE.WebGPURenderer, tier: string, variant: 'A' 
       // 粘液の流れの速さ：実物 約 100µm/秒（6mm/分）を ×20 ゆっくり見て 約 5µm/秒。波がそろうほど速い
       speed = 5 * prog; flowX.value += speed * dt;
       u.lightIn.value += ((0.4 + 0.6 * prog) - u.lightIn.value) * Math.min(1, dt * 1.5);
-      plugs.forEach((pl, i) => { const k = 1 - pl.gone; v.copy(pl.p).add(sv.set(Math.sin(t * 40 + i) * pl.shake * 0.12, 0, 0)); v.x += pl.gone * 8; plugMesh.setMatrixAt(i, m4.compose(v, q.identity(), sv.set(5 * k + 0.01, 5 * k + 0.01, 5 * k + 0.01))); });
+      plugs.forEach((pl, i) => { const k = 1 - pl.gone; v.copy(pl.p).add(sv.set(Math.sin(t * 40 + i) * pl.shake * 0.12, 0, 0)); v.x += pl.gone * 8; v.y -= 1.2 * k; plugMesh.setMatrixAt(i, m4.compose(v, q.identity(), sv.set(5.5 * k + 0.01, 3.2 * k + 0.01, 5.5 * k + 0.01))); /* 粘液の面から盛り上がる、平たい塊 */ });
       plugMesh.instanceMatrix.needsUpdate = true;
       parts.forEach((pp, i) => {
         const stuck = pp.stuck >= 0 && !plugs[pp.stuck].cleared;
         if (!stuck) { pp.p.x += speed * flowAt(pp.p.x, pp.p.z) * dt; if (pp.p.x > W / 2) pp.p.x -= W; }
-        q.setFromEuler(new THREE.Euler(pp.r, pp.r * 2 + t * 0.05, 0)); v.copy(pp.p); v.y = 0.3 + Math.sin(t + i) * 0.05;
+        q.setFromEuler(new THREE.Euler(pp.r, pp.r * 2 + t * 0.05, 0)); v.copy(pp.p); v.y = -0.25 * (pp.kind === 0 ? pp.s : 1) + Math.sin(t + i) * 0.04; /* 粘液に半分しずんでとらえられている */
         const s = pp.kind === 0 ? pp.s : 0, sb = pp.kind === 1 ? 1 : 0;
         dust.setMatrixAt(i, m4.compose(v, q, sv.set(s, s, s))); bac.setMatrixAt(i, m4.compose(v, q, sv.set(sb, sb, sb)));
       });

@@ -13,7 +13,7 @@ import tuning from '../../data/tuning.json';
 
 const { uniform, texture, positionWorld, normalView, positionViewDirection, vec2, float, color, mix, smoothstep, sin, exp, pow, dot, saturate, length } = tsl;
 
-const META: ZoneMeta = {
+export const LENS_META: ZoneMeta = {
   id: 'lens', hud: '水晶体・皮質　透明さの回復', swimCeil: 6,
   arrive: 'こちらオペレーター。水晶体の中です。六角形の帯は、水晶体線維細胞。本当はすき間なく重なっていますが、スーツの力で層の間を押し広げて進みます。白く濁っているのは、固まったタンパクの粒です。光を通る道を晴らしてください。',
   plugName: '凝集の核', plugHit: '濃い粒の塊に当たっています。固まったクリスタリンの集まりです。当て続けて、ほどいてください。',
@@ -139,7 +139,7 @@ export async function buildLens(renderer: THREE.WebGPURenderer, tier: string): P
   let onPlug: (i: number, kind: 'hit' | 'cleared') => void = () => {};
   const floorHeight = () => 0;
   const stage: ZoneStage = {
-    meta: META, scene, health, size: [W, D], u, floorHeight, sun, plugs, progress,
+    meta: LENS_META, scene, health, size: [W, D], u, floorHeight, sun, plugs, progress,
     start: { pos: new THREE.Vector3(-W / 2 + 10, 0, 0), yaw: Math.PI / 2, swimming: false },
     causeAt: () => ({ short: '白濁（タンパクの凝集）', cause: '線維の中のクリスタリンが形を崩して固まり、光を散らしています' }),
     setOnPlug(f) { onPlug = f; },

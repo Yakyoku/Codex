@@ -12,7 +12,7 @@ import tuning from '../../data/tuning.json';
 const { uniform, texture, positionWorld, positionLocal, normalLocal, normalView, positionViewDirection, vec2, vec3, vec4, float, color, mix, smoothstep,
   sin, cos, exp, pow, dot, saturate, abs, vertexColor, mx_worley_noise_float, mx_fractal_noise_float, uv, length, max, min, Fn } = tsl;
 
-const RETINA_META: ZoneMeta = {
+export const RETINA_META: ZoneMeta = {
   id: 'retina', hud: '網膜・内側の面　血流の回復', swimCeil: 50,
   enter: 'こちらオペレーター。硝子体の中に入りました。ほとんどが水の、透明なゼリーの中です。上から差す瞳の光の柱をたどって、網膜まで泳いで降りてください。',
   arrive: 'こちらオペレーター。網膜の内側の面に着きました。足もとの白い濁りは、血流が止まった組織です。スキャンで閉塞点を探し、浄化で流れを取り戻してください。',

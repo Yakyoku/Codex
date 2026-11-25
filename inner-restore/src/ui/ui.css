@@ -61,7 +61,7 @@ body:has(#ui) .ir-hud { left:auto; right:max(12px,env(safe-area-inset-right)); b
   #patient { width:min(26vw,190px); }
   #hint { display:none; }
   #topbtns { top:max(6px,env(safe-area-inset-top)); }
-  #card { bottom:auto; top:max(10px,env(safe-area-inset-top)); width:min(46vw,22em); font-size:.88em; }
+  #card { bottom:auto; top:max(48px,calc(env(safe-area-inset-top) + 40px)); right:auto; left:27%; width:min(46vw,22em); max-height:calc(100vh - 150px); overflow:hidden; font-size:.82em; padding:.7em .9em; }   /* 横向きのスマホ：中ほどに置き、左のスティックと右のボタンに重ねない */
 }
 
 /* 患者の視界：目が開く演出（まぶしい光が引いていく） */

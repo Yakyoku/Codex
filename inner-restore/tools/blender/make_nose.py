@@ -21,10 +21,10 @@ for v in p.data.vertices:
     n = noise.noise(v.co * 2.2) * 0.25 + noise.noise(v.co * 6) * 0.07; v.co *= 1 + n; v.co.z *= 0.55
     if v.co.z < -0.1: v.co.z = -0.1 + (v.co.z + 0.1) * 0.2
 bpy.ops.object.shade_smooth(); objs.append(p)
-# ほこり：角ばった粒
-bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=1, radius=1.0); d = bpy.context.object; d.name = "dust"
-for v in d.data.vertices: v.co *= rng.uniform(0.6, 1.25)
-objs.append(d)
+# ほこり：丸みのある不ぞろいの粒（粘液にとらえられ、角は水の膜でやわらかく見える）
+bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=3, radius=1.0); d = bpy.context.object; d.name = "dust"
+for v in d.data.vertices: v.co *= 1 + 0.22 * noise.noise(v.co * 1.6) + 0.06 * noise.noise(v.co * 5)
+bpy.ops.object.shade_smooth(); objs.append(d)
 # 黄色ブドウ球菌の房
 parts = []; pts = [Vector((0, 0, 0))]
 while len(pts) < 14:
@@ -33,11 +33,21 @@ while len(pts) < 14:
 for q in pts:
     bpy.ops.mesh.primitive_uv_sphere_add(segments=14, ring_count=8, radius=0.5, location=q); parts.append(bpy.context.object)
 objs.append(join(parts, "staph"))
-# 好中球：ひだのある平たい球（半径 6）＋くびれた核（4つの房を細い糸でつなぐ）
-bpy.ops.mesh.primitive_uv_sphere_add(segments=48, ring_count=24, radius=6.0); c = bpy.context.object
+# 好中球：平たく広がった細胞（半径 約6µm）。表面は細かなひだで波打ち、太い突起（偽足）と細い糸状の突起を伸ばす
+bpy.ops.mesh.primitive_uv_sphere_add(segments=96, ring_count=48, radius=6.0); c = bpy.context.object
 for v in c.data.vertices:
-    v.co.z *= 0.6; v.co *= 1 + 0.05 * noise.noise(v.co * 0.9) + 0.03 * math.sin(v.co.x * 3) * math.cos(v.co.y * 3)
-c.name = "neutro"; bpy.ops.object.shade_smooth(); objs.append(c)
+    v.co.z *= 0.55
+    ang = math.atan2(v.co.y, v.co.x)
+    pod = max(0.0, math.cos(ang - 0.4)) ** 6 * 0.35 + max(0.0, math.cos(ang - 2.7)) ** 10 * 0.25   # 偽足（2方向）
+    ruff = 0.06 * noise.noise(v.co * 1.4) + 0.035 * noise.noise(v.co * 4.0) + 0.02 * math.sin(v.co.x * 5 + v.co.y * 3)
+    v.co.x *= 1 + pod; v.co.y *= 1 + pod * 0.6; v.co *= 1 + ruff
+c.name = "neutro"; bpy.ops.object.shade_smooth()
+parts = [c]
+for i in range(16):   # 細い糸状の突起
+    a = rng.uniform(0, 6.28); r0 = 5.6; ln = rng.uniform(1.5, 3.5)
+    bpy.ops.mesh.primitive_cone_add(vertices=8, radius1=0.25, radius2=0.04, depth=ln, location=(math.cos(a) * (r0 + ln / 2), math.sin(a) * (r0 + ln / 2), rng.uniform(-0.6, 0.6)))
+    o = bpy.context.object; o.rotation_euler = (0, math.pi / 2, a); parts.append(o)
+c = join(parts, "neutro"); objs.append(c)
 parts = []; lob = [Vector((-2.2, 0.4, 0)), Vector((-0.7, 1.3, 0.2)), Vector((0.9, 0.9, -0.1)), Vector((2.1, -0.5, 0.1))]
 for q in lob:
     bpy.ops.mesh.primitive_uv_sphere_add(segments=18, ring_count=10, radius=0.95, location=q); o = bpy.context.object; o.scale = (1.1, 0.85, 0.75); parts.append(o)

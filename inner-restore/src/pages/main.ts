@@ -15,7 +15,8 @@ import { Diver } from '../game/diver';
 import { PurifyBeam } from '../game/beam';
 import { Diagnosis } from '../game/diagnosis';
 import { tunePanel } from '../game/tune';
-import { bindSettings, applyVB } from '../game/settings';
+import { bindSettings } from '../game/settings';
+import { LINES } from '../data/lines';
 import { voiceSettings, setVoice } from '../core/voice';
 import { AtlasViewer, hasModel } from '../game/viewer';
 import { HubView, organs, vitals } from '../game/hub';
@@ -28,8 +29,6 @@ const errors: string[] = (W.__irErrors = []) as string[];
 addEventListener('error', (e) => errors.push(String(e.message)));
 addEventListener('unhandledrejection', (e) => errors.push(String(e.reason)));
 const Q = new URLSearchParams(location.search);
-/* voice-buddy：音声会話の先生への連絡（読み込みに失敗しても、ゲームはそのまま動く） */
-const vbNotify = (t: string, p?: object) => { try { (window as unknown as { VoiceBuddy?: { notify: (t: string, p?: object) => void } }).VoiceBuddy?.notify(t, p); } catch { /* 何もしない */ } };
 const store = { get: (k: string) => { try { return localStorage.getItem(k); } catch { return null; } }, set: (k: string, v: string) => { try { localStorage.setItem(k, v); } catch { /* 保存できなくても続ける */ } } };
 
 async function main() {
@@ -53,9 +52,6 @@ async function main() {
   // 設定画面（タイトルと一時停止から）
   const settingsUI = bindSettings($, () => {});
   $('b-settings').onclick = (e) => { e.stopPropagation(); settingsUI.open(); };
-  // 音声会話の先生（voice-buddy）：読み込まれたらボタンの表示を設定に合わせる
-  const vbOn = () => (store.get('ir.vb') ?? 'on') === 'on';
-  { let n = 0; const t = setInterval(() => { applyVB(vbOn()); if (++n > 40 || document.body.classList.contains('vb')) clearInterval(t); }, 500); }
 
   progress(0.1);
   let info = await createRenderer(canvas, { pref: backendPrefFromURL() });
@@ -125,7 +121,6 @@ async function main() {
     card.querySelector('.h')!.textContent = input.kind === 'touch' ? 'カードをタップで閉じる ／ 図鑑に登録しました' : input.kind === 'pad' ? 'Y：閉じる ／ 図鑑に登録しました' : 'E：閉じる　R：もう一度 ／ 図鑑に登録しました';
     card.classList.add('on'); cardCur = id; lastCard = id; cardT = 0; cardDur = mode === 'name' ? 3.5 : 8;
     if (mode === 'all') speak(`${e.ja}。${e.intro}`, ttsSel.value === 'on' && sim === null);
-    vbNotify('lesson_shown', { title: e.ja });                                          /* voice-buddy */
     if (at) { focus.copy(at); focusOn = true; } else focusOn = false;
   }
   let cardGap = 0;
@@ -385,7 +380,6 @@ async function main() {
   function finish() {
     finished = true; audio.resolve(); stage.health.setAll(1); hideCard(); queue.length = 0;
     say(M.done, 5);
-    vbNotify('all_clear', { total: stage.plugs.length, firstTry: stage.plugs.length, miss: 0 });   /* voice-buddy */
     const done = [...new Set([...(loadSave().done ?? []), M.id])]; const next = SZS[si + 1];
     writeSave({ done, zone: next ? next.id : M.id });
     if (sim !== null) return;
@@ -399,7 +393,7 @@ async function main() {
         pImg.style.transition = 'filter 6s cubic-bezier(.2,.6,.2,1), transform 9s ease-out';
         pImg.style.filter = smell ? `grayscale(${(1 - m).toFixed(2)})` : `blur(${blur.toFixed(1)}px) brightness(${(0.55 + 0.45 * m).toFixed(2)}) saturate(${(0.45 + 0.55 * m).toFixed(2)})`; pImg.style.transform = 'scale(1)'; if (smell) wispM = m;
       }));
-      say(smell ? (last ? '患者が、深く息を吸いこみました。朝の空気の匂いが、色をともなって戻ってきます。' : '患者の感じる匂いが、少しずつ戻ってきました。') : last ? '患者の視界です。ぼやけていた光が、くっきりと形を結びました。' : '患者の視界です。ぼやけていた光が、少しずつ形を結びはじめました。', 7);
+      say(smell ? (last ? LINES.smellLast : LINES.smellMid) : last ? LINES.sightLast : LINES.sightMid, 7);
     }, 4500);
     setTimeout(() => {
       $('patient').classList.remove('full', 'waking'); pImg.style.transition = ''; pImg.style.transform = ''; patientDone = true;
@@ -424,7 +418,6 @@ async function main() {
     setKind(input.kind); if (device === 'pc') canvas.requestPointerLock?.();
     say(stage.start.swimming && M.enter ? M.enter : M.arrive, 10);
     $('hud').querySelector('.lab')!.textContent = M.hud;
-    vbNotify('question_shown', { id: `${M.id}-task`, retry: false });                  /* voice-buddy */
   };
   // タイトルのメニュー：続きがあれば「つづきから」
   const hasSave = !!(save.done?.length || save.zone || save.arrived);
@@ -476,10 +469,11 @@ async function main() {
     if (kind === 'hit') { if (!plugHelp) { plugHelp = true; say(M.plugHit, 8); } return; }
     if (kind === 'pulse') { shake = Math.max(shake, 0.7); rumble(0.6 * F.rumble, 0.3 * F.rumble, 260); audio.hit(); return; }
     const left = stage.plugs.filter((p) => !p.cleared).length;
-    vbNotify('answered', { id: `${M.id}-plug`, correct: true, choice: `${M.plugName}をほどいた（残り${left}）`, retry: false });   /* voice-buddy */
     hitStop = 0.16; shake = 1; rumble(0.9 * F.rumble, 0.9 * F.rumble, 320); buzz(60); audio.resolve(); purify.burst();
     say(M.plugCleared(left), 7);
   });
+  // 読み上げの台本（AI の声を前もって録る道具が使う）
+  if (Q.has('narration')) { const { collectLines, lineKey } = await import('../core/narration'); const ls = await collectLines(); W.__narration = ls.map((t) => ({ key: lineKey(t), text: t })); }
   if (Q.has('tune')) tunePanel(tuning as unknown as Record<string, unknown>);
   W.__pos = pos; W.__diver = diver; W.__input = input; W.__stage = stage; W.__begin = begin; W.__advance = (n: number) => { for (let i = 0; i < n; i++) step(1 / 30); };
   W.__irReady = { backend: backendLabel, tier, device };

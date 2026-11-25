@@ -12,7 +12,7 @@ import { epithelium, mucusLayer, PCL, GEL } from './common';
 import tuning from '../../data/tuning.json';
 
 const { uniform, texture, positionWorld, vec2, float, color, mix, exp, length, smoothstep, sin, pointUV, saturate } = tsl;
-const META: ZoneMeta = {
+export const OLF_META: ZoneMeta = {
   id: 'olfactory', hud: '鼻・嗅上皮　においを感じる力の回復', perception: 20, scaleNote: '潜行士の身長 2µm ／ 嗅細胞の線毛 最大 約100µm', patient: 'smell', swimCeil: 18,
   arrive: 'こちらオペレーター。鼻の奥の天井、嗅上皮です。粘液の中に寝そべる長い糸は、嗅細胞の線毛。まわりを支える支持細胞が傷み、嗅細胞が働けなくなっています。においの分子は小さすぎて見えないので、スーツが光の点で示します。',
   plugName: '炎症の中心', plugHit: '炎症の中心です。手当てを始めると、まわりへ炎症の波が広がります。嗅細胞を守りながら、ほどいてください。',
@@ -94,7 +94,7 @@ export async function buildOlfactory(renderer: THREE.WebGPURenderer, tier: strin
   let onPlug: (i: number, kind: 'hit' | 'cleared' | 'pulse') => void = () => {};
   let fight = false, waveT = 0, flowS = 0, booted = false;
   const stage: ZoneStage = {
-    meta: META, scene, health, size: [W, D], u, sun, plugs, progress, floorHeight: () => 0,
+    meta: OLF_META, scene, health, size: [W, D], u, sun, plugs, progress, floorHeight: () => 0,
     start: { pos: new THREE.Vector3(-W / 2 + 10, 0, 0), yaw: Math.PI / 2, swimming: false },
     causeAt: (x, z) => (Math.hypot(x - core.x, z - core.z) < 26 ? { short: '炎症', cause: '支持細胞が傷み、炎症が続いています' } : { short: '嗅細胞の働きの低下', cause: '支える支持細胞が傷み、嗅細胞がにおいの分子をとらえられません' }),
     setOnPlug(f) { onPlug = f; },

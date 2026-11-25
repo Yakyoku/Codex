@@ -15,7 +15,7 @@ import tuning from '../../data/tuning.json';
 
 const { uniform, texture, positionWorld, positionLocal, normalView, positionViewDirection, cameraPosition, vec2, float, color, mix, smoothstep, sin, exp, pow, dot, saturate, length, fract, abs } = tsl;
 
-const META: ZoneMeta = {
+export const PHOTO_META: ZoneMeta = {
   id: 'photo', hud: '視細胞の層　光を受ける力の回復', swimCeil: 56,
   arrive: 'こちらオペレーター。視細胞の層に着きました。足もとの暗い六角形は網膜色素上皮、立ち並ぶ柱が桿体と錐体です。傷んで短くなった視細胞を治しながら、奥の黄斑の中心へ向かってください。',
   plugName: 'ドルーゼン', plugHit: '黄斑の中心の、色素上皮の下の沈着物、ドルーゼンです。傷んだ色素上皮から、まわりを弱らせる波が出ています。波に負けないよう、視細胞を守りながらほどいてください。',
@@ -180,7 +180,7 @@ export async function buildPhoto(renderer: THREE.WebGPURenderer, tier: string): 
   let onPlug: (i: number, kind: 'hit' | 'cleared' | 'pulse') => void = () => {};
   let fight = false, waveT = 0, flowS = 0, booted = false;
   const stage: ZoneStage = {
-    meta: META, scene, health, size: [W, D], u, floorHeight, sun, plugs, progress,
+    meta: PHOTO_META, scene, health, size: [W, D], u, floorHeight, sun, plugs, progress,
     start: { pos: new THREE.Vector3(-W / 2 + 8, 0, 0), yaw: Math.PI / 2, swimming: false },
     causeAt: (x, z) => Math.hypot(x - fovea.x, z - fovea.z) < 30 ? { short: '黄斑の傷み', cause: 'ドルーゼンに押し上げられた色素上皮が弱り、錐体が光を受けられなくなっています' } : { short: '外節の傷み', cause: '視細胞の外節（光を受ける部分）が短く崩れ、光を受け止められません' },
     setOnPlug(f) { onPlug = f as typeof onPlug; },

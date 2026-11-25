@@ -15,7 +15,7 @@ export const CILIUM = 6;         // 線毛の長さ
 export interface CiliaOpts { W: number; D: number; density: number; Hat: (xz: N) => N; time: N; wave: N; diver: N; beatHz: number; goblet?: (x: number, z: number) => boolean; seed?: number }
 /** 線毛の森：1本を細い帯2枚（十字）で描き、曲げ方は頂点の計算で決める（1枚の形にまとめて描く） */
 export function ciliaField(o: CiliaOpts) {
-  const n = Math.round(o.W * o.D * o.density), SEG = 6;
+  const n = Math.round(o.W * o.D * o.density), SEG = 6, SIDES = 5;
   const pos: number[] = [], sAttr: number[] = [], base: number[] = [], ph: number[] = [], idx: number[] = [];
   let sd = o.seed ?? 7; const rnd = () => { sd = (sd * 16807) % 2147483647; return sd / 2147483647; };
   let v = 0;
@@ -23,13 +23,13 @@ export function ciliaField(o: CiliaOpts) {
     const x = (rnd() - 0.5) * o.W, z = (rnd() - 0.5) * o.D;
     if (o.goblet?.(x, z)) continue;                         // 杯細胞の上には線毛がない
     const r = rnd();
-    for (const plane of [0, 1]) {
-      for (let k = 0; k <= SEG; k++) for (const side of [-1, 1]) {
-        pos.push(x, 0, z); sAttr.push(k / SEG, side, plane); base.push(x, 0, z); ph.push(r);
-      }
-      for (let k = 0; k < SEG; k++) { const a = v + k * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
-      v += (SEG + 1) * 2;
+    // 1本を、丸い断面（5角）の細い管として作る。先は丸くすぼめる
+    for (let k = 0; k <= SEG; k++) for (let j = 0; j < SIDES; j++) { pos.push(x, 0, z); sAttr.push(k / SEG, (j / SIDES) * Math.PI * 2, 0); base.push(x, 0, z); ph.push(r); }
+    for (let k = 0; k < SEG; k++) for (let j = 0; j < SIDES; j++) {
+      const a = v + k * SIDES + j, b = v + k * SIDES + (j + 1) % SIDES;
+      idx.push(a, b, b + SIDES, a, b + SIDES, a + SIDES);
     }
+    v += (SEG + 1) * SIDES;
   }
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
@@ -39,7 +39,7 @@ export function ciliaField(o: CiliaOpts) {
   g.setIndex(idx); g.boundingSphere = new THREE.Sphere(new THREE.Vector3(), Math.hypot(o.W, o.D));
   const m = new THREE.MeshStandardNodeMaterial({ side: THREE.DoubleSide, transparent: true, depthWrite: true });
   const aS = attribute('aS', 'vec3'), b = attribute('aBase', 'vec3'), rr = attribute('aRnd', 'float');
-  const s = aS.x, side = aS.y, plane = aS.z;
+  const s = aS.x;
   const Hc: N = o.Hat(b.xz);   // 健康度（根元の場所で。頂点の位置から引くと、位置の計算が自分を参照してしまう）
   const sick = float(1).sub(Hc);
   // 位相：時間とともに進み、x の向きに少しずつ遅れる（波が +x へ走る）。病んだ所は、ばらばら
@@ -60,9 +60,13 @@ export function ciliaField(o: CiliaOpts) {
   const away = b.xz.sub(o.diver.xz); const dd = length(away);
   const push = exp(dd.mul(dd).mul(-0.25)).mul(0.6);
   const off = vec3(sin(thm).mul(L).mul(s), cos(thm).mul(L).mul(s), float(0)).add(vec3(away.x.div(dd.add(0.01)).mul(push).mul(s).mul(2), float(0), away.y.div(dd.add(0.01)).mul(push).mul(s).mul(2)));
-  const wdt = float(0.13).mul(float(1).sub(s.mul(0.4)));
-  const widen = plane.lessThan(0.5).select(vec3(0, 0, side.mul(wdt)), vec3(side.mul(wdt), 0, 0));
-  m.positionNode = b.add(off).add(widen);
+  // 管の断面：線毛の向き（接線）に直交する向きへ、半径ぶん広げる。光の当たり方（法線）も同じ向き
+  const ang = aS.y;
+  const nrm = vec3(cos(thm), sin(thm).negate(), float(0));
+  const radial = nrm.mul(cos(ang)).add(vec3(0, 0, 1).mul(sin(ang)));
+  const rad = float(0.13).mul(float(1).sub(smoothstep(0.82, 1.0, s).mul(0.75)));   // 太さ 約0.25µm、先は丸く
+  m.positionNode = b.add(off).add(radial.mul(rad));
+  m.normalNode = tsl.transformNormalToView(radial);
   m.colorNode = mix(color(0xbfb2a2), color(0xf2ebe4), Hc).mul(mix(float(0.75), float(1.05), s));
   m.roughnessNode = float(0.45); m.metalnessNode = float(0);
   m.opacityNode = mix(float(0.55), float(0.85), Hc).mul(smoothstep(1.2, 3.5, length(positionWorld.sub(cameraPosition))));
@@ -88,14 +92,16 @@ export function epithelium(W: number, D: number, H: N, noise: THREE.Texture) {
 /** 粘液のゲルの層：透ける上面（潜行士が立つ面）。流れの向き（+x）へ模様が動く。健康：澄んで流れる／病：濁って黄みを帯び、止まる */
 export function mucusLayer(W: number, D: number, H: N, noise: THREE.Texture, flowX: N, rich: boolean) {
   const g = new THREE.PlaneGeometry(W * 1.2, D * 1.2, 64, 48); g.rotateX(-Math.PI / 2);
-  const m = new (rich ? THREE.MeshPhysicalNodeMaterial : THREE.MeshStandardNodeMaterial)({ transparent: true, depthWrite: false, side: THREE.DoubleSide });
+  const m = new THREE.MeshPhysicalNodeMaterial({ transparent: true, depthWrite: false, side: THREE.DoubleSide });
   const p = positionWorld.xz.add(vec2(flowX.negate(), 0));
   const swirl = texture(noise, p.mul(1 / 22)).b, fine = texture(noise, p.mul(1 / 5)).a;
   const sick = float(1).sub(H);
   const fres = pow(float(1).sub(saturate(dot(normalView, positionViewDirection).abs())), float(3));
   m.colorNode = mix(color(0xe8eef0), color(0xd8cc9a), sick.mul(0.8)).mul(swirl.mul(0.15).add(0.9));
   m.roughnessNode = float(0.12); m.metalnessNode = float(0);
-  if (rich) { const pm = m as THREE.MeshPhysicalNodeMaterial; pm.clearcoatNode = float(0.8); pm.clearcoatRoughnessNode = float(0.1); }
+  // 濡れた粘膜のつや：ゆるいうねりの面に、光がなめらかに映る
+  m.clearcoatNode = float(rich ? 0.9 : 0.6); m.clearcoatRoughnessNode = float(0.08);
+  m.positionNode = tsl.positionLocal.add(vec3(0, sin(tsl.positionLocal.x.mul(0.16).add(flowX.mul(0.16))).mul(0.25).add(cos(tsl.positionLocal.z.mul(0.21)).mul(0.18)), 0));
   m.opacityNode = saturate(mix(float(0.12), float(0.62), sick.mul(swirl.mul(0.5).add(0.6))).add(fres.mul(0.3)).add(fine.mul(0.04)));
   m.emissiveNode = color(0xfff8f0).mul(fres.mul(0.05));
   const mesh = new THREE.Mesh(g, m); mesh.position.y = 0; mesh.renderOrder = 30; return mesh;
