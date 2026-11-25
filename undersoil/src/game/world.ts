@@ -16,13 +16,13 @@ export interface World {
   cellAt(p: THREE.Vector3): number; cellCenter(i: number): THREE.Vector3;
   /** 区画の状態（水・活力）を粒の見た目に反映する */
   syncWetness(): void;
-  stats: { instances: number; triangles: number; drawCalls: number };
+  stats: { instances: number; triangles: number; drawCalls: number; by?: Record<string, number> };
   cavern: { center: THREE.Vector3; radius: number };
   /** カメラの前にある、その種類の粒（紹介カードで指し示すため） */
   find(kind: GrainKind, from: THREE.Vector3, fwd: THREE.Vector3): { p: THREE.Vector3; r: number; geo?: THREE.BufferGeometry; matrix?: THREE.Matrix4 } | null;
 }
 
-export async function buildWorld(base: string, opts: { grainLod: 0 | 1; density: number; cheap?: boolean }): Promise<World> {
+export async function buildWorld(base: string, opts: { grainLod: 0 | 1; density: number; cheap?: boolean; lite?: boolean }): Promise<World> {
   const rng = makeRng(layout.seed);
   const path = new THREE.CatmullRomCurve3(layout.path.map((p) => new THREE.Vector3(p[0], p[1], p[2])), false, 'catmullrom', 0.5);
   const samples = path.getSpacedPoints(160);
@@ -51,7 +51,7 @@ export async function buildWorld(base: string, opts: { grainLod: 0 | 1; density:
     if (big.some((o) => Math.hypot(o.x - p.x, o.y - p.y, o.z - p.z) < (o.r + r) * 0.72)) continue;
     big.push({ x: p.x, y: p.y, z: p.z, r });
     const isAgg = rng.next() < 0.22;
-    placements.push({ variant: rng.pick(isAgg ? VARIANTS.aggregate : VARIANTS.quartz), lod: n.d < r + 14 ? opts.grainLod : 1, pos: p, quat: rq(),
+    placements.push({ variant: rng.pick(isAgg ? VARIANTS.aggregate : VARIANTS.quartz), lod: n.d < r + 14 ? opts.grainLod : opts.lite && n.d > r + 5 ? 2 : 1, pos: p, quat: rq(),
       scale: new THREE.Vector3(r * rng.range(0.95, 1.12), r * rng.range(0.85, 1.05), r * rng.range(0.95, 1.12)), cell: cellOfSample(n.i), seed: rng.next() });
     colliders.push({ x: p.x, y: p.y, z: p.z, r: r * 0.9 });
   }
@@ -86,7 +86,7 @@ export async function buildWorld(base: string, opts: { grainLod: 0 | 1; density:
       let x = rng.next(), kind: GrainKind = kinds[0][0]; for (const [kd, w] of kinds) { if (x < w) { kind = kd; break; } x -= w; }
       const nrm = new THREE.Vector3(pos.x - hit.o.x, pos.y - hit.o.y, pos.z - hit.o.z).normalize();
       const quat = flat ? new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), nrm).multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), rng.range(0, 6.28))) : rq();
-      placements.push({ variant: rng.pick(VARIANTS[kind]), lod: (() => { const dp = nearest(pos).d; return r > 2.6 ? (dp < 12 ? opts.grainLod : 1) : dp < 9 ? (r > 0.9 && opts.grainLod === 0 ? 0 : 1) : 2; })(), pos, quat, scale: new THREE.Vector3(r * rng.range(0.85, 1.15), r * rng.range(0.8, 1.1), r * rng.range(0.85, 1.15)), cell: cellOfSample(si), seed: rng.next() });
+      placements.push({ variant: rng.pick(VARIANTS[kind]), lod: (() => { const dp = nearest(pos).d; return r > 2.6 ? (dp < 12 ? opts.grainLod : opts.lite ? 2 : 1) : dp < (opts.lite ? 5 : 9) ? (r > 0.9 && opts.grainLod === 0 ? 0 : 1) : 2; })(), pos, quat, scale: new THREE.Vector3(r * rng.range(0.85, 1.15), r * rng.range(0.8, 1.1), r * rng.range(0.85, 1.15)), cell: cellOfSample(si), seed: rng.next() });
       if (collide && r > 1.6) colliders.push({ x: pos.x, y: pos.y, z: pos.z, r: r * 0.85 });
     }
   };
@@ -118,7 +118,7 @@ export async function buildWorld(base: string, opts: { grainLod: 0 | 1; density:
   }));
   const group = new THREE.Group(); group.name = 'soil';
   const batches: { wet: THREE.InstancedBufferAttribute; cells: Uint16Array }[] = [];
-  const stats = { instances: placements.length, triangles: 0, drawCalls: 0 };
+  const stats = { instances: placements.length, triangles: 0, drawCalls: 0, by: {} as Record<string, number> };
   const m4 = new THREE.Matrix4();
   for (const nm of names) for (const lod of [0, 1, 2] as const) {
     const list = placements.filter((p) => p.variant === nm && p.lod === lod); if (!list.length) continue;
@@ -130,7 +130,7 @@ export async function buildWorld(base: string, opts: { grainLod: 0 | 1; density:
     mesh.instanceMatrix.needsUpdate = true; mesh.computeBoundingSphere(); mesh.name = `${nm}_L${lod}`;
     mesh.castShadow = lod === 0; mesh.receiveShadow = true;
     group.add(mesh); batches.push({ wet, cells: Uint16Array.from(list.map((p) => p.cell)) });
-    stats.triangles += (L.geo[lod].index!.count / 3) * list.length; stats.drawCalls++;
+    const tr = (L.geo[lod].index!.count / 3) * list.length; stats.triangles += tr; stats.drawCalls++; stats.by[`${nm}_L${lod}`] = Math.round(tr / 1000) * 1000 + list.length / 1e6;   // 千三角形単位＋個数（小数部）
   }
   // 4) 区画（セル）：道に沿って並べ、隣どうしは「水の橋」がかかるまでつながらない
   const grid = new SoilGrid(N);

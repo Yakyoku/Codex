@@ -17,7 +17,7 @@ export async function createGame(renderer: THREE.WebGPURenderer, base: string, t
   scene.background = new THREE.Color(0x0d0a08);
   scene.fog = new THREE.FogExp2(0x0d0a08, 0.02);   // 奥は真っ黒ではなく、土の色の暗がりに溶ける
   const camera = new THREE.PerspectiveCamera(58, 1, 0.08, 400);
-  const world = await buildWorld(base, { grainLod: q.grainLod as 0 | 1, density: q.grainCount, cheap: tier === 'vr' });
+  const world = await buildWorld(base, { grainLod: q.grainLod as 0 | 1, density: q.grainCount, cheap: tier === 'vr', lite: tier === 'vr' || tier === 'compat' });   // 互換・VR は、中くらいの細かさを道のそばだけに（三角形の予算）
   scene.add(world.group);
   const bridges = buildBridges(world.colliders, world.samples, world.cellAt, { refraction: 'env', max: tier === 'vr' ? 60 : 220 });
   scene.add(bridges.mesh);
