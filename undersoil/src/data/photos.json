@@ -5,7 +5,60 @@
    "video": true,
    "method": "光学（こうがく）顕微鏡・動画（100 倍）",
    "caption": "苔（こけ）のかけらと土の粒の間を動くクマムシ（中央）。種は不明",
-   "credit": "Mariastella.paulon / Wikimedia Commons / CC BY-SA 4.0"
+   "credit": "Mariastella.paulon / Wikimedia Commons / CC BY-SA 4.0",
+   "track": {
+    "label": "クマムシ",
+    "pts": [
+     [
+      0,
+      39,
+      40,
+      13
+     ],
+     [
+      2,
+      42,
+      42,
+      13
+     ],
+     [
+      4,
+      41,
+      42,
+      13
+     ],
+     [
+      6,
+      42,
+      44,
+      13
+     ],
+     [
+      8,
+      44,
+      46,
+      13
+     ],
+     [
+      10,
+      48,
+      52,
+      13
+     ],
+     [
+      12,
+      41,
+      51,
+      14
+     ],
+     [
+      13.5,
+      39,
+      58,
+      15
+     ]
+    ]
+   }
   },
   {
    "src": "photos/tardigrade-1.webp",

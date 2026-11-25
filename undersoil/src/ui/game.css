@@ -95,3 +95,45 @@ body.clean .minimap, body.surface .minimap { display: none; }
 .goal.on { opacity: 1; transform: translate(-50%, 0); }
 .goal b { display: block; color: #ffd27a; font-size: clamp(16px, 1.8vw, 26px); letter-spacing: .06em; margin-bottom: 6px; }
 .goal span { font-size: clamp(12px, 1.1vw, 16px); line-height: 1.6; }
+/* 本物の動画の中で、見るべき生き物を追いかける丸 */
+.scope-track { position: absolute; display: none; width: 0; height: 0; pointer-events: none; }
+.scope-track i { position: absolute; left: 0; top: 0; width: calc(var(--rp) * 2); aspect-ratio: 1; transform: translate(-50%, -50%); border: 2px solid #ffd27a; border-radius: 50%; box-shadow: 0 0 0 2px rgba(0,0,0,.35); }
+.scope-track span { position: absolute; left: 0; top: 0; transform: translate(-50%, calc(-100% - 6px - var(--rp))); white-space: nowrap; color: #1a140c; background: #ffd27a; border-radius: 4px; padding: 0 6px; font-size: clamp(10px, .85vw, 13px); font-weight: 700; }
+/* 本物に会うには（写真の上に重ねる説明） */
+.scope-meet { position: absolute; inset: 0; padding: 44px 16px 16px; background: rgba(16, 13, 10, .9); color: #efe6d8; opacity: 0; pointer-events: none; transition: opacity .3s ease; overflow: auto; }
+.scope.meet-on .scope-meet { opacity: 1; pointer-events: auto; }
+.scope-meet b { display: block; color: #ffd27a; font-size: clamp(13px, 1.2vw, 18px); margin-bottom: 8px; }
+.scope-meet p { font-size: clamp(12px, 1vw, 15px); line-height: 1.75; margin: 0 0 8px; }
+.scope-meet small { font-size: clamp(10px, .8vw, 12px); color: #b9ad98; }
+.scope:not(.has-meet) .scope-btn[data-a="meet"] { display: none; }
+/* 大きさくらべ・観察ノート（設定と同じ見た目のダイアログ） */
+dialog.sizes, dialog.notebook { background: rgba(16, 12, 9, .97); color: var(--ink); border: 1px solid var(--line); border-radius: 14px; padding: 20px 22px; width: min(46em, 94vw); max-height: 90vh; overflow: auto; font-size: clamp(13px, 1.1vw, 17px); }
+dialog.sizes::backdrop, dialog.notebook::backdrop { background: rgba(0, 0, 0, .6); backdrop-filter: blur(4px); }
+dialog.sizes h2, dialog.notebook h2 { margin: 0 0 .5em; font-weight: 500; letter-spacing: .15em; font-size: 1.25em; }
+dialog.notebook h2 small { font-size: .7em; color: var(--dim); letter-spacing: .05em; margin-left: .5em; }
+.sz-lead, .nb-lead { color: #d8cdb9; line-height: 1.7; margin: 0 0 12px; }
+.sz-scale { position: relative; height: 16px; margin: 0 0 4px 76px; font-size: .75em; color: var(--dim); }
+.sz-scale span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
+.sz-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.sz-list li { display: grid; grid-template-columns: 64px 1fr; gap: 12px; align-items: center; }
+.sz-ph { width: 64px; height: 48px; border-radius: 6px; overflow: hidden; background: rgba(255,255,255,.06); }
+.sz-ph img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.sz-name { font-size: .92em; margin-bottom: 3px; } .sz-name em { font-style: normal; color: #ffd27a; margin-left: .6em; }
+.sz-track { position: relative; height: 10px; border-radius: 5px; background: rgba(255,255,255,.07); }
+.sz-track s { position: absolute; top: -2px; bottom: -2px; width: 1px; background: rgba(255,255,255,.18); }
+.sz-track b { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 5px; }
+.sz-note, .nb-hint { color: var(--dim); font-size: .85em; margin: 12px 0; }
+.nb-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
+.nb-card { display: flex; flex-direction: column; gap: 6px; padding: 6px; border-radius: 10px; border: 1px solid var(--line); background: rgba(255,255,255,.05); color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
+.nb-card img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 6px; }
+.nb-card b { font-weight: 600; font-size: .9em; }
+.nb-off { cursor: default; opacity: .55; } .nb-off i { display: grid; place-items: center; aspect-ratio: 4 / 3; border-radius: 6px; background: rgba(255,255,255,.06); font-style: normal; font-size: 2em; color: var(--dim); }
+.nb-actions { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+.nb-q { position: relative; border-radius: 10px; overflow: hidden; max-width: 560px; }
+.nb-q img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
+.nb-q i { position: absolute; width: 26px; height: 26px; transform: translate(-50%, -50%); border-radius: 50%; border: 3px solid #ffd27a; box-shadow: 0 0 0 3px rgba(0,0,0,.5); animation: nbPulse 1.2s ease-in-out infinite; }
+@keyframes nbPulse { 50% { transform: translate(-50%, -50%) scale(1.35); } }
+.nb-choices { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+.nb-choice { min-width: 9em; } .nb-choice.ok { background: #4f8a4a; border-color: #4f8a4a; color: #fff; } .nb-choice.ng { background: #8a4a3f; border-color: #8a4a3f; color: #fff; }
+.nb-res { min-height: 1.6em; margin: 10px 0 0; color: #ffd27a; }
+.scope-btn[data-a="close"] { padding: 5px 9px; }

@@ -13,6 +13,8 @@ import { makePost } from '../game/post';
 import { buildSurface, type Surface } from '../game/surface';
 import { buildMicroscope } from '../game/microscope';
 import { makeMinimap } from '../ui/minimap';
+import { makeSizes } from '../ui/sizes';
+import { makeNotebook } from '../ui/notebook';
 import { makeEncounters } from '../game/encounters';
 import { SPECIES } from '../game/species';
 import { showCard } from '../ui/card';
@@ -50,7 +52,9 @@ async function main() {
   const { scene, camera, world } = game;
   renderer.shadowMap.enabled = game.q.shadows > 0;
   const underFocus = uniform(12);
-  const post = Q.has('nopost') || !game.q.post.length ? null : makePost(renderer, scene, camera, game.q.post, { distance: underFocus as never, range: 8, bokeh: 2.2 });
+  // ピントの深さとぼけの強さ：生き物を紹介している間は、ピントを浅く、まわりを強くぼかして、その生き物に目が行くようにする
+  const underRange = uniform(8), underBokeh = uniform(2.2);
+  const post = Q.has('nopost') || !game.q.post.length ? null : makePost(renderer, scene, camera, game.q.post, { distance: underFocus as never, range: underRange as never, bokeh: underBokeh as never });
   const resize = () => {
     renderer.setPixelRatio(Math.min(devicePixelRatio, game.q.maxDpr)); renderer.setSize(innerWidth, innerHeight, false);
     camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
@@ -116,6 +120,10 @@ async function main() {
   const seedT = (): Target => mode === 'soil' ? { p: game.root > 0.05 ? game.seedLife.rootTip.clone() : seedC.clone().add(new THREE.Vector3(-50, 2, 0)), r: 20 } : null;
   let focusT: THREE.Vector3 | null = null;
   const scope = await buildMicroscope('./');
+  const sizes = makeSizes('./');
+  const notebook = makeNotebook('./', (id) => scope.show(id, SPECIES[id]?.title ?? SPECIES[id]?.nameJa ?? ''));
+  $('sizes').addEventListener('click', () => sizes.open());
+  $('notebook').addEventListener('click', () => notebook.open());
   const minimap = makeMinimap(world.path, { c: game.seed.position, r: 55 }, world.cavern);
   // ゴール：道の終わりで種にたどり着くと、種が目覚めていれば地上の芽生えへ。まだなら「水をあげよう」と知らせる
   const goal = document.createElement('div'); goal.className = 'goal'; document.body.append(goal);
@@ -126,7 +134,7 @@ async function main() {
     if (goalState === 'away' && d < 22) {
       goalState = 'shown'; goalT = 0;
       if (game.wake > 0.5) goal.innerHTML = '<b>種（たね）にたどり着きました！</b><span>種が目を覚まし、根が顔を出しています。地上（ちじょう）で芽が出るところへ行きます</span>';
-      else goal.innerHTML = '<b>種（たね）にたどり着きました</b><span>でも、種はまだ眠っています。「水をあげる」で土をしめらせよう</span>';
+      else goal.innerHTML = '<b>種（たね）にたどり着きました</b><span>でも、種はまだ眠っています。「水を運ぶ」で土をしめらせよう</span>';
       goal.classList.add('on'); audio.chime();
     }
     if (goalState === 'shown') {
@@ -182,7 +190,7 @@ async function main() {
     { id: 'clay', when: () => mode === 'soil' && cellW(8) > 0.4 && !!grain('clay')(), target: grain('clay') },
     { id: 'clover-seed', when: () => mode === 'soil' && nearSeed() < 70, target: seedT },
     { id: 'trifolium-repens', when: () => mode === 'surface' && surface.growth > 0.75, target: seedling },
-  ], { gapSec: 4, onShow: (id, t) => { audio.chime(); pointer.show(t, SPECIES[id]?.nameJa ?? ''); if (ORGANISMS.includes(id)) beginVisit(id, t); scope.show(id, SPECIES[id]?.title ?? SPECIES[id]?.nameJa ?? ''); }, onHide: () => { pointer.hide(); focusT = null; endVisit(); scope.hide(); } });
+  ], { gapSec: 4, onShow: (id, t) => { audio.chime(); pointer.show(t, SPECIES[id]?.nameJa ?? ''); if (ORGANISMS.includes(id)) beginVisit(id, t); scope.show(id, SPECIES[id]?.title ?? SPECIES[id]?.nameJa ?? ''); notebook.meet(id); }, onHide: () => { pointer.hide(); focusT = null; endVisit(); scope.hide(); } });
   $('meet').addEventListener('click', () => { enc.replay(ORGANISMS); if (!touring) $('tour').click(); });
   $('water').addEventListener('click', () => demo.start());
   $('dry').addEventListener('click', () => demo.dry());
@@ -237,6 +245,7 @@ async function main() {
       const f = pointer.focus(); let d = f ? camera.position.distanceTo(f) : 0;
       if (!f) { const ray = new THREE.Raycaster(camera.position, new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion)); let best = 1e9; for (const c of world.colliders) { const v = new THREE.Vector3(c.x, c.y, c.z).sub(camera.position); const t = v.dot(ray.ray.direction); if (t < 0) continue; const off = v.lengthSq() - t * t; if (off < c.r * c.r) best = Math.min(best, t - Math.sqrt(c.r * c.r - off)); } d = best < 1e8 ? best : 14; }
       underFocus.value += (Math.max(2, Math.min(30, d)) - underFocus.value) * (1 - Math.exp(-dt * 3));
+      { const k = 1 - Math.exp(-dt * 2), vr = visit ? Math.max(0.8, visit.dist * 0.3) : 8, vb = visit ? 4.0 : 2.2; underRange.value += (vr - underRange.value) * k; underBokeh.value += (vb - underBokeh.value) * k; }
     }
     audio.setMode(mode); audio.setVitality(world.grid.mean()); audio.setGrowth(surface.growth); audio.update(dt);
     hud.tick(now); frames++;

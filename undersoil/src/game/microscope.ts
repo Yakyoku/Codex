@@ -5,9 +5,11 @@
 //     「ゲームの姿と比べる」を押したときだけ横に出す。
 // 写真ごとに、撮り方（明視野・位相差・電子顕微鏡など）を表示し、「部分の名前」を押すと、写真の上に部分の名前が出る。
 import PHOTOS from '../data/photos.json';
+import MEET from '../data/meet.json';
 
 type Part = { x: number; y: number; label: string };
-type Media = { src: string; caption: string; credit: string; method: string; video?: boolean; parts?: Part[] };
+type Track = { label: string; pts: [number, number, number, number][] };   // [秒, x%, y%, 半径%]
+type Media = { src: string; caption: string; credit: string; method: string; video?: boolean; parts?: Part[]; track?: Track };
 const MEDIA = PHOTOS as Record<string, Media[]>;
 /** ゲームで描いた姿（比べる用） */
 const MICRO: Record<string, { file: string; how: string }> = {
@@ -23,14 +25,14 @@ export async function buildMicroscope(base: string) {
   frame.innerHTML = `
     <div class="scope-real">
       <img alt=""><video muted playsinline preload="none"></video>
-      <div class="scope-parts"></div>
+      <div class="scope-parts"></div><div class="scope-track"><i></i><span></span></div><div class="scope-meet"><b>本物（ほんもの）に会うには</b><p></p><small></small></div>
       <div class="scope-tag">本物（ほんもの）の姿（すがた）<small class="scope-method"></small></div>
       <div class="scope-foot"><div class="scope-caption"></div><div class="scope-credit"></div></div>
       <div class="scope-dots"></div>
     </div>
     <div class="scope-cg"><video muted loop playsinline preload="none"></video><div class="scope-tag">ゲームで描いた姿<small></small></div></div>
     <div class="scope-bar"><b class="scope-name"></b><span class="scope-scale"></span>
-      <button type="button" class="scope-btn" data-a="parts">部分の名前</button><button type="button" class="scope-btn" data-a="cg">ゲームの姿と比べる</button></div>`;
+      <button type="button" class="scope-btn" data-a="meet">本物に会うには</button><button type="button" class="scope-btn" data-a="parts">部分の名前</button><button type="button" class="scope-btn" data-a="cg">ゲームの姿と比べる</button><button type="button" class="scope-btn" data-a="close" aria-label="とじる">×</button></div>`;
   document.body.append(frame);
   const $ = <T extends Element>(s: string) => frame.querySelector(s) as T;
   const img = $<HTMLImageElement>('.scope-real img'), vid = $<HTMLVideoElement>('.scope-real video'), cgv = $<HTMLVideoElement>('.scope-cg video');
@@ -50,12 +52,26 @@ export async function buildMicroscope(base: string) {
     frame.classList.toggle('has-parts', !!m.parts?.length);
     $('.scope-dots').innerHTML = list.length > 1 ? list.map((_, k) => `<i class="${k === i ? 'on' : ''}"></i>`).join('') : '';
   };
+  // 本物の動画の中で、見るべき生き物を丸で追いかける（動画の時刻に合わせて、記録した位置の間をなめらかにつなぐ）
+  const trackEl = $<HTMLElement>('.scope-track');
+  const moveTrack = () => {
+    const m = list[idx]; const tr = m?.track; if (!tr || !m.video) { trackEl.style.display = 'none'; return; }
+    const t = vid.currentTime || 0, P = tr.pts; let k = 0; while (k < P.length - 2 && P[k + 1][0] < t) k++;
+    const a = P[k], b = P[k + 1] ?? a, f = Math.max(0, Math.min(1, (t - a[0]) / Math.max(0.001, b[0] - a[0])));
+    const x = a[1] + (b[1] - a[1]) * f, y = a[2] + (b[2] - a[2]) * f, r = a[3] + (b[3] - a[3]) * f;
+    trackEl.style.display = 'block'; trackEl.style.left = x + '%'; trackEl.style.top = y + '%'; trackEl.style.setProperty('--rp', (r / 100 * $<HTMLElement>('.scope-real').clientWidth).toFixed(1) + 'px');
+    (trackEl.querySelector('span') as HTMLElement).textContent = tr.label;
+  };
+  const trackLoop = () => { if (cur) moveTrack(); requestAnimationFrame(trackLoop); }; requestAnimationFrame(trackLoop);
   const next = (d = 1) => { if (list.length > 1) setMedia((idx + d + list.length) % list.length); };
   // 写真の左右をタップすると前後へ。ボタンは部分の名前／ゲームの姿
+  $('.scope-meet').addEventListener('click', (e) => e.stopPropagation());
   $('.scope-real').addEventListener('click', (e) => { const r = (e.currentTarget as HTMLElement).getBoundingClientRect(); next((e as MouseEvent).clientX < r.left + r.width / 2 ? -1 : 1); });
   frame.querySelectorAll('.scope-btn').forEach((b) => b.addEventListener('click', (e) => {
     e.stopPropagation(); const a = (b as HTMLElement).dataset.a;
-    if (a === 'parts') { showParts = !showParts; frame.classList.toggle('parts-on', showParts); b.classList.toggle('on', showParts); holdT = -20; }
+    if (a === 'close') { frame.classList.remove('on'); vid.pause(); cgv.pause(); cur = null; return; }
+    if (a === 'meet') { const on = !frame.classList.contains('meet-on'); frame.classList.toggle('meet-on', on); b.classList.toggle('on', on); holdT = -30; }
+    else if (a === 'parts') { showParts = !showParts; frame.classList.toggle('parts-on', showParts); b.classList.toggle('on', showParts); holdT = -20; }
     else { showCg = !showCg; frame.classList.toggle('cg-on', showCg); b.classList.toggle('on', showCg); if (showCg && cur && MICRO[cur]) void cgv.play().catch(() => {}); else cgv.pause(); }
   }));
 
@@ -68,6 +84,7 @@ export async function buildMicroscope(base: string) {
       cur = id; const cg = MICRO[id];
       frame.classList.toggle('no-cg', !cg); showCg = false; frame.classList.remove('cg-on'); $('.scope-btn[data-a="cg"]').classList.remove('on');
       if (cg) { cgv.poster = `${base}micro/${cg.file}.webp`; cgv.src = `${base}micro/${cg.file}.${ext}`; $('.scope-cg small').textContent = cg.how + '（Blender で計算）'; }
+      { const M = MEET as Record<string, string>; $('.scope-meet p').textContent = M[id] ?? ''; $('.scope-meet small').textContent = M._note; frame.classList.toggle('has-meet', !!M[id]); frame.classList.remove('meet-on'); $('.scope-btn[data-a="meet"]').classList.remove('on'); }
       $('.scope-name').textContent = name; $('.scope-scale').textContent = SCALE[id] ?? '';
       setMedia(0); frame.classList.add('on');
     },

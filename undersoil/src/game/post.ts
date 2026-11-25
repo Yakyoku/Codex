@@ -4,13 +4,13 @@ import { pass, screenUV, smoothstep, mix, float, vec3, vec4, time, fract, sin, d
 import { bloom } from 'three/addons/tsl/display/BloomNode.js';
 import { dof } from 'three/addons/tsl/display/DepthOfFieldNode.js';
 
-export function makePost(renderer: THREE.WebGPURenderer, scene: THREE.Scene, camera: THREE.Camera, effects: string[], focus?: { distance: ReturnType<typeof float>; range: number; bokeh: number }) {
+export function makePost(renderer: THREE.WebGPURenderer, scene: THREE.Scene, camera: THREE.Camera, effects: string[], focus?: { distance: ReturnType<typeof float>; range: number | ReturnType<typeof float>; bokeh: number | ReturnType<typeof float> }) {
   const pipe = new THREE.RenderPipeline(renderer);
   const scenePass = pass(scene, camera);
   const color = scenePass.getTextureNode('output');
   let base = color;
   // 被写界深度：接写のように、ピントの合った芽のまわりだけがくっきりし、手前と奥がぼける
-  if (focus && effects.some((e) => e.startsWith('dof'))) base = dof(color, scenePass.getViewZNode(), focus.distance, float(focus.range), float(effects.includes('dof-lite') ? focus.bokeh * 0.6 : focus.bokeh)) as unknown as typeof color;
+  if (focus && effects.some((e) => e.startsWith('dof'))) { const num = (v: number | ReturnType<typeof float>) => (typeof v === 'number' ? float(v) : v); const bk = num(focus.bokeh); base = dof(color, scenePass.getViewZNode(), focus.distance, num(focus.range), effects.includes('dof-lite') ? bk.mul(0.6) : bk) as unknown as typeof color; }
   let out = base.rgb;
   if (effects.some((e) => e.startsWith('bloom'))) {
     const lite = effects.includes('bloom-lite');
