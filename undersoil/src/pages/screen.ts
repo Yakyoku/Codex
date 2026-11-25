@@ -12,6 +12,7 @@ import { makeDemo } from '../game/demo';
 import { makePost } from '../game/post';
 import { buildSurface, type Surface } from '../game/surface';
 import { buildMicroscope } from '../game/microscope';
+import { makeMinimap } from '../ui/minimap';
 import { makeEncounters } from '../game/encounters';
 import { SPECIES } from '../game/species';
 import { showCard } from '../ui/card';
@@ -109,8 +110,33 @@ async function main() {
   const colpoda = (): Target => { const p = game.creatures.nearest(camera.position); return p ? { p: p.clone(), r: 4.5 } : null; };
   const tardi = (): Target => game.tardigrade.target();
   const seedling = (): Target => mode === 'surface' ? { p: new THREE.Vector3(0.3, surface.groundY + 1.2, 0.2), r: 3.2 } : null;
+  // 吸水した種：道の終わりの先。カメラから種の表面までのおおよその距離と、紹介カードが指す点（根の出ている所）
+  const seedC = game.seed.position;
+  const nearSeed = () => camera.position.distanceTo(seedC) - 55;
+  const seedT = (): Target => mode === 'soil' ? { p: game.root > 0.05 ? game.seedLife.rootTip.clone() : seedC.clone().add(new THREE.Vector3(-50, 2, 0)), r: 20 } : null;
   let focusT: THREE.Vector3 | null = null;
   const scope = await buildMicroscope('./');
+  const minimap = makeMinimap(world.path, { c: game.seed.position, r: 55 }, world.cavern);
+  // ゴール：道の終わりで種にたどり着くと、種が目覚めていれば地上の芽生えへ。まだなら「水をあげよう」と知らせる
+  const goal = document.createElement('div'); goal.className = 'goal'; document.body.append(goal);
+  let goalState: 'away' | 'shown' | 'done' = 'away', goalT = 0;
+  const goalTick = (dt: number) => {
+    if (mode !== 'soil' || !started) { goal.classList.remove('on'); return; }
+    const d = nearSeed();
+    if (goalState === 'away' && d < 22) {
+      goalState = 'shown'; goalT = 0;
+      if (game.wake > 0.5) goal.innerHTML = '<b>種（たね）にたどり着きました！</b><span>種が目を覚まし、根が顔を出しています。地上（ちじょう）で芽が出るところへ行きます</span>';
+      else goal.innerHTML = '<b>種（たね）にたどり着きました</b><span>でも、種はまだ眠っています。「水をあげる」で土をしめらせよう</span>';
+      goal.classList.add('on'); audio.chime();
+    }
+    if (goalState === 'shown') {
+      goalT += dt;
+      if (goalT > 5.5) goal.classList.remove('on');
+      if (goalT > 5.5 && game.wake > 0.5 && goal.textContent?.includes('地上')) { goalState = 'done'; switchTo('surface'); }
+      if (d > 60) goalState = 'away';
+    }
+    if (goalState === 'done' && d > 60) goalState = 'away';   // 一度地上へ行ったら、種から離れるまでは知らせない
+  };
   // 生き物を見せに行く：カードが出ている間、カメラはその生き物のそばで止まり、離れていれば暗転して移る
   const ORGANISMS = ['bacillus-subtilis', 'pseudomonas-fluorescens', 'colpoda', 'paramacrobiotus-metropolitanus'];
   const VIEW: Record<string, number> = { 'bacillus-subtilis': 2.2, 'pseudomonas-fluorescens': 2.6, colpoda: 13, 'paramacrobiotus-metropolitanus': 70 };
@@ -154,6 +180,7 @@ async function main() {
     { id: 'colpoda', when: () => mode === 'soil' && game.creatures.anyActive(), target: colpoda },
     { id: 'paramacrobiotus-metropolitanus', when: () => mode === 'soil' && game.tardigrade.active(), target: tardi },
     { id: 'clay', when: () => mode === 'soil' && cellW(8) > 0.4 && !!grain('clay')(), target: grain('clay') },
+    { id: 'clover-seed', when: () => mode === 'soil' && nearSeed() < 70, target: seedT },
     { id: 'trifolium-repens', when: () => mode === 'surface' && surface.growth > 0.75, target: seedling },
   ], { gapSec: 4, onShow: (id, t) => { audio.chime(); pointer.show(t, SPECIES[id]?.nameJa ?? ''); if (ORGANISMS.includes(id)) beginVisit(id, t); scope.show(id, SPECIES[id]?.title ?? SPECIES[id]?.nameJa ?? ''); }, onHide: () => { pointer.hide(); focusT = null; endVisit(); scope.hide(); } });
   $('meet').addEventListener('click', () => { enc.replay(ORGANISMS); if (!touring) $('tour').click(); });
@@ -203,7 +230,7 @@ async function main() {
       if (viewShift > 0.002) camera.setViewOffset(innerWidth, innerHeight, innerWidth * viewShift, 0, innerWidth, innerHeight); else if (camera.view) camera.clearViewOffset();
       if (post) post.render(); else renderer.render(scene, camera);
     }
-    scope.tick(dt);
+    scope.tick(dt); minimap.update(camera, mode === 'soil' && started); goalTick(dt);
     if (!testing) enc.update(dt);
     pointer.update(dt);
     { // ピント：説明している物があればそこ、なければ画面中央の粒まで

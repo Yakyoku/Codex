@@ -1,30 +1,188 @@
 {
-  "paramacrobiotus-metropolitanus": [
-    { "src": "photos/tardigrade-v", "video": true, "method": "光学（こうがく）顕微鏡・動画（100 倍）", "caption": "苔（こけ）のかけらと土の粒の間を動くクマムシ（中央）。種は不明", "credit": "Mariastella.paulon / Wikimedia Commons / CC BY-SA 4.0" },
-    { "src": "photos/tardigrade-1.webp", "method": "明視野（めいしや）顕微鏡", "caption": "同じ属（ぞく）のクマムシ Paramacrobiotus sp.（上下が逆さま）", "credit": "Pete Lypkie / iNaturalist / CC BY",
-      "parts": [{ "x": 57, "y": 27, "label": "鉤爪（かぎづめ）" }, { "x": 30, "y": 42, "label": "体の中の粒（貯蔵細胞）" }, { "x": 72, "y": 40, "label": "脚（あし）" }] },
-    { "src": "photos/tardigrade-2.webp", "method": "明視野（めいしや）顕微鏡", "caption": "近い仲間のクマムシ（同じチョウメイムシ科）", "credit": "iNaturalist / CC0" }
-  ],
-  "colpoda": [
-    { "src": "photos/colpoda-v", "video": true, "method": "光学（こうがく）顕微鏡・動画", "caption": "泳ぐコルポダ（Colpoda cucullus）。体じゅうの細かい毛（繊毛）で回りながら進む", "credit": "Igor Shelpiakov / iNaturalist / CC BY" },
-    { "src": "photos/colpoda-1.webp", "method": "明視野（めいしや）顕微鏡", "caption": "コルポダ（右）と、殻の中で2つに分かれているシスト（左）", "credit": "crseaquist / iNaturalist / CC BY",
-      "parts": [{ "x": 92, "y": 62, "label": "口のくぼみ" }, { "x": 82, "y": 45, "label": "細かい粒（食べたものなど）" }, { "x": 30, "y": 47, "label": "シスト（殻の中で分裂中）" }] },
-    { "src": "photos/colpoda-2.webp", "method": "微分干渉（びぶんかんしょう）顕微鏡", "caption": "Colpoda cucullus（400 倍）", "credit": "Picturepest / Wikimedia Commons / CC BY 2.0" }
-  ],
-  "bacillus-subtilis": [
-    { "src": "photos/bacillus-v", "video": true, "method": "位相差（いそうさ）顕微鏡・動画（早回し）", "caption": "白く光る粒が芽胞。水と養分で目を覚まし、暗い細胞になって伸び、分かれて増えていく", "credit": "Pandey et al. 2013, PLoS ONE / CC BY" },
-    { "src": "photos/bacillus-2.webp", "method": "位相差（いそうさ）顕微鏡", "caption": "枯草菌の鎖", "credit": "Pandey et al. 2013, PLoS ONE / CC BY" },
-    { "src": "photos/bacillus-1.webp", "method": "暗視野（あんしや）顕微鏡", "caption": "暗い背景で、細胞が光って見える撮り方", "credit": "Josef Reischig / Wikimedia Commons / CC BY-SA 3.0" }
-  ],
-  "pseudomonas-fluorescens": [
-    { "src": "photos/pseudomonas-1.webp", "method": "位相差（いそうさ）顕微鏡", "caption": "Pseudomonas fluorescens SBW25", "credit": "eLife 98218 / CC BY 4.0",
-      "parts": [{ "x": 52, "y": 70, "label": "細胞（長さ 約 2µm）" }] },
-    { "src": "photos/pseudomonas-2.webp", "method": "電子（でんし）顕微鏡", "caption": "シュードモナスの仲間の鞭毛。光の顕微鏡では細すぎて写らない", "credit": "Jorgevielmasalazar / Wikimedia Commons / CC BY 4.0",
-      "parts": [{ "x": 64, "y": 22, "label": "細胞の端" }, { "x": 30, "y": 78, "label": "鞭毛（べんもう）の束" }] }
-  ],
-  "trifolium-repens": [
-    { "src": "photos/clover-1.webp", "method": "ふつうの写真（接写）", "caption": "シロツメクサの芽生え", "credit": "Krzysztof Ziarnek, Kenraiz / Wikimedia Commons / CC BY-SA 4.0",
-      "parts": [{ "x": 55, "y": 20, "label": "子葉（しよう）" }, { "x": 32, "y": 64, "label": "最初の本葉（ほんよう）" }, { "x": 56, "y": 82, "label": "子葉（しよう）" }] },
-    { "src": "photos/clover-2.webp", "method": "ふつうの写真（接写）", "caption": "シロツメクサの芽生え", "credit": "Salicyna / Wikimedia Commons / CC BY-SA 4.0" }
-  ]
+ "paramacrobiotus-metropolitanus": [
+  {
+   "src": "photos/tardigrade-v",
+   "video": true,
+   "method": "光学（こうがく）顕微鏡・動画（100 倍）",
+   "caption": "苔（こけ）のかけらと土の粒の間を動くクマムシ（中央）。種は不明",
+   "credit": "Mariastella.paulon / Wikimedia Commons / CC BY-SA 4.0"
+  },
+  {
+   "src": "photos/tardigrade-1.webp",
+   "method": "明視野（めいしや）顕微鏡",
+   "caption": "同じ属（ぞく）のクマムシ Paramacrobiotus sp.（上下が逆さま）",
+   "credit": "Pete Lypkie / iNaturalist / CC BY",
+   "parts": [
+    {
+     "x": 57,
+     "y": 27,
+     "label": "鉤爪（かぎづめ）"
+    },
+    {
+     "x": 30,
+     "y": 42,
+     "label": "体の中の粒（貯蔵細胞）"
+    },
+    {
+     "x": 72,
+     "y": 40,
+     "label": "脚（あし）"
+    }
+   ]
+  },
+  {
+   "src": "photos/tardigrade-2.webp",
+   "method": "明視野（めいしや）顕微鏡",
+   "caption": "近い仲間のクマムシ（同じチョウメイムシ科）",
+   "credit": "iNaturalist / CC0"
+  }
+ ],
+ "colpoda": [
+  {
+   "src": "photos/colpoda-v",
+   "video": true,
+   "method": "光学（こうがく）顕微鏡・動画",
+   "caption": "泳ぐコルポダ（Colpoda cucullus）。体じゅうの細かい毛（繊毛）で回りながら進む",
+   "credit": "Igor Shelpiakov / iNaturalist / CC BY"
+  },
+  {
+   "src": "photos/colpoda-1.webp",
+   "method": "明視野（めいしや）顕微鏡",
+   "caption": "コルポダ（右）と、殻の中で2つに分かれているシスト（左）",
+   "credit": "crseaquist / iNaturalist / CC BY",
+   "parts": [
+    {
+     "x": 92,
+     "y": 62,
+     "label": "口のくぼみ"
+    },
+    {
+     "x": 82,
+     "y": 45,
+     "label": "細かい粒（食べたものなど）"
+    },
+    {
+     "x": 30,
+     "y": 47,
+     "label": "シスト（殻の中で分裂中）"
+    }
+   ]
+  },
+  {
+   "src": "photos/colpoda-2.webp",
+   "method": "微分干渉（びぶんかんしょう）顕微鏡",
+   "caption": "Colpoda cucullus（400 倍）",
+   "credit": "Picturepest / Wikimedia Commons / CC BY 2.0"
+  }
+ ],
+ "bacillus-subtilis": [
+  {
+   "src": "photos/bacillus-v",
+   "video": true,
+   "method": "位相差（いそうさ）顕微鏡・動画（早回し）",
+   "caption": "白く光る粒が芽胞。水と養分で目を覚まし、暗い細胞になって伸び、分かれて増えていく",
+   "credit": "Pandey et al. 2013, PLoS ONE / CC BY"
+  },
+  {
+   "src": "photos/bacillus-2.webp",
+   "method": "位相差（いそうさ）顕微鏡",
+   "caption": "枯草菌の鎖",
+   "credit": "Pandey et al. 2013, PLoS ONE / CC BY"
+  },
+  {
+   "src": "photos/bacillus-1.webp",
+   "method": "暗視野（あんしや）顕微鏡",
+   "caption": "暗い背景で、細胞が光って見える撮り方",
+   "credit": "Josef Reischig / Wikimedia Commons / CC BY-SA 3.0"
+  }
+ ],
+ "pseudomonas-fluorescens": [
+  {
+   "src": "photos/pseudomonas-1.webp",
+   "method": "位相差（いそうさ）顕微鏡",
+   "caption": "Pseudomonas fluorescens SBW25",
+   "credit": "eLife 98218 / CC BY 4.0",
+   "parts": [
+    {
+     "x": 52,
+     "y": 70,
+     "label": "細胞（長さ 約 2µm）"
+    }
+   ]
+  },
+  {
+   "src": "photos/pseudomonas-2.webp",
+   "method": "電子（でんし）顕微鏡",
+   "caption": "シュードモナスの仲間の鞭毛。光の顕微鏡では細すぎて写らない",
+   "credit": "Jorgevielmasalazar / Wikimedia Commons / CC BY 4.0",
+   "parts": [
+    {
+     "x": 64,
+     "y": 22,
+     "label": "細胞の端"
+    },
+    {
+     "x": 30,
+     "y": 78,
+     "label": "鞭毛（べんもう）の束"
+    }
+   ]
+  }
+ ],
+ "trifolium-repens": [
+  {
+   "src": "photos/clover-1.webp",
+   "method": "ふつうの写真（接写）",
+   "caption": "シロツメクサの芽生え",
+   "credit": "Krzysztof Ziarnek, Kenraiz / Wikimedia Commons / CC BY-SA 4.0",
+   "parts": [
+    {
+     "x": 55,
+     "y": 20,
+     "label": "子葉（しよう）"
+    },
+    {
+     "x": 32,
+     "y": 64,
+     "label": "最初の本葉（ほんよう）"
+    },
+    {
+     "x": 56,
+     "y": 82,
+     "label": "子葉（しよう）"
+    }
+   ]
+  },
+  {
+   "src": "photos/clover-2.webp",
+   "method": "ふつうの写真（接写）",
+   "caption": "シロツメクサの芽生え",
+   "credit": "Salicyna / Wikimedia Commons / CC BY-SA 4.0"
+  }
+ ],
+ "clover-seed": [
+  {
+   "src": "photos/seed-1.webp",
+   "method": "ふつうの写真（接写）",
+   "caption": "シロツメクサの種（1 粒 約 1.2 mm）。右は米国の 10 セント硬貨（直径 18 mm）",
+   "credit": "Ninjatacoshell / Wikimedia Commons / CC BY-SA 3.0",
+   "parts": [
+    {
+     "x": 68,
+     "y": 87,
+     "label": "黄色い種"
+    },
+    {
+     "x": 26,
+     "y": 39,
+     "label": "山吹色の種"
+    },
+    {
+     "x": 48,
+     "y": 84,
+     "label": "赤みのある種"
+    }
+   ]
+  }
+ ]
 }

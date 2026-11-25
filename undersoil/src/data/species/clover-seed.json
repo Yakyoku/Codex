@@ -1,0 +1,11 @@
+{
+  "id": "clover-seed",
+  "kind": "element",
+  "nameJa": "シロツメクサの種",
+  "title": "シロツメクサの種（たね）",
+  "size": "長さ 約 1.2 mm",
+  "sizeCompare": "いま歩いている世界では、山吹色の大きな壁",
+  "intro": "冬を越して水を吸い、ふくらんだ種です。表面の水には、種から糖やアミノ酸がしみ出し（本当は色がなく見えないので、色をつけています）、それを目当てに細菌が集まります。こぶの側では、種皮を破って白い根が顔を出します。",
+  "stage": 1,
+  "sources": ["Docs/REFERENCE/species/trifolium-repens.md"]
+}
