@@ -8,6 +8,7 @@ import { createGame } from '../game/game';
 import { makeDemo } from '../game/demo';
 import { pushOut } from '../game/controls';
 import { makeHud } from './hud';
+import { buildSurface } from '../game/surface';
 
 const errors: string[] = [];
 addEventListener('error', (e) => errors.push(e.message));
@@ -33,6 +34,18 @@ async function main() {
   const start = world.path.getPointAt(0.03); rig.position.copy(start); rig.position.y -= 1.2;
   const ahead = world.path.getPointAt(0.09); rig.rotation.y = Math.atan2(-(ahead.x - start.x), -(ahead.z - start.z));
   camera.position.set(0, 1.25, 0); // ヘッドセットなしの確認用：座った目の高さ
+  // 地上の場面（芽生え）：1 単位 = 1 mm。座った目の高さ 1.25 m を、地面から約 14 mm の高さにする（芽を、ひざの前の小さな木のように見下ろす）
+  const surface = await buildSurface(renderer, '../', { shadows: false, density: 0.5 });
+  // VR では顔を上げると空が見えるので、明け方の淡い空の色にし、地面の端は同じ色の霧に溶かす
+  { const sky = new THREE.Color(0xcdd8de); surface.scene.background = sky; if (surface.scene.fog) (surface.scene.fog as THREE.Fog).color = sky; else surface.scene.fog = new THREE.Fog(sky, 18, 34); }
+  const sRig = new THREE.Group(); sRig.scale.setScalar(14 / 1.25); surface.scene.add(sRig);
+  sRig.position.set(-11, surface.groundY - 0.5, 10); sRig.rotation.y = Math.atan2(11, -10) + Math.PI;   // 芽（原点）のほうを向く
+  let where: 'soil' | 'surface' = 'soil', growT = 0, fadeT = 0, pending: 'soil' | 'surface' | null = null;
+  /** 場面の切り替え：一瞬暗くしてから、カメラ（頭）を別のリグに付けかえる。カメラを勝手に動かさない */
+  const goTo = (w: 'soil' | 'surface') => { if (w === where || pending) return; pending = w; fadeT = 0.35; };
+  const doSwitch = () => { if (!pending) return; where = pending; pending = null; (where === 'surface' ? sRig : rig).add(camera); growT = 0; surface.setGrowth(0); if (!renderer.xr.isPresenting) pitch = where === 'surface' ? -0.75 : 0; toggleBtn.textContent = where === 'soil' ? '地上を見る' : '土の中へ戻る'; };
+  const toggleBtn = document.createElement('button'); toggleBtn.className = 'btn'; toggleBtn.textContent = '地上を見る'; document.querySelector('.nav')!.prepend(toggleBtn);
+  toggleBtn.addEventListener('click', () => goTo(where === 'soil' ? 'surface' : 'soil'));
   const demo = makeDemo(world);
   const resize = () => { if (renderer.xr.isPresenting) return; renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5)); renderer.setSize(innerWidth, innerHeight, false); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); };
   addEventListener('resize', resize); resize();
@@ -48,13 +61,15 @@ async function main() {
   try { supported = !!xr && await xr.isSessionSupported('immersive-vr'); } catch { supported = false; }
   await renderer.compileAsync(scene, camera);
   if (!supported) { btn.disabled = true; msg.textContent = 'このブラウザは VR に対応していません。Meta Quest 3 の標準ブラウザで開いてください。画面をドラッグすると見回せます。'; }
-  else msg.textContent = '座って遊ぶのがおすすめです。左スティックで移動、右スティックで向きを変えます。ときどき休憩をとり、気分が悪くなったらすぐに中断してください。';
+  else msg.textContent = '座って遊ぶのがおすすめです。左スティックで移動、右スティックで向きを変え、握るボタンで地上の芽生えへ行けます。ときどき休憩をとり、気分が悪くなったらすぐに中断してください。';
   setTimeout(() => demo.start(), 4000);
   let session: XRSession | null = null;
   btn.addEventListener('click', async () => {
     if (session) { await session.end(); return; }
     try {
       session = await xr!.requestSession('immersive-vr', { optionalFeatures: ['local-floor', 'bounded-floor', 'hand-tracking'] });
+      // 握るボタン（グリップ）で、土の中 ⇄ 地上を切り替える
+      session.addEventListener('squeeze', () => goTo(where === 'soil' ? 'surface' : 'soil'));
       session.addEventListener('end', () => { session = null; btn.textContent = 'VR で遊ぶ'; document.body.classList.remove('in-vr'); camera.position.set(0, 1.25, 0); resize(); });
       await renderer.xr.setSession(session);
       btn.textContent = 'VR を終了'; document.body.classList.add('in-vr');
@@ -66,7 +81,10 @@ async function main() {
   let snapReady = true, frames = 0, last = 0;
   renderer.setAnimationLoop((now: number) => {
     const dt = last ? Math.min(0.1, (now - last) / 1000) : 0; last = now;
+    if (fadeT > 0) { fadeT -= dt; if (fadeT <= 0.17 && pending) doSwitch(); }
+    if (where === 'surface') { growT += dt; surface.setGrowth(Math.min(1, growT / 26)); surface.update(dt, now / 1000); }
     if (renderer.xr.isPresenting && session) {
+      if (where === 'surface') { /* 地上では移動しない（向きを変えるだけ） */ }
       let mx = 0, mz = 0, tx = 0;
       for (const src of session.inputSources) { const a = src.gamepad?.axes; if (!a) continue; const x = a[2] ?? a[0] ?? 0, y = a[3] ?? a[1] ?? 0; if (src.handedness === 'left') { mx = Math.abs(x) > 0.15 ? x : 0; mz = Math.abs(y) > 0.15 ? y : 0; } else if (src.handedness === 'right') tx = x; }
       if (Math.abs(tx) > 0.6 && snapReady) { rig.rotation.y -= Math.sign(tx) * Math.PI / 6; snapReady = false; } else if (Math.abs(tx) < 0.3) snapReady = true;
@@ -74,12 +92,13 @@ async function main() {
       fwd.set(0, 0, -1).applyQuaternion(q); right.set(1, 0, 0).applyQuaternion(q);
       want.set(0, 0, 0).addScaledVector(fwd, -mz).addScaledVector(right, mx); if (want.lengthSq() > 1) want.normalize();
       vel.lerp(want.multiplyScalar(3.2), 1 - Math.exp(-dt * 3));
-      rig.position.addScaledVector(vel, dt);
+      if (where === 'soil') rig.position.addScaledVector(vel, dt);
       // 頭の位置で粒との当たりを取り、ずれた分だけ体を戻す
-      xrCam.getWorldPosition(head); const before = head.clone(); pushOut(head, world.colliders, 0.7); rig.position.add(head.sub(before));
+      if (where === 'soil') { xrCam.getWorldPosition(head); const before = head.clone(); pushOut(head, world.colliders, 0.7); rig.position.add(head.sub(before)); }
     } else camera.rotation.set(pitch, yaw, 0, 'YXZ');
     demo.update(dt); game.update(dt, now / 1000);
-    renderer.render(scene, camera);
+    if (fadeT > 0) { renderer.setClearColor(0x000000, 1); renderer.clear(); }   // 切り替えの暗転
+    else renderer.render(where === 'soil' ? scene : surface.scene, camera);
     hud.tick(now); frames++;
     W.__state = { ready: frames > 3, frames, isWebGPU, supported, presenting: renderer.xr.isPresenting, errors, stats: world.stats };
   });
