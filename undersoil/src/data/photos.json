@@ -1,11 +1,12 @@
 {
   "paramacrobiotus-metropolitanus": [
+    { "src": "photos/tardigrade-v", "video": true, "method": "光学（こうがく）顕微鏡・動画（100 倍）", "caption": "苔（こけ）のかけらと土の粒の間を動くクマムシ（中央）。種は不明", "credit": "Mariastella.paulon / Wikimedia Commons / CC BY-SA 4.0" },
     { "src": "photos/tardigrade-1.webp", "method": "明視野（めいしや）顕微鏡", "caption": "同じ属（ぞく）のクマムシ Paramacrobiotus sp.（上下が逆さま）", "credit": "Pete Lypkie / iNaturalist / CC BY",
       "parts": [{ "x": 57, "y": 27, "label": "鉤爪（かぎづめ）" }, { "x": 30, "y": 42, "label": "体の中の粒（貯蔵細胞）" }, { "x": 72, "y": 40, "label": "脚（あし）" }] },
     { "src": "photos/tardigrade-2.webp", "method": "明視野（めいしや）顕微鏡", "caption": "近い仲間のクマムシ（同じチョウメイムシ科）", "credit": "iNaturalist / CC0" }
   ],
   "colpoda": [
-    { "src": "photos/colpoda-v", "video": true, "method": "微分干渉（びぶんかんしょう）顕微鏡・動画", "caption": "泳ぐコルポダ（Colpoda cucullus）。体じゅうの細かい毛（繊毛）で回りながら進む", "credit": "Igor Shelpiakov / iNaturalist / CC BY" },
+    { "src": "photos/colpoda-v", "video": true, "method": "光学（こうがく）顕微鏡・動画", "caption": "泳ぐコルポダ（Colpoda cucullus）。体じゅうの細かい毛（繊毛）で回りながら進む", "credit": "Igor Shelpiakov / iNaturalist / CC BY" },
     { "src": "photos/colpoda-1.webp", "method": "明視野（めいしや）顕微鏡", "caption": "コルポダ（右）と、殻の中で2つに分かれているシスト（左）", "credit": "crseaquist / iNaturalist / CC BY",
       "parts": [{ "x": 92, "y": 62, "label": "口のくぼみ" }, { "x": 82, "y": 45, "label": "細かい粒（食べたものなど）" }, { "x": 30, "y": 47, "label": "シスト（殻の中で分裂中）" }] },
     { "src": "photos/colpoda-2.webp", "method": "微分干渉（びぶんかんしょう）顕微鏡", "caption": "Colpoda cucullus（400 倍）", "credit": "Picturepest / Wikimedia Commons / CC BY 2.0" }
