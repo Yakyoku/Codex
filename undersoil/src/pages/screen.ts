@@ -203,7 +203,7 @@ async function main() {
       if (viewShift > 0.002) camera.setViewOffset(innerWidth, innerHeight, innerWidth * viewShift, 0, innerWidth, innerHeight); else if (camera.view) camera.clearViewOffset();
       if (post) post.render(); else renderer.render(scene, camera);
     }
-    scope.tick(dt); if (mode === 'soil') scope.render(renderer, dt);
+    scope.tick(dt);
     if (!testing) enc.update(dt);
     pointer.update(dt);
     { // ピント：説明している物があればそこ、なければ画面中央の粒まで

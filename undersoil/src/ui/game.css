@@ -51,7 +51,8 @@ dialog.settings ol.steps { margin: .6em 0; padding-left: 1.3em; line-height: 1.9
 .scope.no-photo .scope-photo { display: none; }
 .scope-photo, .scope-3d { position: relative; overflow: hidden; }
 .scope-photo { background: #1a1510; border-right: 3px solid rgba(20, 16, 12, .9); }
-.scope-photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.scope-photo img, .scope-3d video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.scope-3d { background: #dcdcd8; }
 .scope-tag { position: absolute; left: 10px; top: 8px; right: 10px; color: #3d2f1a; font-size: clamp(10px, .95vw, 15px); font-weight: 700; letter-spacing: .08em;
   text-shadow: 0 0 6px rgba(255,255,255,.9), 0 0 2px rgba(255,255,255,.9); }
 .scope-tag small { display: block; font-weight: 500; letter-spacing: .02em; color: #4f3f28; font-size: .82em; }

@@ -15,6 +15,10 @@
 # ハッシュのないモデルやデコーダーは短めにして、必ず更新を確かめる
 /models/*
   Cache-Control: public, max-age=0, must-revalidate
+/micro/*
+  Cache-Control: public, max-age=0, must-revalidate
+/photos/*
+  Cache-Control: public, max-age=0, must-revalidate
 /draco/*
   Cache-Control: public, max-age=86400
 /*
