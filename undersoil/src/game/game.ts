@@ -7,6 +7,8 @@ import { buildBridges, type WaterBridges } from './water';
 import { buildSwarm, type Swarm } from './swarm';
 import { buildCreatures, type Creatures } from './creatures';
 import { buildTardigrade, type Tardigrade } from './tardigrade';
+import { buildSeed } from './seed';
+import layout from '../data/stage1.layout.json';
 import { addLights, makeEnvironment, type Lights } from './env';
 
 export interface Game { focus: { value: number }; scene: THREE.Scene; camera: THREE.PerspectiveCamera; world: World; lights: Lights; bridges: WaterBridges; swarm: Swarm; swarm2: Swarm; creatures: Creatures; tardigrade: Tardigrade; tier: QualityTier; q: (typeof quality)['pc-high']; update(dt: number, t: number): void; setWetAll(v: number): void; }
@@ -29,6 +31,9 @@ export async function createGame(renderer: THREE.WebGPURenderer, base: string, t
   scene.add(creatures.group); if (typeof location !== 'undefined' && new URLSearchParams(location.search).has('nocreatures')) creatures.group.visible = false;
   const tardigrade = await buildTardigrade(base, world, tier === 'vr' ? 1 : 0);
   scene.add(tardigrade.group);
+  // 吸水したシロツメクサの種：道の終わりの先。種のまわりは粒を置いていない（world.ts の inSeed）
+  const seed = buildSeed(new THREE.Vector3(...(layout.seedCenter as [number, number, number])), { segments: tier === 'vr' || tier === 'compat' ? 64 : 128 });
+  scene.add(seed);
   { const hq = typeof location !== 'undefined' ? new URLSearchParams(location.search).get('hide') : null; if (hq) scene.traverse((o) => { if (hq.split(',').some((h) => o.name.startsWith(h))) o.visible = false; }); }
   const syncAll = () => { world.syncWetness(); bridges.sync((c) => world.grid.cells[c].water); swarm.sync((c) => world.grid.cells[c].microbes); swarm2.sync((c) => world.grid.cells[c].microbes * (world.grid.cells[c].water > 0.6 ? 1 : 0)); };   // シュードモナスは、水が十分にあるときだけ泳ぐ
   scene.environment = makeEnvironment(renderer);

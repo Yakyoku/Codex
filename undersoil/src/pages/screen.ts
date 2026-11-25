@@ -190,7 +190,7 @@ async function main() {
     else if (camT !== null) placeOnPath(Number(camT));
     else if (touring && visit) { const f = visit.get(); if (f) { const want = f.view ? f.view : visit.pos.clone().add(f.p.clone().sub(visit.anchor)); camera.position.lerp(want, 1 - Math.exp(-dt * 1.2)); const q0 = camera.quaternion.clone(); camera.lookAt(f.p); camera.quaternion.slerp(q0, Math.exp(-dt * 3)); } }
     else if (touring && pointer.focus()) { const f = pointer.focus()!; focusT = focusT ? focusT.lerp(f, 1 - Math.exp(-dt * 2)) : look.clone(); const q0 = camera.quaternion.clone(); camera.lookAt(focusT); camera.quaternion.slerp(q0, Math.exp(-dt * 1.5)); }
-    else if (touring) { tourU = (tourU + dt * 0.012) % 1; placeOnPath(0.02 + 0.66 * (0.5 - 0.5 * Math.cos(tourU * Math.PI * 2))); /* 奥の種のまわり（まだ作っていない）へは行かない */ }
+    else if (touring) { tourU = (tourU + dt * 0.012) % 1; placeOnPath(0.02 + 0.84 * (0.5 - 0.5 * Math.cos(tourU * Math.PI * 2))); /* 道の終わりで、吸水した種（seed.ts）に近づく */ }
     else controls.update(dt);
     if (wetQ === null) { demo.update(dt); game.update(dt, t); }
     if (mode === 'surface') {
