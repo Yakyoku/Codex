@@ -248,15 +248,15 @@ def colpoda():
     body.data.materials.append(mat('co_cilia', bc)); st.material = 2
     # シスト（写真の左に写っているもの）：厚い殻の中に、丸い細胞。分裂中は 2 つ
     for n in ('colpoda_cyst_wall_LOD0', 'colpoda_cyst_cell_LOD0'):
-        o = ob[n]; o.location = (-6.2, 2.2, 0.0)
-    ob['colpoda_cyst_wall_LOD0'].data.materials.clear(); ob['colpoda_cyst_wall_LOD0'].data.materials.append(specimen('co_wall', (0.99, 0.99, 0.97), 1.16, 0.1, rough=0.05, absorb_col=(0.7, 0.66, 0.55)))
+        o = ob[n]; o.location = (-4.3, 1.9, 0.0)
+    ob['colpoda_cyst_wall_LOD0'].data.materials.clear(); ob['colpoda_cyst_wall_LOD0'].data.materials.append(specimen('co_wall', (0.99, 0.99, 0.97), 1.22, 0.35, rough=0.05, absorb_col=(0.7, 0.66, 0.55)))
     cell = ob['colpoda_cyst_cell_LOD0']; cell.data.materials.clear(); cell.data.materials.append(specimen('co_cell', (0.99, 0.98, 0.96), 1.07, 0.1, absorb_col=(0.62, 0.56, 0.42)))
-    cell.scale = (0.92, 0.6, 0.85); cell.location = (-6.2, 3.15, 0)
+    cell.scale = (0.66, 0.56, 0.62); cell.location = (-4.3, 2.88, 0)
     bpy.ops.object.duplicate(); c2 = bpy.context.active_object if bpy.context.active_object != cell else None
-    c2 = cell.copy(); c2.data = cell.data; bpy.context.collection.objects.link(c2); c2.location = (-6.2, 1.25, 0)
+    c2 = cell.copy(); c2.data = cell.data; bpy.context.collection.objects.link(c2); c2.location = (-4.3, 0.95, 0)
     for c in (cell, c2): scatter_inside(c, 700, 0.04, 0.09, grains_material('co_cfine', (0.95, 0.93, 0.88), 1.07, 0.7), margin=0.1, seed=hash(c.name) % 97)
     bl = backlight(None, 400, tint=(0.93, 0.9, 0.97), strength=0.85); bl.location = (0, 0, -30)
-    debris(26, (9, 7), -1.8, seed=8, scale=0.22)
+    debris(22, (9, 7), -1.8, seed=8, scale=0.15)
     cam = camera((0, 0, 60), (0, 0, 0), 135, 60, 0.9)   # 横 約 16 単位（160µm）。ピントは体の中ほど
     parts = [body, fine, mid, ob['colpoda_vacuoles_LOD0'], ob['colpoda_macronucleus'], cv]
     base = [(o.location.copy(), o.rotation_euler.copy()) for o in parts]
