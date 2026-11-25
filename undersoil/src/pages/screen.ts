@@ -45,7 +45,7 @@ async function main() {
   const tier = (Q.get('tier') as QualityTier | null) ?? (savedTier() as QualityTier | null) ?? pickTier(device, isWebGPU);
   mountSettings($('settings'), { renderer: isWebGPU ? 'WebGPU' : 'WebGL 2', tier: TIER_LABEL[tier] });
   const hud = makeHud($('hud'), { device, isWebGPU, tier, note: fallbackReason });
-  const game = await createGame(renderer, './', tier);
+  const game = await createGame(renderer, './', tier); W.__game = game;   // 確認用
   const { scene, camera, world } = game;
   renderer.shadowMap.enabled = game.q.shadows > 0;
   const underFocus = uniform(12);

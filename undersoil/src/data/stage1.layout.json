@@ -14,5 +14,8 @@
   "smallCount": 2600, "smallRadius": [0.35, 1.5],
   "clayCount": 1800, "clayRadius": [0.06, 0.18],
   "seedCenter": [150, -14, 0],
-  "seedRadii": [52, 44, 48]
+  "seedRadii": [52, 44, 48],
+  "seedKnob": [-0.7, 0.05, 0.71],
+  "rootLen": 40,
+  "rootR": 15
 }

@@ -33,7 +33,11 @@ export async function buildWorld(base: string, opts: { grainLod: 0 | 1; density:
   const cav = layout.cavern as { center: [number, number, number]; radius: number };
   const cavC = new THREE.Vector3(...cav.center);
   const inCavern = (p: THREE.Vector3, pad: number) => p.distanceTo(cavC) < cav.radius + pad;
-  const inSeed = (p: THREE.Vector3, pad: number) => { const dx = (p.x - seedC.x) / (seedR.x + pad), dy = (p.y - seedC.y) / (seedR.y + pad), dz = (p.z - seedC.z) / (seedR.z + pad); return dx * dx + dy * dy + dz * dz < 1; };
+  // 幼根の伸びる所（種のこぶから、seedKnob の向きへ）も、粒を置かない
+  const knobD = new THREE.Vector3(...((layout as unknown as { seedKnob: [number, number, number] }).seedKnob)).normalize();
+  const rootA = seedC.clone().addScaledVector(knobD, 40), rootB = seedC.clone().addScaledVector(knobD, 70 + (layout as unknown as { rootLen: number }).rootLen), rootR = (layout as unknown as { rootR: number }).rootR;
+  const segD = (p: THREE.Vector3) => { const ab = rootB.clone().sub(rootA), t = Math.max(0, Math.min(1, p.clone().sub(rootA).dot(ab) / ab.lengthSq())); return p.distanceTo(rootA.clone().addScaledVector(ab, t)); };
+  const inSeed = (p: THREE.Vector3, pad: number) => { if (segD(p) < rootR + 6 + pad) return true; const dx = (p.x - seedC.x) / (seedR.x + pad), dy = (p.y - seedC.y) / (seedR.y + pad), dz = (p.z - seedC.z) / (seedR.z + pad); return dx * dx + dy * dy + dz * dz < 1; };
 
   const placements: Placement[] = []; const colliders: Collider[] = [];
   const euler = new THREE.Euler();

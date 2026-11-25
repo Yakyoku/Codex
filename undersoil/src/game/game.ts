@@ -8,10 +8,11 @@ import { buildSwarm, type Swarm } from './swarm';
 import { buildCreatures, type Creatures } from './creatures';
 import { buildTardigrade, type Tardigrade } from './tardigrade';
 import { buildSeed } from './seed';
+import { buildSeedLife } from './seedLife';
 import layout from '../data/stage1.layout.json';
 import { addLights, makeEnvironment, type Lights } from './env';
 
-export interface Game { focus: { value: number }; scene: THREE.Scene; camera: THREE.PerspectiveCamera; world: World; lights: Lights; bridges: WaterBridges; swarm: Swarm; swarm2: Swarm; creatures: Creatures; tardigrade: Tardigrade; tier: QualityTier; q: (typeof quality)['pc-high']; update(dt: number, t: number): void; setWetAll(v: number): void; }
+export interface Game { focus: { value: number }; scene: THREE.Scene; camera: THREE.PerspectiveCamera; world: World; lights: Lights; bridges: WaterBridges; swarm: Swarm; swarm2: Swarm; creatures: Creatures; tardigrade: Tardigrade; tier: QualityTier; q: (typeof quality)['pc-high']; seed: THREE.Mesh; seedLife: ReturnType<typeof buildSeedLife>; readonly wake: number; readonly root: number; update(dt: number, t: number): void; setWetAll(v: number): void; }
 
 export async function createGame(renderer: THREE.WebGPURenderer, base: string, tier: QualityTier): Promise<Game> {
   const q = (quality as Record<string, (typeof quality)['pc-high']>)[tier];
@@ -32,8 +33,11 @@ export async function createGame(renderer: THREE.WebGPURenderer, base: string, t
   const tardigrade = await buildTardigrade(base, world, tier === 'vr' ? 1 : 0);
   scene.add(tardigrade.group);
   // 吸水したシロツメクサの種：道の終わりの先。種のまわりは粒を置いていない（world.ts の inSeed）
-  const seed = buildSeed(new THREE.Vector3(...(layout.seedCenter as [number, number, number])), { segments: tier === 'vr' || tier === 'compat' ? 64 : 128 });
+  const seed = buildSeed(new THREE.Vector3(...(layout.seedCenter as [number, number, number])), { segments: tier === 'vr' || tier === 'compat' ? 64 : 128, knob: new THREE.Vector3(...(layout.seedKnob as [number, number, number])) });
   scene.add(seed);
+  const lite = tier === 'vr' || tier === 'compat';
+  const seedLife = buildSeedLife(seed, { cells: lite ? 300 : 900, plumes: lite ? 8 : 14 }); scene.add(seedLife.group);
+  let wake = 0, root = 0;
   { const hq = typeof location !== 'undefined' ? new URLSearchParams(location.search).get('hide') : null; if (hq) scene.traverse((o) => { if (hq.split(',').some((h) => o.name.startsWith(h))) o.visible = false; }); }
   const syncAll = () => { world.syncWetness(); bridges.sync((c) => world.grid.cells[c].water); swarm.sync((c) => world.grid.cells[c].microbes); swarm2.sync((c) => world.grid.cells[c].microbes * (world.grid.cells[c].water > 0.6 ? 1 : 0)); };   // シュードモナスは、水が十分にあるときだけ泳ぐ
   scene.environment = makeEnvironment(renderer);
@@ -41,13 +45,17 @@ export async function createGame(renderer: THREE.WebGPURenderer, base: string, t
   const lights = addLights(scene, camera, { shadows: q.shadows });
   let acc = 0, syncT = 0;
   return {
-    scene, camera, world, lights, bridges, swarm, swarm2, creatures, tardigrade, tier, q, focus: { value: 12 },
+    scene, camera, world, lights, bridges, swarm, swarm2, creatures, tardigrade, tier, q, focus: { value: 12 }, seed, seedLife,
+    get wake() { return wake; }, get root() { return root; },
     update(dt, _t) {
       creatures.update(dt, _t); tardigrade.update(dt, _t);
       acc += Math.min(dt, 0.1);
       while (acc >= 0.1) { world.grid.step(0.1); acc -= 0.1; }
       syncT += dt; if (syncT > 0.1) { syncT = 0; syncAll(); }
+      // 種の目覚め：道の終わりの区画の水と、区画全体の活力から。十分に目覚めると、幼根が少しずつのぞく
+      { const last = world.grid.cells[world.grid.cells.length - 1]; const want = Math.min(1, last.water * 0.55 + world.grid.mean() * 0.6);
+        wake += (want - wake) * (1 - Math.exp(-dt * 0.5)); root = Math.min(1, Math.max(0, root + (wake > 0.7 ? dt / 40 : -dt / 60))); seedLife.set(wake, root); }
     },
-    setWetAll(v) { for (const c of world.grid.cells) { c.water = v; c.structure = 0.15 + 0.85 * v; c.microbes = v; c.carbon = v; } for (let i = 0; i < 6; i++) syncAll(); for (let i = 0; i < 30; i++) creatures.update(0.2, 3); for (let i = 0; i < 80; i++) tardigrade.update(0.2, 3); },
+    setWetAll(v) { for (const c of world.grid.cells) { c.water = v; c.structure = 0.15 + 0.85 * v; c.microbes = v; c.carbon = v; } for (let i = 0; i < 6; i++) syncAll(); for (let i = 0; i < 30; i++) creatures.update(0.2, 3); for (let i = 0; i < 80; i++) tardigrade.update(0.2, 3); wake = v; root = v > 0.9 ? 1 : 0; seedLife.set(wake, root); },
   };
 }

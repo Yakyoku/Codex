@@ -8,7 +8,7 @@ import * as THREE from 'three/webgpu';
 import { mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
 import { bumpMap, float, mix, mx_noise_float, mx_worley_noise_float, positionLocal, saturate, smoothstep, vec3 } from 'three/tsl';
 
-export function buildSeed(center: THREE.Vector3, opts: { segments?: number } = {}) {
+export function buildSeed(center: THREE.Vector3, opts: { segments?: number; knob?: THREE.Vector3 } = {}) {
   const seg = opts.segments ?? 128;
   // 球の極（線が集まる点）が出ないよう、正二十面体を細かく割った球から作る
   const g = mergeVertices(new THREE.IcosahedronGeometry(1, Math.round(seg / 3)).deleteAttribute('normal').deleteAttribute('uv'));
@@ -40,7 +40,9 @@ export function buildSeed(center: THREE.Vector3, opts: { segments?: number } = {
   m.normalNode = bumpMap(cell.mul(-0.35).add(mx_noise_float(p.mul(0.2)).mul(0.25)), float(0.6));
   m.sheenNode = float(0.06); m.sheenColor = new THREE.Color(1.0, 0.85, 0.5);
   const mesh = new THREE.Mesh(g, m); mesh.name = 'seed';
-  mesh.position.copy(center); mesh.rotation.set(0.2, 0.0, 1.35);   // へそとこぶを、道の終わり（−X）のほうへ向ける
+  mesh.position.copy(center);
+  // こぶ（幼根の出る側）を、道の終わりから斜め横に見える向き（layout の seedKnob）へ向ける。根の伸びる所は、粒を置いていない（world.ts）
+  mesh.quaternion.setFromUnitVectors(knob.clone(), (opts.knob ?? new THREE.Vector3(-1, 0, 0)).clone().normalize());
   mesh.castShadow = true; mesh.receiveShadow = true;
   return mesh;
 }
