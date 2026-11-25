@@ -28,8 +28,20 @@ export const MUCUS_META: ZoneMeta = { ...common, id: 'mucus', hud: '鼻・粘液
   plugCleared: (l) => (l ? `せき止めがほどけ、流れが先へ進みました。残りは ${l} か所です。` : 'せき止めがすべてほどけました。粘液が、喉まで流れます。'),
   done: '粘液の川が流れはじめました。ほこりも細菌も、喉へ運ばれていきます。', doneTitle: '粘液の流れが戻りました', causeMain: '粘液栓による流れのせき止め' };
 
-async function build(renderer: THREE.WebGPURenderer, tier: string, variant: 'A' | 'B', opts: { entrance?: boolean } = {}): Promise<ZoneStage> {
-  const W = 110, D = 70, M = variant === 'A' ? CILIA_META : MUCUS_META;
+// 肺の細気管支（ステージ3 区域A）も、この形を使う（線毛の森＋粘液。杯細胞の代わりにクラブ細胞、拍子の代わりに呼吸）
+export const BRONCH_META: ZoneMeta = { id: 'bronchiole', hud: '肺・細気管支　空気の通り道の回復', perception: 2, scaleNote: '潜行士の身長 2µm ／ 細気管支の太さ 約0.5mm', patient: 'breath', swimCeil: 18,
+  enter: 'こちらオペレーター。気管支の奥へ入りました。吸う息に乗って、細い気管支へ降ります。',
+  arrive: 'こちらオペレーター。肺の奥の細い気管支、細気管支です。丸く盛り上がった細胞はクラブ細胞。吸いこんだ細かな粒子が粘液にからまって固まり、線毛を止めています。吸う息と吐く息で、空気の流れが行き来します。吐く息のときに光を当てると、粒子がはがれやすくなります。',
+  plugName: '粒子のかたまり', plugHit: '吸いこんだ粒子が、粘液と固まった塊です。光を当て続けて、ほどいてください。',
+  plugCleared: (l) => (l ? `塊がほどけました。粘液が粒子を運びはじめます。残りは ${l} か所です。` : 'すべての塊がほどけました。線毛が、粘液ごと粒子を喉へ送り返します。'),
+  done: '細気管支の線毛が動きはじめました。空気の通り道が開きます。', doneTitle: '空気の通り道が開きました', causeMain: '吸いこんだ粒子と、固まった粘液',
+  plugDiag: { short: '粒子のかたまり', cause: '吸いこんだ粒子が粘液と固まり、線毛を止めています。光を当て続けてほどいてください' } };
+async function build(renderer: THREE.WebGPURenderer, tier: string, variant: 'A' | 'B' | 'L', opts: { entrance?: boolean } = {}): Promise<ZoneStage> {
+  const lung = variant === 'L';
+  const W = 110, D = 70, M = variant === 'A' ? CILIA_META : variant === 'B' ? MUCUS_META : BRONCH_META;
+  // 呼吸（肺）：実物 約15回/分（4秒で1回）を ×2 ゆっくり → 8秒で1回。吸う 40%・吐く 60%
+  const BREATH = 8;
+  const breath = (t: number) => (t % BREATH) / BREATH;
   const rich = tier === 'pc-high', vr = tier === 'vr';
   const noiseTex = new THREE.TextureLoader().load('/static/img/noise.png');
   noiseTex.wrapS = noiseTex.wrapT = THREE.RepeatWrapping; noiseTex.colorSpace = THREE.NoColorSpace;
@@ -53,19 +65,29 @@ async function build(renderer: THREE.WebGPURenderer, tier: string, variant: 'A' 
   // 床（粘膜の上皮）→ 線毛の森 → 粘液のゲル（上面が潜行士の立つ面、y=0）
   const floorY = -(PCL + GEL);
   const epi = epithelium(W, D, H, noiseTex); epi.position.y = floorY - 0.05; scene.add(epi);
-  const goblet = (x: number, z: number) => { const gx = Math.round(x / 9), gz = Math.round(z / 9); return (gx * 7 + gz * 3) % 6 === 0 && Math.hypot(x - gx * 9, z - gz * 9) < 2.6; };
+  const goblet = (x: number, z: number) => { if (lung) { const gx2 = Math.round(x / 7), gz2 = Math.round(z / 7); return (gx2 * 5 + gz2 * 3) % 3 === 0 && Math.hypot(x - gx2 * 7, z - gz2 * 7) < 3.2; } const gx = Math.round(x / 9), gz = Math.round(z / 9); return (gx * 7 + gz * 3) % 6 === 0 && Math.hypot(x - gx * 9, z - gz * 9) < 2.6; };
   const dens = vr ? 1.0 : rich ? 2.6 : 1.6;   // 1µm² あたり（実物 6〜8本）
   const diverLocal = vec3(diverU.x, diverU.y.sub(floorY), diverU.z);
-  const cil = ciliaField({ W, D, density: dens, Hat, time: u.time, wave: float(WAVE), diver: diverLocal, beatHz: BEAT, goblet });
+  const cil = ciliaField({ W, D, density: lung ? dens * 0.7 : dens, Hat, time: u.time, wave: float(WAVE), diver: diverLocal, beatHz: lung ? 11 / 2 / 6 : BEAT, goblet });
   cil.mesh.position.y = floorY; scene.add(cil.mesh);
   // 杯細胞の口：線毛のない丸いところから、粘液のしずくがのぞく
   {
     const list: THREE.Vector3[] = [];
     for (let gx = -6; gx <= 6; gx++) for (let gz = -4; gz <= 4; gz++) if ((gx * 7 + gz * 3) % 6 === 0) list.push(new THREE.Vector3(gx * 9, floorY, gz * 9));
     const m = new THREE.MeshPhysicalNodeMaterial({ transparent: true }); m.colorNode = color(0xeef2f0); m.roughnessNode = float(0.15); m.opacityNode = float(0.7);
+    if (!lung) {
     const im = new THREE.InstancedMesh(geos.plug, m, list.length); const m4 = new THREE.Matrix4();
     list.forEach((p, i) => im.setMatrixAt(i, m4.compose(p, new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0)), new THREE.Vector3(2.2, 2.2, 2.6))));
     scene.add(im);
+    } else {
+      // クラブ細胞：線毛のない、ドームのように盛り上がった細胞（7µm ごとの並びの一部）
+      const cl: THREE.Vector3[] = []; for (let gx = -9; gx <= 9; gx++) for (let gz = -6; gz <= 6; gz++) if ((gx * 5 + gz * 3) % 3 === 0) cl.push(new THREE.Vector3(gx * 7, floorY, gz * 7));
+      const cm = new THREE.MeshPhysicalNodeMaterial(); cm.colorNode = mix(color(0xd8a8a0), color(0xf0d0c8), H); cm.roughnessNode = float(0.35); cm.clearcoatNode = float(0.5);
+      const lg = await loadGLB('/static/models/lung.glb'); let cg: THREE.BufferGeometry | null = null;
+      lg.scene.traverse((o) => { const mm = o as THREE.Mesh; if (mm.isMesh && mm.name === 'club') { mm.updateWorldMatrix(true, false); cg = mm.geometry.clone().applyMatrix4(mm.matrixWorld); } });
+      const im = new THREE.InstancedMesh(cg!, cm, cl.length); const m4 = new THREE.Matrix4();
+      cl.forEach((p, i) => im.setMatrixAt(i, m4.compose(p, new THREE.Quaternion(), new THREE.Vector3(0.8, 0.8, 0.8)))); scene.add(im);
+    }
   }
   const muc = mucusLayer(W, D, H, noiseTex, flowX, rich); scene.add(muc);
 
@@ -130,14 +152,14 @@ async function build(renderer: THREE.WebGPURenderer, tier: string, variant: 'A' 
         if (pl.hp <= 0) { pl.cleared = true; onPlug(i, 'cleared'); health.heal(pl.p.x, pl.p.z, 18, 0.35); }
       });
       // 拍子に合わせると、よく治る（線毛の打つリズムがそろう）
-      const onBeat = stage.beat() < 0.3 ? 2.2 : 1;
+      const onBeat = lung ? (breath(u.time.value) > 0.4 ? 2.0 : 1) : stage.beat() < 0.3 ? 2.2 : 1;
       const got = health.heal(x, z, tuning.beam.radius, tuning.beam.rate * dt * onBeat);
       health.clampFn(capAround); return got;
     },
     /** 拍子の位相（0〜1。0 付近が「打つ」瞬間）。照準の輪の脈打ちと、治りやすさに使う */
-    beat: () => (u.time.value * BEAT) % 1,
+    beat: () => (lung ? (breath(u.time.value) < 0.4 ? 0.5 : (breath(u.time.value) - 0.4) / 0.6) : (u.time.value * BEAT) % 1),
     flowing: () => flowS,
-    drift(p: THREE.Vector3) { return new THREE.Vector3(speed * flowAt(p.x, p.z) * (variant === 'B' ? 1 : 0.35), 0, 0); },
+    drift(p: THREE.Vector3) { if (lung) { const b = breath(u.time.value); return new THREE.Vector3(b < 0.4 ? 2.2 * Math.sin(b / 0.4 * Math.PI) : -1.4 * Math.sin((b - 0.4) / 0.6 * Math.PI), 0, 0); } return new THREE.Vector3(speed * flowAt(p.x, p.z) * (variant === 'B' ? 1 : 0.35), 0, 0); },
     update(dt, t, camera) {
       u.time.value = t; u.heartPhase.value += dt * 1.2;
       health.spread(dt, hc.regrow); health.clampFn(capAround);
@@ -171,3 +193,4 @@ async function build(renderer: THREE.WebGPURenderer, tier: string, variant: 'A' 
 }
 export const buildCilia = (r: THREE.WebGPURenderer, t: string, o?: { entrance?: boolean }) => build(r, t, 'A', o);
 export const buildMucus = (r: THREE.WebGPURenderer, t: string, o?: { entrance?: boolean }) => build(r, t, 'B', o);
+export const buildBronchiole = (r: THREE.WebGPURenderer, t: string, o?: { entrance?: boolean }) => build(r, t, 'L', o);

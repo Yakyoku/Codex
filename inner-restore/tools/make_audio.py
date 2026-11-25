@@ -60,3 +60,10 @@ flow2 = lp(pink(len(t)), 220); flow2 /= np.abs(flow2).max()
 save("mucus", pad([130.81, 196, 261.63], 0.3) + 0.4 * flow2 + bells(14, 300, 600, 0.04, 0.5))
 # 嗅上皮：においの分子が届くたびに、色の違う澄んだ音が重なる
 save("olfactory", pad([220, 329.63, 440, 554.37], 0.3, 0.2) + bells(36, 700, 2000, 0.045, 1.4) + 0.06 * lp(pink(len(t)), 1200))
+# ---- ステージ3「肺」：8秒で1回の呼吸（吸う 40%・吐く 60%）に合わせた空気の音 ----
+ph = (t % 8.0) / 8.0
+breath8 = np.where(ph < 0.4, np.sin(ph / 0.4 * np.pi), 0.7 * np.sin((ph - 0.4) / 0.6 * np.pi))
+air = lp(pink(len(t)), 1400) * (0.15 + 0.85 * breath8 ** 2); air /= np.abs(air).max()
+save("bronchiole", pad([174.61, 261.63, 349.23], 0.25) + 0.45 * air)
+save("alveolus", pad([146.83, 220, 293.66, 440], 0.35, 0.2) + 0.4 * air + bells(10, 900, 1500, 0.03, 2))
+save("alvwall", pad([110, 164.81, 220], 0.4) + 0.35 * air + 0.1 * lp(pink(len(t)), 300))

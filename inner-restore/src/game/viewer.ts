@@ -27,6 +27,11 @@ const MODELS: Record<string, Src> = {
   olfactory_neuron: { url: '/static/models/nose.glb', mesh: 'olfknob', col: 0xf0e2d2 },
   sustentacular_cell: { url: '/static/models/nose.glb', mesh: 'sustentacular', col: 0xc8a07a },
   neutrophil: { url: '/static/models/nose.glb', mesh: 'neutro', ghost: 'neutro_nucleus', col: 0xece4dc },
+  alveolus: { url: '/static/models/lung.glb', mesh: 'alveolus', scale: 100, col: 0xf0c8c0, noBar: '肺胞の部屋（直径 約200µm）を外から見た形。上の大きな口が肺胞道につながる' },
+  type2_pneumocyte: { url: '/static/models/lung.glb', mesh: 'type2', col: 0xf2dcd4 },
+  alveolar_macrophage: { url: '/static/models/lung.glb', mesh: 'macro', col: 0xece0d8 },
+  club_cell: { url: '/static/models/lung.glb', mesh: 'club', col: 0xf0d0c8 },
+  particle_pm: { url: '/static/models/lung.glb', mesh: 'soot', scale: 2, col: 0x3a3634 },
 };
 export const hasModel = (id: string) => id in MODELS;
 

@@ -205,10 +205,21 @@ async function main() {
   // ---- 患者の視界 ----
   const pImg = $('patient').querySelector('img') as HTMLImageElement, pSpot = $('patient').querySelector('.spot') as HTMLElement;
   // におい（鼻のステージ）：部屋の景色の色と、ただよう香りの帯で見せる。病のあいだは灰色で、香りの帯がない
+  const breathP = M.patient === 'breath';
   const smell = M.patient === 'smell', wc = $('patient').querySelector('.wisps') as HTMLCanvasElement, wx = wc.getContext('2d')!;
   if (smell) $('patient').querySelector('.cap')!.textContent = '患者の感じる におい';
+  if (breathP) $('patient').querySelector('.cap')!.textContent = '患者の呼吸';
   let wispM = 0;
   const drawWisps = (time: number) => {
+    if (breathP) {
+      // 呼吸の波形：病の間は浅く速い。治るほど深くゆっくり（1分あたり 約22回 → 約15回）
+      const w = (wc.width = wc.clientWidth || 300), h = (wc.height = wc.clientHeight || 170); wx.clearRect(0, 0, w, h);
+      const rate = 22 - 7 * wispM, amp = 0.12 + 0.26 * wispM;
+      wx.beginPath(); for (let x = 0; x <= w; x += 3) { const tt = time - (w - x) / w * 8; const y = h * 0.62 - Math.sin(tt * rate / 60 * Math.PI * 2) * h * amp; if (x === 0) wx.moveTo(x, y); else wx.lineTo(x, y); }
+      wx.strokeStyle = `rgba(150,235,220,${(0.5 + 0.5 * wispM).toFixed(2)})`; wx.lineWidth = Math.max(2, h * 0.025); wx.shadowBlur = h * 0.05; wx.shadowColor = 'rgba(150,235,220,.8)'; wx.stroke();
+      wx.fillStyle = 'rgba(230,250,245,.9)'; wx.font = `${Math.round(h * 0.11)}px IRJP, sans-serif`; wx.fillText(`呼吸 ${Math.round(rate)}回/分　酸素 ${Math.round(91 + 7 * wispM)}%`, w * 0.05, h * 0.2);
+      return;
+    }
     if (!smell) return; const w = (wc.width = wc.clientWidth || 300), h = (wc.height = wc.clientHeight || 170); wx.clearRect(0, 0, w, h);
     const cols = ['255,190,120', '255,150,170', '190,230,140', '255,225,150'];
     for (let i = 0; i < 7; i++) {
@@ -218,6 +229,7 @@ async function main() {
     }
   };
   function patientView(m: number) {
+    if (breathP) { wispM = m; pImg.style.filter = `brightness(${(0.55 + 0.45 * m).toFixed(2)}) saturate(${(0.5 + 0.5 * m).toFixed(2)})`; return; }
     if (smell) { wispM = m; pImg.style.filter = `grayscale(${(1 - m).toFixed(2)}) brightness(${(0.6 + 0.4 * m).toFixed(2)})`; return; }
     if ($('patient').classList.contains('waking')) return;
     const k = 1 - m;
@@ -391,9 +403,9 @@ async function main() {
       pImg.style.transition = 'none'; pImg.style.filter = 'blur(28px) brightness(2.1) saturate(0.4)'; pImg.style.transform = 'scale(1.06)';
       requestAnimationFrame(() => requestAnimationFrame(() => {
         pImg.style.transition = 'filter 6s cubic-bezier(.2,.6,.2,1), transform 9s ease-out';
-        pImg.style.filter = smell ? `grayscale(${(1 - m).toFixed(2)})` : `blur(${blur.toFixed(1)}px) brightness(${(0.55 + 0.45 * m).toFixed(2)}) saturate(${(0.45 + 0.55 * m).toFixed(2)})`; pImg.style.transform = 'scale(1)'; if (smell) wispM = m;
+        pImg.style.filter = smell ? `grayscale(${(1 - m).toFixed(2)})` : `blur(${blur.toFixed(1)}px) brightness(${(0.55 + 0.45 * m).toFixed(2)}) saturate(${(0.45 + 0.55 * m).toFixed(2)})`; pImg.style.transform = 'scale(1)'; if (smell || breathP) wispM = m;
       }));
-      say(smell ? (last ? LINES.smellLast : LINES.smellMid) : last ? LINES.sightLast : LINES.sightMid, 7);
+      say(breathP ? (last ? LINES.breathLast : LINES.breathMid) : smell ? (last ? LINES.smellLast : LINES.smellMid) : last ? LINES.sightLast : LINES.sightMid, 7);
     }, 4500);
     setTimeout(() => {
       $('patient').classList.remove('full', 'waking'); pImg.style.transition = ''; pImg.style.transform = ''; patientDone = true;
