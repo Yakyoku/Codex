@@ -39,7 +39,7 @@ async function main() {
   // VR では顔を上げると空が見えるので、明け方の淡い空の色にし、地面の端は同じ色の霧に溶かす
   { const sky = new THREE.Color(0xcdd8de); surface.scene.background = sky; if (surface.scene.fog) (surface.scene.fog as THREE.Fog).color = sky; else surface.scene.fog = new THREE.Fog(sky, 18, 34); }
   const sRig = new THREE.Group(); sRig.scale.setScalar(14 / 1.25); surface.scene.add(sRig);
-  sRig.position.set(-11, surface.groundY - 0.5, 10); sRig.rotation.y = Math.atan2(11, -10) + Math.PI;   // 芽（原点）のほうを向く
+  sRig.position.set(-11, surface.groundY - 0.5, 10); sRig.rotation.y = Math.atan2(-11, 10);   // 芽（原点）のほうを向く（−Z が前なので、向き (11, −10) になる角度）
   let where: 'soil' | 'surface' = 'soil', growT = 0, fadeT = 0, pending: 'soil' | 'surface' | null = null;
   /** 場面の切り替え：一瞬暗くしてから、カメラ（頭）を別のリグに付けかえる。カメラを勝手に動かさない */
   const goTo = (w: 'soil' | 'surface') => { if (w === where || pending) return; pending = w; fadeT = 0.35; };
@@ -56,6 +56,8 @@ async function main() {
   addEventListener('pointerup', () => { drag = false; });
   addEventListener('pointermove', (e) => { if (!drag || renderer.xr.isPresenting) return; yaw -= (e.clientX - px) * 0.004; pitch = Math.max(-1.2, Math.min(1.2, pitch - (e.clientY - py) * 0.004)); px = e.clientX; py = e.clientY; });
 
+  // 確認用：?scene=surface&g=0..1 で、地上の場面から始める
+  { const Q = new URLSearchParams(location.search); if (Q.get('scene') === 'surface') { pending = 'surface'; doSwitch(); growT = Number(Q.get('g') ?? 0) * 26; surface.setGrowth(Math.min(1, growT / 26)); } }
   const xr = (navigator as Navigator & { xr?: XRSystem }).xr;
   let supported = false;
   try { supported = !!xr && await xr.isSessionSupported('immersive-vr'); } catch { supported = false; }
