@@ -7,6 +7,7 @@ export async function collectLines(): Promise<string[]> {
     (await import('../stages/eye/retina')).RETINA_META, (await import('../stages/eye/lens')).LENS_META, (await import('../stages/eye/photo')).PHOTO_META,
     (await import('../stages/nose/airway')).CILIA_META, (await import('../stages/nose/airway')).MUCUS_META, (await import('../stages/nose/olfactory')).OLF_META,
     (await import('../stages/nose/airway')).BRONCH_META, (await import('../stages/lung/alveolus')).ALV_META, (await import('../stages/lung/alveolus')).WALL_META,
+    (await import('../stages/gut/villi')).VILLI_META, (await import('../stages/gut/villi')).COLON_META, (await import('../stages/gut/villi')).CRYPT_META,
   ];
   const out: string[] = [];
   for (const m of metas) { if (m.enter) out.push(m.enter); out.push(m.arrive, m.plugHit, m.plugCleared(2), m.plugCleared(1), m.plugCleared(0), m.done); }

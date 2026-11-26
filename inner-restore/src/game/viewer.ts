@@ -32,6 +32,12 @@ const MODELS: Record<string, Src> = {
   alveolar_macrophage: { url: '/static/models/lung.glb', mesh: 'macro', col: 0xece0d8 },
   club_cell: { url: '/static/models/lung.glb', mesh: 'club', col: 0xf0d0c8 },
   particle_pm: { url: '/static/models/lung.glb', mesh: 'soot', scale: 2, col: 0x3a3634 },
+  villus: { url: '/static/models/gut.glb', mesh: 'vtip', scale: 50, col: 0xeeb0a4, noBar: '絨毛の先（幅 約100µm）。根元はさらに長く伸びる' },
+  paneth_cell: { url: '/static/models/gut.glb', mesh: 'paneth', ghost: 'paneth_granules', col: 0xf0d8c8 },
+  bacteroides: { url: '/static/models/gut.glb', mesh: 'bactero', col: 0xc8b898 },
+  bifidobacterium: { url: '/static/models/gut.glb', mesh: 'bifido', col: 0xd8c8a8 },
+  akkermansia: { url: '/static/models/gut.glb', mesh: 'akker', col: 0xe0d0c0 },
+  enterobacteria: { url: '/static/models/gut.glb', mesh: 'ecoli', col: 0xb89878 },
 };
 export const hasModel = (id: string) => id in MODELS;
 
@@ -62,7 +68,7 @@ export class AtlasViewer {
     g.scene.traverse((o) => { const mm = o as THREE.Mesh; if (mm.isMesh && mm.name === src.mesh) { mm.updateWorldMatrix(true, false); geo = mm.geometry.clone().applyMatrix4(mm.matrixWorld); } });
     if (!geo) return;
     mat = new THREE.MeshPhysicalMaterial({ color: src.col ?? (id === 'rbc' ? 0x9a1c18 : id === 'rpe' ? 0x4a2a1c : id === 'drusen' ? 0xe8d6a0 : id === 'rod' ? 0xd8c0cc : 0xe4e0dc),
-      roughness: 0.35, clearcoat: 0.4, transparent: id === 'lens_fiber' || id === 'neutrophil', opacity: id === 'lens_fiber' ? 0.7 : id === 'neutrophil' ? 0.4 : 1, depthWrite: id !== 'neutrophil' });
+      roughness: 0.35, clearcoat: 0.4, transparent: id === 'lens_fiber' || id === 'neutrophil' || id === 'paneth_cell', opacity: id === 'lens_fiber' ? 0.7 : id === 'neutrophil' || id === 'paneth_cell' ? 0.4 : 1, depthWrite: id !== 'neutrophil' && id !== 'paneth_cell' });
     const grp = new THREE.Group();
     const n = src.many ?? 1;
     for (let i = 0; i < n; i++) {

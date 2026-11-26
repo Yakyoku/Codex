@@ -17,7 +17,7 @@ export interface ZoneMeta {
   causeMain: string;        // 診断の「主な原因」
   swimCeil?: number;        // 泳げる高さ（床から）
   plugDiag?: { short: string; cause: string };   // 診断での塊の説明
-  patient?: 'sight' | 'smell' | 'breath';
+  patient?: 'sight' | 'smell' | 'breath' | 'comfort';
   perception?: number;                         // 知覚加速（体内の時間を何倍ゆっくり見るか）。省略時は tuning の値
   scaleNote?: string;                          // 左上の大きさの目安（例：潜行士の身長 2µm ／ 赤血球の直径 7.8µm）                  // 患者の変化の見せ方（目＝視界、鼻＝におい）
 }
@@ -66,10 +66,13 @@ export const ZONES: ZoneEntry[] = [
   { id: 'bronchiole', stage: 'lung', name: '区域A　細気管支', load: () => import('./nose/airway').then((m) => ({ build: m.buildBronchiole })) },
   { id: 'alveolus', stage: 'lung', name: '区域B　肺胞の中', load: () => import('./lung/alveolus').then((m) => ({ build: m.buildAlveolus })) },
   { id: 'alvwall', stage: 'lung', name: '区域C　肺胞の壁　→　病巣の核：炎症の芯', load: () => import('./lung/alveolus').then((m) => ({ build: m.buildAlvWall })) },
+  { id: 'villi', stage: 'gut', name: '区域A　絨毛の草原（小腸）', load: () => import('./gut/villi').then((m) => ({ build: m.buildVilli })) },
+  { id: 'colon', stage: 'gut', name: '区域B　大腸の粘液', load: () => import('./gut/villi').then((m) => ({ build: m.buildColon })) },
+  { id: 'crypt', stage: 'gut', name: '区域C　陰窩　→　病巣の核：炎症の芯', load: () => import('./gut/villi').then((m) => ({ build: m.buildCrypt })) },
 ];
 
 /** ステージ（器官）の一覧。区域を作ったステージだけが遊べる */
-export const STAGES: { id: string; ja: string }[] = [{ id: 'eye', ja: '目' }, { id: 'nose', ja: '鼻' }, { id: 'lung', ja: '肺' }];
+export const STAGES: { id: string; ja: string }[] = [{ id: 'eye', ja: '目' }, { id: 'nose', ja: '鼻' }, { id: 'lung', ja: '肺' }, { id: 'gut', ja: '腸' }];
 export const stageZones = (stage: string) => ZONES.filter((z) => z.stage === stage);
 /** そのステージの進み具合（治しきった区域の割合） */
 export const stageProgress = (done: string[] | undefined, stage: string) => { const zs = stageZones(stage); return zs.length ? zs.filter((z) => done?.includes(z.id)).length / zs.length : 0; };

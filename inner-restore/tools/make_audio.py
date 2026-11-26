@@ -67,3 +67,10 @@ air = lp(pink(len(t)), 1400) * (0.15 + 0.85 * breath8 ** 2); air /= np.abs(air).
 save("bronchiole", pad([174.61, 261.63, 349.23], 0.25) + 0.45 * air)
 save("alveolus", pad([146.83, 220, 293.66, 440], 0.35, 0.2) + 0.4 * air + bells(10, 900, 1500, 0.03, 2))
 save("alvwall", pad([110, 164.81, 220], 0.4) + 0.35 * air + 0.1 * lp(pink(len(t)), 300))
+# ---- ステージ4「腸」：6秒ごとのぜん動の、低くうねる音 ----
+ph6 = (t % 6.0) / 6.0
+wave6 = np.sin(ph6 * np.pi) ** 2
+gurgle = lp(pink(len(t)), 260) * (0.3 + 0.7 * wave6); gurgle /= np.abs(gurgle).max()
+save("villi", pad([196, 246.94, 293.66, 392], 0.35, 0.2) + 0.25 * gurgle + bells(10, 800, 1300, 0.03, 1.2))
+save("colon", pad([130.81, 164.81, 196], 0.4) + 0.45 * gurgle + bells(16, 400, 800, 0.035, 0.6))
+save("crypt", pad([164.81, 207.65, 246.94, 329.63], 0.35) + 0.3 * gurgle + bells(12, 1000, 1700, 0.03, 1.5))
