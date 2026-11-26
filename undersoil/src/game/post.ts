@@ -1,16 +1,40 @@
-// 後処理（画面版のみ。VR では使わない）：ブルーム、色調整、周辺減光、わずかな粒状感
+// 後処理（画面版のみ。VR では使わない）。2026-11-27 に「本物の接写・顕微鏡の映像」に近づけるため作り直した。
+// 作り物っぽさの原因と対策（Docs/REFERENCE/realism-pass-2026-11-27.md）：
+//   ・粒どうしの接点やすき間が暗くならず、粒が浮いて見える → 画面空間の環境光の遮り（GTAO）。接点・くぼみ・すき間が自然に暗くなる
+//   ・後処理を通すと縁がギザギザ（ちらつき）→ 最後に FXAA でなめらかに
+//   ・明るい所が白く飛び、色が「CG のつや」になる → 写真に近いトーンマッピング（AgX）を後処理の中で行い、そのあとにレンズの癖を足す
+//   ・レンズの癖：周辺のわずかな色ずれ（色収差）、周辺減光、にじみ（ブルーム）、粒状感
 import * as THREE from 'three/webgpu';
-import { pass, screenUV, smoothstep, mix, float, vec3, vec4, time, fract, sin, dot, vec2 } from 'three/tsl';
+import { pass, mrt, output, normalView, directionToColor, colorToDirection, screenUV, smoothstep, mix, float, vec3, vec4, time, fract, sin, dot, vec2, renderOutput } from 'three/tsl';
 import { bloom } from 'three/addons/tsl/display/BloomNode.js';
 import { dof } from 'three/addons/tsl/display/DepthOfFieldNode.js';
+import { ao } from 'three/addons/tsl/display/GTAONode.js';
+import { fxaa } from 'three/addons/tsl/display/FXAANode.js';
+import { chromaticAberration } from 'three/addons/tsl/display/ChromaticAberrationNode.js';
 
-export function makePost(renderer: THREE.WebGPURenderer, scene: THREE.Scene, camera: THREE.Camera, effects: string[], focus?: { distance: ReturnType<typeof float>; range: number | ReturnType<typeof float>; bokeh: number | ReturnType<typeof float> }) {
+type N = ReturnType<typeof float>;
+export function makePost(renderer: THREE.WebGPURenderer, scene: THREE.Scene, camera: THREE.Camera, effects: string[], focus?: { distance: N; range: number | N; bokeh: number | N }) {
   const pipe = new THREE.RenderPipeline(renderer);
   const scenePass = pass(scene, camera);
+  const useAO = effects.includes('ao') || effects.includes('ao-half');
+  if (useAO) scenePass.setMRT(mrt({ output, normal: directionToColor(normalView) }));
   const color = scenePass.getTextureNode('output');
   let base = color;
-  // 被写界深度：接写のように、ピントの合った芽のまわりだけがくっきりし、手前と奥がぼける
-  if (focus && effects.some((e) => e.startsWith('dof'))) { const num = (v: number | ReturnType<typeof float>) => (typeof v === 'number' ? float(v) : v); const bk = num(focus.bokeh); base = dof(color, scenePass.getViewZNode(), focus.distance, num(focus.range), effects.includes('dof-lite') ? bk.mul(0.6) : bk) as unknown as typeof color; }
+  if (useAO) {
+    const aoPass = ao(scenePass.getTextureNode('depth'), colorToDirection(scenePass.getTextureNode('normal')), camera);
+    aoPass.resolutionScale = effects.includes('ao-half') ? 0.5 : 1;
+    // 土の粒は半径が数単位〜数十単位。遮りを見る範囲は、細かい粒のすき間がちょうど暗くなる大きさ
+    (aoPass as unknown as { radius: { value: number }; thickness: { value: number }; scale: { value: number }; samples: { value: number } }).radius.value = 1.6;
+    (aoPass as unknown as { thickness: { value: number } }).thickness.value = 1.2;
+    (aoPass as unknown as { samples: { value: number } }).samples.value = effects.includes('ao-half') ? 8 : 16;
+    const occ = aoPass.getTextureNode().r;
+    base = vec4(color.rgb.mul(mix(float(1), occ, 0.85)), color.a) as unknown as typeof color;
+  }
+  // 被写界深度：接写のように、ピントの合った所だけがくっきりし、手前と奥がぼける
+  if (focus && effects.some((e) => e.startsWith('dof'))) {
+    const num = (v: number | N) => (typeof v === 'number' ? float(v) : v); const bk = num(focus.bokeh);
+    base = dof(base, scenePass.getViewZNode(), focus.distance, num(focus.range), effects.includes('dof-lite') ? bk.mul(0.6) : bk) as unknown as typeof color;
+  }
   let out = base.rgb;
   if (effects.some((e) => e.startsWith('bloom'))) {
     const lite = effects.includes('bloom-lite');
@@ -21,8 +45,15 @@ export function makePost(renderer: THREE.WebGPURenderer, scene: THREE.Scene, cam
     const l = dot(out, vec3(0.2126, 0.7152, 0.0722));
     out = mix(out.mul(vec3(0.98, 1.0, 1.03)), out.mul(vec3(1.06, 1.0, 0.92)), smoothstep(0.02, 0.6, l));
   }
-  if (effects.includes('vignette')) { const d = screenUV.sub(0.5).length(); out = out.mul(mix(float(1), float(0.42), smoothstep(0.32, 0.86, d))); }
-  if (effects.includes('grain')) { const n = fract(sin(dot(screenUV.add(fract(time)), vec2(12.9898, 78.233))).mul(43758.5453)); out = out.mul(mix(float(0.965), float(1.035), n)); }
-  pipe.outputNode = out;
+  // ここで写真の明るさの曲線（トーンマッピング）と sRGB に直す。このあとはレンズとカメラの癖
+  let disp = renderOutput(vec4(out, float(1)) as never) as unknown as typeof color;
+  if (effects.includes('ca')) disp = chromaticAberration(disp, float(0.35), vec2(0.5, 0.5), float(1.0)) as unknown as typeof color;   // 周辺だけ、ごくわずか
+  let fin = disp.rgb;
+  if (effects.includes('vignette')) { const d = screenUV.sub(0.5).length(); fin = fin.mul(mix(float(1), float(0.5), smoothstep(0.32, 0.86, d))); }
+  if (effects.includes('grain')) { const n = fract(sin(dot(screenUV.add(fract(time)), vec2(12.9898, 78.233))).mul(43758.5453)); fin = fin.mul(mix(float(0.97), float(1.03), n)); }
+  let res: unknown = vec4(fin, float(1));
+  if (effects.includes('fxaa')) res = fxaa(res as never);   // 最後に縁をなめらかに（後処理を通すと MSAA が効かないため）
+  pipe.outputColorTransform = false;
+  pipe.outputNode = res as never;
   return pipe;
 }

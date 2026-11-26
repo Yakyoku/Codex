@@ -1,7 +1,7 @@
 // 地面の落ちもの：枯れ草のくず、小枝、落ち葉のかけら。シロツメクサの芽生えの写真4点すべてに写っている。単位は mm。
 // 形はその場で作る（画像に頼らない）。色は、写真の枯れ草（わら色〜灰褐色）、小枝（こげ茶）、落ち葉（赤茶〜こげ茶）に合わせる。
 import * as THREE from 'three/webgpu';
-import { mx_noise_float, attribute, float, vec3, mix, uv, sin, abs, fract, smoothstep, oneMinus, saturate, normalWorld, dot, cameraPosition, positionWorld, pow, uniform } from 'three/tsl';
+import { mx_noise_float, attribute, float, vec3, mix, uv, sin, abs, fract, smoothstep, oneMinus, saturate, normalWorld, dot, cameraPosition, positionWorld, pow, uniform, positionLocal, time } from 'three/tsl';
 import { makeRng } from './rng';
 
 type Height = (x: number, z: number) => number;
@@ -70,6 +70,8 @@ export function buildLitter(height: Height, opts: { density: number; keepOut: nu
     const col = straw.mul(oneMinus(veins)).mul(mix(float(0.85), float(1.1), smoothstep(0.0, 1.0, u2.y)));
     mat.colorNode = col; mat.roughnessNode = float(0.82); mat.metalnessNode = float(0);
     mat.emissiveNode = col.mul(vec3(1.0, 0.85, 0.5)).mul(back).mul(0.35);
+    // そよ風：浮いた先のほうだけが、ゆっくり上下にゆれる（根もとは地面に付いたまま）
+    { const v = uv().y; const ph = tn.mul(31.0); mat.positionNode = positionLocal.add(vec3(0, sin(time.mul(1.6).add(ph)).mul(0.06).add(sin(time.mul(3.7).add(ph.mul(1.7))).mul(0.02)).mul(v.mul(v)), 0)); }
     const mesh = new THREE.InstancedMesh(geo, mat, n);
     geo.setAttribute('tone', tone);
     for (let i = 0; i < n; i++) {

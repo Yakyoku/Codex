@@ -13,6 +13,7 @@ import { makePost } from '../game/post';
 import { buildSurface, type Surface } from '../game/surface';
 import { buildMicroscope } from '../game/microscope';
 import { makeMinimap } from '../ui/minimap';
+import { buildColloids } from '../game/colloids';
 import { makeSizes } from '../ui/sizes';
 import { makeNotebook } from '../ui/notebook';
 import { makeEncounters } from '../game/encounters';
@@ -119,6 +120,8 @@ async function main() {
   const nearSeed = () => camera.position.distanceTo(seedC) - 55;
   const seedT = (): Target => mode === 'soil' ? { p: game.root > 0.05 ? game.seedLife.rootTip.clone() : seedC.clone().add(new THREE.Vector3(-50, 2, 0)), r: 20 } : null;
   let focusT: THREE.Vector3 | null = null;
+  // 水の中をただよう小さな粒（ブラウン運動）。奥行きの手がかり
+  const colloids = game.tier === 'vr' ? null : buildColloids(game.tier === 'pc-high' ? 1400 : game.tier === 'mobile-high' ? 800 : 300); if (colloids) scene.add(colloids.mesh);
   const scope = await buildMicroscope('./');
   const sizes = makeSizes('./');
   const notebook = makeNotebook('./', (id) => scope.show(id, SPECIES[id]?.title ?? SPECIES[id]?.nameJa ?? ''));
@@ -218,9 +221,11 @@ async function main() {
   let hidden = false; document.addEventListener('visibilitychange', () => { hidden = document.hidden; last = 0; });
 
   let frames = 0, last = 0, tourU = 0.02, vitShown = -1, viewShift = 0;
+  const driftQ = new THREE.Quaternion(); const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const frame = (now: number) => {
     if (hidden) return;
     const t = fixedT !== null ? Number(fixedT) : now / 1000; const dt = last ? Math.min(0.1, (now - last) / 1000) : 0; last = now;
+    camera.quaternion.multiply(driftQ.invert()); driftQ.identity();   // 前のコマの手持ちの揺れを戻す
     if (dbg) { const v = dbg.split(',').map(Number); camera.position.set(v[0], v[1], v[2]); camera.lookAt(v[3], v[4], v[5]); }
     else if (camT !== null) placeOnPath(Number(camT));
     else if (touring && visit) { const f = visit.get(); if (f) { const want = f.view ? f.view : visit.pos.clone().add(f.p.clone().sub(visit.anchor)); camera.position.lerp(want, 1 - Math.exp(-dt * 1.2)); const q0 = camera.quaternion.clone(); camera.lookAt(f.p); camera.quaternion.slerp(q0, Math.exp(-dt * 3)); } }
@@ -228,6 +233,8 @@ async function main() {
     else if (touring) { tourU = (tourU + dt * 0.012) % 1; placeOnPath(0.02 + 0.84 * (0.5 - 0.5 * Math.cos(tourU * Math.PI * 2))); /* 道の終わりで、吸水した種（seed.ts）に近づく */ }
     else controls.update(dt);
     if (wetQ === null) { demo.update(dt); game.update(dt, t); }
+    // 手持ちカメラのごくわずかな揺れ（記録映像らしさ）：自動で巡るときだけ、0.15°以内。動きを減らす設定の端末では使わない
+    if (touring && !reduceMotion && !testing) { const k = 0.0026; driftQ.setFromEuler(new THREE.Euler(Math.sin(t * 0.53) * k + Math.sin(t * 1.37) * k * 0.4, Math.sin(t * 0.41 + 1.2) * k + Math.sin(t * 1.11) * k * 0.35, 0)); camera.quaternion.multiply(driftQ); }
     if (mode === 'surface') {
       if (Q.get('g') === null) { growT += dt; surface.setGrowth(Math.min(1, growT / GROW_SEC)); }
       surface.update(dt, t);
@@ -238,6 +245,7 @@ async function main() {
       if (viewShift > 0.002) camera.setViewOffset(innerWidth, innerHeight, innerWidth * viewShift, 0, innerWidth, innerHeight); else if (camera.view) camera.clearViewOffset();
       if (post) post.render(); else renderer.render(scene, camera);
     }
+    if (colloids && mode === 'soil') colloids.update(dt, camera.position, world.grid.cells[world.cellAt(camera.position)]?.water ?? 0);
     scope.tick(dt); minimap.update(camera, mode === 'soil' && started); goalTick(dt);
     if (!testing) enc.update(dt);
     pointer.update(dt);

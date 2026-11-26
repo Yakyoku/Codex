@@ -166,7 +166,9 @@ export async function buildSurface(renderer: THREE.WebGPURenderer, base: string,
     // 芽が出てから子葉が開くまでの間、かぎ形の先が左右にゆっくり大きく揺れ（約 3 往復）、開ききると収まる
     const w = Math.max(0, Math.min(1, (g - 0.22) / 0.46)), env = Math.sin(w * Math.PI) ** 0.8;
     const ph = w * Math.PI * 2 * 3;
-    holder.rotation.z = Math.sin(ph) * 0.12 * env; holder.rotation.x = Math.sin(ph * 0.5 + 0.7) * 0.05 * env;
+    // そよ風のごく小さなふるえ（開いたあとも、葉はかすかに動いている）
+    const tt = performance.now() / 1000, breeze = (Math.sin(tt * 1.3) * 0.6 + Math.sin(tt * 2.9 + 1.1) * 0.4) * 0.012 * Math.min(1, g * 1.5);
+    holder.rotation.z = Math.sin(ph) * 0.12 * env + breeze; holder.rotation.x = Math.sin(ph * 0.5 + 0.7) * 0.05 * env + breeze * 0.6;
   };
   holder.updateMatrixWorld(true);
   const spill = buildSpill(height, sand.geos, sand.mats, plant, pose, { growSec: 26, count: Math.round(2600 * Math.max(0.6, opts.density)), stuck: 80 });
