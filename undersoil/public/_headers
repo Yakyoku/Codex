@@ -12,6 +12,8 @@
   Cache-Control: no-cache
 /progress/*
   Cache-Control: no-cache
+/roadmap/*
+  Cache-Control: no-cache
 # ハッシュのないモデルやデコーダーは短めにして、必ず更新を確かめる
 /models/*
   Cache-Control: public, max-age=0, must-revalidate
