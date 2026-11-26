@@ -1,0 +1,212 @@
+{
+ "entries": [
+  {
+   "id": "cardiomyocyte",
+   "ja": "心筋細胞",
+   "en": "Cardiomyocyte (cardiac muscle cell)",
+   "kind": "細胞",
+   "size": "長さ 約100〜150µm、太さ 約10〜40µm（資料により幅がある）",
+   "compare": "長さは髪の毛の太さより少し長く、赤血球 約13個分。太さは髪の毛の 約4分の1",
+   "intro": "心臓の壁をつくる、縞もようのある太い筋肉の細胞です。端どうしで隣とつながり、電気の合図を受けると、みんなでそろって縮みます。",
+   "look": "太い柱の形で、ときどき枝分かれして隣の細胞と網をつくります。表面に細かい横縞が並び、核はふつう中央に1つ。心臓の筋肉は肉眼で濃い赤褐色に見えます。",
+   "move": "合図が届くと細胞の中のカルシウムが増え、短く太くなるように縮みます。安静時は1分に60〜100回、まわりの細胞とそろって縮みます。",
+   "role": "心臓のポンプの力そのものです。何層にも重なった細胞が、縦・横・ねじりの向きに心室をしぼります。",
+   "relation": "端の介在板で隣とつながり、電気を渡します。血流が止まると死んでしまい、再生せずにコラーゲンの傷あとに置きかわります。",
+   "stage": "心臓",
+   "image": ""
+  },
+  {
+   "id": "intercalated_disc",
+   "ja": "介在板",
+   "en": "Intercalated disc",
+   "kind": "細胞の一部",
+   "size": "心筋細胞の端の面全体（太さ 約10〜40µm）。細胞1個ごと、約100µmおき。中の通り道のすきまは 2〜4nm",
+   "compare": "端の面の幅は赤血球 約1〜5個分。すきまは赤血球の 約2000〜4000分の1",
+   "intro": "心筋細胞どうしが端でかみ合う、階段のようなつなぎ目です。ここにある小さな通り道（ギャップ結合）を通って、電気の合図が隣の細胞へ次々と渡されます。",
+   "look": "筋肉の縞と直角に、細胞を横切る線に見えます。拡大すると、まっすぐではなく段のついた入り組んだ形をしています。",
+   "move": "自分では動きません。電気を通しにくさがとても小さく、合図はほとんど止まらずに細胞から細胞へ伝わります。",
+   "role": "細胞どうしをしっかりつなぎとめ、縮む力と電気を伝えて、多くの細胞を一つのように働かせます。",
+   "relation": "通り道をつくるタンパク（コネキシン43）は、円盤のふちに輪のように多く並びます。古い傷あとの境目では、この並びが乱れます。",
+   "stage": "心臓",
+   "image": ""
+  },
+  {
+   "id": "sarcomere",
+   "ja": "サルコメア",
+   "en": "Sarcomere",
+   "kind": "細胞の一部",
+   "size": "長さ 約2µm（ヒトの心臓では 2.2µm で最も強い力）",
+   "compare": "赤血球の 約4分の1、髪の毛の太さの 約35〜40分の1。主人公の背丈とほぼ同じ",
+   "intro": "筋肉の中で、太い糸と細い糸が交互に重なった、縮むための小さな区切りです。これが何万と連なって、心臓の縞もようをつくります。",
+   "look": "濃い仕切りの線（Z線）にはさまれ、まん中に暗い帯、両側に明るい帯が並びます。隣の糸の区切りと横にそろうため、細胞全体に縞が通って見えます。",
+   "move": "カルシウムが増えると、太い糸が細い糸をたぐり寄せ、仕切りどうしが近づいて短くなります。カルシウムが減ると元の長さに戻ります。",
+   "role": "心臓が縮む力の最小の単位です。適度に引きのばされるほど、強い力を出します。",
+   "relation": "合図を細胞の奥へ運ぶ細い管（T管）が、仕切りの位置に入りこんでいます。合図を作る洞結節の細胞には、この区切りがほとんどありません。",
+   "stage": "心臓",
+   "image": ""
+  },
+  {
+   "id": "purkinje_fiber",
+   "ja": "プルキンエ線維",
+   "en": "Purkinje fibers (cardiac)",
+   "kind": "細胞",
+   "size": "細胞の太さ 約20〜40µm（ヒト）",
+   "compare": "赤血球 約3〜5個分、髪の毛の太さの 約4分の1〜2分の1",
+   "intro": "心室の内側の壁のすぐ下を走る、電気の高速道路です。ふつうの心筋細胞より太く、合図を心室のすみずみへ一気に届けます。",
+   "look": "太い円柱形の細胞が端と端でつながり、分かれ目では星形になります。縮む糸が少なく、中は明るく見えます。核は2つのことが多くあります。",
+   "move": "合図を秒速約4メートルで運び、心臓の中でいちばん速く伝えます。ふだんは自分では打ちませんが、上流が止まると1分に20〜40回の合図を出します。",
+   "role": "心室の壁全体をほぼ同時に縮ませ、血液を効率よく押し出せるようにします。",
+   "relation": "心房から来た合図を、ヒス束と左右の枝を通して受け取り、心筋細胞へ渡します。1本ずつ細い繊維の鞘に包まれ、まわりと隔てられています。",
+   "stage": "心臓",
+   "image": ""
+  },
+  {
+   "id": "sa_node_cell",
+   "ja": "洞結節の細胞",
+   "en": "Sinoatrial node cell (pacemaker cell)",
+   "kind": "細胞",
+   "size": "直径 約8µm、長さ 約20〜30µm",
+   "compare": "太さは赤血球とほぼ同じ、長さは赤血球 約3個分。髪の毛の太さの 約4分の1〜3分の1",
+   "intro": "右心房の壁に埋もれた、細く淡い小さな細胞たちです。だれにも命じられずに少しずつ電気をため、一定のリズムで合図を出して、心臓の拍動のテンポを決めています。",
+   "look": "細長い紡錘形や、突起の多い形をしています。ふつうの心筋細胞より小さく、縮む糸もエネルギー工場（ミトコンドリア）も少ないため、淡く見えます。",
+   "move": "膜の電気が自然に少しずつ上がり、一定の高さで発火して、また始めに戻ります。安静時は1分に60〜100回。神経の働きで速くも遅くもなります。",
+   "role": "心臓の主なペースメーカーです。ここが発火する回数が、そのまま心拍数になります。",
+   "relation": "神経や血管、コラーゲンを含む結合組織の中に散らばり、まわりの心房からは電気的に隔てられています。合図は心房から房室結節へ伝わります。",
+   "stage": "心臓",
+   "image": ""
+  },
+  {
+   "id": "chordae_tendineae",
+   "ja": "腱索",
+   "en": "Chordae tendineae",
+   "kind": "組織",
+   "size": "僧帽弁で1本の長さ 約15〜20mm、太さ 約0.45mm（引用の値）",
+   "compare": "太さは髪の毛 約6本分",
+   "intro": "心室の筋肉の柱（乳頭筋）と弁をつなぐ、白い丈夫なひもです。心臓が縮むたびにぴんと張って、弁が裏返らないように支えています。",
+   "look": "乳頭筋の先から扇のように何本も広がり、枝分かれしながら弁のふちへ付きます。表面はなめらかな膜で覆われ、中のコラーゲンの繊維は細かく波打っています。",
+   "move": "弁が開くときはゆるみ、心室が縮んで弁が閉じるときに張ります。張ると波打った繊維がまっすぐにのび、急な力をやわらげます。",
+   "role": "閉じた弁が心房の側へめくれるのを防ぎ、血液の逆流を止めます。",
+   "relation": "乳頭筋は心室が縮む少し前から縮み、ひもを引きます。年をとると繊維の波が乱れ、ひもが細くなって切れることがあります。",
+   "stage": "心臓",
+   "image": ""
+  },
+  {
+   "id": "cardiac_fibroblast",
+   "ja": "心臓の線維芽細胞",
+   "en": "Cardiac fibroblast",
+   "kind": "細胞",
+   "size": "心筋細胞より小さい（具体的な値は確かめられていない）",
+   "compare": "心筋細胞（長さ 約100µm、髪の毛の太さほど）より小さい",
+   "intro": "心筋細胞のすき間にいる、細長い小さな細胞です。筋肉を包む網を編み、傷ができるとコラーゲンの繊維で穴をふさぎます。",
+   "look": "細長い紡錘形で、細胞質が枝分かれし、楕円の核をもちます。心筋細胞より小さく、数は多くいます。",
+   "move": "傷ができると数が増え、少し縮む性質をもつ細胞（筋線維芽細胞）に変わります。コラーゲンを作りながら、傷のふちを引き寄せます。",
+   "role": "心筋を支える網（コラーゲンなど）を作り、保ちます。傷を治す役目もあります。",
+   "relation": "1つの心筋細胞に何個もくっつき、その電気に影響することがあります。働きすぎると、心臓が固くなる線維化の原因になります。",
+   "stage": "心臓",
+   "image": ""
+  },
+  {
+   "id": "collagen_scar",
+   "ja": "線維化（かたい傷あと）",
+   "en": "Cardiac fibrosis / collagen scar",
+   "kind": "組織",
+   "size": "細胞のすき間に入りこむ細い帯から、数ミリ〜センチの傷あとまで（傷の範囲しだい）",
+   "compare": "心筋の束を隔てる仕切りの間隔は最大 約8mm、髪の毛 約100本分",
+   "intro": "失われた心筋の代わりに、コラーゲンの繊維がつまった場所です。縮むことも電気を通すこともできず、合図はその周りを遠回りするしかありません。",
+   "look": "心筋の束のあいだに、細胞の少ない繊維の帯が網の目のように入りこみます。重いところでは心筋がほとんど消え、波打つ繊維の中に細い心筋の帯が点々と残ります。",
+   "move": "自分では動きません。梗塞のあと、2〜4週で若いコラーゲンが増え、2〜3か月で密な傷あとになります。",
+   "role": "失われた心筋の穴を埋めて、壁が破れないように保ちます。ただし縮む力はありません。",
+   "relation": "合図は生き残った心筋の束をたどってジグザグに遠回りし、遅れます。この遅れが、合図がぐるぐる回る乱れたリズム（不整脈）の土台になります。",
+   "stage": "心臓",
+   "image": ""
+  }
+ ],
+ "sources": {
+  "cardiomyocyte": [
+   "Docs/REFERENCE/atlas/cardiomyocyte.md",
+   "Docs/REFERENCE/heart.md",
+   "https://en.wikipedia.org/wiki/Cardiac_muscle",
+   "https://en.wikipedia.org/wiki/Trabeculae_carneae",
+   "https://en.wikipedia.org/wiki/Heart_rate",
+   "https://en.wikipedia.org/wiki/Myocardial_infarction",
+   "Ono N et al. Arch Histol Cytol 2009;72:139-149 (human ventricular myocyte ~10 µm)",
+   "Barth E et al. J Mol Cell Cardiol 1992;24:669-681 PMID 1404407 (abstract)",
+   "Commons: Muscle Tissue Intercalated Discs in Cardiac Muscle (41931906281).jpg (CC0, Berkshire Community College)"
+  ],
+  "intercalated_disc": [
+   "Docs/REFERENCE/atlas/intercalated_disc.md",
+   "Docs/REFERENCE/heart.md",
+   "https://en.wikipedia.org/wiki/Intercalated_disc",
+   "https://en.wikipedia.org/wiki/Cardiac_muscle",
+   "https://en.wikipedia.org/wiki/Gap_junction",
+   "Green CR, Severs NJ. Histochemistry 1993;99:105-120 PMID 8478212 (abstract)",
+   "Commons: Glanzstreifen.jpg (CC BY 2.5, Girod & Becker); Histopathology of ruptured intercalated discs.jpg (CC0, Häggström)"
+  ],
+  "sarcomere": [
+   "Docs/REFERENCE/atlas/sarcomere.md",
+   "Docs/REFERENCE/heart.md",
+   "https://en.wikipedia.org/wiki/Sarcomere",
+   "https://en.wikipedia.org/wiki/Frank%E2%80%93Starling_law",
+   "https://en.wikipedia.org/wiki/Myofibril",
+   "https://en.wikipedia.org/wiki/T-tubule",
+   "Commons: Electronic microscopy picture of a muscle.jpg (CC BY 4.0, Giolicc; tissue type unstated)"
+  ],
+  "purkinje_fiber": [
+   "Docs/REFERENCE/atlas/purkinje_fiber.md",
+   "Docs/REFERENCE/heart.md",
+   "Ono N et al. Arch Histol Cytol 2009;72:139-149 https://www.med.oita-u.ac.jp/matrix/member/shimada/4_Ono_Shimada_2008.pdf",
+   "https://en.wikipedia.org/wiki/Purkinje_fibers",
+   "Klabunde RE. https://cvphysiology.com/Arrhythmias/a003"
+  ],
+  "sa_node_cell": [
+   "Docs/REFERENCE/atlas/sa_node_cell.md",
+   "Docs/REFERENCE/heart.md",
+   "https://en.wikipedia.org/wiki/Sinoatrial_node",
+   "https://en.wikipedia.org/wiki/Cardiac_action_potential",
+   "https://en.wikipedia.org/wiki/Heart_rate"
+  ],
+  "chordae_tendineae": [
+   "Docs/REFERENCE/atlas/chordae_tendineae.md",
+   "Docs/REFERENCE/heart.md",
+   "Millington-Sanders C et al. J Anat 1998;192:573-581 PMID 9723984 (abstract)",
+   "Khalighi AH et al. 2016 (citing Millington-Sanders; search excerpt only)",
+   "https://en.wikipedia.org/wiki/Chordae_tendineae",
+   "https://en.wikipedia.org/wiki/Papillary_muscle",
+   "https://en.wikipedia.org/wiki/Mitral_valve",
+   "Commons: 2010 Chordae Tendinae Papillary Muscles.jpg (CC BY 3.0, OpenStax); Rheumatic heart disease, gross pathology 20G0013 lores.jpg (PD, CDC)"
+  ],
+  "cardiac_fibroblast": [
+   "Docs/REFERENCE/atlas/cardiac_fibroblast.md",
+   "Docs/REFERENCE/heart.md",
+   "https://en.wikipedia.org/wiki/Cardiac_muscle",
+   "https://en.wikipedia.org/wiki/Fibroblast"
+  ],
+  "collagen_scar": [
+   "Docs/REFERENCE/atlas/cardiac_fibroblast.md",
+   "Docs/REFERENCE/heart.md",
+   "https://en.wikipedia.org/wiki/Cardiac_fibrosis",
+   "https://en.wikipedia.org/wiki/Myocardial_infarction",
+   "Michaud K et al. Virchows Arch 2020;476:179-194 https://pmc.ncbi.nlm.nih.gov/articles/PMC7028821/",
+   "de Bakker JM et al. Circulation 1993;88:915-926 PMID 8353918 (abstract)",
+   "Commons: Histopathology of interstitial fibrosis of chronic ischemic heart disease.jpg (CC0, Häggström); Histopathology of dense fibrous scar replacing myocyte loss in myocardial infarction.jpg (CC BY 3.0, Michaud et al.)"
+  ]
+ },
+ "uncertain": [
+  "cardiomyocyte: 太さは資料で 10〜40µm と幅がある（Wikipedia の2つの節と Ono 2009）。指定の『約100×20µm』は範囲内だが、size には幅をそのまま書いた。",
+  "cardiomyocyte: ミトコンドリアの体積比は動物10種で22〜37%（Barth 1992 要旨）。ヒトだけの値は未確認のため、台帳には数値を書いていない。",
+  "cardiomyocyte: look の『濃い赤褐色』は死後の解剖写真（CDC・Häggström）を自分で見た観察。生きた心臓の色は未確認。",
+  "cardiomyocyte: ミトコンドリアが筋原線維の間に列で並ぶ様子は、PD/CC BY の心筋の電顕写真を入手できず確認していない。台帳には書いていない。",
+  "intercalated_disc: 『階段のよう』は、電顕の『縦と横の部分がある入り組んだ道すじ』（Wikipedia）、模式図の説明文（CC BY-SA）、ちぎれた介在板の写真（CC0）による。段の数・高さは未確認。",
+  "intercalated_disc: Cx43 が円盤のふちに輪のように並ぶ・傷の境目で乱れる、は Green & Severs 1993 の要旨のみ。",
+  "sarcomere: 2.2µm は『最大の力が出る長さ』（Wikipedia の Frank–Starling law）。ヒトの心筋の拡張期・収縮期の実測範囲は未確認。",
+  "sarcomere: 保存した電顕写真は心筋か骨格筋か不明（説明文に記載なし）。形の参考のみ。",
+  "purkinje_fiber: 太さ 20〜40µm はヒトの電顕観察（Ono 2009 本文）。伝導速度 約4m/s は教科書サイト（Klabunde）。他のサイトの抜粋では 1〜4、2〜4m/s。",
+  "purkinje_fiber: look の『中は明るく』は標本での見え方（グリコーゲンが染まらない）。生体の色は未確認。PD/CC BY の写真なし。",
+  "sa_node_cell: 細胞の大きさ（直径8µm、長さ20〜30µm）は Wikipedia の本文のみ。原著は読んでいない。PD/CC BY の写真なし。",
+  "chordae_tendineae: 長さ15〜20mm・太さ0.45mm は Khalighi 2016 が Millington-Sanders 1998 を引用した値（検索結果の抜粋）。原著の本文では確認していない。",
+  "chordae_tendineae: intro の『白い』は、病気で厚くなった腱索のカラー写真（CDC）と白黒写真（OpenStax）の観察による。正常な腱索の生きた色・透け具合は未確認。",
+  "cardiac_fibroblast: 大きさの数値は未確認（『心筋細胞より小さく数が多い』のみ）。形（紡錘形・枝分かれ）は線維芽細胞一般の記述。",
+  "collagen_scar: 古い傷あとが肉眼で白いことは未確認のため、台帳の look に色を書いていない。ジグザグ伝導は de Bakker 1993 の要旨（ヒトの梗塞した乳頭筋10例）。",
+  "全体: Wikimedia Commons の回数制限のため、ライセンス確認は API の説明データで行った。CC BY-SA の候補（心筋の SEM、プルキンエ線維、洞結節など）は保存していない。"
+ ]
+}

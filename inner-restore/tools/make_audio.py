@@ -84,3 +84,13 @@ rush = lp(pink(len(t)), 500); rush /= np.abs(rush).max()
 save("valve", pad([110, 146.83, 220], 0.3) + 0.3 * rush + pulse)
 save("plaque", pad([123.47, 185, 246.94], 0.3) + 0.35 * rush + pulse)
 save("clot", pad([98, 146.83, 196, 233.08], 0.35) + 0.3 * rush + pulse)
+# ---- ステージ6「心臓」：乱れた拍（病）を思わせる不規則な心音（ドッ・クン）と、低い持続音 ----
+rng6 = np.random.default_rng(6)
+heart = np.zeros_like(t); tt = 0.5
+while tt < T + XF:
+    for off, f, g in ((0, 50, 0.7), (0.3, 62, 0.45)):
+        t0 = tt + off; m = (t > t0) & (t < t0 + 1.0); x = t[m] - t0; heart[m] += np.sin(2 * np.pi * f * x) * np.exp(-x / 0.18) * g
+    tt += beat_t * (0.45 if rng6.random() < 0.2 else 1 + (rng6.random() - 0.5) * 0.4)
+save("endo", pad([110, 164.81, 220, 277.18], 0.3) + 0.2 * rush + heart)
+save("myo", pad([98, 146.83, 196], 0.35) + 0.12 * lp(pink(len(t)), 300) + heart)
+save("scar", pad([92.5, 138.59, 185], 0.4) + 0.1 * lp(pink(len(t)), 250) + heart + bells(8, 300, 500, 0.03, 0.5))

@@ -43,6 +43,14 @@ const MODELS: Record<string, Src> = {
   foam_cell: { url: '/static/models/vessel.glb', mesh: 'foam', ghost: 'foam_drops', col: 0xf0e0c8 },
   monocyte: { url: '/static/models/vessel.glb', mesh: 'monocyte', ghost: 'monocyte_nuc', col: 0xe8e0dc },
   smooth_muscle_cell: { url: '/static/models/vessel.glb', mesh: 'smc', col: 0xe0b0a8 },
+  cardiomyocyte: { url: '/static/models/heart.glb', mesh: 'cardiomyocyte', col: 0x8e3428, noBar: '心筋細胞1つ（長さ 約100µm）。両端の段のついた面が介在板、片方の端は二股に分かれて隣とつながる' },
+  intercalated_disc: { url: '/static/models/heart.glb', mesh: 'cardiomyocyte', col: 0xa04a3a, noBar: '両端の、段のついた面が介在板（隣の細胞とつながる所）' },
+  sarcomere: { url: '/static/models/heart.glb', mesh: 'myofiber', col: 0x8e3428, noBar: '心筋線維のひと続き（長さ 約120µm）。サルコメアは表面の細かい横縞（約2µm ごと）' },
+  purkinje_fiber: { url: '/static/models/heart.glb', mesh: 'purkinje', col: 0xe0b8a8, noBar: 'プルキンエ線維の細胞の列（太く淡い細胞が、介在板でつながる）' },
+  sa_node_cell: { url: '/static/models/heart.glb', mesh: 'sa_cell', col: 0xd8a898 },
+  chordae_tendineae: { url: '/static/models/heart.glb', mesh: 'chorda', col: 0xe8d8c4, noBar: '腱索（形の目安。実物の太さは 約0.5mm 前後で、ここでは縮めて表示）' },
+  cardiac_fibroblast: { url: '/static/models/heart.glb', mesh: 'fibroblast', col: 0xe8d4c8 },
+  collagen_scar: { url: '/static/models/heart.glb', mesh: 'collagen', col: 0xf0e4da, noBar: 'コラーゲンの束（長さ 60µm）。線維化では、これが心筋のあいだを埋める' },
   fibrin: { url: '/static/models/vessel.glb', mesh: 'fibrin', col: 0xf0e6dc, noBar: 'フィブリンの網（20µm 四方）。実物の線維は太さ 約0.1µm で、見えるよう太くして描いています' },
 };
 export const hasModel = (id: string) => id in MODELS;
