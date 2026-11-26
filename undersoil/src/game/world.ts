@@ -1,5 +1,6 @@
 // 種のまわりの土の一区画を、決まった乱数で組み立てる。1 単位 = 10 µm（主人公の身長 約 2 単位 = 20 µm）。
 import * as THREE from 'three/webgpu';
+import { mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
 import { loadGLB, loadTexture } from '../core/assets';
 import { makeRng } from './rng';
 import { makeSoilMaterial, type GrainKind } from './soilMaterial';
@@ -7,7 +8,7 @@ import { SoilGrid } from '../sim/soil';
 import layout from '../data/stage1.layout.json';
 
 export interface Collider { x: number; y: number; z: number; r: number; }
-interface Placement { variant: string; lod: 0 | 1 | 2; pos: THREE.Vector3; quat: THREE.Quaternion; scale: THREE.Vector3; cell: number; seed: number; }
+interface Placement { variant: string; lod: 0 | 1 | 2 | 3; pos: THREE.Vector3; quat: THREE.Quaternion; scale: THREE.Vector3; cell: number; seed: number; }
 const VARIANTS: Record<GrainKind, string[]> = { quartz: ['quartz_a', 'quartz_b', 'quartz_c'], aggregate: ['aggregate_a', 'aggregate_b', 'aggregate_c'], humus: ['humus_a', 'humus_b', 'humus_c'], clay: ['clay_a'] };
 const kindOf = (v: string) => v.split('_')[0] as GrainKind;
 
@@ -110,6 +111,8 @@ export async function buildWorld(base: string, opts: { grainLod: 0 | 1; density:
   scatter(Math.round(layout.smallCount * opts.density), [['aggregate', 0.45], ['humus', 0.25], ['quartz', 0.3]], layout.smallRadius as [number, number], 0.2, false);
   scatter(Math.round(layout.clayCount * opts.density), [['clay', 1]], layout.clayRadius as [number, number], -0.05, false, true);
 
+  // 互換・VR：いちばん遠い形（LOD2）の粒は、すべて 80 面の形（LOD3）にする（三角形の予算）
+  if (opts.lite && !(typeof location !== 'undefined' && location.search.includes('nolod3'))) for (const p of placements) if (p.lod === 2) p.lod = 3;   // 確認用：?nolod3 で前の形
   // 3) 素材を読み、種類×LOD ごとにインスタンス描画にまとめる
   const names = [...new Set(placements.map((p) => p.variant))];
   const detail = await loadTexture(base, 'tex/soil_detail.webp', { repeat: true });
@@ -118,18 +121,19 @@ export async function buildWorld(base: string, opts: { grainLod: 0 | 1; density:
     const [g, na0, na1, na2] = await Promise.all([loadGLB(base, `models/grains/${nm}.glb`), loadTexture(base, `models/grains/${nm}_na.webp`), loadTexture(base, `models/grains/${nm}_lod1_na.webp`), loadTexture(base, `models/grains/${nm}_lod2_na.webp`)]);
     const geo: THREE.BufferGeometry[] = [];
     for (const l of [0, 1, 2]) { const o = g.scene.getObjectByName(`${nm}_LOD${l}`) as THREE.Mesh; geo[l] = o.geometry; }
+    if (opts.lite) geo[3] = shrinkWrap(geo[2]);   // 互換・VR の遠くの粒：80 面の粗い形
     loaded.set(nm, { geo, na: [na0, na1, na2] });
   }));
   const group = new THREE.Group(); group.name = 'soil';
   const batches: { wet: THREE.InstancedBufferAttribute; cells: Uint16Array }[] = [];
   const stats = { instances: placements.length, triangles: 0, drawCalls: 0, by: {} as Record<string, number> };
   const m4 = new THREE.Matrix4();
-  for (const nm of names) for (const lod of [0, 1, 2] as const) {
+  for (const nm of names) for (const lod of [0, 1, 2, 3] as const) {
     const list = placements.filter((p) => p.variant === nm && p.lod === lod); if (!list.length) continue;
     const L = loaded.get(nm)!;
     const wet = new THREE.InstancedBufferAttribute(new Float32Array(list.length), 1); wet.setUsage(THREE.DynamicDrawUsage);
     const seedA = new THREE.InstancedBufferAttribute(new Float32Array(list.map((p) => p.seed)), 1);
-    const mesh = new THREE.InstancedMesh(L.geo[lod], makeSoilMaterial(kindOf(nm), L.na[lod], detail, wet, seedA, { cheap: opts.cheap, style: nm === 'humus_a' ? 'charcoal' : nm === 'humus_b' ? 'tissue' : nm === 'humus_c' ? 'pellet' : undefined }), list.length);
+    const mesh = new THREE.InstancedMesh(L.geo[lod], makeSoilMaterial(kindOf(nm), L.na[Math.min(2, lod)], detail, wet, seedA, { cheap: opts.cheap, style: nm === 'humus_a' ? 'charcoal' : nm === 'humus_b' ? 'tissue' : nm === 'humus_c' ? 'pellet' : undefined }), list.length);
     list.forEach((p, i) => mesh.setMatrixAt(i, m4.compose(p.pos, p.quat, p.scale)));
     mesh.instanceMatrix.needsUpdate = true; mesh.computeBoundingSphere(); mesh.name = `${nm}_L${lod}`;
     mesh.castShadow = lod === 0; mesh.receiveShadow = true;
@@ -163,4 +167,28 @@ export async function buildWorld(base: string, opts: { grainLod: 0 | 1; density:
     },
   };
   return world;
+}
+
+/** 粗い形（LOD3）を作る：80 面の球の頂点を、中心から外へ光線を飛ばして元の粒（LOD2）の表面へ貼りつける。
+ *  UV は、いちばん近い元の頂点のものを使う（遠くの小さな粒なので、継ぎ目のずれは目立たない）。
+ *  三角形を間引く方法は、粒の UV の継ぎ目が多く、ほとんど減らなかった（WEB_BUDGET.md 2026-11-25）。 */
+function shrinkWrap(src: THREE.BufferGeometry) {
+  const P = src.attributes.position, UV = src.attributes.uv, idx = src.index;
+  const tri = (k: number) => idx ? idx.getX(k) : k; const nT = (idx ? idx.count : P.count) / 3;
+  const vs: THREE.Vector3[] = []; for (let i = 0; i < P.count; i++) vs.push(new THREE.Vector3().fromBufferAttribute(P, i));
+  const c = new THREE.Vector3(); vs.forEach((v) => c.add(v)); c.divideScalar(vs.length);
+  const ico = mergeVertices(new THREE.IcosahedronGeometry(1, 1).deleteAttribute('normal').deleteAttribute('uv')); const IP = ico.attributes.position as THREE.BufferAttribute;
+  const out = new Float32Array(IP.count * 3), uvs = new Float32Array(IP.count * 2);
+  const ray = new THREE.Ray(), hit = new THREE.Vector3(), d = new THREE.Vector3();
+  for (let i = 0; i < IP.count; i++) {
+    d.fromBufferAttribute(IP, i).normalize(); ray.set(c, d); let far = 0;
+    for (let k = 0; k < nT; k++) { const a = vs[tri(k * 3)], b = vs[tri(k * 3 + 1)], e = vs[tri(k * 3 + 2)]; if (ray.intersectTriangle(a, b, e, false, hit)) far = Math.max(far, hit.distanceTo(c)); }
+    if (far === 0) { for (const v of vs) far = Math.max(far, v.clone().sub(c).dot(d)); }
+    const p = c.clone().addScaledVector(d, far); out.set([p.x, p.y, p.z], i * 3);
+    let bi = 0, bd = 1e9; for (let j = 0; j < vs.length; j++) { const dd = vs[j].distanceToSquared(p); if (dd < bd) { bd = dd; bi = j; } }
+    if (UV) { uvs[i * 2] = UV.getX(bi); uvs[i * 2 + 1] = UV.getY(bi); }
+  }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(out, 3)); g.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+  if (ico.index) g.setIndex(ico.index); g.computeVertexNormals(); g.computeBoundingSphere();
+  return g;
 }
