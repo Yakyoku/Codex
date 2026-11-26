@@ -72,6 +72,7 @@ async function build(renderer: THREE.WebGPURenderer, tier: string, variant: 'A' 
   const cells = texture(noiseTex, vec2(positionWorld.x.mul(1 / 60), positionWorld.z.mul(1 / 16))).r;   // 流れの向きに長い細胞
   const border = smoothstep(0.55, 0.98, cells).mul(0.5);
   fm.colorNode = mix(color(0xb87068), color(0xeaa898), H).mul(mix(float(1), float(0.85), border)).mul(texture(noiseTex, positionWorld.xz.mul(1 / 3)).g.mul(0.1).add(0.92));
+  if (variant === 'B') fm.colorNode = mix(fm.colorNode as N, color(0xe8c890), smoothstep(0.4, 5.0, positionWorld.y).mul(0.6));   // プラークの盛り上がりは、脂質で黄みを帯びる
   fm.roughnessNode = mix(float(0.55), float(0.18), H); fm.clearcoatNode = H.mul(0.8); fm.clearcoatRoughnessNode = float(0.12);
   fm.emissiveNode = color(0xb83a2a).mul(sick.mul(0.12)).add(color(0xff7a40).mul(waveRing.mul(0.5))).add(color(0xfff0e0).mul(bootRing.mul(0.6))).add(scanCol.mul(u.scan.mul(0.12))).add(color(0xffd0c8).mul(fres.mul(0.06)));
   const fg = new THREE.PlaneGeometry(W * 1.3, D * 1.3, 140, 90); fg.rotateX(-Math.PI / 2);
