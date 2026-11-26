@@ -6,6 +6,7 @@
 //   増えすぎた菌の群れが残っている間は、まわりの治っていない所が少しずつ押し返される。大腸では、ぜん動（腸の動き）の波で床が波打つ。
 // 作り事：光で粘液と細菌のバランスを整えるのは作り事の治し方。特定の菌が病気を治すとは描かない。
 import * as THREE from 'three/webgpu';
+import { organic } from '../../core/realism';
 import { tsl, type N } from '../../core/tsl';
 import { loadGLB, makeEnvironment } from '../../core/assets';
 import { HealthField } from '../../core/health';
@@ -78,6 +79,7 @@ async function build(renderer: THREE.WebGPURenderer, tier: string, variant: 'A' 
     // ぜん動の波：床がゆるく持ち上がって +x へ進む
     fm.positionNode = positionLocal.add(vec3(0, 0, sin(positionLocal.x.mul(0.06).sub(waveU.mul(Math.PI * 2))).mul(1.6)));
   }
+  if (variant !== 'B') organic(fm, noiseTex, { scale: 2.2, bump: 0.7, sss: 0xff9080, sssAmt: 0.3, planar: variant === 'A' ? 'tri' : 'xz' });   // 細胞の上面の丸み（石畳）と、粘膜の光の透け
   let floor: THREE.Mesh;
   if (variant === 'A') { floor = new THREE.Mesh(geos.vtip, fm); floor.scale.set(VA, VR_, VB); floor.position.y = -VR_; }
   else { const g = new THREE.PlaneGeometry(W * 1.3, D * 1.3, 120, 90); g.rotateX(-Math.PI / 2); g.rotateX(Math.PI / 2); floor = new THREE.Mesh(g, fm); floor.rotation.x = -Math.PI / 2; }

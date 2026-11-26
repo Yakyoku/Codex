@@ -5,14 +5,28 @@ import * as THREE from 'three/webgpu';
 import { tsl } from './tsl';
 import { dof } from 'three/examples/jsm/tsl/display/DepthOfFieldNode.js';
 import { bloom } from 'three/examples/jsm/tsl/display/BloomNode.js';
+import { gaussianBlur } from 'three/examples/jsm/tsl/display/GaussianBlurNode.js';
+import { ao } from 'three/examples/jsm/tsl/display/GTAONode.js';
 const { pass, uniform, uv, vec2, vec3, vec4, float, mix, smoothstep, length, dot, fract, sin, time, screenUV } = tsl;
 
 export type Tier = 'pc-high' | 'mobile-high' | 'compat' | 'mobile' | string;
 
-export function createPost(renderer: THREE.WebGPURenderer, scene: THREE.Scene, camera: THREE.Camera, tier: Tier) {
+export function createPost(renderer: THREE.WebGPURenderer, scene: THREE.Scene, camera: THREE.Camera, tier: Tier, opts: { ao?: boolean } = {}) {
   const pipe = new THREE.RenderPipeline(renderer);
   const sp = pass(scene, camera);
-  let col = sp.getTextureNode('output');
+  const src = sp.getTextureNode('output');
+  let col = src;
+  // レンズの色のにじみ：画面の縁ほど、赤と青がわずかにずれる（本物のレンズの映像の癖）
+  if (tier === 'pc-high' || tier === 'mobile-high') {
+    const off = screenUV.sub(0.5), k = dot(off, off).mul(0.012);
+    col = vec4(src.sample(screenUV.sub(off.mul(k))).r, src.g, src.sample(screenUV.add(off.mul(k))).b, 1);
+  }
+  // すき間の陰（GTAO）：細胞どうしが接する所、くぼみ、柱の根元が自然に暗くなる。高画質のみ
+  let aoPass: { radius: { value: number }; resolutionScale: number; getTextureNode(): { r: unknown } } | null = null;
+  if (opts.ao) {
+    aoPass = (ao as unknown as (d: unknown, n: unknown, c: THREE.Camera) => typeof aoPass)(sp.getTextureNode('depth'), null, camera); aoPass!.radius.value = 3.2; aoPass!.resolutionScale = 0.5;
+    col = col.mul(mix(float(1), gaussianBlur(aoPass!.getTextureNode() as never, 2, 3).r, float(0.8)));   // ざらつきが出ないよう、陰はぼかしてから掛ける
+  }
   const focus = uniform(5.5);
   const exposure = uniform(1);   // 露出のゆらぎ（顕微鏡のカメラが明るさを追いかける感じ）
   const useDof = tier === 'pc-high';

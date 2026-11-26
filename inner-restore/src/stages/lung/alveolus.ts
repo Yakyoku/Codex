@@ -5,6 +5,7 @@
 //   呼吸で肺胞は長さで 4〜10% ほど伸び縮みする（体積の変化の多くは肺胞道）。
 // 遊び：吸う息と吐く息で、空気の流れ（潜行士を運ぶ）と壁の伸び縮み（足もとの地形）が変わる。吐く息のときに光を当てると粒子がはがれやすい。
 import * as THREE from 'three/webgpu';
+import { organic } from '../../core/realism';
 import { tsl, type N } from '../../core/tsl';
 import { loadGLB, makeEnvironment } from '../../core/assets';
 import { HealthField } from '../../core/health';
@@ -68,6 +69,7 @@ async function build(renderer: THREE.WebGPURenderer, tier: string, variant: 'B' 
   wallMat.clearcoatNode = H.mul(0.7); wallMat.clearcoatRoughnessNode = float(0.12);   // サーファクタントの薄い液の膜のつや
   wallMat.emissiveNode = blood.mul(net.mul(flow).mul(H).mul(0.45)).add(color(0xffd8d0).mul(fres.mul(0.08)))
     .add(color(0xff7a40).mul(waveRing.mul(0.5))).add(color(0xfff0e0).mul(bootRing.mul(0.6)));
+  organic(wallMat, noiseTex, { scale: 2.8, bump: 0.45, sss: 0xffb0a0, sssAmt: 0.3, planar: 'tri' });   // ごく薄い膜の細かなしわと、光の透け
   let wall!: THREE.Mesh;
   if (room) { wall = new THREE.Mesh(geos.alveolus, wallMat); wall.scale.setScalar(R); wall.position.y = R; }
   // 区域C：膜は薄く、下を通る毛細血管の所だけ盛り上がって波打つ（実物の写真：薄い膜が毛細血管にかぶさる）

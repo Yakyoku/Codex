@@ -35,6 +35,10 @@ export function makeEnvironment(renderer: THREE.WebGPURenderer, tint = new THREE
   add([0, 8, 2], 3.2, new THREE.Color(1, 0.97, 0.92), 6);
   add([-7, -1, -4], 2.5, tint, 1.6);
   add([6, -3, 5], 3, tint.clone().multiplyScalar(0.6), 1.0);
+  // 小さく強い光（内視鏡や顕微鏡の照明の映りこみ）。濡れた面に、点の照り返しが出る
+  add([3.5, 6, -5], 0.7, new THREE.Color(1, 0.98, 0.95), 14);
+  add([-4, 5.5, 5], 0.55, new THREE.Color(1, 0.96, 0.9), 11);
+  add([0, -8, 0], 5, tint.clone().multiplyScalar(0.5), 0.5);   // 下からの、組織の色の照り返し
   const pmrem = new THREE.PMREMGenerator(renderer);
   const rt = pmrem.fromScene(s, 0.04);
   pmrem.dispose();

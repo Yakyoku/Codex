@@ -6,6 +6,7 @@ import { detectDevice, DEVICE_LABEL, pickTier, TIER_LABEL } from '../core/device
 import { Hud } from '../core/hud';
 import { DynamicResolution } from '../core/dynres';
 import { createPost } from '../core/post';
+import { addRealism } from '../core/realism';
 import { rumble, buzz } from '../core/feel';
 import { Input } from '../core/input';
 import { GameAudio, speak } from '../core/audio';
@@ -78,9 +79,11 @@ async function main() {
   const diver = await Diver.load(tier === 'pc-high' || tier === 'mobile-high');
   stage.scene.add(diver.root);
   const diag = new Diagnosis(stage.health, stage.size as [number, number], stage.floorHeight, (x: number, z: number) => stage.causeAt(x, z), 1, stage.plugs, M.plugDiag); stage.scene.add(diag.group);
+  // リアリティのしかけ（探照灯・接地の影・漂う粒。高画質では主光源の影も）。?real=off で切れる（見比べ用）
+  const real = Q.get('real') === 'off' ? null : addRealism(stage, renderer, tier, { shadows: Q.get('shadows') !== '0' && (tier === 'pc-high' || Q.has('shadows')) });
   // 仕上げ（浅いピント・光のにじみ・色調）。?post=off で切れる
   // 映像の仕上げは設定で切れる（ir.post=off）。失敗したら自動で切って、そのまま描き続ける
-  let post = Q.get('post') === 'off' || (store.get('ir.post') === 'off' && !Q.has('post')) ? null : createPost(renderer, stage.scene, camera, Q.get('post') === 'full' ? 'pc-high' : tier);
+  let post = Q.get('post') === 'off' || (store.get('ir.post') === 'off' && !Q.has('post')) ? null : createPost(renderer, stage.scene, camera, Q.get('post') === 'full' ? 'pc-high' : tier, { ao: Q.get('ao') !== '0' && (tier === 'pc-high' || Q.has('ao')) });
   const audio = new GameAudio();
   const input = new Input(canvas);
   input.sens = { mouse: tuning.camera.mouseSens, pad: tuning.camera.padSens, touch: tuning.camera.touchSens };
@@ -503,6 +506,7 @@ async function main() {
     // 1コマの更新で思わぬ失敗が起きても、止まらずに続ける（失敗は画面の右下と __irErrors に残す）
     try { if (!debugCam && sim === null && !paused) { if (started) { if (hitStop > 0) { hitStop -= dt; step(dt * F.hitStopScale); } else step(dt); } else { t += dt; stage.update(dt, t, camera); } dyn?.tick(dt); } }
     catch (e) { report('update', e); }
+    try { real?.update(paused ? 0 : dt, now / 1000, diver.root.position, camera.position); } catch (e) { report('real', e); }
     // 顕微鏡の映像らしさ：手持ちでない機材でもわずかに揺れ、ピントがかすかに前後し、明るさが心拍に合わせて息づく（確認用の固定撮影では止める）
     const live = !debugCam && sim === null && !Q.has('frames') && !Q.has('still');
     const tt = now / 1000;

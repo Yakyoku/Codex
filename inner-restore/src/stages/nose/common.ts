@@ -4,6 +4,7 @@
 //   線毛のまわりの層（PCL）は 約 6〜7µm、その上を粘液のゲルの層が流れる（鼻の粘液全体で 10〜15µm、運ばれる速さ 5〜10mm/分）。
 // 簡略化：線毛の本数は実物の約半分（描く負荷のため）。潜行士は粘液のゲルの上に立ち、透ける粘液ごしに下の線毛の森を見る（線毛の間は狭すぎて歩けない）。
 import * as THREE from 'three/webgpu';
+import { organic } from '../../core/realism';
 import { tsl, type N } from '../../core/tsl';
 
 const { attribute, uniform, float, vec3, color, mix, sin, cos, fract, smoothstep, saturate, positionWorld, texture, vec2, length, exp, cameraPosition, max, pow, dot, normalView, positionViewDirection } = tsl;
@@ -86,6 +87,7 @@ export function epithelium(W: number, D: number, H: N, noise: THREE.Texture) {
   m.colorNode = mix(color(0xd98c84), color(0xe8b4a8), H).mul(mix(float(1), float(0.78), border)).mul(fine.mul(0.12).add(0.9));
   m.roughnessNode = float(0.5);
   m.emissiveNode = color(0xb83a2a).mul(float(1).sub(H).mul(0.12));
+  organic(m as unknown as THREE.MeshPhysicalNodeMaterial, noise, { scale: 2.4, bump: 0.6 });   // 細胞の上面の細かな起伏
   const mesh = new THREE.Mesh(g, m); mesh.position.y = -0.05; return mesh;
 }
 

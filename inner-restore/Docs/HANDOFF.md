@@ -173,3 +173,10 @@
 - 実物の写真（`Docs/REFERENCE/img/heart/`、13枚）で決めた見た目は GDD 6-6。見比べて直した所：コラーゲンを細い線維の束（端が細る）に、床の模様を規則的でない筋に、心内膜を濡れたつやに、プルキンエ線維を膜に覆われた畝に。
 - 台帳：心臓の8項目（事実確認：誤り7・削除6・言い換え13）。
 - 進捗ページの全体：ステージ6 完了で 86%（次はステージ7「脳」）。
+
+## 2026-11-26 映像のリアリティの共通のしかけ
+- `src/core/realism.ts`：`addRealism(stage, renderer, tier, {shadows})`（探照灯 PointLight・足もとの影・漂う粒・主光源の影）と `organic(mat, noiseTex, {scale,bump,sss,planar})`（細かな凹凸＝bumpMap、光の透け）。画面版 `main.ts` と VR 版 `vr.ts` から呼ぶ。影は pc-high のみ（`?shadows` で他の段階でも試せる、`?shadows=0` で切る）。`?real=off` で全部切る。
+- `post.ts`：レンズの色のにじみ（pc-high・mobile-high）。GTAO は `?ao` のときだけ（ざらつきが出るので標準は切。直すならノイズ除去 DenoiseNode を検討）。
+- `assets.ts` の makeEnvironment に小さく強い光源を追加（濡れた面の点の照り返し）。
+- organic を入れた面：鼻の上皮、肺胞の壁、腸の床（A・C）、血管の床、心臓の床（A・C）と心筋。目のステージは材質を変えていない（共通のしかけだけ）。
+- 未確認：WebGPU での見え方、影つきの PC 実機の速さ、スマホの重さ（粒 240個＋光1つ）。重ければ `addRealism` の motes を減らす。

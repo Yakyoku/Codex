@@ -6,6 +6,7 @@
 //   合図はジグザグに遅れて伝わる（1.4mm で 45ms 遅れる、de Bakker 1993）。傷あとのまわりを合図が回り続けると、速く乱れた拍（リエントリー）になる。
 // 作り事：本物の傷あとは消えない。伝導の波は、見えるよう実物（秒速 0.5〜4m）よりずっとゆっくり描く。
 import * as THREE from 'three/webgpu';
+import { organic } from '../../core/realism';
 import { tsl, type N } from '../../core/tsl';
 import { loadGLB, makeEnvironment } from '../../core/assets';
 import { HealthField } from '../../core/health';
@@ -79,6 +80,7 @@ async function build(renderer: THREE.WebGPURenderer, tier: string, variant: 'A' 
     mm.colorNode = base.mul(float(1).sub(stripes.mul(0.16))).mul(mix(float(1), float(1.35), disc)).mul(texture(noiseTex, positionWorld.xz.mul(1 / 7)).g.mul(0.12).add(0.9)).mul(dim);
     mm.roughnessNode = float(0.38); mm.clearcoatNode = float(0.45); mm.clearcoatRoughnessNode = float(0.25);
     mm.emissiveNode = color(0xff9a5a).mul(sigGlow(blockAttr).mul(0.9)).add(color(0xffe0b0).mul(disc.mul(sigGlow(blockAttr)).mul(1.2))).add(color(0xfff0e0).mul(bootRing.mul(0.5))).add(scanCol.mul(u.scan.mul(0.1))).add(color(0xffc0a8).mul(fres.mul(0.07)));
+    organic(mm, noiseTex, { scale: 1.4, bump: 0.5, sss: 0xff5a3a, sssAmt: 0.45, planar: 'tri' });   // 筋の膜の細かな起伏。縁は血の色に透ける
     return mm;
   };
   const blockArr = (n: number) => { const a = new THREE.InstancedBufferAttribute(new Float32Array(n).fill(1e4), 1); a.setUsage(THREE.DynamicDrawUsage); return a; };
@@ -117,6 +119,7 @@ async function build(renderer: THREE.WebGPURenderer, tier: string, variant: 'A' 
   } else { fm.colorNode = color(0x3a1612); fm.roughnessNode = float(0.6); }
   fm.emissiveNode = color(0xb83a2a).mul(sick.mul(0.1)).add(color(0xff7a40).mul(waveRing.mul(0.5))).add(color(0xfff0e0).mul(bootRing.mul(0.6))).add(scanCol.mul(u.scan.mul(0.12))).add(color(0xffd0c8).mul(fres.mul(0.05)));
   const fg = new THREE.PlaneGeometry(W * 1.3, D * 1.3, 130, 84); fg.rotateX(-Math.PI / 2);
+  if (variant !== 'B') organic(fm, noiseTex, { scale: variant === 'A' ? 3 : 1.6, bump: variant === 'A' ? 0.5 : 0.9, sss: 0xff8a6a, sssAmt: 0.25 });   // 膜の細かな起伏と、光の透け
   const floor0 = new THREE.Mesh(fg, fm); floor0.position.y = variant === 'B' ? -6 : 0; scene.add(floor0);
   const reshape = () => { if (variant !== 'C') return; const pa = fg.attributes.position as THREE.BufferAttribute; for (let i = 0; i < pa.count; i++) pa.setY(i, floorAt(pa.getX(i), pa.getZ(i))); pa.needsUpdate = true; fg.computeVertexNormals(); };
   reshape();

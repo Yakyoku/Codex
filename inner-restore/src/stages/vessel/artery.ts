@@ -4,6 +4,7 @@
 //   プラークの覆い（線維性の膜）が破れると、血小板が集まり、太さ 約0.1µm のフィブリンの網が赤血球をとらえて血栓になる。静脈には、逆流を止めるポケット形の弁がある。
 // 作り事：本物のプラークは治療でもゆっくりしか小さくならない（2年で約1%）。ゲームでは光で小さくする（演出）。
 import * as THREE from 'three/webgpu';
+import { organic } from '../../core/realism';
 import { tsl, type N } from '../../core/tsl';
 import { loadGLB, makeEnvironment } from '../../core/assets';
 import { HealthField } from '../../core/health';
@@ -77,6 +78,7 @@ async function build(renderer: THREE.WebGPURenderer, tier: string, variant: 'A' 
   fm.emissiveNode = color(0xb83a2a).mul(sick.mul(0.12)).add(color(0xff7a40).mul(waveRing.mul(0.5))).add(color(0xfff0e0).mul(bootRing.mul(0.6))).add(scanCol.mul(u.scan.mul(0.12))).add(color(0xffd0c8).mul(fres.mul(0.06)));
   const fg = new THREE.PlaneGeometry(W * 1.3, D * 1.3, 140, 90); fg.rotateX(-Math.PI / 2);
   if (variant === 'B') { const pa = fg.attributes.position as THREE.BufferAttribute; for (let i = 0; i < pa.count; i++) pa.setY(i, 0); }
+  organic(fm, noiseTex, { scale: 2.6, bump: 0.6, sss: 0xff8070, sssAmt: 0.25 });   // 内皮の、核の所のふくらみと細かな起伏
   const floor = new THREE.Mesh(fg, fm); scene.add(floor);
   const reshape = () => { if (variant !== 'B') return; const pa = fg.attributes.position as THREE.BufferAttribute; for (let i = 0; i < pa.count; i++) pa.setY(i, plaqueH(pa.getX(i), pa.getZ(i))); pa.needsUpdate = true; fg.computeVertexNormals(); };
   reshape();

@@ -1,4 +1,5 @@
 // VR 版（M1）：同じ網膜の区画の中に立ち、見回し、歩き、手のビームで治す。VR 中は WebGL 2。
+import { addRealism } from '../core/realism';
 import * as THREE from 'three/webgpu';
 import { createRenderer, fitRenderer } from '../core/renderer';
 import { detectDevice, DEVICE_LABEL } from '../core/device';
@@ -53,6 +54,7 @@ async function main() {
   const save = loadSave(), Qv = new URLSearchParams(location.search);
   let zi = ZONES.findIndex((z) => z.id === (Qv.get('zone') ?? save.zone ?? 'retina')); if (zi < 0) zi = 0;
   const stage = await (await ZONES[zi].load()).build(renderer, 'vr');
+  const real = addRealism(stage, renderer, 'vr'), realCam = new THREE.Vector3();   // 探照灯・足もとの影・漂う粒（VR は軽い設定）
   const M = stage.meta;
   stage.scene.add(rig);
   const [SX, SZ] = stage.size;
@@ -239,6 +241,7 @@ async function main() {
     const sc = stage.u.scan.value as number; stage.u.scan.value = sc + ((scanOn ? 1 : 0) - sc) * Math.min(1, dt * 4);
     if (scanOn && (!scanWas || (diagT -= dt) <= 0)) { diag.analyze(rig.position.x, rig.position.z); diagT = 1; wristT = 0; lastProg = -1; } scanWas = scanOn; diag.update(dt, scanOn, rig.position.x, rig.position.z);
     stage.update(dt, t, camera);
+    camera.getWorldPosition(realCam); real.update(dt, t, rig.position, realCam);
     // 進み具合、紹介、字幕、患者の窓
     const mean = stage.health.mean(), prog = stage.progress();
     const stepNow = Math.floor(prog * 10); if (stepNow > lastStep && lastStep >= 0 && !finished) { audio.restored(stepNow); purify.burst(); haptic(srcOf(right), 0.8, 160); haptic(srcOf(left), 0.5, 160); } lastStep = Math.max(lastStep, stepNow);
