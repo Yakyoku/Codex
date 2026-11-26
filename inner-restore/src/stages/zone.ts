@@ -17,7 +17,7 @@ export interface ZoneMeta {
   causeMain: string;        // 診断の「主な原因」
   swimCeil?: number;        // 泳げる高さ（床から）
   plugDiag?: { short: string; cause: string };   // 診断での塊の説明
-  patient?: 'sight' | 'smell' | 'breath' | 'comfort' | 'circulation' | 'rhythm';
+  patient?: 'sight' | 'smell' | 'breath' | 'comfort' | 'circulation' | 'rhythm' | 'conscious';
   perception?: number;                         // 知覚加速（体内の時間を何倍ゆっくり見るか）。省略時は tuning の値
   scaleNote?: string;                          // 左上の大きさの目安（例：潜行士の身長 2µm ／ 赤血球の直径 7.8µm）                  // 患者の変化の見せ方（目＝視界、鼻＝におい）
 }
