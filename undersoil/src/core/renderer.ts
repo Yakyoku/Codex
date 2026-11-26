@@ -39,7 +39,8 @@ export async function createRenderer(canvas: HTMLCanvasElement, pref: RendererPr
   }
   const isWebGPU = (renderer.backend as unknown as { isWebGPUBackend?: boolean }).isWebGPUBackend === true;
   if (!forceWebGL && !isWebGPU && !fallbackReason) fallbackReason = 'WebGPU のアダプターが得られない';
-  renderer.toneMapping = THREE.AgXToneMapping;   // 2026-11-27：ACES より写真に近い（明るい所が白く飛ばず、色が自然に落ち着く）
+  { const tm = typeof location !== 'undefined' ? new URLSearchParams(location.search).get('tm') : null;   // 2026-11-27：既定はニュートラル（色が写真どおりに出る）。確認用：?tm=aces|agx|neutral
+    renderer.toneMapping = tm === 'agx' ? THREE.AgXToneMapping : tm === 'aces' ? THREE.ACESFilmicToneMapping : THREE.NeutralToneMapping; }
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   return { renderer, isWebGPU, fallbackReason };
 }

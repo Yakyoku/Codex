@@ -2,7 +2,8 @@
 // 作り物っぽさの原因と対策（Docs/REFERENCE/realism-pass-2026-11-27.md）：
 //   ・粒どうしの接点やすき間が暗くならず、粒が浮いて見える → 画面空間の環境光の遮り（GTAO）。接点・くぼみ・すき間が自然に暗くなる
 //   ・後処理を通すと縁がギザギザ（ちらつき）→ 最後に FXAA でなめらかに
-//   ・明るい所が白く飛び、色が「CG のつや」になる → 写真に近いトーンマッピング（AgX）を後処理の中で行い、そのあとにレンズの癖を足す
+//   ・明るい所の色が変わり、写真から測った色とずれる → 色を保つトーンマッピング（ニュートラル）を後処理の中で行い、そのあとにレンズの癖を足す
+//     （AgX も試したが、地上の場面が白くかすんで、コントラストが落ちたのでやめた）
 //   ・レンズの癖：周辺のわずかな色ずれ（色収差）、周辺減光、にじみ（ブルーム）、粒状感
 import * as THREE from 'three/webgpu';
 import { pass, mrt, output, normalView, directionToColor, colorToDirection, screenUV, smoothstep, mix, float, vec3, vec4, time, fract, sin, dot, vec2, renderOutput } from 'three/tsl';
@@ -46,9 +47,11 @@ export function makePost(renderer: THREE.WebGPURenderer, scene: THREE.Scene, cam
     out = mix(out.mul(vec3(0.98, 1.0, 1.03)), out.mul(vec3(1.06, 1.0, 0.92)), smoothstep(0.02, 0.6, l));
   }
   // ここで写真の明るさの曲線（トーンマッピング）と sRGB に直す。このあとはレンズとカメラの癖
-  let disp = renderOutput(vec4(out, float(1)) as never) as unknown as typeof color;
+  // 明るさの曲線はニュートラル（Khronos PBR Neutral）：写真から測って合わせた色が、ほとんど変わらずに出る。少しだけ明るくする
+  let disp = renderOutput(vec4(out.mul(1.15), float(1)) as never) as unknown as typeof color;
   if (effects.includes('ca')) disp = chromaticAberration(disp, float(0.35), vec2(0.5, 0.5), float(1.0)) as unknown as typeof color;   // 周辺だけ、ごくわずか
-  let fin = disp.rgb;
+  // 写真の現像と同じ、ごく弱い S 字の曲線（黒を締め、白を少し伸ばす）。ニュートラルの曲線は暗部が少し浮くため
+  let fin = mix(disp.rgb, smoothstep(vec3(0.0), vec3(1.0), disp.rgb), 0.38);
   if (effects.includes('vignette')) { const d = screenUV.sub(0.5).length(); fin = fin.mul(mix(float(1), float(0.5), smoothstep(0.32, 0.86, d))); }
   if (effects.includes('grain')) { const n = fract(sin(dot(screenUV.add(fract(time)), vec2(12.9898, 78.233))).mul(43758.5453)); fin = fin.mul(mix(float(0.97), float(1.03), n)); }
   let res: unknown = vec4(fin, float(1));

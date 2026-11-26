@@ -6,7 +6,7 @@
 import * as THREE from 'three/webgpu';
 import { float, instancedBufferAttribute, mix, positionLocal, smoothstep, uniform, vec3, cameraPosition, positionWorld, oneMinus, saturate, length } from 'three/tsl';
 
-export function buildColloids(count: number, R = 7) {
+export function buildColloids(count: number, R = 7, nearFade = 0.15) {
   const geo = new THREE.IcosahedronGeometry(1, 1);
   const pos = new Float32Array(count * 3), size = new Float32Array(count), tone = new Float32Array(count);
   for (let i = 0; i < count; i++) {
@@ -25,7 +25,7 @@ export function buildColloids(count: number, R = 7) {
   m.colorNode = mix(vec3(0.42, 0.34, 0.22), vec3(0.12, 0.08, 0.05), smoothstep(0.55, 0.85, T));
   m.roughnessNode = float(0.6); m.metalnessNode = float(0);
   const d = length(positionWorld.sub(cameraPosition));
-  m.opacityNode = uWet.mul(smoothstep(float(R), float(R * 0.55), d)).mul(saturate(d.sub(0.15).mul(4.0))).mul(mix(float(0.55), float(0.9), T));
+  m.opacityNode = uWet.mul(smoothstep(float(R), float(R * 0.55), d)).mul(smoothstep(float(nearFade), float(nearFade * 2.0 + 0.2), d)).mul(mix(float(0.55), float(0.9), T));
   void oneMinus;
   const mesh = new THREE.InstancedMesh(geo, m, count); mesh.frustumCulled = false; mesh.name = 'colloids'; mesh.renderOrder = 8;
   const arr = aPos.array as Float32Array; const vel = new Float32Array(count * 3);

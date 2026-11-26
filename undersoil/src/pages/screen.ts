@@ -121,7 +121,7 @@ async function main() {
   const seedT = (): Target => mode === 'soil' ? { p: game.root > 0.05 ? game.seedLife.rootTip.clone() : seedC.clone().add(new THREE.Vector3(-50, 2, 0)), r: 20 } : null;
   let focusT: THREE.Vector3 | null = null;
   // 水の中をただよう小さな粒（ブラウン運動）。奥行きの手がかり
-  const colloids = game.tier === 'vr' ? null : buildColloids(game.tier === 'pc-high' ? 1400 : game.tier === 'mobile-high' ? 800 : 300); if (colloids) scene.add(colloids.mesh);
+  const colloids = game.tier === 'vr' ? null : buildColloids(game.tier === 'pc-high' ? 1400 : game.tier === 'mobile-high' ? 800 : 300, 7, game.q.post.some((e: string) => e.startsWith('dof')) ? 0.15 : 1.6)   // ぼかしのない段階では、近すぎる粒は消す（くっきりした玉に見えるため）; if (colloids) scene.add(colloids.mesh);
   const scope = await buildMicroscope('./');
   const sizes = makeSizes('./');
   const notebook = makeNotebook('./', (id) => scope.show(id, SPECIES[id]?.title ?? SPECIES[id]?.nameJa ?? ''));
