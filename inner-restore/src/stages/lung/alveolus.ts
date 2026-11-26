@@ -63,14 +63,17 @@ async function build(renderer: THREE.WebGPURenderer, tier: string, variant: 'B' 
   const flow = fract(cell.mul(6).sub(u.time.mul(0.6))).pow(6);                                                   // 網の中を流れる赤血球の光
   const sick = float(1).sub(H);
   const blood = mix(color(0x7a1a22), color(0xe0303a), oxy.mul(H));
-  wallMat.colorNode = mix(mix(color(0xb8a8a4), color(0xf0c8c0), H), blood, net.mul(mix(float(0.25), float(0.75), H)));
+  wallMat.colorNode = mix(mix(color(0xb8a8a4), color(0xf0c8c0), H), blood, net.mul(mix(float(0.25), float(0.75), H)).mul(room ? 1 : 0.3));
   wallMat.roughnessNode = mix(float(0.7), float(0.18), H);
   wallMat.clearcoatNode = H.mul(0.7); wallMat.clearcoatRoughnessNode = float(0.12);   // サーファクタントの薄い液の膜のつや
   wallMat.emissiveNode = blood.mul(net.mul(flow).mul(H).mul(0.45)).add(color(0xffd8d0).mul(fres.mul(0.08)))
     .add(color(0xff7a40).mul(waveRing.mul(0.5))).add(color(0xfff0e0).mul(bootRing.mul(0.6)));
-  let wall: THREE.Mesh;
+  let wall!: THREE.Mesh;
   if (room) { wall = new THREE.Mesh(geos.alveolus, wallMat); wall.scale.setScalar(R); wall.position.y = R; }
-  else { const g = new THREE.PlaneGeometry(W * 1.3, D * 1.3, 96, 64); g.rotateX(-Math.PI / 2); wall = new THREE.Mesh(g, wallMat); }
+  // 区域C：膜は薄く、下を通る毛細血管の所だけ盛り上がって波打つ（実物の写真：薄い膜が毛細血管にかぶさる）
+  const laneZ = Array.from({ length: 6 }, (_, k) => -D / 2 + 8 + k * (D - 16) / 5);
+  const memY = (x: number, z: number) => { let y = 0; for (const lz of laneZ) y += 3.0 * Math.exp(-(((z - lz - 0.8 * Math.sin(x * 0.05 + lz)) / 4.6) ** 2)); return y + 0.35 * Math.sin(x * 0.07 + z * 0.05); };
+  if (!room) { const g = new THREE.PlaneGeometry(W * 1.3, D * 1.3, 160, 120); g.rotateX(-Math.PI / 2); const pa = g.attributes.position as THREE.BufferAttribute; for (let i = 0; i < pa.count; i++) pa.setY(i, memY(pa.getX(i), pa.getZ(i))); g.computeVertexNormals(); wall = new THREE.Mesh(g, wallMat); }
   scene.add(wall);
   // 区域C：膜のすぐ下の毛細血管を、本物の管として見せる（足もとの膜ごしに赤血球が流れる）
   const rbcs: { x: number; z: number; v: number; lane: number }[] = [];
@@ -78,7 +81,7 @@ async function build(renderer: THREE.WebGPURenderer, tier: string, variant: 'B' 
   if (!room) {
     const tube = new THREE.MeshPhysicalNodeMaterial({ transparent: true, depthWrite: false });
     tube.colorNode = color(0xf0c8c0); tube.opacityNode = float(0.18).add(fres.mul(0.25)); tube.roughnessNode = float(0.2);
-    for (let k = 0; k < 6; k++) { const g = new THREE.CylinderGeometry(3.5, 3.5, W * 1.3, 24, 1, true); g.rotateZ(Math.PI / 2); const t = new THREE.Mesh(g, tube); t.position.set(0, -4.2, -D / 2 + 8 + k * (D - 16) / 5); scene.add(t); }
+    for (let k = 0; k < 6; k++) { const g = new THREE.CylinderGeometry(3.5, 3.5, W * 1.3, 24, 1, true); g.rotateZ(Math.PI / 2); const pa = g.attributes.position as THREE.BufferAttribute; for (let i = 0; i < pa.count; i++) pa.setZ(i, pa.getZ(i) + 0.8 * Math.sin(pa.getX(i) * 0.05 + laneZ[k])); const t = new THREE.Mesh(g, tube); t.position.set(0, -1.0, laneZ[k]); scene.add(t); }
     const rm = new THREE.MeshPhysicalNodeMaterial(); rm.colorNode = mix(color(0x6a1018), color(0xd0202c), oxy); rm.roughnessNode = float(0.45);
     const rg = new THREE.SphereGeometry(1, 20, 12); rg.scale(1.3, 0.55, 1.3);   // 赤血球（直径 約7.8µm を、細い管の中で少し縮めて）
     const NR = vr ? 40 : 90; rbcMesh = new THREE.InstancedMesh(rg, rm, NR); rbcMesh.frustumCulled = false; scene.add(rbcMesh);
@@ -88,7 +91,7 @@ async function build(renderer: THREE.WebGPURenderer, tier: string, variant: 'B' 
   }
   // ---- II型肺胞上皮細胞（壁に点々と）、肺胞マクロファージ、粒子 ----
   const t2Mat = new THREE.MeshPhysicalNodeMaterial(); t2Mat.colorNode = mix(color(0xc8b0a8), color(0xf2dcd4), H); t2Mat.roughnessNode = float(0.35); t2Mat.clearcoatNode = float(0.4);
-  const floorAt = (x: number, z: number) => { if (!room) return 0; const r2 = x * x + z * z; return R - Math.sqrt(Math.max(0, R * R - r2)); };
+  const floorAt = (x: number, z: number) => { if (!room) return memY(x, z); const r2 = x * x + z * z; return R - Math.sqrt(Math.max(0, R * R - r2)); };
   const t2: THREE.Vector3[] = []; let sd = 9; const rnd = () => { sd = (sd * 16807) % 2147483647; return sd / 2147483647; };
   for (let i = 0; i < (room ? 26 : 10); i++) { const x = (rnd() - 0.5) * W * 0.85, z = (rnd() - 0.5) * D * 0.85; t2.push(new THREE.Vector3(x, floorAt(x, z) - 1.2, z)); }
   const t2m = new THREE.InstancedMesh(geos.type2, t2Mat, t2.length); const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), v = new THREE.Vector3(), sv = new THREE.Vector3();
@@ -194,7 +197,7 @@ async function build(renderer: THREE.WebGPURenderer, tier: string, variant: 'B' 
       });
       soot.instanceMatrix.needsUpdate = grain.instanceMatrix.needsUpdate = true;
       if (rbcMesh) {
-        rbcs.forEach((r, i) => { r.x += dt * (3 + 6 * prog); if (r.x > W * 0.65) r.x -= W * 1.3; v.set(r.x, -4.2, -D / 2 + 8 + r.lane * (D - 16) / 5); rbcMesh!.setMatrixAt(i, m4.compose(v, q.setFromEuler(new THREE.Euler(0, 0, Math.PI / 2)), sv.set(1.5, 1.5, 1.5))); });
+        rbcs.forEach((r, i) => { r.x += dt * (3 + 6 * prog); if (r.x > W * 0.65) r.x -= W * 1.3; v.set(r.x, -1.0, laneZ[r.lane] + 0.8 * Math.sin(r.x * 0.05 + laneZ[r.lane])); rbcMesh!.setMatrixAt(i, m4.compose(v, q.setFromEuler(new THREE.Euler(0, 0, Math.PI / 2)), sv.set(1.5, 1.5, 1.5))); });
         rbcMesh.instanceMatrix.needsUpdate = true;
       }
       for (let i = 0; i < NA; i++) { const d = stage.drift!(new THREE.Vector3(ap[i * 3], 0, ap[i * 3 + 2])); ap[i * 3] += d.x * dt * 2; ap[i * 3 + 2] += d.z * dt * 2; if (Math.abs(ap[i * 3]) > W / 2) ap[i * 3] *= -0.95; if (Math.abs(ap[i * 3 + 2]) > D / 2) ap[i * 3 + 2] *= -0.95; }

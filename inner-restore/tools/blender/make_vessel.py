@@ -18,7 +18,7 @@ def join(objs, name):
 def tube(pts, r, name="t", res=2):
     cu = bpy.data.curves.new(name, "CURVE"); cu.dimensions = "3D"; sp = cu.splines.new("NURBS"); sp.points.add(len(pts) - 1)
     for k, q in enumerate(pts): sp.points[k].co = (*q, 1)
-    sp.use_endpoint_u = True; cu.bevel_depth = r; cu.bevel_resolution = res; co = bpy.data.objects.new(name, cu); bpy.context.scene.collection.objects.link(co)
+    sp.use_endpoint_u = True; cu.resolution_u = 4; cu.bevel_depth = r; cu.bevel_resolution = res; co = bpy.data.objects.new(name, cu); bpy.context.scene.collection.objects.link(co)
     L.select_only(co); bpy.ops.object.convert(target="MESH"); return bpy.context.object
 L.reset(); objs = []
 # 弁尖：半円の付け根から、ポケット状にふくらむ薄い膜（x：流れの向き、y：横、z：高さ）
@@ -66,10 +66,10 @@ for v in s.data.vertices: v.co.x *= 12; v.co.y *= 1.0 - 0.6 * (abs(v.co.x) / 12)
 bpy.ops.object.shade_smooth(); objs.append(s)
 # フィブリンの網（20µm 四方、見えるよう太さ 0.12µm で）
 parts = []
-for i in range(46):
-    a = Vector(rng.uniform(-10, 10, 3)); d = Vector(rng.normal(size=3)).normalized(); ln = rng.uniform(8, 22)
-    pts = [tuple(a + d * (t * ln - ln / 2) + Vector((math.sin(t * 6 + i), math.cos(t * 5 + i), math.sin(t * 4)) ) * 0.8) for t in np.linspace(0, 1, 7)]
-    parts.append(tube(pts, 0.12, "f", 1))
+for i in range(110):   # 実物の写真：規則的な網ではなく、細い線維が不規則にからまった、ふわっとした塊
+    a = Vector(rng.normal(0, 5.5, 3)); d = Vector(rng.normal(size=3)).normalized(); ln = rng.uniform(6, 18)
+    pts = [tuple(a + d * (t * ln - ln / 2) + Vector((math.sin(t * 9 + i), math.cos(t * 7 + i * 1.3), math.sin(t * 8 + i * 0.7))) * 1.3) for t in np.linspace(0, 1, 9)]
+    parts.append(tube(pts, rng.uniform(0.07, 0.14), "f", 1))
 objs.append(join(parts, "fibrin"))
 mat = bpy.data.materials.new("cell"); [o.data.materials.append(mat) for o in objs]
 size = L.export_glb(objs, os.path.join(L.OUT_MODELS, "vessel.raw.glb"))

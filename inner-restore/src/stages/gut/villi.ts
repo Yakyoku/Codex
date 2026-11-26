@@ -38,7 +38,7 @@ export const CRYPT_META: ZoneMeta = { ...common, id: 'crypt', hud: '腸・陰窩
 
 async function build(renderer: THREE.WebGPURenderer, tier: string, variant: 'A' | 'B' | 'C', opts: { entrance?: boolean } = {}): Promise<ZoneStage> {
   const M = variant === 'A' ? VILLI_META : variant === 'B' ? COLON_META : CRYPT_META;
-  const W = 130, D = 100, VR_ = 60;   // 区域A：絨毛の先の半径 60µm
+  const W = 130, D = 100, VR_ = 60, VA = 78, VB = 52;   // 区域A：絨毛の先（実物の写真：葉や舌の形に平たい。長さの向き 約156µm・幅 約104µm、高さの丸み 60µm）
   const rich = tier === 'pc-high', vr = tier === 'vr';
   const noiseTex = new THREE.TextureLoader().load('/static/img/noise.png'); noiseTex.wrapS = noiseTex.wrapT = THREE.RepeatWrapping; noiseTex.colorSpace = THREE.NoColorSpace;
   const [gl, nl] = await Promise.all([loadGLB('/static/models/gut.glb'), loadGLB('/static/models/nose.glb')]);
@@ -65,12 +65,13 @@ async function build(renderer: THREE.WebGPURenderer, tier: string, variant: 'A' 
   const scanCol = mix(color(0xffa040), color(0x5fe8d0), H);
   // ---- 床 ----
   // 区域A：絨毛の先の丸い面（刷子縁のびろうど）。区域B：内側の粘液のかたい層（下に上皮が透ける）。区域C：陰窩の口が並ぶ上皮
-  const floorAt = (x: number, z: number) => variant === 'A' ? Math.sqrt(Math.max(0, VR_ * VR_ - x * x - z * z)) - VR_ : 1.6 * Math.sin(x * 0.06 - waveU.value * Math.PI * 2);   // 大腸・陰窩は、ぜん動の波で床が波打つ
+  const floorAt = (x: number, z: number) => variant === 'A' ? VR_ * Math.sqrt(Math.max(0, 1 - (x / VA) ** 2 - (z / VB) ** 2)) - VR_ : 1.6 * Math.sin(x * 0.06 - waveU.value * Math.PI * 2);   // 大腸・陰窩は、ぜん動の波で床が波打つ
   const fm = new THREE.MeshPhysicalNodeMaterial({ side: THREE.DoubleSide });
-  const velvet = texture(noiseTex, positionWorld.xz.mul(1 / 1.6)).g, cells = texture(noiseTex, positionWorld.xz.mul(1 / 22)).r;
+  const velvet = texture(noiseTex, positionWorld.xz.mul(1 / 1.6)).g, cells = texture(noiseTex, positionWorld.xz.mul(1 / (variant === 'A' ? 7 : 22))).r;
   const border = smoothstep(0.55, 0.98, cells).mul(0.6);   // 細胞の境目はやわらかく（くっきりした直線にしない）
   const pink = mix(color(0xc87870), color(0xeeb0a4), H), gel = mix(color(0xb8b090), color(0xdde4e0), H);
-  fm.colorNode = (variant === 'B' ? gel : pink).mul(velvet.mul(0.14).add(0.9)).mul(mix(float(1), float(0.82), border));
+  const pores = variant === 'B' ? float(0) : smoothstep(0.9, 0.97, texture(noiseTex, positionWorld.xz.mul(1 / 9)).b);   // 杯細胞の口（粘液の出る小さな穴）
+  fm.colorNode = (variant === 'B' ? gel : pink).mul(velvet.mul(0.14).add(0.9)).mul(mix(float(1), float(0.82), border)).mul(float(1).sub(pores.mul(0.45)));
   fm.roughnessNode = mix(float(0.6), float(0.25), H); fm.clearcoatNode = H.mul(0.7); fm.clearcoatRoughnessNode = float(0.15);   // 粘液と糖の衣（グリコカリックス）のつや
   fm.emissiveNode = color(0xb83a2a).mul(sick.mul(0.1)).add(color(0xff7a40).mul(waveRing.mul(0.5))).add(color(0xfff0e0).mul(bootRing.mul(0.6))).add(scanCol.mul(u.scan.mul(0.12))).add(color(0xffd8d0).mul(fres.mul(0.06)));
   if (variant === 'B' || variant === 'C') {
@@ -78,12 +79,13 @@ async function build(renderer: THREE.WebGPURenderer, tier: string, variant: 'A' 
     fm.positionNode = positionLocal.add(vec3(0, 0, sin(positionLocal.x.mul(0.06).sub(waveU.mul(Math.PI * 2))).mul(1.6)));
   }
   let floor: THREE.Mesh;
-  if (variant === 'A') { floor = new THREE.Mesh(geos.vtip, fm); floor.scale.setScalar(VR_); floor.position.y = -VR_; }
+  if (variant === 'A') { floor = new THREE.Mesh(geos.vtip, fm); floor.scale.set(VA, VR_, VB); floor.position.y = -VR_; }
   else { const g = new THREE.PlaneGeometry(W * 1.3, D * 1.3, 120, 90); g.rotateX(-Math.PI / 2); g.rotateX(Math.PI / 2); floor = new THREE.Mesh(g, fm); floor.rotation.x = -Math.PI / 2; }
   scene.add(floor);
-  if (variant === 'A') {   // となりの絨毛（丸い山）
-    const nm = new THREE.MeshPhysicalNodeMaterial(); nm.colorNode = color(0xe0a49a); nm.roughnessNode = float(0.3); nm.clearcoatNode = float(0.5);
-    for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2 + 0.3, r = 135 + (i % 3) * 18; const m = new THREE.Mesh(geos.vtip, nm); m.scale.setScalar(52 + (i % 2) * 8); m.position.set(Math.cos(a) * r, -70 - (i % 3) * 14, Math.sin(a) * r); scene.add(m); }
+  if (variant === 'A') {   // となりの絨毛：葉の形の先が、すき間なく並ぶ（実物の走査電顕の写真：舌の形の絨毛が縁を接して敷きつめられる）
+    const nm = new THREE.MeshPhysicalNodeMaterial(); nm.colorNode = color(0xe2a094).mul(texture(noiseTex, positionWorld.xz.mul(1 / 7)).r.mul(0.12).add(0.9)); nm.roughnessNode = float(0.28); nm.clearcoatNode = float(0.6); nm.clearcoatRoughnessNode = float(0.15);
+    const nb: [number, number, number][] = [[1, 0, 0], [-1, 0, 0], [0.5, 1, 0.25], [-0.5, 1, -0.2], [0.5, -1, 0.15], [-0.5, -1, -0.25], [1.5, 1, 0.3], [-1.5, 1, 0.1], [1.5, -1, -0.1], [-1.5, -1, 0.3], [0, 2, 0], [0, -2, 0.2]];
+    nb.forEach(([ix, iz, rot], i) => { const m = new THREE.Mesh(geos.vtip, nm); const k = 0.92 + (i % 3) * 0.05; m.scale.set(VA * k, VR_ * k, VB * k); m.rotation.y = rot; m.position.set(ix * VA * 2.02, -VR_ - 6 - (i % 3) * 5, iz * VB * 2.02); scene.add(m); });
   }
   if (variant === 'B') {   // 内側の粘液ごしに透ける上皮
     const g = new THREE.PlaneGeometry(W * 1.4, D * 1.4); g.rotateX(-Math.PI / 2); const m = new THREE.MeshStandardNodeMaterial(); m.colorNode = mix(color(0xb86860), color(0xd89488), H); const e = new THREE.Mesh(g, m); e.position.y = -26; scene.add(e);

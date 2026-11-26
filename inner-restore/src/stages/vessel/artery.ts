@@ -65,14 +65,14 @@ async function build(renderer: THREE.WebGPURenderer, tier: string, variant: 'A' 
   const plugs: (Plug & { gone: number; shake: number })[] = (variant === 'C' ? [[-0.06, -0.12], [0.08, -0.04], [0.0, 0.14]] : variant === 'A' ? [[-0.22, -0.18], [-0.22, 0.18], [0.24, 0.0]] : [[-0.25, -0.1], [0.05, 0.2], [0.28, -0.15]])
     .map(([fx, fz]) => ({ p: new THREE.Vector3(core.x + fx * W, 0, core.z + fz * D), hp: 1, cleared: false, gone: 0, shake: 0 }));
   // 区域B：プラークの盛り上がりが足もとの高さになる
-  const plaqueH = (x: number, z: number) => { if (variant !== 'B') return 0; let h = 0; for (const pl of plugs) { const k = 1 - pl.gone * 0.85; const d2 = ((x - pl.p.x) / 26) ** 2 + ((z - pl.p.z) / 16) ** 2; if (d2 < 1) h = Math.max(h, 7 * k * (1 - d2) ** 1.5); } return h; };
+  const plaqueH = (x: number, z: number) => { if (variant !== 'B') return 0; let h = 0; for (const pl of plugs) { const k = 1 - pl.gone * 0.85; const d2 = ((x - pl.p.x) / 26) ** 2 + ((z - pl.p.z) / 16) ** 2; if (d2 < 1) h = Math.max(h, 7 * k * (1 - d2) ** 1.5 * (1 + 0.16 * Math.sin(x * 0.55 + z * 0.2) * Math.sin(z * 0.7 - x * 0.15) + 0.08 * Math.sin(x * 1.3 + z * 1.1))); } return h; };   // 実物の写真：盛り上がりはごつごつしている
   const floorAt = (x: number, z: number) => plaqueH(x, z);
   // ---- 床：内皮細胞の並び（流れの向きに細長い）と、つやのある糖の衣 ----
   const fm = new THREE.MeshPhysicalNodeMaterial();
   const cells = texture(noiseTex, vec2(positionWorld.x.mul(1 / 60), positionWorld.z.mul(1 / 16))).r;   // 流れの向きに長い細胞
   const border = smoothstep(0.55, 0.98, cells).mul(0.5);
   fm.colorNode = mix(color(0xb87068), color(0xeaa898), H).mul(mix(float(1), float(0.85), border)).mul(texture(noiseTex, positionWorld.xz.mul(1 / 3)).g.mul(0.1).add(0.92));
-  if (variant === 'B') fm.colorNode = mix(fm.colorNode as N, color(0xe8c890), smoothstep(0.4, 5.0, positionWorld.y).mul(0.6));   // プラークの盛り上がりは、脂質で黄みを帯びる
+  if (variant === 'B') fm.colorNode = mix(fm.colorNode as N, mix(color(0xdcbc78), color(0xf0e2c4), smoothstep(0.3, 0.7, texture(noiseTex, positionWorld.xz.mul(1 / 16)).g)), smoothstep(0.4, 4.0, positionWorld.y).mul(0.75));   // 実物の写真：黄白色でまだら（白い線維の覆いの下に脂質の芯）   // プラークの盛り上がりは、脂質で黄みを帯びる
   fm.roughnessNode = mix(float(0.55), float(0.18), H); fm.clearcoatNode = H.mul(0.8); fm.clearcoatRoughnessNode = float(0.12);
   fm.emissiveNode = color(0xb83a2a).mul(sick.mul(0.12)).add(color(0xff7a40).mul(waveRing.mul(0.5))).add(color(0xfff0e0).mul(bootRing.mul(0.6))).add(scanCol.mul(u.scan.mul(0.12))).add(color(0xffd0c8).mul(fres.mul(0.06)));
   const fg = new THREE.PlaneGeometry(W * 1.3, D * 1.3, 140, 90); fg.rotateX(-Math.PI / 2);
@@ -100,17 +100,17 @@ async function build(renderer: THREE.WebGPURenderer, tier: string, variant: 'A' 
   const rbcGeo = geos.rbc_lod1 ?? geos.rbc_lod0;
   if (variant === 'C') {
     const fbm = new THREE.MeshPhysicalNodeMaterial(); fbm.colorNode = color(0xf0e6dc); fbm.roughnessNode = float(0.4); fbm.clearcoatNode = float(0.4);
-    fibM = new THREE.InstancedMesh(geos.fibrin, fbm, plugs.length * 2); fibM.frustumCulled = false; scene.add(fibM);
-    const rm = new THREE.MeshPhysicalNodeMaterial(); rm.colorNode = color(0x8a1a20); rm.roughnessNode = float(0.45);
+    fibM = new THREE.InstancedMesh(geos.fibrin, fbm, plugs.length * 5); fibM.frustumCulled = false; scene.add(fibM);
+    const rm = new THREE.MeshPhysicalNodeMaterial({ side: THREE.DoubleSide }); rm.colorNode = color(0x8a1a20); rm.roughnessNode = float(0.45);
     plugs.forEach((pl, i) => { for (let k = 0; k < 14; k++) traps.push({ p: pl.p.clone().add(new THREE.Vector3((rnd() - 0.5) * 16, 1 + rnd() * 12, (rnd() - 0.5) * 16)), plug: i, r: rnd() * 6.28 }); });
-    trapR = new THREE.InstancedMesh(rbcGeo, rm, traps.length); trapR.frustumCulled = false; scene.add(trapR);
+    trapR = new THREE.InstancedMesh(geos.rbc_lod0 ?? rbcGeo, rm, traps.length); trapR.frustumCulled = false; scene.add(trapR);
     const pm = new THREE.MeshPhysicalNodeMaterial(); pm.colorNode = color(0xe8dcc8); pm.roughnessNode = float(0.4);
     plt = new THREE.InstancedMesh(geos.platelet, pm, traps.length); plt.frustumCulled = false; scene.add(plt);
   }
   // ---- 頭の上を流れる赤血球（拍動で速さが変わる）、ときどき転がる単球 ----
   const NR = vr ? 60 : rich ? 180 : 110;
   const flow = Array.from({ length: NR }, () => ({ x: (rnd() - 0.5) * W * 1.3, y: 5 + rnd() * 30, z: (rnd() - 0.5) * D * 1.2, r: rnd() * 6.28, s: 0.7 + rnd() * 0.5 }));
-  const frm = new THREE.MeshPhysicalNodeMaterial(); frm.colorNode = mix(color(0x7a1018), color(0xc8202a), H); frm.roughnessNode = float(0.5);
+  const frm = new THREE.MeshPhysicalNodeMaterial({ side: THREE.DoubleSide }); frm.colorNode = mix(color(0x7a1018), color(0xc8202a), H); frm.roughnessNode = float(0.5);
   const fr = new THREE.InstancedMesh(rbcGeo, frm, NR); fr.frustumCulled = false; scene.add(fr);
   const mm = new THREE.MeshPhysicalNodeMaterial({ transparent: true }); mm.colorNode = color(0xe8e0dc); mm.roughnessNode = float(0.4); mm.opacityNode = float(0.85);
   const mono = new THREE.InstancedMesh(geos.monocyte, mm, 3); mono.frustumCulled = false; scene.add(mono);
@@ -187,10 +187,10 @@ async function build(renderer: THREE.WebGPURenderer, tier: string, variant: 'A' 
       });
       if (foamM) foams.forEach((f, i) => { const pl = plugs[f.plug], k = 1 - pl.gone; v.copy(f.p); v.y = plaqueH(f.p.x, f.p.z) * 0.5; foamM!.setMatrixAt(i, m4.compose(v, q.identity(), sv.set(0.35 * k + 0.001, 0.22 * k + 0.001, 0.35 * k + 0.001))); });
       if (foamM) foamM.instanceMatrix.needsUpdate = true;
-      if (fibM) { plugs.forEach((pl, i) => { const k = 1 - pl.gone; for (let j = 0; j < 2; j++) { v.copy(pl.p).add(sv.set(j * 4 - 2, 7 + j * 3, j * 3 - 1.5)); v.x += Math.sin(t * 40 + i) * pl.shake * 0.12; fibM!.setMatrixAt(i * 2 + j, m4.compose(v, q.setFromEuler(new THREE.Euler(j, i, j * 0.5)), sv.set(0.6 * k + 0.001, 0.6 * k + 0.001, 0.6 * k + 0.001))); } }); fibM.instanceMatrix.needsUpdate = true; }
+      if (fibM) { plugs.forEach((pl, i) => { const k = 1 - pl.gone; for (let j = 0; j < 5; j++) { v.copy(pl.p).add(sv.set(Math.sin(j * 2.4) * 6, 4 + (j % 3) * 4, Math.cos(j * 2.4) * 6)); v.x += Math.sin(t * 40 + i) * pl.shake * 0.12; fibM!.setMatrixAt(i * 5 + j, m4.compose(v, q.setFromEuler(new THREE.Euler(j, i + j * 1.3, j * 0.5)), sv.set(0.75 * k + 0.001, 0.75 * k + 0.001, 0.75 * k + 0.001))); } }); fibM.instanceMatrix.needsUpdate = true; }
       if (trapR && plt) { traps.forEach((tr, i) => { const pl = plugs[tr.plug]; v.copy(tr.p); if (pl.gone > 0) v.x += pl.gone * 30; v.y += Math.sin(t + i) * 0.1; const s = pl.gone > 0.9 ? 0.001 : 1;
         trapR!.setMatrixAt(i, m4.compose(v, q.setFromEuler(new THREE.Euler(tr.r, tr.r * 2, 0)), sv.set(s, s, s)));
-        plt!.setMatrixAt(i, m4.compose(v.add(sv.set(1.8, 0.6, 0.4)), q, sv.set(s * 1.2, s * 1.2, s * 1.2))); }); trapR.instanceMatrix.needsUpdate = plt.instanceMatrix.needsUpdate = true; }
+        plt!.setMatrixAt(i, m4.compose(v.add(sv.set(4.6 * Math.cos(i * 2.3), 2.2 * Math.sin(i * 1.7), 4.6 * Math.sin(i * 2.3))), q, sv.set(s * 1.2, s * 1.2, s * 1.2))); /* 血小板は赤血球のくぼみではなく、すき間の網にからむ */ }); trapR.instanceMatrix.needsUpdate = plt.instanceMatrix.needsUpdate = true; }
       sun.intensity = 0.9 + 1.2 * u.lightIn.value;
       (scene.fog as THREE.FogExp2).color.setRGB(0.5 + 0.12 * prog, 0.2 + 0.06 * prog, 0.2 + 0.05 * prog);
       (scene.background as THREE.Color).copy((scene.fog as THREE.FogExp2).color).multiplyScalar(0.5);
