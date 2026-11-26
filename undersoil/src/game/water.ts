@@ -1,6 +1,6 @@
 // 水の橋（メニスカス）：粒と粒の接点にかかる、鼓の形の水。区画の水の量に応じて太る。
 import * as THREE from 'three/webgpu';
-import { float, vec3, mix, normalView, positionViewDirection, dot, pow, oneMinus, saturate, instancedBufferAttribute, viewportSharedTexture, screenUV, positionLocal, normalLocal, time, sin } from 'three/tsl';
+import { float, vec3, mix, smoothstep, normalView, positionViewDirection, dot, pow, oneMinus, saturate, instancedBufferAttribute, viewportSharedTexture, screenUV, positionLocal, normalLocal, time, sin } from 'three/tsl';
 import type { Collider } from './world';
 
 export interface WaterBridges { mesh: THREE.InstancedMesh; count: number; sync(waterOfCell: (cell: number) => number): void; centers: THREE.Vector3[]; cells: number[]; }
@@ -37,10 +37,13 @@ export function buildBridges(colliders: Collider[], pathSamples: THREE.Vector3[]
   const fres = pow(oneMinus(saturate(dot(normalView, positionViewDirection).abs())), 3.0);
   m.roughnessNode = float(0.02); m.metalnessNode = float(0);
   m.ior = 1.333; m.clearcoat = 1; m.clearcoatRoughness = 0.0; m.envMapIntensity = 2.5;
-  m.colorNode = vec3(0.02, 0.025, 0.03);
-  const edge = pow(fres, float(2.5));
-  m.emissiveNode = vec3(0.16, 0.18, 0.2).mul(edge).mul(saturate(a.mul(3.0)));        // 縁の明るい線（水面が光を受ける所）
-  m.opacityNode = saturate(a.mul(4.0)).mul(mix(float(0.05), float(0.7), fres));
+  // 2026-11-26：写真（ガラス玉の間の水の橋、100 倍）では、水の橋は「くびれた透明な首」で、輪郭に明るい細い線と、
+  // 内側にもう一本の暗い線（光が曲がる所）が見え、中は奥が少しゆがんで透ける。前は暗く薄すぎて、ほとんど見えなかった
+  m.colorNode = vec3(0.10, 0.13, 0.15);
+  const edge = pow(fres, float(1.6));
+  const inner = smoothstep(0.25, 0.45, fres).mul(smoothstep(0.7, 0.5, fres));      // 輪郭の内側の、暗い細い帯
+  m.emissiveNode = vec3(0.30, 0.34, 0.38).mul(smoothstep(0.55, 0.95, fres)).mul(saturate(a.mul(3.0)));   // 縁の明るい線
+  m.opacityNode = saturate(a.mul(4.0)).mul(mix(float(0.16), float(0.85), edge).max(inner.mul(0.55)));
   void viewportSharedTexture; void screenUV;
   void normalLocal;
   const mesh = new THREE.InstancedMesh(geo, m, found.length); mesh.name = 'waterBridges'; mesh.renderOrder = 5;
