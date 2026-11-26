@@ -32,6 +32,7 @@
 6. 公開：Netlify 連携の deploy-site（siteId 指定）で proxy の URL を取り、`build-cache/proxy.txt` に保存 → `node scripts/deploy.mjs draft|prod`（`npm run build` のあと）
 
 ## 決定事項
+- **実機診断の結果は、診断ページの「結果を送る」で Netlify のフォーム（名前 diag、formId 6b0829f66228584cbe74807c）に届く**。Netlify 連携の manage-form-submissions（get-submissions）で読み、`public/roadmap/data.json` の diag に足す。
 - **報告のたびに、全体の進み具合ページを更新し、その URL を共有する**（持ち主の指示 2026-11-26）：https://undersoil-web-20261122.netlify.app/roadmap/ 。中身は `public/roadmap/data.json`（各項目の進み具合 s＝0〜1、次にやること、確認待ち、歩み）。全体の割合はページが重みから自動で計算する。
 - リポジトリは Yakyoku/Codex、本体は `undersoil/`、ブランチは `claude/undersoil-web-game-2niuh3`（main には push しない）。公開は Netlify 連携で直接。
 - Netlify は新しいサイト `undersoil-web-20261122`（持ち主の指示）。本番デプロイは 1 回 15 クレジットなので節目だけ。下書きは 0。
