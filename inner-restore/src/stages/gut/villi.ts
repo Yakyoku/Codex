@@ -68,7 +68,7 @@ async function build(renderer: THREE.WebGPURenderer, tier: string, variant: 'A' 
   const floorAt = (x: number, z: number) => variant === 'A' ? Math.sqrt(Math.max(0, VR_ * VR_ - x * x - z * z)) - VR_ : 1.6 * Math.sin(x * 0.06 - waveU.value * Math.PI * 2);   // 大腸・陰窩は、ぜん動の波で床が波打つ
   const fm = new THREE.MeshPhysicalNodeMaterial({ side: THREE.DoubleSide });
   const velvet = texture(noiseTex, positionWorld.xz.mul(1 / 1.6)).g, cells = texture(noiseTex, positionWorld.xz.mul(1 / 22)).r;
-  const border = smoothstep(0.62, 0.9, cells);
+  const border = smoothstep(0.55, 0.98, cells).mul(0.6);   // 細胞の境目はやわらかく（くっきりした直線にしない）
   const pink = mix(color(0xc87870), color(0xeeb0a4), H), gel = mix(color(0xb8b090), color(0xdde4e0), H);
   fm.colorNode = (variant === 'B' ? gel : pink).mul(velvet.mul(0.14).add(0.9)).mul(mix(float(1), float(0.82), border));
   fm.roughnessNode = mix(float(0.6), float(0.25), H); fm.clearcoatNode = H.mul(0.7); fm.clearcoatRoughnessNode = float(0.15);   // 粘液と糖の衣（グリコカリックス）のつや
@@ -95,10 +95,14 @@ async function build(renderer: THREE.WebGPURenderer, tier: string, variant: 'A' 
     const cm = new THREE.MeshPhysicalNodeMaterial(); cm.colorNode = mix(color(0xb87068), color(0xe8a89c), H); cm.roughnessNode = float(0.3); cm.clearcoatNode = float(0.5);
     for (let x = -W / 2 + 10; x < W / 2; x += 22) for (let z = -D / 2 + 10; z < D / 2; z += 22) crypts.push(new THREE.Vector3(x + ((z / 22) % 2 ? 11 : 0), 0, z));
     const ci = new THREE.InstancedMesh(geos.crypt, cm, crypts.length); const m4 = new THREE.Matrix4();
-    crypts.forEach((p, i) => ci.setMatrixAt(i, m4.compose(p, new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0)), new THREE.Vector3(5, 5, 5)))); scene.add(ci);
+    crypts.forEach((p, i) => ci.setMatrixAt(i, m4.compose(p.clone().setY(-0.8), new THREE.Quaternion(), new THREE.Vector3(5, 5, 3)))); scene.add(ci);
+    // くぼみの入り口：輪の内側の暗い穴（奥がのぞく）
+    const hm = new THREE.MeshBasicNodeMaterial(); const hr = length(tsl.uv().sub(0.5)).mul(2); hm.colorNode = mix(color(0x3a1a18), color(0x8a4a40), smoothstep(0.2, 1.0, hr));
+    const hg = new THREE.CircleGeometry(4.2, 32); hg.rotateX(-Math.PI / 2);
+    const hi = new THREE.InstancedMesh(hg, hm, crypts.length); crypts.forEach((p, i) => hi.setMatrixAt(i, m4.compose(p.clone().setY(0.05), new THREE.Quaternion(), new THREE.Vector3(1, 1, 1)))); scene.add(hi);
     const gm = new THREE.MeshPhysicalNodeMaterial({ transparent: true }); gm.colorNode = color(0xf4e2c0); gm.emissiveNode = color(0xffd890).mul(H.mul(0.5).add(sin(u.time.mul(2)).mul(0.08))); gm.opacityNode = float(0.9);
     const gi = new THREE.InstancedMesh(geos.paneth_granules, gm, crypts.length);
-    crypts.forEach((p, i) => gi.setMatrixAt(i, m4.compose(p.clone().setY(-9), new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0)), new THREE.Vector3(0.7, 0.7, 0.7)))); scene.add(gi);
+    crypts.forEach((p, i) => gi.setMatrixAt(i, m4.compose(p.clone().setY(-9), new THREE.Quaternion(), new THREE.Vector3(0.7, 0.7, 0.7)))); scene.add(gi);
   }
   // ---- 細菌：もとから住む菌（バクテロイデス・ビフィズス菌・アッカーマンシア）と、増えすぎた菌（大腸菌など）----
   const kinds = ['bactero', 'bifido', 'akker', 'ecoli'] as const;
