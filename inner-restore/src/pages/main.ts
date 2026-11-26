@@ -205,14 +205,33 @@ async function main() {
   // ---- 患者の視界 ----
   const pImg = $('patient').querySelector('img') as HTMLImageElement, pSpot = $('patient').querySelector('.spot') as HTMLElement;
   // におい（鼻のステージ）：部屋の景色の色と、ただよう香りの帯で見せる。病のあいだは灰色で、香りの帯がない
-  const breathP = M.patient === 'breath', comfortP = M.patient === 'comfort', circP = M.patient === 'circulation';
+  const breathP = M.patient === 'breath', comfortP = M.patient === 'comfort', circP = M.patient === 'circulation', rhyP = M.patient === 'rhythm';
   const smell = M.patient === 'smell', wc = $('patient').querySelector('.wisps') as HTMLCanvasElement, wx = wc.getContext('2d')!;
   if (smell) $('patient').querySelector('.cap')!.textContent = '患者の感じる におい';
   if (breathP) $('patient').querySelector('.cap')!.textContent = '患者の呼吸';
   if (comfortP) $('patient').querySelector('.cap')!.textContent = '患者のおなかの調子';
   if (circP) $('patient').querySelector('.cap')!.textContent = '患者の足の血のめぐり';
+  if (rhyP) $('patient').querySelector('.cap')!.textContent = '患者の心電図';
   let wispM = 0;
   const drawWisps = (time: number) => {
+    if (rhyP) {
+      // 心電図：病のあいだは、拍の間隔がばらばらで、ところどころ幅の広い余計な拍（期外収縮）が混じる。治るほど、P波・QRS・T波のそろった規則正しい波になる
+      const w = (wc.width = wc.clientWidth || 300), h = (wc.height = wc.clientHeight || 170); wx.clearRect(0, 0, w, h);
+      wx.fillStyle = 'rgba(6,16,12,.6)'; wx.fillRect(0, 0, w, h);
+      wx.strokeStyle = 'rgba(80,160,120,.18)'; wx.lineWidth = 1; for (let gx = 0; gx < w; gx += h / 8) { wx.beginPath(); wx.moveTo(gx, 0); wx.lineTo(gx, h); wx.stroke(); } for (let gy = 0; gy < h; gy += h / 8) { wx.beginPath(); wx.moveTo(0, gy); wx.lineTo(w, gy); wx.stroke(); }
+      const rate = Math.round(112 - 40 * wispM), sec = 4, base = h * 0.62;
+      // 拍の時刻：規則正しい間隔に、病の度合いだけ揺らぎと余計な拍を足す（決まった乱数で、毎コマ同じ形）
+      const rnd = (i: number) => { const x = Math.sin(i * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
+      const iv = 60 / rate, k = 1 - wispM, beats: { t: number; pvc: boolean }[] = [];
+      let bt = Math.floor((time - sec) / iv) - 1; for (let n = 0; n < Math.ceil(sec / iv) + 3; n++, bt++) { const t0 = bt * iv + (rnd(bt) - 0.5) * iv * 0.5 * k; const pvc = k > 0.2 && rnd(bt * 3.1) < 0.25 * k; beats.push({ t: pvc ? t0 - iv * 0.35 : t0, pvc }); }
+      const g = (x: number, c: number, s: number) => Math.exp(-(((x - c) / s) ** 2));
+      const v = (tt: number) => { let y = 0; for (const b of beats) { const d = tt - b.t; if (d < -0.3 || d > 0.6) continue;
+        y += b.pvc ? -0.35 * g(d, 0, 0.05) + 1.0 * g(d, 0.06, 0.06) - 0.4 * g(d, 0.25, 0.09) : 0.12 * g(d, -0.16, 0.035) - 0.12 * g(d, -0.02, 0.01) + 1.0 * g(d, 0, 0.012) - 0.22 * g(d, 0.025, 0.012) + 0.25 * g(d, 0.28, 0.06); } return y; };
+      wx.beginPath(); for (let x = 0; x <= w; x += 2) { const tt = time - (w - x) / w * sec; const y = base - v(tt) * h * 0.42; if (x === 0) wx.moveTo(x, y); else wx.lineTo(x, y); }
+      wx.strokeStyle = 'rgba(120,255,170,.95)'; wx.lineWidth = Math.max(1.5, h * 0.016); wx.shadowBlur = h * 0.05; wx.shadowColor = 'rgba(120,255,170,.8)'; wx.stroke(); wx.shadowBlur = 0;
+      wx.fillStyle = 'rgba(220,255,235,.92)'; wx.font = `${Math.round(h * 0.11)}px IRJP, sans-serif`; wx.fillText(`心拍 ${rate}回/分　${wispM > 0.95 ? 'リズム 正常' : wispM > 0.4 ? 'リズム 少し乱れ' : 'リズム 乱れ'}`, w * 0.05, h * 0.18);
+      return;
+    }
     if (circP) {
       // 足の血のめぐり：足先の温かさ（冷たい青 → 温かい橙）と、足首の脈（弱い → はっきり）
       const w = (wc.width = wc.clientWidth || 300), h = (wc.height = wc.clientHeight || 170); wx.clearRect(0, 0, w, h);
@@ -250,6 +269,7 @@ async function main() {
     }
   };
   function patientView(m: number) {
+    if (rhyP) { wispM = m; pImg.style.filter = `brightness(${(0.55 + 0.45 * m).toFixed(2)}) saturate(${(0.5 + 0.5 * m).toFixed(2)})`; return; }
     if (circP) { wispM = m; pImg.style.filter = `brightness(${(0.55 + 0.45 * m).toFixed(2)}) saturate(${(0.45 + 0.55 * m).toFixed(2)})`; return; }
     if (comfortP) { wispM = m; pImg.style.filter = `brightness(${(0.55 + 0.45 * m).toFixed(2)}) saturate(${(0.45 + 0.55 * m).toFixed(2)})`; return; }
     if (breathP) { wispM = m; pImg.style.filter = `brightness(${(0.55 + 0.45 * m).toFixed(2)}) saturate(${(0.5 + 0.5 * m).toFixed(2)})`; return; }
@@ -426,9 +446,9 @@ async function main() {
       pImg.style.transition = 'none'; pImg.style.filter = 'blur(28px) brightness(2.1) saturate(0.4)'; pImg.style.transform = 'scale(1.06)';
       requestAnimationFrame(() => requestAnimationFrame(() => {
         pImg.style.transition = 'filter 6s cubic-bezier(.2,.6,.2,1), transform 9s ease-out';
-        pImg.style.filter = smell ? `grayscale(${(1 - m).toFixed(2)})` : `blur(${blur.toFixed(1)}px) brightness(${(0.55 + 0.45 * m).toFixed(2)}) saturate(${(0.45 + 0.55 * m).toFixed(2)})`; pImg.style.transform = 'scale(1)'; if (smell || breathP || comfortP || circP) wispM = m;
+        pImg.style.filter = smell ? `grayscale(${(1 - m).toFixed(2)})` : `blur(${blur.toFixed(1)}px) brightness(${(0.55 + 0.45 * m).toFixed(2)}) saturate(${(0.45 + 0.55 * m).toFixed(2)})`; pImg.style.transform = 'scale(1)'; if (smell || breathP || comfortP || circP || rhyP) wispM = m;
       }));
-      say(circP ? (last ? LINES.circLast : LINES.circMid) : comfortP ? (last ? LINES.comfortLast : LINES.comfortMid) : breathP ? (last ? LINES.breathLast : LINES.breathMid) : smell ? (last ? LINES.smellLast : LINES.smellMid) : last ? LINES.sightLast : LINES.sightMid, 7);
+      say(rhyP ? (last ? LINES.rhythmLast : LINES.rhythmMid) : circP ? (last ? LINES.circLast : LINES.circMid) : comfortP ? (last ? LINES.comfortLast : LINES.comfortMid) : breathP ? (last ? LINES.breathLast : LINES.breathMid) : smell ? (last ? LINES.smellLast : LINES.smellMid) : last ? LINES.sightLast : LINES.sightMid, 7);
     }, 4500);
     setTimeout(() => {
       $('patient').classList.remove('full', 'waking'); pImg.style.transition = ''; pImg.style.transform = ''; patientDone = true;
