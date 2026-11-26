@@ -74,7 +74,8 @@ export function buildSwarm(colliders: Collider[], cellOf: (p: THREE.Vector3) => 
   const rim = pow(oneMinus(saturate(dot(normalView, positionViewDirection))), 2.0);
   const R0 = species === 'bacillus' ? 0.04 : 0.035, HL = species === 'bacillus' ? 0.11 : 0.06;   // 枯草菌は長さ約 3µm・太さ 0.8µm（写真の細長さ）
   const grain = smoothstep(0.55, 0.85, mx_noise_float(lp.mul(90.0).add(aPh.mul(13.0))).add(0.5));
-  const base = species === 'bacillus' ? vec3(0.46, 0.45, 0.44) : vec3(0.44, 0.44, 0.36);
+  // 2026-11-26：遠くでは白い棒（糸くず）に見えていたので、本物の写真（位相差：暗い灰色の棒）に合わせて暗く、光らせない
+  const base = species === 'bacillus' ? vec3(0.27, 0.265, 0.25) : vec3(0.25, 0.25, 0.20);
   let col = base.mul(mix(float(1.0), float(0.72), grain));
   // 芽胞：細胞の長軸上、中ほど（やや端寄り）に楕円
   const so = aPh.sub(0.5).mul(HL * 0.6), sd = vec3(lp.x.div(R0 * 0.62), lp.y.sub(so).div(HL * 0.55), lp.z.div(R0 * 0.62)).length();
@@ -85,7 +86,7 @@ export function buildSwarm(colliders: Collider[], cellOf: (p: THREE.Vector3) => 
   m.colorNode = col;
   const uHi = uniform(new THREE.Vector3()), uHiOn = uniform(0);
   const near = smoothstep(2.2, 0.8, aPos.distance(uHi)).mul(uHiOn);
-  m.emissiveNode = col.mul(0.25).add(vec3(0.55, 0.38, 0.16).mul(rim.mul(0.7).add(0.3)).mul(near));
+  m.emissiveNode = col.mul(0.06).add(vec3(0.55, 0.38, 0.16).mul(rim.mul(0.7).add(0.3)).mul(near));
   m.opacityNode = mix(float(0.62), float(0.95), rim).max(near.mul(0.9));
   m.roughnessNode = float(0.5); m.metalnessNode = float(0);
   void hash; void instanceIndex;

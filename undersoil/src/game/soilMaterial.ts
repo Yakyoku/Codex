@@ -79,7 +79,12 @@ export function makeSoilMaterial(kind: GrainKind, na: THREE.Texture, detail: THR
     const rim = pow(oneMinus(saturate(dot(normalView, positionViewDirection))), 2.0);
     m.emissiveNode = vec3(0.40, 0.36, 0.28).mul(rim).mul(0.35);                   // 縁の暖かい透け
     const stain = saturate(oneMinus(ao).mul(2.2).sub(0.3)).mul(saturate(d.g.mul(1.5).sub(0.2)));
-    m.colorNode = mix(colF, vec3(0.32, 0.20, 0.07), stain.mul(0.6));   // くぼみの鉄のしみ
+    // 2026-11-26：石英は透き通った鉱物なので、正面（光が奥へ抜ける所）は奥の暗さが透けて暗く、縁ほど反射で明るい（ガラス玉の見え方）
+    const face = saturate(dot(normalView, positionViewDirection));
+    const glass = mix(float(1.0), float(0.38), smoothstep(0.35, 0.95, face));
+    // 粘土の膜（薄片の写真）：一部の粒の表面を、黄褐色の薄い膜がおおう。くぼみほど厚い
+    const coatOn = smoothstep(0.55, 0.75, seed).mul(saturate(oneMinus(ao).mul(1.4).add(d.g.sub(0.4)))).mul(0.55);
+    m.colorNode = mix(mix(colF.mul(glass), vec3(0.32, 0.20, 0.07), stain.mul(0.6)), vec3(0.26, 0.15, 0.05), coatOn);   // くぼみの鉄のしみ、粘土の膜
     m.transmission = 0; m.thickness = 0;
     m.ior = 1.54;
   }
