@@ -23,7 +23,7 @@ export interface World {
   find(kind: GrainKind, from: THREE.Vector3, fwd: THREE.Vector3): { p: THREE.Vector3; r: number; geo?: THREE.BufferGeometry; matrix?: THREE.Matrix4 } | null;
 }
 
-export async function buildWorld(base: string, opts: { grainLod: 0 | 1; density: number; cheap?: boolean; lite?: boolean }): Promise<World> {
+export async function buildWorld(base: string, opts: { grainLod: 0 | 1; density: number; cheap?: boolean; lite?: boolean; far3?: boolean }): Promise<World> {
   const rng = makeRng(layout.seed);
   const path = new THREE.CatmullRomCurve3(layout.path.map((p) => new THREE.Vector3(p[0], p[1], p[2])), false, 'catmullrom', 0.5);
   const samples = path.getSpacedPoints(160);
@@ -112,7 +112,7 @@ export async function buildWorld(base: string, opts: { grainLod: 0 | 1; density:
   scatter(Math.round(layout.clayCount * opts.density), [['clay', 1]], layout.clayRadius as [number, number], -0.05, false, true);
 
   // 互換・VR：いちばん遠い形（LOD2）の粒は、すべて 80 面の形（LOD3）にする（三角形の予算）
-  if (opts.lite && !(typeof location !== 'undefined' && location.search.includes('nolod3'))) for (const p of placements) if (p.lod === 2) p.lod = 3;   // 確認用：?nolod3 で前の形
+  if ((opts.lite || opts.far3) && !(typeof location !== 'undefined' && location.search.includes('nolod3'))) for (const p of placements) if (p.lod === 2) p.lod = 3;   // 確認用：?nolod3 で前の形
   // 3) 素材を読み、種類×LOD ごとにインスタンス描画にまとめる
   const names = [...new Set(placements.map((p) => p.variant))];
   const detail = await loadTexture(base, 'tex/soil_detail.webp', { repeat: true });
@@ -121,7 +121,7 @@ export async function buildWorld(base: string, opts: { grainLod: 0 | 1; density:
     const [g, na0, na1, na2] = await Promise.all([loadGLB(base, `models/grains/${nm}.glb`), loadTexture(base, `models/grains/${nm}_na.webp`), loadTexture(base, `models/grains/${nm}_lod1_na.webp`), loadTexture(base, `models/grains/${nm}_lod2_na.webp`)]);
     const geo: THREE.BufferGeometry[] = [];
     for (const l of [0, 1, 2]) { const o = g.scene.getObjectByName(`${nm}_LOD${l}`) as THREE.Mesh; geo[l] = o.geometry; }
-    if (opts.lite) geo[3] = shrinkWrap(geo[2]);   // 互換・VR の遠くの粒：80 面の粗い形
+    if (opts.lite || opts.far3) geo[3] = shrinkWrap(geo[2]);   // 互換・VR の遠くの粒：80 面の粗い形
     loaded.set(nm, { geo, na: [na0, na1, na2] });
   }));
   const group = new THREE.Group(); group.name = 'soil';
