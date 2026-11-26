@@ -43,7 +43,7 @@ export async function buildTardigrade(base: string, world: World, lod: 0 | 1): P
   const C = world.cavern.center.clone(); const floorY = C.y - world.cavern.radius * 0.78;   // 空洞の底（まわりの粒の上）
   group.position.set(C.x, floorY, C.z);
   const cellIdx = world.cellAt(C);
-  let wake = 0, walkPh = 0, ang = 0;
+  let wake = 0, walkPh = 0, ang = 0, feedT = 0, nextFeed = 7, feedW = 0;
   const KEYS = ['walk_a', 'walk_b', 'walk_c', 'walk_d'];
   const setKeys = (tun: number, ph: number) => {
     for (const m of meshes) {
@@ -69,10 +69,16 @@ export async function buildTardigrade(base: string, world: World, lod: 0 | 1): P
       const tun = 1 - ss(0.1, 0.9, wake);
       if (wake > 0.9) {
         // ゆっくり歩く：1 周期（約 1.6 秒）で約 9.4 単位進む。空洞の底を大きな円を描いて歩く
-        walkPh += dt * 2.5; ang += dt * 0.12;
+        // ときどき立ち止まり、頭を下げて口を粒の表面に当て、食べる（口の管と咽頭で吸い込む。本物の動画でよく見られるしぐさ）
+        nextFeed -= dt; if (nextFeed <= 0 && feedT <= 0) { feedT = 3.5 + Math.random() * 2; nextFeed = 8 + Math.random() * 6; }
+        if (feedT > 0) feedT -= dt;
+        feedW += ((feedT > 0 ? 1 : 0) - feedW) * (1 - Math.exp(-dt * 3));
+        walkPh += dt * 2.5 * (1 - feedW); ang += dt * 0.12 * (1 - feedW);
         const R = world.cavern.radius * 0.12;
-        group.position.set(C.x + Math.cos(ang) * R, floorY, C.z + Math.sin(ang) * R);
-        group.rotation.y = -ang + Math.PI;   // 進む向き（円の接線）へ頭を向ける
+        const pump = Math.sin(performance.now() / 1000 * 2 * Math.PI * 2.2) * 0.35 * feedW;   // 咽頭のポンプ（毎秒 約 2 回）に合わせて、頭が小さく前後する
+        group.position.set(C.x + Math.cos(ang) * R, floorY - feedW * 0.8, C.z + Math.sin(ang) * R);
+        group.rotation.set(0, -ang + Math.PI, 0);   // 進む向き（円の接線）へ頭を向ける
+        group.rotateX(-0.16 * feedW); group.translateZ(-pump);
       }
       setKeys(tun, walkPh);
     },

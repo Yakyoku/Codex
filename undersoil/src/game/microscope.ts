@@ -32,8 +32,9 @@ export async function buildMicroscope(base: string) {
     </div>
     <div class="scope-cg"><video muted loop playsinline preload="none"></video><div class="scope-tag">ゲームで描いた姿<small></small></div></div>
     <div class="scope-bar"><b class="scope-name"></b><span class="scope-scale"></span>
-      <button type="button" class="scope-btn" data-a="meet">本物に会うには</button><button type="button" class="scope-btn" data-a="parts">部分の名前</button><button type="button" class="scope-btn" data-a="cg">ゲームの姿と比べる</button><button type="button" class="scope-btn" data-a="close" aria-label="とじる">×</button></div>`;
+      <button type="button" class="scope-btn" data-a="meet">本物に会うには</button><button type="button" class="scope-btn" data-a="parts">部分の名前</button><button type="button" class="scope-btn" data-a="cmp">ゲームの中と見比べる</button><button type="button" class="scope-btn" data-a="cg">Blender で描いた姿</button><button type="button" class="scope-btn" data-a="close" aria-label="とじる">×</button></div>`;
   document.body.append(frame);
+  const cmpTag = document.createElement('div'); cmpTag.className = 'cmp-tag'; cmpTag.innerHTML = 'ゲームの中の姿<small>いま土の中にいる、その生き物</small>'; document.body.append(cmpTag);
   const $ = <T extends Element>(s: string) => frame.querySelector(s) as T;
   const img = $<HTMLImageElement>('.scope-real img'), vid = $<HTMLVideoElement>('.scope-real video'), cgv = $<HTMLVideoElement>('.scope-cg video');
   const canWebm = vid.canPlayType('video/webm; codecs="vp9"') !== '';
@@ -69,7 +70,8 @@ export async function buildMicroscope(base: string) {
   $('.scope-real').addEventListener('click', (e) => { const r = (e.currentTarget as HTMLElement).getBoundingClientRect(); next((e as MouseEvent).clientX < r.left + r.width / 2 ? -1 : 1); });
   frame.querySelectorAll('.scope-btn').forEach((b) => b.addEventListener('click', (e) => {
     e.stopPropagation(); const a = (b as HTMLElement).dataset.a;
-    if (a === 'close') { frame.classList.remove('on'); vid.pause(); cgv.pause(); cur = null; return; }
+    if (a === 'cmp') { const on = !document.body.classList.contains('compare'); document.body.classList.toggle('compare', on); b.classList.toggle('on', on); holdT = -60; return; }
+    if (a === 'close') { document.body.classList.remove('compare'); frame.classList.remove('on'); vid.pause(); cgv.pause(); cur = null; return; }
     if (a === 'meet') { const on = !frame.classList.contains('meet-on'); frame.classList.toggle('meet-on', on); b.classList.toggle('on', on); holdT = -30; }
     else if (a === 'parts') { showParts = !showParts; frame.classList.toggle('parts-on', showParts); b.classList.toggle('on', showParts); holdT = -20; }
     else { showCg = !showCg; frame.classList.toggle('cg-on', showCg); b.classList.toggle('on', showCg); if (showCg && cur && MICRO[cur]) void cgv.play().catch(() => {}); else cgv.pause(); }
@@ -79,6 +81,8 @@ export async function buildMicroscope(base: string) {
     has: (id: string) => id in MEDIA,
     /** 枠が出ているか。出ている間は、本体の画面を左へずらして、枠が生き物に重ならないようにする */
     get on3d() { return cur !== null && frame.classList.contains('on'); },
+    /** 見比べる表示か（本体の映像を、画面の左半分の中央に寄せる） */
+    get compare() { return document.body.classList.contains('compare'); },
     show(id: string, name: string) {
       list = MEDIA[id] ?? []; if (!list.length) return;
       cur = id; const cg = MICRO[id];
@@ -88,7 +92,7 @@ export async function buildMicroscope(base: string) {
       $('.scope-name').textContent = name; $('.scope-scale').textContent = SCALE[id] ?? '';
       setMedia(0); frame.classList.add('on');
     },
-    hide() { cur = null; list = []; frame.classList.remove('on'); vid.pause(); cgv.pause(); },
+    hide() { document.body.classList.remove('compare'); frame.querySelectorAll('.scope-btn[data-a="cmp"]').forEach((x) => x.classList.remove('on')); cur = null; list = []; frame.classList.remove('on'); vid.pause(); cgv.pause(); },
     /** 写真は 8 秒ごとに次へ（動画は 10 秒か、1 回流し終えたら次へ）。「部分の名前」を押した直後は、しばらく止める */
     tick(dt: number) {
       if (!cur || list.length < 2) return; holdT += dt;

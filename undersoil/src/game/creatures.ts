@@ -56,7 +56,7 @@ export async function buildCreatures(base: string, world: World, opts: { lod: 0 
   const cell = new THREE.MeshStandardNodeMaterial();
   { const g = saturate(mx_noise_float(positionLocal.mul(9.0)).mul(0.6).add(mx_worley_noise_float(positionLocal.mul(5.0)).mul(-0.5)).add(0.6));
     cell.colorNode = mix(vec3(0.10, 0.09, 0.07), vec3(0.24, 0.21, 0.15), g); cell.roughnessNode = float(0.85); }
-  const list: { root: THREE.Object3D; active: THREE.Object3D[]; cyst: THREE.Object3D[]; cvMesh: THREE.Object3D | null; cellIdx: number; home: THREE.Vector3; ph: number; a: number; axis: THREE.Vector3 }[] = [];
+  const list: { root: THREE.Object3D; active: THREE.Object3D[]; cyst: THREE.Object3D[]; cvMesh: THREE.Object3D | null; cellIdx: number; home: THREE.Vector3; ph: number; a: number; axis: THREE.Vector3; s: number; rate: number; modeT: number; rollA: number }[] = [];
   for (let k = 0; k < opts.count; k++) {
     const root = gltf.scene.clone(true); const active: THREE.Object3D[] = [], cyst: THREE.Object3D[] = []; let cvMesh: THREE.Object3D | null = null;
     root.traverse((o) => {
@@ -77,14 +77,24 @@ export async function buildCreatures(base: string, world: World, opts: { lod: 0 
     const u = 0.42 + 0.16 * k + 0.03 * Math.sin(k * 7.1); const home = world.path.getPointAt(Math.min(0.92, u));
     home.x += Math.sin(k * 3.3) * 1.5; home.y += 0.6 + Math.cos(k * 2.1) * 1.2; home.z += Math.cos(k * 4.7) * 1.5;
     const tan = world.path.getTangentAt(Math.min(0.92, u));
-    list.push({ root, active, cyst, cvMesh, cellIdx: world.cellAt(home), home, ph: k * 2.4, a: 0, axis: tan });
+    list.push({ root, active, cyst, cvMesh, cellIdx: world.cellAt(home), home, ph: k * 2.4, a: 0, axis: tan, s: k * 2.4, rate: 1, modeT: 1 + k, rollA: 0 });
     group.add(root);
   }
   const p = new THREE.Vector3(), nxt = new THREE.Vector3(), side = new THREE.Vector3(), up = new THREE.Vector3(0, 1, 0), m = new THREE.Matrix4(), q = new THREE.Quaternion(), roll = new THREE.Quaternion(), fwd = new THREE.Vector3(0, 0, -1);
-  const posAt = (c: (typeof list)[number], t: number, out: THREE.Vector3) => {
-    // すき間の中を、ゆるい8の字に巡る（体長の約1.5倍/秒。泳ぐ速さの実測値は未確認）
-    const s = t * 0.42 + c.ph; side.crossVectors(c.axis, up).normalize();
-    return out.copy(c.home).addScaledVector(c.axis, Math.sin(s) * 4.2).addScaledVector(side, Math.sin(s * 2) * 1.6).addScaledVector(up, Math.cos(s * 1.3) * 1.1);
+  // 泳ぎ方（2026-11-26、本物の動画〈iNaturalist、Shelpiakov〉と文献に合わせた）：
+  //   ・らせんの道すじを描き、体の長い軸のまわりを回りながら進む（Kim et al. 2016）
+  //   ・速さは同属の C. steinii の実測に近い毎秒約 50µm（5 単位）。ときどき止まって向きを変え、少し後ろへ下がる（繊毛虫に普通の動き）
+  const posAt = (c: (typeof list)[number], s: number, t: number, out: THREE.Vector3) => {
+    side.crossVectors(c.axis, up).normalize();
+    out.copy(c.home).addScaledVector(c.axis, Math.sin(s) * 4.2).addScaledVector(side, Math.sin(s * 2) * 1.6).addScaledVector(up, Math.cos(s * 1.3) * 1.1);
+    const hx = Math.cos(t * 2.4 + c.ph) * 0.45, hy = Math.sin(t * 2.4 + c.ph) * 0.45;   // らせん（半径 4.5µm）
+    return out.addScaledVector(side, hx).addScaledVector(up, hy);
+  };
+  const step = (c: (typeof list)[number], dt: number) => {
+    c.modeT -= dt;
+    if (c.modeT <= 0) { const r = Math.random(); if (c.rate > 0.5) { c.rate = r < 0.35 ? -0.35 : 0.06; c.modeT = c.rate < 0 ? 0.7 + Math.random() * 0.5 : 0.8 + Math.random() * 1.2; } else { c.rate = 1; c.modeT = 2 + Math.random() * 3; } }
+    // 経路の長さ約 20 単位を 1 周 2π として、毎秒 5 単位で進むよう、位相の進みを決める
+    const want = c.rate * 1.55; c.s += want * dt * 1.0; c.rollA += dt * (1.2 + 3.0 * Math.max(0, c.rate));
   };
   return {
     group,
@@ -96,8 +106,10 @@ export async function buildCreatures(base: string, world: World, opts: { lod: 0 
         c.a += Math.sign(target - c.a) * Math.min(Math.abs(target - c.a), dt * 0.5);
         const act = c.a > 0.5; for (const o of c.active) o.visible = act && !o.name.endsWith(other); for (const o of c.cyst) o.visible = !act && !o.name.endsWith(other) && !o.name.startsWith('colpoda_cyst_granules');
         if (!act) { c.root.position.copy(c.home); c.root.position.y -= 1.8; c.root.scale.setScalar(1); continue; }
-        posAt(c, t, p); posAt(c, t + 0.05, nxt); nxt.sub(p).normalize();
-        q.setFromUnitVectors(fwd, nxt); roll.setFromAxisAngle(fwd, t * 2.2 + c.ph); q.multiply(roll); // 体の長い軸のまわりに回りながら進む
+        step(c, dt); posAt(c, c.s, t, p); posAt(c, c.s + Math.sign(c.rate || 1) * 0.05 + 0.0001, t + 0.03, nxt); nxt.sub(p);
+        const ud = c.root.userData as { head?: THREE.Quaternion }; ud.head ??= c.root.quaternion.clone();
+        if (nxt.lengthSq() > 1e-8) { nxt.normalize(); if (c.rate < 0) nxt.negate(); ud.head.slerp(new THREE.Quaternion().setFromUnitVectors(fwd, nxt), 1 - Math.exp(-dt * 4)); }   // 向きはなめらかに変える（後ろへ下がるときも頭は前のまま）
+        roll.setFromAxisAngle(fwd, c.rollA); q.copy(ud.head).multiply(roll);   // 体の長い軸のまわりに回りながら進む（止まると回りもゆっくり）
         c.root.position.copy(p); c.root.quaternion.copy(q); c.root.scale.setScalar(0.6 + 0.4 * Math.min(1, (c.a - 0.5) * 2));
         if (c.cvMesh) c.cvMesh.scale.setScalar(0.55 + 0.45 * Math.abs(Math.sin(t * 0.9 + c.ph))); // 収縮胞の拍動
         void m;

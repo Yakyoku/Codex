@@ -16,7 +16,8 @@
   <p id="sndState" style="color:var(--dim);font-size:14px;margin:10px 0 0"></p>
   <textarea id="short" readonly placeholder="ここに結果が出ます"></textarea>
   <div class="row">
-    <button class="btn primary" id="copy" disabled>結果をコピー</button>
+    <button class="btn primary" id="send" disabled>結果を送る</button>
+    <button class="btn" id="copy" disabled>結果をコピー</button>
     <button class="btn" id="reAuto">自動で測り直す</button>
     <button class="btn" id="reGPU">WebGPU で測る</button>
     <button class="btn" id="reGL">WebGL 2 で測る</button>
@@ -26,5 +27,7 @@
   </div>
 </div>
 <script type="module" src="/src/pages/diag.ts"></script>
+<!-- 実機診断の結果を Netlify のフォームで受け取る（貼り付けなくても、Claude が読める）。Netlify がこの形を読み取るための、隠したフォーム -->
+<form name="diag" data-netlify="true" netlify-honeypot="bot" hidden><input name="result"><input name="note"><input name="bot"></form>
 </body>
 </html>

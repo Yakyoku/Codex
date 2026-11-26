@@ -234,7 +234,7 @@ async function main() {
       if (postSurface) postSurface.render(); else renderer.render(surface.scene, surface.camera);
     } else {
       // 拡大像の枠（右上）が出ている間は、映像を左へずらし、紹介している生き物が枠に隠れないようにする
-      viewShift += ((scope.on3d ? 0.15 : 0) - viewShift) * (1 - Math.exp(-dt * 3));
+      viewShift += ((scope.compare ? 0.25 : scope.on3d ? 0.15 : 0) - viewShift) * (1 - Math.exp(-dt * 3));
       if (viewShift > 0.002) camera.setViewOffset(innerWidth, innerHeight, innerWidth * viewShift, 0, innerWidth, innerHeight); else if (camera.view) camera.clearViewOffset();
       if (post) post.render(); else renderer.render(scene, camera);
     }

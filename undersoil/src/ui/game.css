@@ -137,3 +137,9 @@ dialog.notebook h2 small { font-size: .7em; color: var(--dim); letter-spacing: .
 .nb-choice { min-width: 9em; } .nb-choice.ok { background: #4f8a4a; border-color: #4f8a4a; color: #fff; } .nb-choice.ng { background: #8a4a3f; border-color: #8a4a3f; color: #fff; }
 .nb-res { min-height: 1.6em; margin: 10px 0 0; color: #ffd27a; }
 .scope-btn[data-a="close"] { padding: 5px 9px; }
+/* 見比べる：右半分に本物、左半分にゲームの中の姿 */
+body.compare .scope { width: min(48vw, 900px); top: 50%; transform: translateY(-50%); }
+body.compare .card, body.compare svg.pointer .ptag { opacity: .25; }
+.cmp-tag { position: fixed; left: 25vw; top: 6%; transform: translateX(-50%); color: #ffd27a; font-weight: 700; font-size: clamp(14px, 1.4vw, 22px); letter-spacing: .08em; text-align: center; text-shadow: 0 0 6px #000; opacity: 0; pointer-events: none; transition: opacity .4s ease; z-index: 8; }
+.cmp-tag small { display: block; color: #efe6d8; font-weight: 500; font-size: .7em; letter-spacing: .04em; }
+body.compare .cmp-tag { opacity: 1; }

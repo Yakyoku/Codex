@@ -46,6 +46,10 @@
   .ms li .st.d { background: var(--done); border-color: var(--done); } .ms li .st.p { background: conic-gradient(var(--part) var(--a), transparent 0); border-color: var(--part); }
   .ms li em { font-style: normal; display: block; color: var(--dim); font-size: 12.5px; line-height: 1.5; }
   .ms li .v { text-align: right; color: var(--dim); font-size: 12.5px; }
+  .sub { color: var(--dim); font-size: 13px; margin: -4px 0 10px; }
+  .dtab table { width: 100%; border-collapse: collapse; font-size: 13.5px; } .dtab th, .dtab td { text-align: left; padding: 6px 8px; border-top: 1px solid var(--line); vertical-align: top; } .dtab th { color: var(--dim); font-weight: 500; white-space: nowrap; }
+  .thumb { width: 64px; height: 44px; object-fit: cover; border-radius: 6px; border: 1px solid var(--line); cursor: zoom-in; margin-top: 4px; display: block; }
+  #lb { background: #17120e; color: var(--ink); border: 1px solid var(--line); border-radius: 14px; padding: 12px; max-width: min(96vw, 1100px); } #lb::backdrop { background: rgba(0,0,0,.7); } #lb img { display: block; max-width: 100%; max-height: 78vh; border-radius: 8px; } #lb p { margin: 8px 2px; } #lb button { font: inherit; color: var(--ink); background: none; border: 1px solid var(--line); border-radius: 999px; padding: 4px 14px; cursor: pointer; }
   .hist { list-style: none; margin: 0; padding: 0; } .hist li { padding: 5px 0; border-top: 1px solid var(--line); font-size: 14px; } .hist b { color: var(--dim); font-weight: 500; margin-right: 10px; }
   @media (max-width: 640px) { .hero { grid-template-columns: 1fr; justify-items: center; text-align: center; } .ms > summary { grid-template-columns: 48px 1fr 70px; } .track > div span { font-size: 9px; } }
 </style>
@@ -70,8 +74,10 @@
   <section class="box"><h2>次にやること</h2><ol class="next" id="next"></ol></section>
   <section class="box"><h2>持ち主の確認・決定を待っていること</h2><ul class="wait" id="wait"></ul></section>
   <div id="ms"></div>
+  <section class="box"><h2>実機診断の結果</h2><p class="sub">実機診断ページの「結果を送る」で届いた結果と、そのあとの対応です。</p><div class="dtab" id="diag"></div></section>
   <section class="box"><h2>これまでの歩み</h2><ul class="hist" id="hist"></ul></section>
 </main>
+<dialog id="lb"><img alt=""><p></p><button type="button" onclick="this.closest('dialog').close()">とじる</button></dialog>
 <script>
 fetch('./data.json', { cache: 'no-store' }).then((r) => r.json()).then((d) => {
   const $ = (id) => document.getElementById(id);
@@ -87,7 +93,9 @@ fetch('./data.json', { cache: 'no-store' }).then((r) => r.json()).then((d) => {
   $('wait').innerHTML = d.waiting.map((t) => `<li>${t}</li>`).join('');
   $('ms').innerHTML = d.milestones.map((m) => { const p = pctOf(m); return `<details class="ms ${m.id === curId ? 'cur' : ''}" ${m.id === curId ? 'open' : ''}>
     <summary><span class="id">${m.id}</span><span class="nm">${m.name}<small>${m.summary}</small></span><span class="pc"><b>${Math.round(p * 100)}%</b><div class="bar"><i style="width:${p * 100}%"></i></div></span></summary>
-    <ul>${m.items.map((it) => `<li><span class="st ${it.s >= 1 ? 'd' : it.s > 0 ? 'p' : ''}" style="--a:${it.s * 360}deg"></span><span>${it.t}${it.note ? `<em>${it.note}</em>` : ''}</span><span class="v">${it.s >= 1 ? '完了' : it.s > 0 ? Math.round(it.s * 100) + '%' : '未着手'}</span></li>`).join('')}</ul></details>`; }).join('');
+    <ul>${m.items.map((it) => `<li><span class="st ${it.s >= 1 ? 'd' : it.s > 0 ? 'p' : ''}" style="--a:${it.s * 360}deg"></span><span>${it.t}${it.note ? `<em>${it.note}</em>` : ''}${it.img ? `<img class="thumb" src="${it.img}" alt="" data-cap="${it.t}" loading="lazy">` : ''}</span><span class="v">${it.s >= 1 ? '完了' : it.s > 0 ? Math.round(it.s * 100) + '%' : '未着手'}</span></li>`).join('')}</ul></details>`; }).join('');
+  $('diag').innerHTML = (d.diag || []).length ? `<table><tr><th>日付</th><th>機器</th><th>三角形</th><th>なめらかさ（fps）</th><th>エラー</th><th>対応</th></tr>${d.diag.map((x) => `<tr><td>${x.d}</td><td>${x.dev}<br><small>${x.tier}</small></td><td>${x.tri}</td><td>${x.fps}</td><td>${x.err}</td><td>${x.action}</td></tr>`).join('')}</table>` : 'まだありません';
+  document.addEventListener('click', (e) => { const t = e.target; if (t.classList && t.classList.contains('thumb')) { e.preventDefault(); const lb = $('lb'); lb.querySelector('img').src = t.src; lb.querySelector('p').textContent = t.dataset.cap; lb.showModal(); } });
   $('hist').innerHTML = d.history.map((h) => `<li><b>${h.d}</b>${h.t}</li>`).join('');
 });
 </script>

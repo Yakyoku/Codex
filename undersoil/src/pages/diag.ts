@@ -94,8 +94,8 @@ async function main() {
       new Date().toISOString().slice(0, 16),
     ].join(' | ');
     ($('short') as HTMLTextAreaElement).value = short;
-    $('status').textContent = '計測が終わりました。「結果をコピー」を押して、Claude に貼り付けてください。';
-    ($('copy') as HTMLButtonElement).disabled = false;
+    $('status').textContent = '計測が終わりました。「結果を送る」を押すと、そのまま Claude に届きます（貼り付けは不要です）。';
+    ($('copy') as HTMLButtonElement).disabled = false; ($('send') as HTMLButtonElement).disabled = false;
     W.__state = { ready: true, done: true, isWebGPU, short, errors };
   }
   // 音の確認：押すと和音が鳴る。鳴らない場合の原因を切り分けるため、状態を表示する
@@ -103,6 +103,17 @@ async function main() {
     const { createAudio } = await import('../audio/engine');
     const a = (W.__audio as ReturnType<typeof createAudio>) ?? createAudio(); W.__audio = a; a.start(); a.chime();
     setTimeout(() => { const as = (navigator as unknown as { audioSession?: { type: string } }).audioSession; $('sndState').textContent = `音声：${(a as unknown as { state?: string }).state ?? '開始'}／音声セッション：${as ? as.type : '非対応'}`; }, 600);
+  });
+  // 結果を送る：Netlify のフォームに送る。Claude は Netlify 連携で読み、全体の進み具合ページに反映する
+  $('send').addEventListener('click', async () => {
+    const btn = $('send') as HTMLButtonElement; btn.disabled = true; btn.textContent = '送っています…';
+    const note = prompt('気づいたことがあれば書いてください（なくても大丈夫です）') ?? '';
+    try {
+      const body = new URLSearchParams({ 'form-name': 'diag', result: ($('short') as HTMLTextAreaElement).value, note, bot: '' });
+      const r = await fetch('/', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: body.toString() });
+      if (!r.ok) throw new Error(String(r.status));
+      btn.textContent = '送りました'; $('status').textContent = '送りました。Claude が読んで、全体の進み具合ページに反映します。';
+    } catch (e) { btn.disabled = false; btn.textContent = '結果を送る'; $('status').textContent = '送れませんでした（' + String(e) + '）。「結果をコピー」で貼り付けてください。'; }
   });
   $('copy').addEventListener('click', async () => {
     const ta = $('short') as HTMLTextAreaElement;
