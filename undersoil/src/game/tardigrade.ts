@@ -21,16 +21,17 @@ export async function buildTardigrade(base: string, world: World, lod: 0 | 1): P
     const clump = smoothstep(0.1, 0.45, mx_noise_float(positionLocal.mul(3.0)).add(0.2));
     const grain = smoothstep(0.55, 0.85, mx_noise_float(positionLocal.mul(60.0)).add(0.5));
     const fold = smoothstep(0.75, 0.98, sin(positionLocal.z.mul(14.0)).abs());   // 体節の境の細いしわ
-    let col = mix(vec3(0.42, 0.36, 0.24), vec3(0.34, 0.27, 0.15), clump.mul(0.8));
-    col = mix(col, vec3(0.22, 0.17, 0.08), grain.mul(clump).mul(0.6));
+    // 2026-11-26：本物の写真と並べると、中の粒のかたまりがもっと濃く（暗い黄褐色〜こげ茶）、体じゅうにぎっしり見える
+    let col = mix(vec3(0.44, 0.37, 0.22), vec3(0.22, 0.16, 0.06), clump.mul(0.9));
+    col = mix(col, vec3(0.10, 0.075, 0.03), grain.mul(clump.mul(0.7).add(0.3)).mul(0.75));
     col = mix(col, vec3(0.16, 0.13, 0.08), fold.mul(0.45).add(smoothstep(0.55, 0.9, rim).mul(0.7)).min(0.85));
-    body.colorNode = mix(col, vec3(0.62, 0.62, 0.6), claw);
+    body.colorNode = mix(col, vec3(0.14, 0.12, 0.09), claw);   // 鉤爪：写真では細く暗い（灰褐色の硬いクチクラ）
     body.roughnessNode = float(0.4); body.metalnessNode = float(0); body.clearcoat = 0.3; body.clearcoatRoughness = 0.3;
-    body.opacityNode = mix(mix(float(0.5), float(0.95), rim).max(clump.mul(grain).mul(0.7)), float(0.95), claw);
-    body.emissiveNode = col.mul(0.22); }
+    body.opacityNode = mix(mix(float(0.6), float(0.95), rim).max(clump.mul(0.55)).max(clump.mul(grain).mul(0.9)), float(0.9), claw);
+    body.emissiveNode = col.mul(0.18).mul(oneMinus(claw)); }
   // 中身：口の管と咽頭（硬い部分）は明るい灰、腸は橙褐色
   const inner = new THREE.MeshStandardNodeMaterial();
-  { const hard = vc.g; inner.colorNode = mix(vec3(0.40, 0.30, 0.16), vec3(0.55, 0.54, 0.5), smoothstep(0.5, 0.9, hard)); inner.roughnessNode = float(0.6); }
+  { const hard = vc.g; inner.colorNode = mix(vec3(0.20, 0.17, 0.07), vec3(0.42, 0.40, 0.34), smoothstep(0.5, 0.9, hard)); inner.roughnessNode = float(0.6); }   // 腸は食べたもので暗い緑褐色
   const meshes: THREE.Mesh[] = [];
   gltf.scene.traverse((o) => {
     const m = o as THREE.Mesh; if (!m.isMesh) return;
@@ -56,8 +57,10 @@ export async function buildTardigrade(base: string, world: World, lod: 0 | 1): P
     group,
     active: () => wake > 0.8,
     // 見せる位置：空洞の中、道の側の少し上から見下ろす
-    target: () => { const R = world.cavern.radius, toPath = world.path.getPointAt(0.5).sub(C).setY(0).normalize();
-      return { p: group.position.clone().add(new THREE.Vector3(0, 4, 0)), r: 24, view: C.clone().addScaledVector(toPath, R * 0.93).add(new THREE.Vector3(0, -R * 0.12, 0)) }; },
+    // 2026-11-26：前は空洞の端から見下ろしていたので、お尻と腹ばかりが見えていた。本物の写真と同じく、横から（少し上から）見る
+    target: () => { const head = new THREE.Vector3(0, 0, -1).applyQuaternion(group.quaternion).setY(0).normalize(); const side = new THREE.Vector3(-head.z, 0, head.x);
+      const toPath = world.path.getPointAt(0.5).sub(C).setY(0).normalize(); if (side.dot(toPath) < 0) side.negate();   // 道の側の横から
+      return { p: group.position.clone().add(new THREE.Vector3(0, 7, 0)), r: 24, view: group.position.clone().addScaledVector(side, 48).add(new THREE.Vector3(0, 13, 0)) }; },
     update(dt) {
       const c = world.grid.cells[cellIdx];
       // 水が戻ると、乾眠の樽から元の姿に戻る（実際は数十分〜数時間。ゲームでは早回し）

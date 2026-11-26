@@ -14,11 +14,13 @@ function bodyMaterial(na: THREE.Texture) {
   m.normalNode = normalMap(vec3(mix(float(0.5), naT.r, 0.15), mix(float(0.5), naT.g, 0.15), float(1)));
   const rim = pow(oneMinus(saturate(dot(normalView, positionViewDirection))), 1.6);
   const speck = smoothstep(0.62, 0.9, mx_noise_float(positionLocal.mul(25.0)).add(0.5)).add(smoothstep(0.7, 0.95, mx_noise_float(positionLocal.mul(60.0)).add(0.5)).mul(0.7)).min(1.0);
-  const base = mix(vec3(0.42, 0.38, 0.32), vec3(0.30, 0.26, 0.19), speck);
+  // 2026-11-26：本物の動画・写真では、黄みがかった灰緑〜黄褐色で、細かい粒がぎっしり詰まって見える（前は白っぽかった）
+  const fine = smoothstep(0.45, 0.85, mx_noise_float(positionLocal.mul(140.0)).add(0.5));
+  const base = mix(mix(vec3(0.26, 0.25, 0.12), vec3(0.15, 0.14, 0.05), speck), vec3(0.09, 0.085, 0.03), fine.mul(0.55));
   m.colorNode = mix(base, vec3(0.06, 0.06, 0.05), smoothstep(0.55, 0.9, rim));     // 輪郭線は暗く細い
-  m.emissiveNode = base.mul(0.18);
+  m.emissiveNode = base.mul(0.12);
   m.roughnessNode = float(0.45); m.metalnessNode = float(0);
-  m.opacityNode = mix(float(0.42), float(0.95), smoothstep(0.3, 0.9, rim)).max(speck.mul(0.55));
+  m.opacityNode = mix(float(0.62), float(0.95), smoothstep(0.3, 0.9, rim)).max(speck.mul(0.6)).max(fine.mul(0.5));
   return m;
 }
 function innerMaterial(opacity: number, col: [number, number, number]) {
@@ -32,7 +34,7 @@ function ciliaMaterial() {
   const u = uv(); const row = fract(u.x.mul(80.0)); const line = smoothstep(0.0, 0.35, row).mul(smoothstep(1.0, 0.65, row));
   const wave = sin(u.y.mul(42.0).sub(time.mul(26.0)).add(u.x.mul(240.0))).mul(0.5).add(0.5);
   m.colorNode = vec3(0.75, 0.74, 0.7); m.roughnessNode = float(0.6);
-  m.opacityNode = edge.mul(mix(float(0.25), float(1), line)).mul(mix(float(0.55), float(1), wave)).mul(0.32);
+  m.opacityNode = edge.mul(mix(float(0.25), float(1), line)).mul(mix(float(0.55), float(1), wave)).mul(0.14);   // 繊毛は細く、写真ではふちにかすかに見えるだけ
   return m;
 }
 
@@ -43,7 +45,7 @@ export async function buildCreatures(base: string, world: World, opts: { lod: 0 
   const body = bodyMaterial(na), cv = innerMaterial(0.25, [0.46, 0.46, 0.44]), cil = ciliaMaterial();
   const vac = new THREE.MeshStandardNodeMaterial({ transparent: true });
   { const rim = pow(oneMinus(saturate(dot(normalView, positionViewDirection))), 1.5); const dots = smoothstep(0.6, 0.9, mx_noise_float(positionLocal.mul(30.0)).add(0.5));
-    vac.colorNode = mix(mix(vec3(0.36, 0.29, 0.13), vec3(0.18, 0.14, 0.06), dots), vec3(0.08, 0.06, 0.03), smoothstep(0.5, 0.9, rim)); vac.opacityNode = float(0.85); vac.roughnessNode = float(0.5); }
+    vac.colorNode = mix(mix(vec3(0.36, 0.29, 0.13), vec3(0.18, 0.14, 0.06), dots), vec3(0.08, 0.06, 0.03), smoothstep(0.5, 0.9, rim)); vac.opacityNode = float(0.45); vac.roughnessNode = float(0.5); }
   const nuc = new THREE.MeshStandardNodeMaterial({ transparent: true });
   { const g = smoothstep(0.5, 0.9, mx_noise_float(positionLocal.mul(18.0)).add(0.5)); const rim = pow(oneMinus(saturate(dot(normalView, positionViewDirection))), 1.5);
     nuc.colorNode = mix(mix(vec3(0.36, 0.34, 0.29), vec3(0.24, 0.23, 0.2), g), vec3(0.1, 0.1, 0.09), smoothstep(0.55, 0.9, rim)); nuc.opacityNode = float(0.75); }

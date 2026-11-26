@@ -173,7 +173,7 @@ async function main() {
     // 手前の細かい粒で見えなくならないよう、見ている間だけ、カメラのすぐ前（距離の半分まで）は描かない
     camera.near = Math.max(0.08, dist * (dist < 4 ? 0.8 : 0.5)); camera.updateProjectionMatrix();
     if (id === 'bacillus-subtilis') game.swarm.highlight(first.p); if (id === 'pseudomonas-fluorescens') game.swarm2.highlight(first.p);
-    game.lights.fill.intensity = 7 + Math.min(60, dist * 0.9) * 2;
+    game.lights.fill.intensity = 7 + Math.min(60, dist * 0.9) * (dist < 20 ? 0.6 : 2);   // 近い生き物は、照らしすぎると白く飛ぶ
     visit = { get: t, dist, pos, anchor: first.p.clone(), ret: camera.position.clone(), retQ: camera.quaternion.clone() };
     if (camera.position.distanceTo(pos) > 12) { fade.classList.add('on'); setTimeout(() => { if (visit) { camera.position.copy(visit.pos); const f = visit.get(); if (f) camera.lookAt(f.p); } fade.classList.remove('on'); }, 700); }
   };
