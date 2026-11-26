@@ -115,7 +115,7 @@ parts = []
 for i in range(56):   # 細い線維が束にぎっしり並び、そろって波打つ（写真⑤）。束全体が一つの波を共有し、1本ずつ少しずれる
     oy, oz = rng.normal(0, 1.7), rng.normal(0, 1.0); ph = 0.8 + rng.normal(0, 0.25); amp = 1.0 + rng.normal(0, 0.15)
     pts = [(x, oy + amp * math.sin(x / 4.2 + ph) + 0.15 * math.sin(x / 1.7 + i), oz + 0.35 * math.cos(x / 5.5 + ph)) for x in np.linspace(-30, 30, 15)]
-    parts.append(tube(pts, rng.uniform(0.16, 0.3), "c", 1))
+    parts.append(tube(pts, rng.uniform(0.16, 0.3), "c", 1, taper=[0.15 + 0.85 * math.sin(math.pi * k / 14) ** 0.5 for k in range(15)]))
 objs.append(join(parts, "collagen"))
 # ---- 線維芽細胞：平たい星形（中央に核のふくらみ、細い突起）----
 parts = []

@@ -108,9 +108,11 @@ async function build(renderer: THREE.WebGPURenderer, tier: string, variant: 'A' 
     fm.roughnessNode = mix(float(0.5), float(0.16), H); fm.clearcoatNode = H.mul(0.7).add(0.2); fm.clearcoatRoughnessNode = float(0.1);
   } else if (variant === 'C') {
     // コラーゲンの原：淡い、細胞の少ない、波打つ線維（写真⑤。生きた色は確かめられないので、淡い桃色がかった白で）
-    const warp = texture(noiseTex, positionWorld.xz.mul(1 / 30)).r.mul(14);
-    const fib = sin(positionWorld.z.add(warp).mul(1.6).add(sin(positionWorld.x.mul(0.25)).mul(2))).mul(0.5).add(0.5);
-    fm.colorNode = mix(color(0xb89088), color(0xe0c4b8), fib.mul(0.5).add(0.3)).mul(mix(float(0.8), float(1), H));
+    // 線維の向きはゆるくうねり、細い筋が密に並ぶ（規則的な模様にならないよう、ゆがめた雑音から作る）
+    const warp = texture(noiseTex, positionWorld.xz.mul(1 / 45)).r.mul(10);
+    const fib = texture(noiseTex, vec2(positionWorld.x.add(warp).mul(1 / 3.0), positionWorld.z.mul(1 / 8))).r;
+    const fib2 = texture(noiseTex, positionWorld.xz.mul(1 / 14)).b;
+    fm.colorNode = mix(color(0xa88078), color(0xe6cec2), fib.mul(0.55).add(fib2.mul(0.45))).mul(mix(float(0.8), float(1), H));
     fm.roughnessNode = float(0.42); fm.clearcoatNode = float(0.35); fm.clearcoatRoughnessNode = float(0.3);
   } else { fm.colorNode = color(0x3a1612); fm.roughnessNode = float(0.6); }
   fm.emissiveNode = color(0xb83a2a).mul(sick.mul(0.1)).add(color(0xff7a40).mul(waveRing.mul(0.5))).add(color(0xfff0e0).mul(bootRing.mul(0.6))).add(scanCol.mul(u.scan.mul(0.12))).add(color(0xffd0c8).mul(fres.mul(0.05)));
@@ -152,7 +154,7 @@ async function build(renderer: THREE.WebGPURenderer, tier: string, variant: 'A' 
     }
   }
   if (variant === 'C') {   // 生き残った細い心筋の帯：ばらばらの向きに波打つ（写真⑤）
-    for (let i = 0; i < 26; i++) { const a = rnd() * Math.PI; const x = (rnd() - 0.5) * W * 1.1, z = (rnd() - 0.5) * D * 1.1; if (Math.hypot(x, z) < loopR + 10) continue; fibers.push({ x, y: 1.6, z, yaw: a, sx: 0.55 + rnd() * 0.3, sy: 0.32, sz: 0.32 }); }
+    for (let i = 0; i < 44; i++) { const a = rnd() * Math.PI; const x = (rnd() - 0.5) * W * 1.1, z = (rnd() - 0.5) * D * 1.1; if (Math.hypot(x, z) < loopR + 10) continue; fibers.push({ x, y: 1.4 + floorAt(x, z), z, yaw: a, sx: 0.5 + rnd() * 0.35, sy: 0.24, sz: 0.24 }); }
   }
   let fibM: THREE.InstancedMesh | null = null, fibYM: THREE.InstancedMesh | null = null, fibBlock: THREE.InstancedBufferAttribute | null = null;
   const fibY: Inst[] = [];
