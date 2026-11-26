@@ -74,3 +74,13 @@ gurgle = lp(pink(len(t)), 260) * (0.3 + 0.7 * wave6); gurgle /= np.abs(gurgle).m
 save("villi", pad([196, 246.94, 293.66, 392], 0.35, 0.2) + 0.25 * gurgle + bells(10, 800, 1300, 0.03, 1.2))
 save("colon", pad([130.81, 164.81, 196], 0.4) + 0.45 * gurgle + bells(16, 400, 800, 0.035, 0.6))
 save("crypt", pad([164.81, 207.65, 246.94, 329.63], 0.35) + 0.3 * gurgle + bells(12, 1000, 1700, 0.03, 1.5))
+# ---- ステージ5「血管」：約8.6秒ごとの拍動（ドッ・クン）と、流れの音 ----
+beat_t = 60 / 70 * 10
+pulse = np.zeros_like(t)
+for k in range(int((T + XF) / beat_t) + 1):
+    for off, f, g in ((0, 55, 0.6), (0.35, 44, 0.4)):
+        t0 = k * beat_t + off; m = (t > t0) & (t < t0 + 1.2); x = t[m] - t0; pulse[m] += np.sin(2 * np.pi * f * x) * np.exp(-x / 0.25) * g
+rush = lp(pink(len(t)), 500); rush /= np.abs(rush).max()
+save("valve", pad([110, 146.83, 220], 0.3) + 0.3 * rush + pulse)
+save("plaque", pad([123.47, 185, 246.94], 0.3) + 0.35 * rush + pulse)
+save("clot", pad([98, 146.83, 196, 233.08], 0.35) + 0.3 * rush + pulse)

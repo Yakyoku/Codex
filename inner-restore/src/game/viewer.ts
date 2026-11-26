@@ -38,6 +38,12 @@ const MODELS: Record<string, Src> = {
   bifidobacterium: { url: '/static/models/gut.glb', mesh: 'bifido', col: 0xd8c8a8 },
   akkermansia: { url: '/static/models/gut.glb', mesh: 'akker', col: 0xe0d0c0 },
   enterobacteria: { url: '/static/models/gut.glb', mesh: 'ecoli', col: 0xb89878 },
+  vein_valve: { url: '/static/models/vessel.glb', mesh: 'leaflet', scale: 30, col: 0xf2d0c8, noBar: '弁尖1枚（ポケットの形の薄い膜）。2枚で1組の弁になる' },
+  plaque: { url: '/static/models/vessel.glb', mesh: 'plaque', scale: 20, col: 0xf0d8a8 },
+  foam_cell: { url: '/static/models/vessel.glb', mesh: 'foam', ghost: 'foam_drops', col: 0xf0e0c8 },
+  monocyte: { url: '/static/models/vessel.glb', mesh: 'monocyte', ghost: 'monocyte_nuc', col: 0xe8e0dc },
+  smooth_muscle_cell: { url: '/static/models/vessel.glb', mesh: 'smc', col: 0xe0b0a8 },
+  fibrin: { url: '/static/models/vessel.glb', mesh: 'fibrin', col: 0xf0e6dc, noBar: 'フィブリンの網（20µm 四方）。実物の線維は太さ 約0.1µm で、見えるよう太くして描いています' },
 };
 export const hasModel = (id: string) => id in MODELS;
 
@@ -68,7 +74,7 @@ export class AtlasViewer {
     g.scene.traverse((o) => { const mm = o as THREE.Mesh; if (mm.isMesh && mm.name === src.mesh) { mm.updateWorldMatrix(true, false); geo = mm.geometry.clone().applyMatrix4(mm.matrixWorld); } });
     if (!geo) return;
     mat = new THREE.MeshPhysicalMaterial({ color: src.col ?? (id === 'rbc' ? 0x9a1c18 : id === 'rpe' ? 0x4a2a1c : id === 'drusen' ? 0xe8d6a0 : id === 'rod' ? 0xd8c0cc : 0xe4e0dc),
-      roughness: 0.35, clearcoat: 0.4, transparent: id === 'lens_fiber' || id === 'neutrophil' || id === 'paneth_cell', opacity: id === 'lens_fiber' ? 0.7 : id === 'neutrophil' || id === 'paneth_cell' ? 0.4 : 1, depthWrite: id !== 'neutrophil' && id !== 'paneth_cell' });
+      roughness: 0.35, clearcoat: 0.4, transparent: ['lens_fiber', 'neutrophil', 'paneth_cell', 'foam_cell', 'monocyte'].includes(id), opacity: id === 'lens_fiber' ? 0.7 : ['neutrophil', 'paneth_cell', 'foam_cell', 'monocyte'].includes(id) ? 0.4 : 1, depthWrite: !['neutrophil', 'paneth_cell', 'foam_cell', 'monocyte'].includes(id) });
     const grp = new THREE.Group();
     const n = src.many ?? 1;
     for (let i = 0; i < n; i++) {

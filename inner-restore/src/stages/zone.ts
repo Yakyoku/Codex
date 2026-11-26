@@ -17,7 +17,7 @@ export interface ZoneMeta {
   causeMain: string;        // 診断の「主な原因」
   swimCeil?: number;        // 泳げる高さ（床から）
   plugDiag?: { short: string; cause: string };   // 診断での塊の説明
-  patient?: 'sight' | 'smell' | 'breath' | 'comfort';
+  patient?: 'sight' | 'smell' | 'breath' | 'comfort' | 'circulation';
   perception?: number;                         // 知覚加速（体内の時間を何倍ゆっくり見るか）。省略時は tuning の値
   scaleNote?: string;                          // 左上の大きさの目安（例：潜行士の身長 2µm ／ 赤血球の直径 7.8µm）                  // 患者の変化の見せ方（目＝視界、鼻＝におい）
 }
@@ -69,10 +69,13 @@ export const ZONES: ZoneEntry[] = [
   { id: 'villi', stage: 'gut', name: '区域A　絨毛の草原（小腸）', load: () => import('./gut/villi').then((m) => ({ build: m.buildVilli })) },
   { id: 'colon', stage: 'gut', name: '区域B　大腸の粘液', load: () => import('./gut/villi').then((m) => ({ build: m.buildColon })) },
   { id: 'crypt', stage: 'gut', name: '区域C　陰窩　→　病巣の核：炎症の芯', load: () => import('./gut/villi').then((m) => ({ build: m.buildCrypt })) },
+  { id: 'valve', stage: 'vessel', name: '区域A　静脈の弁', load: () => import('./vessel/artery').then((m) => ({ build: m.buildValve })) },
+  { id: 'plaque', stage: 'vessel', name: '区域B　動脈のプラーク', load: () => import('./vessel/artery').then((m) => ({ build: m.buildPlaque })) },
+  { id: 'clot', stage: 'vessel', name: '区域C　血栓　→　病巣の核', load: () => import('./vessel/artery').then((m) => ({ build: m.buildClot })) },
 ];
 
 /** ステージ（器官）の一覧。区域を作ったステージだけが遊べる */
-export const STAGES: { id: string; ja: string }[] = [{ id: 'eye', ja: '目' }, { id: 'nose', ja: '鼻' }, { id: 'lung', ja: '肺' }, { id: 'gut', ja: '腸' }];
+export const STAGES: { id: string; ja: string }[] = [{ id: 'eye', ja: '目' }, { id: 'nose', ja: '鼻' }, { id: 'lung', ja: '肺' }, { id: 'gut', ja: '腸' }, { id: 'vessel', ja: '血管' }];
 export const stageZones = (stage: string) => ZONES.filter((z) => z.stage === stage);
 /** そのステージの進み具合（治しきった区域の割合） */
 export const stageProgress = (done: string[] | undefined, stage: string) => { const zs = stageZones(stage); return zs.length ? zs.filter((z) => done?.includes(z.id)).length / zs.length : 0; };

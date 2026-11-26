@@ -205,13 +205,24 @@ async function main() {
   // ---- 患者の視界 ----
   const pImg = $('patient').querySelector('img') as HTMLImageElement, pSpot = $('patient').querySelector('.spot') as HTMLElement;
   // におい（鼻のステージ）：部屋の景色の色と、ただよう香りの帯で見せる。病のあいだは灰色で、香りの帯がない
-  const breathP = M.patient === 'breath', comfortP = M.patient === 'comfort';
+  const breathP = M.patient === 'breath', comfortP = M.patient === 'comfort', circP = M.patient === 'circulation';
   const smell = M.patient === 'smell', wc = $('patient').querySelector('.wisps') as HTMLCanvasElement, wx = wc.getContext('2d')!;
   if (smell) $('patient').querySelector('.cap')!.textContent = '患者の感じる におい';
   if (breathP) $('patient').querySelector('.cap')!.textContent = '患者の呼吸';
   if (comfortP) $('patient').querySelector('.cap')!.textContent = '患者のおなかの調子';
+  if (circP) $('patient').querySelector('.cap')!.textContent = '患者の足の血のめぐり';
   let wispM = 0;
   const drawWisps = (time: number) => {
+    if (circP) {
+      // 足の血のめぐり：足先の温かさ（冷たい青 → 温かい橙）と、足首の脈（弱い → はっきり）
+      const w = (wc.width = wc.clientWidth || 300), h = (wc.height = wc.clientHeight || 170); wx.clearRect(0, 0, w, h);
+      const g = wx.createLinearGradient(0, 0, w, 0); g.addColorStop(0, 'rgba(110,160,255,.55)'); g.addColorStop(1, 'rgba(255,170,110,.55)');
+      wx.fillStyle = 'rgba(10,14,16,.55)'; wx.fillRect(w * 0.05, h * 0.1, w * 0.9, h * 0.32); wx.fillStyle = 'rgba(240,245,245,.92)'; wx.font = `${Math.round(h * 0.1)}px IRJP, sans-serif`; wx.fillText('足先のあたたかさ', w * 0.08, h * 0.22);
+      wx.fillStyle = g; wx.fillRect(w * 0.08, h * 0.27, w * 0.84, h * 0.07); wx.fillStyle = '#fff'; wx.fillRect(w * (0.08 + 0.84 * (0.15 + 0.8 * wispM)) - 2, h * 0.25, 4, h * 0.11);
+      wx.beginPath(); for (let x = 0; x <= w; x += 3) { const tt = time * 1.2 - (w - x) / w * 5; const ph = ((tt % 1) + 1) % 1; const y = h * 0.78 - (ph < 0.15 ? Math.sin(ph / 0.15 * Math.PI) : 0) * h * (0.06 + 0.2 * wispM); if (x === 0) wx.moveTo(x, y); else wx.lineTo(x, y); }
+      wx.strokeStyle = 'rgba(255,140,140,.9)'; wx.lineWidth = Math.max(2, h * 0.02); wx.stroke(); wx.fillStyle = 'rgba(240,245,245,.9)'; wx.fillText('足首の脈', w * 0.08, h * 0.58);
+      return;
+    }
     if (comfortP) {
       // おなかの調子：痛みの目盛りが下がり、食欲の目盛りが上がる
       const w = (wc.width = wc.clientWidth || 300), h = (wc.height = wc.clientHeight || 170); wx.clearRect(0, 0, w, h);
@@ -239,6 +250,7 @@ async function main() {
     }
   };
   function patientView(m: number) {
+    if (circP) { wispM = m; pImg.style.filter = `brightness(${(0.55 + 0.45 * m).toFixed(2)}) saturate(${(0.45 + 0.55 * m).toFixed(2)})`; return; }
     if (comfortP) { wispM = m; pImg.style.filter = `brightness(${(0.55 + 0.45 * m).toFixed(2)}) saturate(${(0.45 + 0.55 * m).toFixed(2)})`; return; }
     if (breathP) { wispM = m; pImg.style.filter = `brightness(${(0.55 + 0.45 * m).toFixed(2)}) saturate(${(0.5 + 0.5 * m).toFixed(2)})`; return; }
     if (smell) { wispM = m; pImg.style.filter = `grayscale(${(1 - m).toFixed(2)}) brightness(${(0.6 + 0.4 * m).toFixed(2)})`; return; }
@@ -414,9 +426,9 @@ async function main() {
       pImg.style.transition = 'none'; pImg.style.filter = 'blur(28px) brightness(2.1) saturate(0.4)'; pImg.style.transform = 'scale(1.06)';
       requestAnimationFrame(() => requestAnimationFrame(() => {
         pImg.style.transition = 'filter 6s cubic-bezier(.2,.6,.2,1), transform 9s ease-out';
-        pImg.style.filter = smell ? `grayscale(${(1 - m).toFixed(2)})` : `blur(${blur.toFixed(1)}px) brightness(${(0.55 + 0.45 * m).toFixed(2)}) saturate(${(0.45 + 0.55 * m).toFixed(2)})`; pImg.style.transform = 'scale(1)'; if (smell || breathP || comfortP) wispM = m;
+        pImg.style.filter = smell ? `grayscale(${(1 - m).toFixed(2)})` : `blur(${blur.toFixed(1)}px) brightness(${(0.55 + 0.45 * m).toFixed(2)}) saturate(${(0.45 + 0.55 * m).toFixed(2)})`; pImg.style.transform = 'scale(1)'; if (smell || breathP || comfortP || circP) wispM = m;
       }));
-      say(comfortP ? (last ? LINES.comfortLast : LINES.comfortMid) : breathP ? (last ? LINES.breathLast : LINES.breathMid) : smell ? (last ? LINES.smellLast : LINES.smellMid) : last ? LINES.sightLast : LINES.sightMid, 7);
+      say(circP ? (last ? LINES.circLast : LINES.circMid) : comfortP ? (last ? LINES.comfortLast : LINES.comfortMid) : breathP ? (last ? LINES.breathLast : LINES.breathMid) : smell ? (last ? LINES.smellLast : LINES.smellMid) : last ? LINES.sightLast : LINES.sightMid, 7);
     }, 4500);
     setTimeout(() => {
       $('patient').classList.remove('full', 'waking'); pImg.style.transition = ''; pImg.style.transform = ''; patientDone = true;
