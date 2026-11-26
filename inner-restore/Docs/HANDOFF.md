@@ -161,3 +161,8 @@
 - 区域：`src/stages/gut/villi.ts`（villi・colon・crypt）。模型 `tools/blender/make_gut.py`（絨毛の先・陰窩の口・パネート細胞・4種の細菌）。音（6秒のぜん動）。患者の変化 `patient: 'comfort'`。
 - 勢力図：細菌は場所の健康度で種類が入れかわる。群れ（plugs）が残る間は、健康度0.5未満の所が少しずつ下がる（creep）。
 - 進捗ページの全体：ステージ4 完了で 70%（次はステージ5「血管」）。
+
+## 2026-11-26 ステージ5「血管」
+- 区域：`src/stages/vessel/artery.ts`（valve・plaque・clot）。模型 `tools/blender/make_vessel.py`。音（拍動）。患者の変化 `patient: 'circulation'`。拍動は `beat`（約8.6秒）、`drift` で押される。
+- 進捗ページの全体：ステージ5 完了で 78%（次はステージ6「心臓」）。
+- 容量：音声ファイル（AI の声）が 約15MB に増えた。どれも読み上げるときに1つずつ読む（最初の読み込みには入らない）。
