@@ -75,10 +75,13 @@ export const ZONES: ZoneEntry[] = [
   { id: 'endo', stage: 'heart', name: '区域A　心内膜とプルキンエ線維', load: () => import('./heart/heart').then((m) => ({ build: m.buildEndo })) },
   { id: 'myo', stage: 'heart', name: '区域B　心筋の並び', load: () => import('./heart/heart').then((m) => ({ build: m.buildMyo })) },
   { id: 'scar', stage: 'heart', name: '区域C　傷あとの迷路　→　病巣の核：渦をまく信号', load: () => import('./heart/heart').then((m) => ({ build: m.buildScar })) },
+  { id: 'bbb', stage: 'brain', name: '区域A　血液脳関門', load: () => import('./brain/brain').then((m) => ({ build: m.buildBBB })) },
+  { id: 'cortex', stage: 'brain', name: '区域B　神経細胞の森', load: () => import('./brain/brain').then((m) => ({ build: m.buildCortex })) },
+  { id: 'amyloid', stage: 'brain', name: '区域C　アミロイドβのかたまり　→　病巣の核', load: () => import('./brain/brain').then((m) => ({ build: m.buildAmyloid })) },
 ];
 
 /** ステージ（器官）の一覧。区域を作ったステージだけが遊べる */
-export const STAGES: { id: string; ja: string }[] = [{ id: 'eye', ja: '目' }, { id: 'nose', ja: '鼻' }, { id: 'lung', ja: '肺' }, { id: 'gut', ja: '腸' }, { id: 'vessel', ja: '血管' }, { id: 'heart', ja: '心臓' }];
+export const STAGES: { id: string; ja: string }[] = [{ id: 'eye', ja: '目' }, { id: 'nose', ja: '鼻' }, { id: 'lung', ja: '肺' }, { id: 'gut', ja: '腸' }, { id: 'vessel', ja: '血管' }, { id: 'heart', ja: '心臓' }, { id: 'brain', ja: '脳' }];
 export const stageZones = (stage: string) => ZONES.filter((z) => z.stage === stage);
 /** そのステージの進み具合（治しきった区域の割合） */
 export const stageProgress = (done: string[] | undefined, stage: string) => { const zs = stageZones(stage); return zs.length ? zs.filter((z) => done?.includes(z.id)).length / zs.length : 0; };

@@ -10,6 +10,7 @@ export async function collectLines(): Promise<string[]> {
     (await import('../stages/gut/villi')).VILLI_META, (await import('../stages/gut/villi')).COLON_META, (await import('../stages/gut/villi')).CRYPT_META,
     (await import('../stages/vessel/artery')).VALVE_META, (await import('../stages/vessel/artery')).PLAQUE_META, (await import('../stages/vessel/artery')).CLOT_META,
     (await import('../stages/heart/heart')).ENDO_META, (await import('../stages/heart/heart')).MYO_META, (await import('../stages/heart/heart')).SCAR_META,
+    (await import('../stages/brain/brain')).BBB_META, (await import('../stages/brain/brain')).CORTEX_META, (await import('../stages/brain/brain')).PLAQUE_B_META,
   ];
   const out: string[] = [];
   for (const m of metas) { if (m.enter) out.push(m.enter); out.push(m.arrive, m.plugHit, m.plugCleared(2), m.plugCleared(1), m.plugCleared(0), m.done); }

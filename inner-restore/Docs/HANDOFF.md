@@ -180,3 +180,8 @@
 - `assets.ts` の makeEnvironment に小さく強い光源を追加（濡れた面の点の照り返し）。
 - organic を入れた面：鼻の上皮、肺胞の壁、腸の床（A・C）、血管の床、心臓の床（A・C）と心筋。目のステージは材質を変えていない（共通のしかけだけ）。
 - 未確認：WebGPU での見え方、影つきの PC 実機の速さ、スマホの重さ（粒 240個＋光1つ）。重ければ `addRealism` の motes を減らす。
+
+## 2026-11-27 ステージ7「脳」と締めくくり
+- 区域：`src/stages/brain/brain.ts`（bbb＝血液脳関門・cortex＝神経細胞の森・amyloid＝アミロイドβのかたまりと病巣の核）。模型 `tools/blender/make_brain.py`（錐体細胞・もつれ・とげ・毛細血管・終足・アストロサイト・周皮細胞・ミクログリア2形・かたまり・ふくれた突起・髄鞘・オリゴデンドロサイト）。管や枝の共通の道具は `tools/blender/shapes.py`（make_heart.py と共用）。音（電子音と弦、4秒の発火）。患者の変化 `patient: 'conscious'`（脳波と呼びかけへの反応）。
+- 締めくくり：`main.ts` の `playEnding()`。最後の器官の最後の区域を治しきると、患者の目覚め → 記録映像（`public/static/img/ending/<区域>.jpg`、`node scripts/ending-shots.mjs` で撮り直せる）＋灯先生の言葉（`lines.ts` の end1〜end8）→ 治療完了。確認用 `window.__ending()`。締めくくりの間は後ろの3Dを描かない。
+- 進捗ページの全体：ステージ7 完了で 94%（残りは実機での確認と調整）。

@@ -21,7 +21,7 @@ export function organs(j: J): Organ[] {
     { id: 'gut', ja: '腸', stage: 4, ready: stageZones('gut').length > 0, at: v('spine-1').lerp(v('pelvis'), 0.3).add(new THREE.Vector3(0, 0, 0.05)), r: 0.09, note: '腸内細菌の勢力図を塗り替える' },
     { id: 'vessel', ja: '血管', stage: 5, ready: stageZones('vessel').length > 0, at: v('l-elbow').lerp(v('l-shoulder'), 0.4), r: 0.03, note: 'プラークと血栓を取り除く（器官どうしをつなぐ道）' },
     { id: 'heart', ja: '心臓', stage: 6, ready: stageZones('heart').length > 0, at: chest.clone().add(new THREE.Vector3(0.035, -0.03, 0.04)), r: 0.045, note: '乱れた電気信号を整える' },
-    { id: 'brain', ja: '脳', stage: 7, ready: false, at: v('head').add(new THREE.Vector3(0, 0.1, -0.01)), r: 0.075, note: '切れた回路をつなぎ、沈着物を取り除く' },
+    { id: 'brain', ja: '脳', stage: 7, ready: stageZones('brain').length > 0, at: v('head').add(new THREE.Vector3(0, 0.1, -0.01)), r: 0.075, note: '切れた回路をつなぎ、沈着物を取り除く' },
   ];
 }
 /** 目の進み具合（0〜1）：治しきった区域の数 */
@@ -37,6 +37,7 @@ export function vitals(s: Save) {
     { k: 'おなかの調子', v: stageProgress(s.done, 'gut') >= 1 ? '落ち着いている' : stageProgress(s.done, 'gut') > 0 ? '少し楽に' : '痛み・食欲がない', ok: stageProgress(s.done, 'gut') >= 1 },
     { k: '手足のあたたかさ', v: stageProgress(s.done, 'vessel') >= 1 ? 'あたたかい・足の脈がふれる' : stageProgress(s.done, 'vessel') > 0 ? '少し戻った' : '冷たく、足の脈が弱い', ok: stageProgress(s.done, 'vessel') >= 1 },
     { k: '心拍', v: stageProgress(s.done, 'heart') >= 1 ? '72 回/分・規則正しい' : `${Math.round(112 - 30 * stageProgress(s.done, 'heart'))} 回/分・${stageProgress(s.done, 'heart') > 0 ? '少し乱れ' : '乱れ'}`, ok: stageProgress(s.done, 'heart') >= 1 },
+    { k: '意識', v: stageProgress(s.done, 'brain') >= 1 ? '戻った（目を開けた）' : stageProgress(s.done, 'brain') > 0 ? '呼びかけに、かすかに反応' : '戻っていない', ok: stageProgress(s.done, 'brain') >= 1 },
     { k: '血中の酸素', v: `${Math.round(91 + 7 * stageProgress(s.done, 'lung'))} %`, ok: stageProgress(s.done, 'lung') >= 1 },
     { k: '呼吸', v: `${Math.round(22 - 7 * stageProgress(s.done, 'lung'))} 回/分`, ok: stageProgress(s.done, 'lung') >= 1 },
   ];
@@ -58,7 +59,7 @@ export async function buildHubModel(save: Save) {
   const list = organs(j.joints);
   const marks: { o: Organ; mesh: THREE.Mesh; state: 'done' | 'active' | 'locked' }[] = [];
   for (const o of list) {
-    const pr = o.id === 'eye' ? e : o.id === 'nose' ? noseProgress(save) : o.id === 'lung' ? stageProgress(save.done, 'lung') : o.id === 'gut' ? stageProgress(save.done, 'gut') : o.id === 'vessel' ? stageProgress(save.done, 'vessel') : o.id === 'heart' ? stageProgress(save.done, 'heart') : 0;
+    const pr = o.id === 'eye' ? e : o.id === 'nose' ? noseProgress(save) : o.id === 'lung' ? stageProgress(save.done, 'lung') : o.id === 'gut' ? stageProgress(save.done, 'gut') : o.id === 'vessel' ? stageProgress(save.done, 'vessel') : o.id === 'heart' ? stageProgress(save.done, 'heart') : o.id === 'brain' ? stageProgress(save.done, 'brain') : 0;
     const state = !o.ready ? 'locked' : pr >= 1 ? 'done' : 'active';
     const m = new THREE.MeshBasicNodeMaterial({ transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
     const d = length(uv().sub(0.5)).mul(2);

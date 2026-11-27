@@ -469,13 +469,40 @@ async function main() {
       }));
       say(conP ? (last ? LINES.wakeLast : LINES.wakeMid) : rhyP ? (last ? LINES.rhythmLast : LINES.rhythmMid) : circP ? (last ? LINES.circLast : LINES.circMid) : comfortP ? (last ? LINES.comfortLast : LINES.comfortMid) : breathP ? (last ? LINES.breathLast : LINES.breathMid) : smell ? (last ? LINES.smellLast : LINES.smellMid) : last ? LINES.sightLast : LINES.sightMid, 7);
     }, 4500);
+    const finale = last && ZONES[zi].stage === STAGES[STAGES.length - 1].id;   // 最後の器官（脳）を治しきった：灯先生が目を開ける
     setTimeout(() => {
       $('patient').classList.remove('full', 'waking'); pImg.style.transition = ''; pImg.style.transform = ''; patientDone = true;
+      if (finale) { playEnding(); return; }
       $('done').classList.remove('hide'); $('done').querySelector('h2')!.textContent = M.doneTitle;
       const st = STAGES.find((x) => x.id === ZONES[zi].stage); const sn = STAGES.indexOf(st!) + 1;
       $('donetext').textContent = next ? `次は ${next.name} です。` : `ステージ${sn}「${st?.ja}」の治療が終わりました。全身マップで、次の器官を選べます。`;
       $('b-next').classList.toggle('hide', !next); document.exitPointerLock?.();
     }, 13000);
+  }
+
+  // ---- 締めくくり：目を開けた灯先生が、スーツの記録映像（潜行士が見てきた体の中）を見る ----
+  let ending = false;
+  function playEnding() {
+    document.exitPointerLock?.(); ending = true;   // 締めくくりの間は、後ろの3Dを描かない（重さを避ける）
+    const shots: [string, string][] = [['photo', LINES.end2], ['cilia', LINES.end3], ['alveolus', LINES.end4], ['villi', LINES.end5], ['myo', LINES.end6], ['cortex', LINES.end7]];
+    const el = document.createElement('div'); el.id = 'ending';
+    el.style.cssText = 'position:fixed;inset:0;z-index:60;background:#000;display:flex;align-items:center;justify-content:center;flex-direction:column;opacity:0;transition:opacity 2.5s;font-family:IRJP,sans-serif;color:#f2eee8';
+    const img = document.createElement('img'); img.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity 2s,transform 9s ease-out;transform:scale(1.04)';
+    const cap = document.createElement('div'); cap.style.cssText = 'position:absolute;left:0;right:0;bottom:12%;text-align:center;font-size:clamp(16px,2.6vw,28px);text-shadow:0 2px 12px #000;padding:0 6%;line-height:1.7';
+    const title = document.createElement('div'); title.style.cssText = 'position:relative;text-align:center;opacity:0;transition:opacity 3s';
+    title.innerHTML = '<div style="font-size:clamp(28px,5vw,56px);letter-spacing:.3em">治療完了</div><div style="margin-top:1em;opacity:.8;font-size:clamp(14px,2vw,20px)">目・鼻・肺・腸・血管・心臓・脳</div>';
+    const btn = document.createElement('button'); btn.className = 'btn'; btn.textContent = '全身マップへ'; btn.style.cssText = 'margin-top:2em;pointer-events:auto'; btn.onclick = () => { el.remove(); ending = false; void openHub(); };
+    title.appendChild(btn); el.append(img, cap, title); document.body.appendChild(el);
+    const line = (t: string, d: number) => { cap.textContent = t; speak(t, ttsSel.value === 'on' && sim === null); void d; };
+    requestAnimationFrame(() => (el.style.opacity = '1'));
+    setTimeout(() => line(LINES.end1, 6), 2500);
+    shots.forEach(([id, text], i) => setTimeout(() => {
+      img.style.opacity = '0';
+      setTimeout(() => { img.style.transform = 'scale(1.04)'; img.src = `/static/img/ending/${id}.jpg`; void img.decode().catch(() => undefined).then(() => requestAnimationFrame(() => { img.style.opacity = '1'; img.style.transform = 'scale(1.0)'; })); line(text, 7); }, 900);
+    }, 9000 + i * 8000));
+    const tEnd = 9000 + shots.length * 8000;
+    setTimeout(() => { img.style.opacity = '0'; line(LINES.end8, 8); }, tEnd);
+    setTimeout(() => { cap.textContent = ''; title.style.opacity = '1'; }, tEnd + 9000);
   }
   $('b-next').onclick = () => { const next = SZS[si + 1]; if (next) location.href = `${location.pathname}?zone=${next.id}`; };
   $('b-cont').onclick = () => { $('done').classList.add('hide'); finished = true; };
@@ -519,6 +546,7 @@ async function main() {
   let last = performance.now();
   renderer.setAnimationLoop(() => {
     const now = performance.now(); const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    if (ending) return;
     // 1コマの更新で思わぬ失敗が起きても、止まらずに続ける（失敗は画面の右下と __irErrors に残す）
     try { if (!debugCam && sim === null && !paused) { if (started) { if (hitStop > 0) { hitStop -= dt; step(dt * F.hitStopScale); } else step(dt); } else { t += dt; stage.update(dt, t, camera); } dyn?.tick(dt); } }
     catch (e) { report('update', e); }
@@ -550,7 +578,7 @@ async function main() {
   // 読み上げの台本（AI の声を前もって録る道具が使う）
   if (Q.has('narration')) { const { collectLines, lineKey } = await import('../core/narration'); const ls = await collectLines(); W.__narration = ls.map((t) => ({ key: lineKey(t), text: t })); }
   if (Q.has('tune')) tunePanel(tuning as unknown as Record<string, unknown>);
-  W.__pos = pos; W.__diver = diver; W.__input = input; W.__stage = stage; W.__begin = begin; W.__advance = (n: number) => { for (let i = 0; i < n; i++) step(1 / 30); };
+  W.__ending = () => playEnding(); W.__pos = pos; W.__diver = diver; W.__input = input; W.__stage = stage; W.__begin = begin; W.__advance = (n: number) => { for (let i = 0; i < n; i++) step(1 / 30); };
   W.__irReady = { backend: backendLabel, tier, device };
 }
 main().catch((e) => { errors.push(String(e)); console.error(e); const el = document.querySelector('#load .tip'); if (el) el.textContent = '読み込みに失敗しました：' + String(e); });
