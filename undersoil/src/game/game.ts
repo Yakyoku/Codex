@@ -9,6 +9,7 @@ import { buildCreatures, type Creatures } from './creatures';
 import { buildTardigrade, type Tardigrade } from './tardigrade';
 import { buildSeed } from './seed';
 import { buildSeedLife } from './seedLife';
+import { buildFibres } from './fibres';
 import layout from '../data/stage1.layout.json';
 import { addLights, makeEnvironment, type Lights } from './env';
 
@@ -32,6 +33,8 @@ export async function createGame(renderer: THREE.WebGPURenderer, base: string, t
   scene.add(creatures.group); if (typeof location !== 'undefined' && new URLSearchParams(location.search).has('nocreatures')) creatures.group.visible = false;
   const tardigrade = await buildTardigrade(base, world, tier === 'vr' ? 1 : 0);
   scene.add(tardigrade.group);
+  // 植物の繊維のかけら（腐植の一部）。本物の土の「ごちゃごちゃした細部」
+  scene.add(buildFibres(world.colliders, world.distToPath, tier === 'vr' ? 30 : tier === 'compat' ? 50 : 110));
   // 吸水したシロツメクサの種：道の終わりの先。種のまわりは粒を置いていない（world.ts の inSeed）
   const seed = buildSeed(new THREE.Vector3(...(layout.seedCenter as [number, number, number])), { segments: tier === 'vr' || tier === 'compat' ? 64 : 128, knob: new THREE.Vector3(...(layout.seedKnob as [number, number, number])) });
   scene.add(seed);

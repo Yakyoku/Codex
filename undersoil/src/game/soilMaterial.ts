@@ -1,7 +1,7 @@
 // 土の粒のマテリアル（TSL）。WebGPU と WebGL 2 で同じ記述が動く。
 // 「濡れ」（0=乾いて粉をふいた状態、1=水の膜に覆われた状態）を粒ごとに持ち、色・粗さ・クリアコートを同時に動かす。
 import * as THREE from 'three/webgpu';
-import { texture, uv, vec3, float, mix, normalMap, positionWorld, positionLocal, normalWorld, triplanarTexture, instancedBufferAttribute, saturate, uniform, positionViewDirection, normalView, dot, pow, oneMinus, smoothstep, fract, floor, min, mx_worley_noise_float } from 'three/tsl';
+import { texture, uv, vec3, float, mix, normalMap, positionWorld, positionLocal, normalWorld, triplanarTexture, instancedBufferAttribute, saturate, uniform, positionViewDirection, normalView, dot, pow, oneMinus, smoothstep, fract, floor, min, mx_worley_noise_float, time } from 'three/tsl';
 
 export type GrainKind = 'quartz' | 'aggregate' | 'humus' | 'clay';
 interface Look { dry: [number, number, number]; wet: [number, number, number]; roughDry: number; roughWet: number; coat: number; detail: number; bump: number; }
@@ -87,6 +87,16 @@ export function makeSoilMaterial(kind: GrainKind, na: THREE.Texture, detail: THR
     m.colorNode = mix(mix(colF.mul(glass), vec3(0.32, 0.20, 0.07), stain.mul(0.6)), vec3(0.26, 0.15, 0.05), coatOn);   // くぼみの鉄のしみ、粘土の膜
     m.transmission = 0; m.thickness = 0;
     m.ior = 1.54;
+  }
+  // 水面がつくる光のゆらめき（コースティクス）：水の膜や水の橋を通った光が、ぬれた粒の表面で細かい網目になって揺れる。
+  // 2 つの網目模様をずらして重ね、細い明るい線だけを残す。ぬれた所だけ。軽い段階（VR）では使わない
+  if (!opts.cheap) {
+    const cp = positionWorld.mul(0.55);
+    const c1 = mx_worley_noise_float(cp.add(vec3(time.mul(0.11), time.mul(0.07), 0))), c2 = mx_worley_noise_float(cp.mul(1.37).add(vec3(0, time.mul(-0.09), time.mul(0.12))));
+    const caus = pow(saturate(oneMinus(min(c1, c2).mul(1.6))), 6.0).mul(wet).mul(saturate(normalWorld.y.mul(0.5).add(0.6)));
+    const prev = m.emissiveNode as ReturnType<typeof vec3> | null;
+    const add = vec3(0.30, 0.28, 0.22).mul(caus).mul(0.5);
+    m.emissiveNode = prev ? prev.add(add) : add;
   }
   m.envMapIntensity = 1;
   return m;

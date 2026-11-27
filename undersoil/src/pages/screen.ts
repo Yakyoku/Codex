@@ -178,6 +178,7 @@ async function main() {
     if (id === 'bacillus-subtilis') game.swarm.highlight(first.p); if (id === 'pseudomonas-fluorescens') game.swarm2.highlight(first.p);
     game.lights.fill.intensity = 7 + Math.min(60, dist * 0.9) * (dist < 20 ? 0.6 : 2);   // 近い生き物は、照らしすぎると白く飛ぶ
     visit = { get: t, dist, pos, anchor: first.p.clone(), ret: camera.position.clone(), retQ: camera.quaternion.clone() };
+    underFocus.value = Math.min(underFocus.value, Math.max(1.2, dist * 0.25));   // ピント送りの始まり：いったん手前に
     if (camera.position.distanceTo(pos) > 12) { fade.classList.add('on'); setTimeout(() => { if (visit) { camera.position.copy(visit.pos); const f = visit.get(); if (f) camera.lookAt(f.p); } fade.classList.remove('on'); }, 700); }
   };
   const endVisit = () => { game.lights.fill.intensity = 7; game.swarm.highlight(null); game.swarm2.highlight(null); if (!visit) return; const v = visit; visit = null; setTimeout(() => { camera.near = 0.08; camera.updateProjectionMatrix(); }, 700); if (camera.position.distanceTo(v.ret) > 12) { fade.classList.add('on'); setTimeout(() => fade.classList.remove('on'), 700); } };
@@ -252,7 +253,8 @@ async function main() {
     { // ピント：説明している物があればそこ、なければ画面中央の粒まで
       const f = pointer.focus(); let d = f ? camera.position.distanceTo(f) : 0;
       if (!f) { const ray = new THREE.Raycaster(camera.position, new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion)); let best = 1e9; for (const c of world.colliders) { const v = new THREE.Vector3(c.x, c.y, c.z).sub(camera.position); const t = v.dot(ray.ray.direction); if (t < 0) continue; const off = v.lengthSq() - t * t; if (off < c.r * c.r) best = Math.min(best, t - Math.sqrt(c.r * c.r - off)); } d = best < 1e8 ? best : 14; }
-      underFocus.value += (Math.max(2, Math.min(30, d)) - underFocus.value) * (1 - Math.exp(-dt * 3));
+      // ピント送り：生き物の紹介に入ると、手前に合っていたピントが、その生き物へゆっくり移る（記録映像の撮り方）
+      underFocus.value += (Math.max(2, Math.min(visit ? 80 : 30, d)) - underFocus.value) * (1 - Math.exp(-dt * (visit ? 0.9 : 3)));
       { const k = 1 - Math.exp(-dt * 2), vr = visit ? Math.max(0.8, visit.dist * 0.3) : 8, vb = visit ? 4.0 : 2.2; underRange.value += (vr - underRange.value) * k; underBokeh.value += (vb - underBokeh.value) * k; }
     }
     audio.setMode(mode); audio.setVitality(world.grid.mean()); audio.setGrowth(surface.growth); audio.update(dt);

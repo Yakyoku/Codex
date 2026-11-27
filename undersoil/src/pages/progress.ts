@@ -2,7 +2,7 @@
 import '../ui/base.css';
 import './progress.css';
 
-interface Item { src: string; caption: string; kind?: 'image' | 'video'; }
+interface Item { src: string; caption: string; kind?: 'image' | 'video' | 'compare'; }
 interface Section { title: string; note?: string; items: Item[]; }
 interface Data { updated: string; milestone: string; summary: string; sections: Section[]; }
 
@@ -23,6 +23,14 @@ async function main() {
     for (const it of s.items) {
       const fig = el('figure');
       if (it.kind === 'video') { const v = el('video'); v.src = it.src; v.controls = true; v.playsInline = true; v.preload = 'metadata'; fig.append(v); }
+      else if (it.kind === 'compare') {
+        // 比べるスライダー：左半分が「前」、右半分が「後」の 1 枚の画像（上に 20/560 の余白）を、同じ位置に重ねて、つまみで切り替える
+        const box = el('div', undefined, 'cmp'); const before = el('div', undefined, 'cmp-l'), after = el('div', undefined, 'cmp-l cmp-after'); const bar = el('i');
+        for (const [d, x] of [[before, '0%'], [after, '100%']] as const) { d.style.backgroundImage = `url(${it.src})`; d.style.backgroundPosition = `${x} 100%`; }
+        const tagB = el('span', '前', 'cmp-tag'), tagA = el('span', '後', 'cmp-tag cmp-tag-a'); const range = el('input'); range.type = 'range'; range.min = '0'; range.max = '100'; range.value = '50'; range.setAttribute('aria-label', '前と後を比べる');
+        const set = () => { after.style.clipPath = `inset(0 0 0 ${range.value}%)`; bar.style.left = range.value + '%'; }; range.addEventListener('input', set); set();
+        box.append(before, after, bar, tagB, tagA, range); fig.append(box);
+      }
       else { const a = el('a'); a.href = it.src; a.target = '_blank'; const img = el('img'); img.src = it.src; img.loading = 'lazy'; img.alt = it.caption; a.append(img); fig.append(a); }
       fig.append(el('figcaption', it.caption)); grid.append(fig);
     }
