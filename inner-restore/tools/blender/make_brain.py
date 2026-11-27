@@ -81,7 +81,7 @@ bs = np.linspace(0, 1, 24)
 c2 = sweep("cap_b", np.stack([5 + bs * 50, 2 + bs ** 1.4 * 34, bs * 4], 1), lambda t, a: 2.8 * (1 + 0.06 * math.sin(t * 23)), nr=20, flat=1.0, sub=False)
 cap = join([c1, c2], "capillary"); voxel_smooth(cap, 0.3, 6); decimate(cap, 24000); objs.append(cap)
 # 終足：管（半径 約3.4）に沿って曲がった、丸い平たい板
-verts, faces = [], []; nu, nv = 16, 12
+verts, faces = [], []; nu, nv = 8, 6
 for i in range(nu + 1):
     for j in range(nv + 1):
         u = (i / nu - 0.5) * 2; w = (j / nv - 0.5) * 2; rr = max(0, 1 - u * u - w * w)
@@ -92,7 +92,7 @@ for i in range(nu):
         a = i * (nv + 1) + j; faces.append((a, a + nv + 1, a + nv + 2, a + 1))
 ef = L.mesh_object("endfoot", np.array(verts), faces); L.select_only(ef)
 m = ef.modifiers.new("s", "SOLIDIFY"); m.thickness = 0.3; bpy.ops.object.modifier_apply(modifier=m.name)
-m = ef.modifiers.new("sub", "SUBSURF"); m.levels = 2; bpy.ops.object.modifier_apply(modifier=m.name); bpy.ops.object.shade_smooth(); objs.append(ef)
+m = ef.modifiers.new("sub", "SUBSURF"); m.levels = 1; bpy.ops.object.modifier_apply(modifier=m.name); bpy.ops.object.shade_smooth(); objs.append(ef)
 # アストロサイト：小さな体と、放射状の細い突起（体内では立体の星形）
 parts = []
 bpy.ops.mesh.primitive_uv_sphere_add(segments=24, ring_count=16, radius=3.5); parts.append(bpy.context.object)
@@ -132,6 +132,12 @@ for i in range(1500):   # 写真①：細かな粒が、輪郭のぼやけた輪
     bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=1, radius=1.0, location=tuple(d * r)); g = bpy.context.object
     g.scale = tuple(rng.uniform(0.09, 0.28, 3)); g.rotation_euler = tuple(rng.uniform(0, 6.3, 3)); parts.append(g)
 pl = join(parts, "plaque"); objs.append(pl)
+parts = []
+for i in range(520):   # 写真①：細かな粒が、輪郭のぼやけた輪のように集まる（粒は線維の束。実物の1本の線維は 約10nm で見えない）
+    r = 10 * (0.3 + 0.7 * rng.beta(5, 2)); d = Vector(rng.normal(size=3)).normalized(); d.z *= 0.65
+    bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=1, radius=1.0, location=tuple(d * r)); g = bpy.context.object
+    g.scale = tuple(rng.uniform(0.13, 0.36, 3)); g.rotation_euler = tuple(rng.uniform(0, 6.3, 3)); parts.append(g)
+pl2 = join(parts, "plaque_lo"); objs.append(pl2)
 parts = []
 for i in range(5):
     d = Vector(rng.normal(size=3)).normalized() * rng.uniform(0, 4); dd = Vector(rng.normal(size=3)).normalized()

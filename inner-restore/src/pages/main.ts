@@ -1,4 +1,5 @@
 // 画面版の本体（M1：網膜の一区画）
+import { setLowModels } from '../core/assets';
 import * as THREE from 'three/webgpu';
 import '../ui/ui.css';
 import { createRenderer, fitRenderer, backendPrefFromURL } from '../core/renderer';
@@ -71,6 +72,7 @@ async function main() {
   // 入口：そのステージの最初の区域で、まだ治していなければ（網膜は一度着いたら省く）
   const firstOfStage = ZONES.findIndex((z) => z.stage === ZONES[zi].stage) === zi;
   const entrance = firstOfStage && !(save.done ?? []).includes(ZONES[zi].id) && !(zi === 0 && save.arrived) && !Q.has('h') && !Q.has('noentry') && !debugCam && sim === null;
+  setLowModels(tier !== 'pc-high');   // 軽い模型（予算表の三角形の上限に収める）
   const stage = await (await ZONES[zi].load()).build(renderer, tier, { entrance });
   // 同じステージ（器官）の区域の並び。区域を治しきると、この中の次へ進む
   const SZS = stageZones(ZONES[zi].stage), si = SZS.indexOf(ZONES[zi]);

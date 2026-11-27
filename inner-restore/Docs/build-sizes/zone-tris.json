@@ -1,0 +1,254 @@
+[
+{
+"zone": "retina",
+"screen": {
+"tris": 235820,
+"draws": 28
+},
+"vr": {
+"tris": 168654,
+"draws": 23
+},
+"over": []
+},
+{
+"zone": "lens",
+"screen": {
+"tris": 515928,
+"draws": 22
+},
+"vr": {
+"tris": 292484,
+"draws": 18
+},
+"over": []
+},
+{
+"zone": "photo",
+"screen": {
+"tris": 546208,
+"draws": 31
+},
+"vr": {
+"tris": 244452,
+"draws": 21
+},
+"over": []
+},
+{
+"zone": "cilia",
+"screen": {
+"tris": 775060,
+"draws": 25
+},
+"vr": {
+"tris": 374174,
+"draws": 20
+},
+"over": []
+},
+{
+"zone": "mucus",
+"screen": {
+"tris": 775060,
+"draws": 25
+},
+"vr": {
+"tris": 374174,
+"draws": 20
+},
+"over": []
+},
+{
+"zone": "olfactory",
+"screen": {
+"tris": 272792,
+"draws": 23
+},
+"vr": {
+"tris": 128814,
+"draws": 18
+},
+"over": []
+},
+{
+"zone": "bronchiole",
+"screen": {
+"tris": 583460,
+"draws": 25
+},
+"vr": {
+"tris": 284394,
+"draws": 20
+},
+"over": []
+},
+{
+"zone": "alveolus",
+"screen": {
+"tris": 591788,
+"draws": 22
+},
+"vr": {
+"tris": 284438,
+"draws": 17
+},
+"over": []
+},
+{
+"zone": "alvwall",
+"screen": {
+"tris": 569456,
+"draws": 29
+},
+"vr": {
+"tris": 323044,
+"draws": 25
+},
+"over": []
+},
+{
+"zone": "villi",
+"screen": {
+"tris": 446780,
+"draws": 35
+},
+"vr": {
+"tris": 224258,
+"draws": 31
+},
+"over": []
+},
+{
+"zone": "colon",
+"screen": {
+"tris": 433204,
+"draws": 24
+},
+"vr": {
+"tris": 210682,
+"draws": 20
+},
+"over": []
+},
+{
+"zone": "crypt",
+"screen": {
+"tris": 654542,
+"draws": 26
+},
+"vr": {
+"tris": 331220,
+"draws": 22
+},
+"over": []
+},
+{
+"zone": "valve",
+"screen": {
+"tris": 285472,
+"draws": 23
+},
+"vr": {
+"tris": 142306,
+"draws": 18
+},
+"over": []
+},
+{
+"zone": "plaque",
+"screen": {
+"tris": 444508,
+"draws": 21
+},
+"vr": {
+"tris": 301342,
+"draws": 16
+},
+"over": []
+},
+{
+"zone": "clot",
+"screen": {
+"tris": 487732,
+"draws": 23
+},
+"vr": {
+"tris": 307738,
+"draws": 18
+},
+"over": []
+},
+{
+"zone": "endo",
+"screen": {
+"tris": 332340,
+"draws": 23
+},
+"vr": {
+"tris": 204374,
+"draws": 18
+},
+"over": []
+},
+{
+"zone": "myo",
+"screen": {
+"tris": 364272,
+"draws": 23
+},
+"vr": {
+"tris": 297106,
+"draws": 18
+},
+"over": []
+},
+{
+"zone": "scar",
+"screen": {
+"tris": 478080,
+"draws": 22
+},
+"vr": {
+"tris": 369294,
+"draws": 17
+},
+"over": []
+},
+{
+"zone": "bbb",
+"screen": {
+"tris": 375146,
+"draws": 24
+},
+"vr": {
+"tris": 251370,
+"draws": 19
+},
+"over": []
+},
+{
+"zone": "cortex",
+"screen": {
+"tris": 769680,
+"draws": 22
+},
+"vr": {
+"tris": 328258,
+"draws": 17
+},
+"over": []
+},
+{
+"zone": "amyloid",
+"screen": {
+"tris": 467928,
+"draws": 27
+},
+"vr": {
+"tris": 337906,
+"draws": 22
+},
+"over": []
+}
+]

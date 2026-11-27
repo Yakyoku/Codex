@@ -95,7 +95,7 @@ async function build(renderer: THREE.WebGPURenderer, tier: string, variant: 'B' 
   const t2Mat = new THREE.MeshPhysicalNodeMaterial(); t2Mat.colorNode = mix(color(0xc8b0a8), color(0xf2dcd4), H); t2Mat.roughnessNode = float(0.35); t2Mat.clearcoatNode = float(0.4);
   const floorAt = (x: number, z: number) => { if (!room) return memY(x, z); const r2 = x * x + z * z; return R - Math.sqrt(Math.max(0, R * R - r2)); };
   const t2: THREE.Vector3[] = []; let sd = 9; const rnd = () => { sd = (sd * 16807) % 2147483647; return sd / 2147483647; };
-  for (let i = 0; i < (room ? 26 : 10); i++) { const x = (rnd() - 0.5) * W * 0.85, z = (rnd() - 0.5) * D * 0.85; t2.push(new THREE.Vector3(x, floorAt(x, z) - 1.2, z)); }
+  for (let i = 0; i < (room ? (vr ? 12 : 26) : 10); i++) { const x = (rnd() - 0.5) * W * 0.85, z = (rnd() - 0.5) * D * 0.85; t2.push(new THREE.Vector3(x, floorAt(x, z) - 1.2, z)); }
   const t2m = new THREE.InstancedMesh(geos.type2, t2Mat, t2.length); const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), v = new THREE.Vector3(), sv = new THREE.Vector3();
   t2.forEach((p, i) => { const n = room ? new THREE.Vector3(-p.x, R - p.y, -p.z).normalize() : new THREE.Vector3(0, 1, 0); q.setFromUnitVectors(new THREE.Vector3(0, 0, 1), n); t2m.setMatrixAt(i, m4.compose(p, q, sv.set(1, 1, 1))); });
   scene.add(t2m);
@@ -106,7 +106,7 @@ async function build(renderer: THREE.WebGPURenderer, tier: string, variant: 'B' 
   const plugs: (Plug & { gone: number; shake: number })[] = (room ? [[-0.25, -0.15], [0.2, -0.22], [0.05, 0.25]] : [[-0.07, -0.12], [0.08, -0.06], [0.0, 0.14]]).map(([fx, fz]) => { const x = core.x + fx * W, z = core.z + fz * D; return { p: new THREE.Vector3(x, floorAt(x, z), z), hp: 1, cleared: false, gone: 0, shake: 0 }; });
   const sootMat = new THREE.MeshStandardNodeMaterial(); sootMat.colorNode = color(0x2a2624); sootMat.roughnessNode = float(0.8);
   const grMat = new THREE.MeshPhysicalNodeMaterial(); grMat.colorNode = color(0xb8b0a4); grMat.roughnessNode = float(0.4); grMat.clearcoatNode = float(0.5);
-  const NPP = 40, pp: { o: THREE.Vector3; plug: number; s: number; soot: boolean; r: number }[] = [];
+  const NPP = vr ? 22 : 40, pp: { o: THREE.Vector3; plug: number; s: number; soot: boolean; r: number }[] = [];
   for (let i = 0; i < NPP * 3; i++) { const pl = plugs[i % 3]; const a = rnd() * 6.28, rr = 5 * Math.sqrt(rnd()); const x = pl.p.x + Math.cos(a) * rr, z = pl.p.z + Math.sin(a) * rr; pp.push({ o: new THREE.Vector3(x, floorAt(x, z) + rnd() * 1.5, z), plug: i % 3, s: 0.8 + rnd() * 1.6, soot: rnd() < 0.6, r: rnd() * 6.28 }); }
   const soot = new THREE.InstancedMesh(geos.soot, sootMat, pp.length), grain = new THREE.InstancedMesh(geos.grain, grMat, pp.length);
   soot.frustumCulled = grain.frustumCulled = false; scene.add(soot, grain);

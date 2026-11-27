@@ -201,7 +201,7 @@ async function build(renderer: THREE.WebGPURenderer, tier: string, variant: 'A' 
     });
     if (variant === 'C') for (let k = 0; k < (vr ? 14 : 24); k++) { const x = (rnd() - 0.5) * W * 1.2, z = (rnd() - 0.5) * D * 1.2; colls.push({ x, y: 1 + floorAt(x, z), z, yaw: rnd() * Math.PI, sx: 0.6 + rnd() * 0.5, sy: 1.4, sz: 1, plug: -1 }); }
     const clm = new THREE.MeshPhysicalNodeMaterial({ transparent: true }); clm.colorNode = color(0xf0e4da); clm.roughnessNode = float(0.35); clm.opacityNode = float(0.82).add(fres.mul(0.15)); clm.clearcoatNode = float(0.5);
-    collM = instanced(geos.collagen, clm, colls.length);
+    collM = instanced(rich ? geos.collagen : geos.collagen_lo ?? geos.collagen, clm, colls.length);
     const fbm = new THREE.MeshPhysicalNodeMaterial({ transparent: true }); fbm.colorNode = color(0xe8d4c8); fbm.roughnessNode = float(0.4); fbm.opacityNode = float(0.8);
     fbM = instanced(geos.fibroblast, fbm, fbs.length);
   }

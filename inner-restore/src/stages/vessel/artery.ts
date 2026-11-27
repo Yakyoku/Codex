@@ -99,13 +99,13 @@ async function build(renderer: THREE.WebGPURenderer, tier: string, variant: 'A' 
   }
   // 区域C：血栓（フィブリンの網＋とらえられた赤血球と血小板）
   let fibM: THREE.InstancedMesh | null = null, trapR: THREE.InstancedMesh | null = null, plt: THREE.InstancedMesh | null = null; const traps: { p: THREE.Vector3; plug: number; r: number }[] = [];
-  const rbcGeo = geos.rbc_lod1 ?? geos.rbc_lod0;
+  const rbcGeo = geos.rbc_lod1 ?? geos.rbc_lod0; const NF = rich ? 5 : vr ? 2 : 3;   // フィブリンの網の数（軽い段階では減らす）
   if (variant === 'C') {
     const fbm = new THREE.MeshPhysicalNodeMaterial(); fbm.colorNode = color(0xf0e6dc); fbm.roughnessNode = float(0.4); fbm.clearcoatNode = float(0.4);
-    fibM = new THREE.InstancedMesh(geos.fibrin, fbm, plugs.length * 5); fibM.frustumCulled = false; scene.add(fibM);
+    fibM = new THREE.InstancedMesh(rich ? geos.fibrin : geos.fibrin_lo ?? geos.fibrin, fbm, plugs.length * NF); fibM.frustumCulled = false; scene.add(fibM);
     const rm = new THREE.MeshPhysicalNodeMaterial({ side: THREE.DoubleSide }); rm.colorNode = color(0x8a1a20); rm.roughnessNode = float(0.45);
     plugs.forEach((pl, i) => { for (let k = 0; k < 14; k++) traps.push({ p: pl.p.clone().add(new THREE.Vector3((rnd() - 0.5) * 16, 1 + rnd() * 12, (rnd() - 0.5) * 16)), plug: i, r: rnd() * 6.28 }); });
-    trapR = new THREE.InstancedMesh(geos.rbc_lod0 ?? rbcGeo, rm, traps.length); trapR.frustumCulled = false; scene.add(trapR);
+    trapR = new THREE.InstancedMesh(rich ? geos.rbc_lod0 ?? rbcGeo : rbcGeo, rm, traps.length); trapR.frustumCulled = false; scene.add(trapR);
     const pm = new THREE.MeshPhysicalNodeMaterial(); pm.colorNode = color(0xe8dcc8); pm.roughnessNode = float(0.4);
     plt = new THREE.InstancedMesh(geos.platelet, pm, traps.length); plt.frustumCulled = false; scene.add(plt);
   }
@@ -189,7 +189,7 @@ async function build(renderer: THREE.WebGPURenderer, tier: string, variant: 'A' 
       });
       if (foamM) foams.forEach((f, i) => { const pl = plugs[f.plug], k = 1 - pl.gone; v.copy(f.p); v.y = plaqueH(f.p.x, f.p.z) * 0.5; foamM!.setMatrixAt(i, m4.compose(v, q.identity(), sv.set(0.35 * k + 0.001, 0.22 * k + 0.001, 0.35 * k + 0.001))); });
       if (foamM) foamM.instanceMatrix.needsUpdate = true;
-      if (fibM) { plugs.forEach((pl, i) => { const k = 1 - pl.gone; for (let j = 0; j < 5; j++) { v.copy(pl.p).add(sv.set(Math.sin(j * 2.4) * 6, 4 + (j % 3) * 4, Math.cos(j * 2.4) * 6)); v.x += Math.sin(t * 40 + i) * pl.shake * 0.12; fibM!.setMatrixAt(i * 5 + j, m4.compose(v, q.setFromEuler(new THREE.Euler(j, i + j * 1.3, j * 0.5)), sv.set(0.75 * k + 0.001, 0.75 * k + 0.001, 0.75 * k + 0.001))); } }); fibM.instanceMatrix.needsUpdate = true; }
+      if (fibM) { plugs.forEach((pl, i) => { const k = 1 - pl.gone; for (let j = 0; j < NF; j++) { v.copy(pl.p).add(sv.set(Math.sin(j * 2.4) * 6, 4 + (j % 3) * 4, Math.cos(j * 2.4) * 6)); v.x += Math.sin(t * 40 + i) * pl.shake * 0.12; fibM!.setMatrixAt(i * NF + j, m4.compose(v, q.setFromEuler(new THREE.Euler(j, i + j * 1.3, j * 0.5)), sv.set(0.75 * k + 0.001, 0.75 * k + 0.001, 0.75 * k + 0.001))); } }); fibM.instanceMatrix.needsUpdate = true; }
       if (trapR && plt) { traps.forEach((tr, i) => { const pl = plugs[tr.plug]; v.copy(tr.p); if (pl.gone > 0) v.x += pl.gone * 30; v.y += Math.sin(t + i) * 0.1; const s = pl.gone > 0.9 ? 0.001 : 1;
         trapR!.setMatrixAt(i, m4.compose(v, q.setFromEuler(new THREE.Euler(tr.r, tr.r * 2, 0)), sv.set(s, s, s)));
         plt!.setMatrixAt(i, m4.compose(v.add(sv.set(4.6 * Math.cos(i * 2.3), 2.2 * Math.sin(i * 1.7), 4.6 * Math.sin(i * 2.3))), q, sv.set(s * 1.2, s * 1.2, s * 1.2))); /* 血小板は赤血球のくぼみではなく、すき間の網にからむ */ }); trapR.instanceMatrix.needsUpdate = plt.instanceMatrix.needsUpdate = true; }

@@ -88,7 +88,7 @@ export class AtlasViewer {
   async show(id: string) {
     const src = MODELS[id]; if (!src) return;
     if (this.obj) this.scene.remove(this.obj); this.obj = null; this.active = true;   // 読み込みの間も、図鑑の背景を出しておく
-    const g = await loadGLB(src.url); let geo: THREE.BufferGeometry | null = null; let mat: THREE.Material | null = null;
+    const g = await loadGLB(src.url, false, true); let geo: THREE.BufferGeometry | null = null; let mat: THREE.Material | null = null;
     g.scene.traverse((o) => { const mm = o as THREE.Mesh; if (mm.isMesh && mm.name === src.mesh) { mm.updateWorldMatrix(true, false); geo = mm.geometry.clone().applyMatrix4(mm.matrixWorld); } });
     if (!geo) return;
     mat = new THREE.MeshPhysicalMaterial({ color: src.col ?? (id === 'rbc' ? 0x9a1c18 : id === 'rpe' ? 0x4a2a1c : id === 'drusen' ? 0xe8d6a0 : id === 'rod' ? 0xd8c0cc : 0xe4e0dc),

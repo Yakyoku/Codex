@@ -61,6 +61,13 @@ for i in range(56):   # 細い線維が束にぎっしり並び、そろって�
     pts = [(x, oy + amp * math.sin(x / 4.2 + ph) + 0.15 * math.sin(x / 1.7 + i), oz + 0.35 * math.cos(x / 5.5 + ph)) for x in np.linspace(-30, 30, 15)]
     parts.append(tube(pts, rng.uniform(0.16, 0.3), "c", 1, taper=[0.15 + 0.85 * math.sin(math.pi * k / 14) ** 0.5 for k in range(15)]))
 objs.append(join(parts, "collagen"))
+# 軽い版（互換・モバイル・VR）：線維の本数を減らし、少し太くして束の見た目を保つ
+parts = []
+for i in range(22):   # 細い線維が束にぎっしり並び、そろって波打つ（写真⑤）。束全体が一つの波を共有し、1本ずつ少しずれる
+    oy, oz = rng.normal(0, 1.7), rng.normal(0, 1.0); ph = 0.8 + rng.normal(0, 0.25); amp = 1.0 + rng.normal(0, 0.15)
+    pts = [(x, oy + amp * math.sin(x / 4.2 + ph) + 0.15 * math.sin(x / 1.7 + i), oz + 0.35 * math.cos(x / 5.5 + ph)) for x in np.linspace(-30, 30, 15)]
+    parts.append(tube(pts, rng.uniform(0.24, 0.4), "c", 0, taper=[0.15 + 0.85 * math.sin(math.pi * k / 14) ** 0.5 for k in range(15)]))
+objs.append(join(parts, "collagen_lo"))
 # ---- 線維芽細胞：平たい星形（中央に核のふくらみ、細い突起）----
 parts = []
 bpy.ops.mesh.primitive_uv_sphere_add(segments=32, ring_count=16, radius=1.0); b = bpy.context.object
@@ -94,7 +101,7 @@ for k in range(4):   # 短い太い円柱が、介在板でつながって列に
 objs.append(join(parts, "purkinje"))
 zs = np.linspace(0, 1, 30)
 objs.append(sweep("sa_cell", np.stack([zs * 26 - 13, 2.2 * np.sin(zs * 6.3), 1.2 * np.sin(zs * 4)], 1), lambda t, a: 4 * math.sin(math.pi * (0.06 + 0.88 * t)) ** 0.8, flat=0.85))
-for o, nt in (("myofiber_y", 24000), ("cardiomyocyte", 30000), ("collagen", 14000), ("chorda", 30000), ("fibroblast", 8000)):
+for o, nt in (("myofiber_y", 24000), ("cardiomyocyte", 30000), ("collagen", 14000), ("collagen_lo", 5200), ("chorda", 30000), ("fibroblast", 8000)):
     decimate(bpy.data.objects[o], nt)
 mat = bpy.data.materials.new("cell"); [o.data.materials.append(mat) for o in objs]
 size = L.export_glb(objs, os.path.join(L.OUT_MODELS, "heart.raw.glb"))

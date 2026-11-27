@@ -66,7 +66,7 @@ async function build(renderer: THREE.WebGPURenderer, tier: string, variant: 'A' 
   const floorY = -(PCL + GEL);
   const epi = epithelium(W, D, H, noiseTex); epi.position.y = floorY - 0.05; scene.add(epi);
   const goblet = (x: number, z: number) => { if (lung) { const gx2 = Math.round(x / 7), gz2 = Math.round(z / 7); return (gx2 * 5 + gz2 * 3) % 3 === 0 && Math.hypot(x - gx2 * 7, z - gz2 * 7) < 3.2; } const gx = Math.round(x / 9), gz = Math.round(z / 9); return (gx * 7 + gz * 3) % 6 === 0 && Math.hypot(x - gx * 9, z - gz * 9) < 2.6; };
-  const dens = vr ? 1.0 : rich ? 2.6 : 1.6;   // 1µm² あたり（実物 6〜8本）
+  const dens = vr ? 0.5 : rich ? 2.6 : tier === 'mobile-high' ? 2.0 : 1.05;   // 予算表の三角形の上限に合わせる（1本 60枚）   // 1µm² あたり（実物 6〜8本）
   const diverLocal = vec3(diverU.x, diverU.y.sub(floorY), diverU.z);
   const cil = ciliaField({ W, D, density: lung ? dens * 0.7 : dens, Hat, time: u.time, wave: float(WAVE), diver: diverLocal, beatHz: lung ? 11 / 2 / 6 : BEAT, goblet });
   cil.mesh.position.y = floorY; scene.add(cil.mesh);

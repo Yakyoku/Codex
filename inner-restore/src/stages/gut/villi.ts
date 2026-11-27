@@ -106,12 +106,12 @@ async function build(renderer: THREE.WebGPURenderer, tier: string, variant: 'A' 
     const hi = new THREE.InstancedMesh(hg, hm, crypts.length); crypts.forEach((p, i) => hi.setMatrixAt(i, m4.compose(p.clone().setY(0.05), new THREE.Quaternion(), new THREE.Vector3(1, 1, 1)))); scene.add(hi);
     const gm = new THREE.MeshPhysicalNodeMaterial({ transparent: true }); gm.colorNode = color(0xf4e2c0); gm.emissiveNode = color(0xffd890).mul(H.mul(0.5).add(sin(u.time.mul(2)).mul(0.08))); gm.opacityNode = float(0.9);
     const gi = new THREE.InstancedMesh(geos.paneth_granules, gm, crypts.length);
-    crypts.forEach((p, i) => gi.setMatrixAt(i, m4.compose(p.clone().setY(-9), new THREE.Quaternion(), new THREE.Vector3(0.7, 0.7, 0.7)))); scene.add(gi);
+    crypts.forEach((p, i) => gi.setMatrixAt(i, m4.compose(p.clone().setY(-9), new THREE.Quaternion(), new THREE.Vector3(0.7, 0.7, 0.7)))); if (vr) gi.count = Math.ceil(crypts.length / 2); scene.add(gi);
   }
   // ---- 細菌：もとから住む菌（バクテロイデス・ビフィズス菌・アッカーマンシア）と、増えすぎた菌（大腸菌など）----
   const kinds = ['bactero', 'bifido', 'akker', 'ecoli'] as const;
   const mats = { bactero: 0xc8b898, bifido: 0xd8c8a8, akker: 0xe0d0c0, ecoli: 0xb89878 };
-  const NB = vr ? 50 : rich ? 140 : 90;
+  const NB = vr ? 28 : rich ? 140 : tier === 'mobile-high' ? 90 : 55;   // 細菌の数（4種類ぶん描くので、軽い段階では減らす）
   let sd = 13; const rnd = () => { sd = (sd * 16807) % 2147483647; return sd / 2147483647; };
   const plugs: (Plug & { gone: number; shake: number })[] = (variant === 'C' ? [[-0.07, -0.12], [0.08, -0.05], [0.0, 0.14]] : variant === 'A' ? [[-0.22, -0.12], [0.18, -0.2], [0.04, 0.24]] : [[-0.25, 0.1], [0.05, -0.2], [0.3, 0.15]])
     .map(([fx, fz]) => { const x = core.x + fx * W, z = core.z + fz * D; return { p: new THREE.Vector3(x, floorAt(x, z), z), hp: 1, cleared: false, gone: 0, shake: 0 }; });

@@ -6,7 +6,13 @@ const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
 const cache = new Map<string, Promise<GLTF>>();
 export let bytesLoaded = 0;
 
-export function loadGLB(url: string, keepHierarchy = false): Promise<GLTF> {
+/** 軽い模型を使うか（互換・モバイル・VR）。区域を作る前に、端末の段階に合わせて決める。図鑑の表示は常に細かい模型 */
+let lowModels = false;
+const LO = new Set(['nose', 'lung', 'gut', 'vessel', 'heart', 'brain']);
+export const setLowModels = (on: boolean, extra: string[] = []) => { lowModels = on; for (const e of extra) LO.add(e); };
+export function loadGLB(url: string, keepHierarchy = false, full = false): Promise<GLTF> {
+  const nm = url.match(/\/models\/(\w+)\.glb$/)?.[1];
+  if (lowModels && !full && nm && LO.has(nm)) url = url.replace('.glb', '.lo.glb');   // 三角形を約4分の1にした版（tools/pack-glb.mjs --ratio 0.25）
   let p = cache.get(url);
   if (!p) {
     p = loader.loadAsync(url, (e) => { if (e.loaded === e.total) bytesLoaded += e.total; }).then((g) => { if (!keepHierarchy) dequantize(g.scene); return g; });

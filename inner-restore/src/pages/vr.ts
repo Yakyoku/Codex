@@ -1,4 +1,5 @@
 // VR 版（M1）：同じ網膜の区画の中に立ち、見回し、歩き、手のビームで治す。VR 中は WebGL 2。
+import { setLowModels } from '../core/assets';
 import { addRealism } from '../core/realism';
 import * as THREE from 'three/webgpu';
 import { createRenderer, fitRenderer } from '../core/renderer';
@@ -54,6 +55,7 @@ async function main() {
   // 区域：URL の ?zone= か、保存した続きから（画面版と同じ並び）
   const save = loadSave(), Qv = new URLSearchParams(location.search);
   let zi = ZONES.findIndex((z) => z.id === (Qv.get('zone') ?? save.zone ?? 'retina')); if (zi < 0) zi = 0;
+  setLowModels(true, ['photo']);   // VR は視細胞の模型も軽い版
   const stage = await (await ZONES[zi].load()).build(renderer, 'vr');
   const real = addRealism(stage, renderer, 'vr'), realCam = new THREE.Vector3();   // 探照灯・足もとの影・漂う粒（VR は軽い設定）
   const M = stage.meta;

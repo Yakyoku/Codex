@@ -91,7 +91,7 @@ async function build(renderer: THREE.WebGPURenderer, tier: string, variant: 'A' 
   const pulse = (ph: N) => fract(u.time.div(PULSE_T).add(ph));   // 0〜1 の発火の位相
 
   // ---- 区域A：毛細血管・終足・周皮細胞・アストロサイト ----
-  const capZ = [-25, 15, 38];
+  const capZ = [-25, 15, 38]; const FS = vr ? 5.1 : 3.4;   // 終足の間隔（VR は大きめの板を少なく）
   const capPathZ = (k: number, x: number) => capZ[k] + 1.5 * Math.sin(x / 17) * (k === 1 ? -1 : 1);
   type Foot = { x: number; k: number; rot: number; plug: number };
   const feet: Foot[] = [];
@@ -103,7 +103,7 @@ async function build(renderer: THREE.WebGPURenderer, tier: string, variant: 'A' 
     capM = instanced(geos.capillary, cm, capZ.length);
     capZ.forEach((z, k) => capM!.setMatrixAt(k, m4.compose(v.set(0, 2.6, z), q.setFromEuler(eu.set(0, k === 1 ? Math.PI : 0, 0)), sv.set(1, 1, 1))));
     // 終足：管の向きに 約3.5µm おき、管をぐるりと3枚で覆う。すき間（塊）のそばは欠ける
-    for (let k = 0; k < capZ.length; k++) for (let x = -W * 0.62; x < W * 0.62; x += 3.4) for (const rot of [0, 2.1, 4.2]) {
+    for (let k = 0; k < capZ.length; k++) for (let x = -W * 0.62; x < W * 0.62; x += FS) for (const rot of [0, 2.1, 4.2]) {
       let plug = -1; plugs.forEach((pl, i) => { if (Math.abs(pl.p.z - capZ[k]) < 4 && Math.abs(pl.p.x - x) < 9) plug = i; }); feet.push({ x, k, rot: rot + (x * 0.37) % 0.6, plug });
     }
     const em = new THREE.MeshPhysicalNodeMaterial(); em.colorNode = mix(color(0xa89098), color(0xe0ccd0), H).mul(texture(noiseTex, positionWorld.xz.mul(1 / 2)).g.mul(0.12).add(0.9)); em.roughnessNode = float(0.4); em.clearcoatNode = float(0.4);
@@ -112,7 +112,7 @@ async function build(renderer: THREE.WebGPURenderer, tier: string, variant: 'A' 
     // 管の中の赤血球：管より太いので、細長く形を変えて通る
     const rm = new THREE.MeshPhysicalNodeMaterial({ side: THREE.DoubleSide }); rm.colorNode = color(0xa8182a); rm.roughnessNode = float(0.45);
     for (let k = 0; k < capZ.length; k++) for (let i = 0; i < 9; i++) capRBC.push({ x: -W * 0.6 + i * 16 + k * 5, k, s: 0.9 + rnd() * 0.2 });
-    capR = instanced(geos.rbc_lod0 ?? geos.rbc_lod1, rm, capRBC.length);
+    capR = instanced(rich ? geos.rbc_lod0 ?? geos.rbc_lod1 : geos.rbc_lod1 ?? geos.rbc_lod0, rm, capRBC.length);
     // 漏れ出す血の中のもの（たんぱく質など）の、淡い黄色のにじみ
     const lm = new THREE.MeshBasicNodeMaterial({ transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
     lm.colorNode = color(0xd8b060).mul(pow(saturate(dot(normalView, positionViewDirection)), float(2)).mul(0.25));
@@ -130,7 +130,7 @@ async function build(renderer: THREE.WebGPURenderer, tier: string, variant: 'A' 
   type Neu = { x: number; z: number; rot: number; plug: number; tangle: boolean };
   const neus: Neu[] = [];
   if (variant !== 'A') {
-    const step = variant === 'B' ? 30 : 38;
+    const step = variant === 'B' ? (rich ? 30 : vr ? 44 : 37) : 38;   // 軽い段階では、細胞の間隔を少し広げる
     for (let x = -W * 0.55; x < W * 0.6; x += step) for (let z = -D * 0.5; z < D * 0.55; z += step * 0.85) {
       const nx = x + (rnd() - 0.5) * step * 0.5, nz = z + (rnd() - 0.5) * step * 0.5;
       let plug = -1; plugs.forEach((pl, i) => { if (Math.hypot(pl.p.x - nx, pl.p.z - nz) < step * 0.6) plug = i; });
@@ -161,7 +161,7 @@ async function build(renderer: THREE.WebGPURenderer, tier: string, variant: 'A' 
   // とげ：幹の下の方（潜行士の目の高さ）にびっしり。切れた細胞では消えていて、治ると生えてくる
   type Sp = { n: number; y: number; a: number; tilt: number };
   const spines: Sp[] = [];
-  healthyN.forEach((n, ni) => { const cnt = vr ? 30 : rich ? 90 : 60; for (let k = 0; k < cnt; k++) spines.push({ n: ni, y: 16 + k * (26 / cnt) + rnd() * 0.3, a: rnd() * 6.28, tilt: 0.3 + rnd() * 0.5 }); });
+  healthyN.forEach((n, ni) => { const cnt = vr ? 22 : rich ? 90 : 40; for (let k = 0; k < cnt; k++) spines.push({ n: ni, y: 16 + k * (26 / cnt) + rnd() * 0.3, a: rnd() * 6.28, tilt: 0.3 + rnd() * 0.5 }); });
   let spM: THREE.InstancedMesh | null = null;
   if (spines.length) {
     const smat = new THREE.MeshPhysicalNodeMaterial(); smat.colorNode = color(0xe0d0d4); smat.roughnessNode = float(0.35); smat.clearcoatNode = float(0.5);
@@ -193,7 +193,7 @@ async function build(renderer: THREE.WebGPURenderer, tier: string, variant: 'A' 
   if (variant === 'C') {
     const pm = new THREE.MeshPhysicalNodeMaterial(); pm.colorNode = color(0xd8c8a8); pm.roughnessNode = float(0.5);   // 生きた色は分からないので、淡い黄みの灰白色（染色の茶色は使わない）
     pm.emissiveNode = color(0xc89a60).mul(sin(u.time.mul(1.2)).mul(0.04).add(0.08));
-    plM = instanced(geos.plaque, pm, plugs.length * 2);
+    plM = instanced(rich ? geos.plaque : geos.plaque_lo ?? geos.plaque, pm, plugs.length * 2);
     const dm = new THREE.MeshPhysicalNodeMaterial(); dm.colorNode = color(0x5a4048); dm.roughnessNode = float(0.45); dm.clearcoatNode = float(0.3);
     dyM = instanced(geos.dystrophic, dm, plugs.length * 2);
     plugs.forEach((pl, i) => { for (let k = 0; k < 5; k++) { const a = k / 5 * 6.28 + i; const ax = pl.p.x + Math.cos(a) * 19, az = pl.p.z + Math.sin(a) * 17; if (Math.hypot(ax + W / 2 - 10, az) > 16) amoeba.push({ p: new THREE.Vector3(ax, 3, az), plug: i }); } });
@@ -269,7 +269,7 @@ async function build(renderer: THREE.WebGPURenderer, tier: string, variant: 'A' 
       u.lightIn.value += ((0.4 + 0.6 * prog) - u.lightIn.value) * Math.min(1, dt * 1.5);
       // 終足：すき間の所は欠けていて、治ると管を覆い直す
       if (footM) { feet.forEach((f, i) => { const pl = f.plug >= 0 ? plugs[f.plug] : null; const k = pl ? Math.min(1, 0.05 + pl.gone * 1.05) : 1; const x = f.x + (pl ? Math.sin(t * 40) * pl.shake * 0.05 : 0);
-        footM!.setMatrixAt(i, m4.compose(v.set(x, 2.6, capPathZ(f.k, x)), q.setFromEuler(eu.set(f.rot, 0, 0)), sv.set(k, k, k))); }); footM.instanceMatrix.needsUpdate = true; }
+        footM!.setMatrixAt(i, m4.compose(v.set(x, 2.6, capPathZ(f.k, x)), q.setFromEuler(eu.set(f.rot, 0, 0)), sv.set(k * FS / 3.4, k, k))); }); footM.instanceMatrix.needsUpdate = true; }
       if (capR) { capRBC.forEach((r, i) => { r.x += dt * (3 + 3 * prog) * r.s; if (r.x > W * 0.62) r.x -= W * 1.24; v.set(r.x, 2.6, capPathZ(r.k, r.x)); capR!.setMatrixAt(i, m4.compose(v, q.setFromEuler(eu.set(0, 0, Math.PI / 2)), sv.set(0.62, 1.35, 0.62))); }); capR.instanceMatrix.needsUpdate = true; }
       if (leakM) { plugs.forEach((pl, i) => { for (let k = 0; k < 6; k++) { const a = k * 1.05 + t * 0.2, rr = 3 + ((t * 0.6 + k * 0.7) % 4); const s = (1 - pl.gone) * (2.2 + k * 0.3); leakM!.setMatrixAt(i * 6 + k, m4.compose(v.set(pl.p.x + Math.cos(a) * rr, 3 + Math.sin(t + k) * 1.2, pl.p.z + Math.sin(a) * rr), q, sv.setScalar(s + 0.001))); } }); leakM.instanceMatrix.needsUpdate = true; }
       // とげ：生えている度合いに合わせて大きさが変わる

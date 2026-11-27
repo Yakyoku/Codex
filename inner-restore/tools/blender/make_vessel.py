@@ -71,6 +71,12 @@ for i in range(110):   # 実物の写真：規則的な網ではなく、細い�
     pts = [tuple(a + d * (t * ln - ln / 2) + Vector((math.sin(t * 9 + i), math.cos(t * 7 + i * 1.3), math.sin(t * 8 + i * 0.7))) * 1.3) for t in np.linspace(0, 1, 9)]
     parts.append(tube(pts, rng.uniform(0.07, 0.14), "f", 1))
 objs.append(join(parts, "fibrin"))
+parts = []
+for i in range(60):   # 実物の写真：規則的な網ではなく、細い線維が不規則にからまった、ふわっとした塊
+    a = Vector(rng.normal(0, 5.5, 3)); d = Vector(rng.normal(size=3)).normalized(); ln = rng.uniform(6, 18)
+    pts = [tuple(a + d * (t * ln - ln / 2) + Vector((math.sin(t * 9 + i), math.cos(t * 7 + i * 1.3), math.sin(t * 8 + i * 0.7))) * 1.3) for t in np.linspace(0, 1, 9)]
+    parts.append(tube(pts, rng.uniform(0.1, 0.17), "f", 0))
+objs.append(join(parts, "fibrin_lo"))
 mat = bpy.data.materials.new("cell"); [o.data.materials.append(mat) for o in objs]
 size = L.export_glb(objs, os.path.join(L.OUT_MODELS, "vessel.raw.glb"))
 print("STATS " + json.dumps({"bytes": size, "tris": {o.name: sum(len(p.vertices) - 2 for p in o.data.polygons) for o in objs}}))
