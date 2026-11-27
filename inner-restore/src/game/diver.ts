@@ -1,7 +1,7 @@
 import * as THREE from 'three/webgpu';
 import { loadGLB } from '../core/assets';
 import { tsl } from '../core/tsl';
-const { vertexColor, color, float, pow, saturate, dot, normalView, positionViewDirection, mix } = tsl;
+const { vertexColor, color, float, pow, saturate, dot, normalView, positionViewDirection, mix, vec3 } = tsl;
 
 /** 主人公（ナノスーツの潜行士）。継ぎ目のない体を、ボーン（骨）で曲げて動かす。
  *  ボーンの向き（ねじれ）に左右されないよう、「体の向きを基準にした軸」で回す：
@@ -88,6 +88,23 @@ export class Diver {
       m.emissiveNode = color(0x7b4dff).mul(rim.mul(0.45));
     }
     m.envMapIntensity = 2.0;
+    // 見た目の案の見比べ用（?suit=grey／?suit=matte）。指定がなければ、これまでどおりの紫
+    const look = new URLSearchParams(location.search).get('suit');
+    if (look === 'grey') {
+      // 案B：つや消しの灰色の硬いスーツ。縁の光は弱く、差し色は青緑
+      const g = dot(vc, vec3(0.3, 0.5, 0.2));
+      m.sheen = 0; m.iridescence = 0; m.envMapIntensity = 0.9;
+      if (name === 'armor') { m.colorNode = mix(color(0x6e747a), color(0xb9c0c6), g); m.roughness = 0.55; m.metalness = 0.25; m.clearcoat = 0.15; m.clearcoatRoughness = 0.5; m.emissiveNode = color(0x7fe0d2).mul(rim.mul(0.12)); }
+      else if (name === 'suit') { m.colorNode = mix(color(0x3a4046), color(0x7c848c), g); m.roughness = 0.75; m.clearcoat = 0; m.emissiveNode = color(0x7fe0d2).mul(rim.mul(0.1)); }
+      else if (name === 'visor') { m.colorNode = color(0x04080a); m.emissiveNode = color(0x7fe0d2).mul(rim.mul(0.35)); }
+      else { m.colorNode = mix(color(0x4a5258), color(0x9aa2a8), g); m.roughness = 0.6; m.clearcoat = 0.1; m.emissiveNode = color(0x7fe0d2).mul(rim.mul(0.12)); }
+    } else if (look === 'matte') {
+      // 案C：色は紫のまま、つやと虹色の光を抑えた、落ち着いた質感
+      m.iridescence = 0; m.sheen = 0.2; m.envMapIntensity = 1.0;
+      if (name === 'armor') { m.roughness = 0.45; m.clearcoat = 0.25; m.clearcoatRoughness = 0.4; m.colorNode = vc.mul(color(0xd8d0ea)).mul(0.95); m.emissiveNode = color(0xb994ff).mul(rim.mul(0.18)); }
+      else if (name === 'suit') { m.roughness = 0.65; m.clearcoat = 0.05; m.colorNode = mix(vc.mul(color(0xe4d8ff)).mul(1.1), color(0x6c5cae), float(0.45)); m.emissiveNode = color(0x9a6cff).mul(rim.mul(0.15)); }
+      else if (name !== 'visor') { m.roughness = 0.55; m.clearcoat = 0.1; m.emissiveNode = color(0x7b4dff).mul(rim.mul(0.15)); }
+    }
     return m;
   }
   private qa = new THREE.Quaternion(); private qb = new THREE.Quaternion(); private qc = new THREE.Quaternion();
