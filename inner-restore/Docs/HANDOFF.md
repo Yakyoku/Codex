@@ -198,3 +198,8 @@
 - 患者の窓：`tools/blender/make_patient_view.py` の `VIEW=smell|breath|comfort|circulation|rhythm`（`W=1280 H=720 SAMPLES=48` で約3分）→ `public/static/img/patient_<VIEW>.jpg`。画面版 `main.ts`・VR 版 `vr.ts` が `M.patient` で選ぶ。
 - 豆知識：`ui.ts` の `TIPS_BY`（器官ごと）。
 - 見送り中：主人公の見た目の変更（持ち主の判断待ち）。
+
+## 2026-11-27 実機のスクリーンショットを受けた修正
+- 全身マップ：`hub.ts` の体は、奥行きだけを先に描く（`bodyDepth`）＋表の面だけを加算で光らせる。目印は depthTest なし。顔の目印（目 r0.02、鼻 r0.012）を小さく。
+- スマホ横向き（`@media (max-height:520px)`、`ui.css`）：紹介カードは上中央に小さく（英語名・比較・くわしい説明の3行目以降・閉じ方の案内は省く）、字幕は下に3行まで、右のボタンの位置は ui.css の末尾の同じ media で上書き。確認用の再現は scratchpad の phone.mjs と同じ手順（850×390・タッチ）。
+- 主人公の見た目の案（?suit=matte|grey）は、持ち主の判断待ちのまま。

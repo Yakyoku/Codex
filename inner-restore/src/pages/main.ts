@@ -123,7 +123,7 @@ async function main() {
     if (!replay) { known.add(id); store.set('ir.known', [...known].join(',')); audio.chime(); }
     if (mode === 'off') return;
     card.querySelector('.n')!.textContent = e.ja; card.querySelector('.e')!.textContent = e.en;
-    card.querySelector('.s')!.innerHTML = mode === 'name' ? '' : `${e.kind}　<b>${e.size}</b>　— ${e.compare}`;
+    card.querySelector('.s')!.innerHTML = mode === 'name' ? '' : `${e.kind}　<b>${e.size}</b><span>　— ${e.compare}</span>`;
     card.querySelector('.d')!.textContent = mode === 'name' ? '' : e.intro;
     card.querySelector('.h')!.textContent = input.kind === 'touch' ? 'カードをタップで閉じる ／ 図鑑に登録しました' : input.kind === 'pad' ? 'Y：閉じる ／ 図鑑に登録しました' : 'E：閉じる　R：もう一度 ／ 図鑑に登録しました';
     card.classList.add('on'); cardCur = id; lastCard = id; cardT = 0; cardDur = mode === 'name' ? 3.5 : 8;

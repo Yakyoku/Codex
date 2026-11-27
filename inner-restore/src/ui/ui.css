@@ -61,7 +61,19 @@ body:has(#ui) .ir-hud { left:auto; right:max(12px,env(safe-area-inset-right)); b
   #patient { width:min(26vw,190px); }
   #hint { display:none; }
   #topbtns { top:max(6px,env(safe-area-inset-top)); }
-  #card { bottom:auto; top:max(48px,calc(env(safe-area-inset-top) + 40px)); right:auto; left:27%; width:min(46vw,22em); max-height:calc(100vh - 150px); overflow:hidden; font-size:.82em; padding:.7em .9em; }   /* 横向きのスマホ：中ほどに置き、左のスティックと右のボタンに重ねない */
+  /* 横向きのスマホ：紹介カードは、上のボタンのすぐ下に小さく出す（画面の中ほどの主人公を隠さない）。英語名・くわしい説明・閉じ方の案内は省き、名前・大きさ・ひとことだけ */
+  #card { bottom:auto; top:max(44px,calc(env(safe-area-inset-top) + 38px)); right:auto; left:50%; width:min(40vw,20em); margin-left:calc(min(40vw,20em) / -2); max-height:34vh; overflow:hidden; font-size:.7em; padding:.5em .8em .55em; }
+  #card .e, #card .h, #card .s span { display:none; } #card .n { font-size:1.3em; margin:0; } #card .s { margin:.25em 0 .2em; }
+  #card .d { line-height:1.5; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; } #card .p { margin-top:.4em; }
+  /* 右のボタンは、右上の患者の窓に重ならない高さにまとめる */
+  #tb-up { bottom:max(152px,calc(env(safe-area-inset-bottom) + 136px)); right:max(22px,env(safe-area-inset-right)); }
+  #tb-down { bottom:max(96px,calc(env(safe-area-inset-bottom) + 80px)); right:max(118px,calc(env(safe-area-inset-right) + 100px)); }
+  #tb-fire { bottom:max(70px,calc(env(safe-area-inset-bottom) + 54px)); width:5em !important; height:5em !important; }
+  #tb-scan { bottom:max(22px,env(safe-area-inset-bottom)); right:max(118px,calc(env(safe-area-inset-right) + 100px)); }
+  .tb-s { width:3.8em !important; height:3.8em !important; }
+  #patient { width:min(24vw,170px); }
+  /* 字幕は、画面の下の、左のスティックと右のボタンのあいだに小さく出す（中ほどの主人公にかぶせない）。長い案内は声で読み上げるので、字幕は3行まで */
+  #subs { bottom:max(8px,env(safe-area-inset-bottom)); max-width:46vw; font-size:.78em; line-height:1.45; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; background:#070c0e99; padding:.3em .7em; border-radius:6px; }
 }
 
 /* 患者の視界：目が開く演出（まぶしい光が引いていく） */
@@ -128,3 +140,12 @@ body.hubbing #hud, body.hubbing #subs, body.hubbing #hint, body.hubbing #topbtns
 body.shot #viewer, body.shot #errline, body.shot .ir-hud { visibility:hidden; } body.shot voice-buddy { display:none; }
 #patient .wisps { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; mix-blend-mode:screen; }
 #reticle.beat { border-color:#ffd0a0; box-shadow:0 0 10px #ffb07a99; }
+
+/* 横向きのスマホ（背の低い画面）：右のボタンを、右上の患者の窓に重ならない高さにまとめる（上の既定の位置より後に書く） */
+@media (max-height: 520px) {
+  #tb-up { bottom:max(152px,calc(env(safe-area-inset-bottom) + 136px)); right:max(22px,env(safe-area-inset-right)); }
+  #tb-down { bottom:max(96px,calc(env(safe-area-inset-bottom) + 80px)); right:max(118px,calc(env(safe-area-inset-right) + 100px)); }
+  #tb-fire { bottom:max(70px,calc(env(safe-area-inset-bottom) + 54px)); width:5em !important; height:5em !important; }
+  #tb-scan { bottom:max(22px,env(safe-area-inset-bottom)); right:max(118px,calc(env(safe-area-inset-right) + 100px)); }
+  .tb-s { width:3.8em !important; height:3.8em !important; }
+}
