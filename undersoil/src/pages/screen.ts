@@ -152,6 +152,7 @@ async function main() {
   let goalState: 'away' | 'shown' | 'done' = 'away', goalT = 0;
   const goalTick = (dt: number) => {
     if (mode !== 'soil' || !started) { goal.classList.remove('on'); return; }
+    if (!touring && quest.index < 7) return;   // 自分で動くときは、山場「乾きの風」を乗りきるまで、種のゴールは働かない（道しるべの順番どおり）
     const d = nearSeed();
     if (goalState === 'away' && d < 22) {
       goalState = 'shown'; goalT = 0;

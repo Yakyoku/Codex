@@ -18,14 +18,16 @@ await ev(() => { const g = window.__game; g.camera.position.copy(g.world.cellCen
 ok('道しるべ 4：糖のしずく', await until(() => document.querySelector('.quest small i')?.textContent.startsWith('5'), 30000));
 for (let c = 5; c < 9; c++) { await pour(c); await page.waitForTimeout(600); }
 ok('道しるべ 5：区域 B まで橋をつなぐ', await until(() => document.querySelector('.quest small i')?.textContent.startsWith('6'), 60000));
+// 早回し（25 倍）では、風は実時間で 2〜3 秒で終わる。1 回ずつの水まきでは間に合わないので、風の前から、ページの中で種のまわりに細かく水を補う（流れの確認が目的）
+await ev(() => { window.__keepOn = true; const f = () => { if (!window.__keepOn) return; const g = window.__game.world.grid; for (const c of [9, 10, 11]) g.addWater(c, 1); requestAnimationFrame(f); }; requestAnimationFrame(f); });   // 描画のコマごとに補う（タイマーは間引かれるため）
 for (let c = 9; c < 12; c++) { await pour(c); await page.waitForTimeout(600); }
 ok('道しるべ 6：種の岸まで水', await until(() => document.querySelector('.quest small i')?.textContent.startsWith('7'), 60000));
 ok('乾きの風が始まる', await until(() => document.querySelector('.wind').classList.contains('on'), 60000));
 // 風の間、種のまわり（区画 10〜12）に水を補いつづける
-let windDone = false; for (let k = 0; k < 40 && !windDone; k++) { for (const c of [9, 10, 11]) await pour(c); await page.waitForTimeout(1200); windDone = await ev(() => !document.querySelector('.wind').classList.contains('on')); }
+const windDone = await until(() => !document.querySelector('.wind').classList.contains('on'), 240000);
 ok('乾きの風が終わる', windDone);
-ok('道しるべ 7：風を乗りきる', await until(() => document.querySelector('.quest small i')?.textContent.startsWith('8'), 60000));
-console.log('step', await step());
+ok('道しるべ 7：風を乗りきる', await until(() => document.querySelector('.quest small i')?.textContent.startsWith('8'), 60000)); await ev(() => { window.__keepOn = false; });
+console.log('step', await step(), await ev(() => JSON.stringify({ wind: document.querySelector('.wind').className, w: window.__game.world.grid.cells.slice(9).map((c) => +c.water.toFixed(2)), toast: document.querySelector('.tool-toast').textContent })));
 for (let c = 0; c < 12; c++) { await pour(c); await page.waitForTimeout(400); }
 ok('種が目覚める', await until(() => window.__game.wake > 0.5, 120000));
 await ev(() => { const g = window.__game; g.camera.position.copy(g.seed.position).add({ x: -70, y: 2, z: 0 }); });
