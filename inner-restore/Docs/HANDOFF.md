@@ -1,4 +1,4 @@
-# HANDOFF（引き継ぎ）— 2026-11-25 更新
+# HANDOFF（引き継ぎ）— 2026-11-27 更新
 
 ## 公開 URL
 - 本番：https://inner-restore-web-20261122.netlify.app/ （VR：/vr/、進捗：/progress/、診断：/diag/）
@@ -204,3 +204,12 @@
 - スマホ横向き（`@media (max-height:520px)`、`ui.css`）：紹介カードは上中央に小さく（英語名・比較・くわしい説明の3行目以降・閉じ方の案内は省く）、字幕は下に3行まで、右のボタンの位置は ui.css の末尾の同じ media で上書き。確認用の再現は scratchpad の phone.mjs と同じ手順（850×390・タッチ）。
 - 主人公の見た目の案（?suit=matte|grey）は、持ち主の判断待ちのまま。
 - 2026-11-27 追記：スマホ横向きの配置を作り直した（`ui.css` 末尾の `@media (max-height:520px)`）。主人公のいる中央から下には何も重ねない。字幕＝上のボタンの下に2行、紹介カードとスキャン診断＝左の細い列、右のボタン＝高さ基準（--b: min(60px,20vh)）で2列×2段、病巣の札＝番号と距離だけ。Safari のバーを出した iPhone は高さ 約290px なので、確認は 870×290 で行う。
+
+## 2026-11-27 検証と報告のまとめ（指示書の最後の工程）
+- 全7ステージ＋締めくくりまで公開済み。進捗の全体は 94%（残りは項目13「実機での確認と調整」）。
+- スマホ横向きの字幕：`main.ts` の `paginate()`／`say()`。2行に入らない案内は「。」「、」で区切り、文字数に応じた時間で順に切り替える（全文が読める）。870×290 で確認。
+- 全器官の動画：`node scripts/video-highlights.mjs progress-src/all-organs-highlights.mp4 photo cilia alveolus villi clot myo cortex`（約1時間）。
+- 予算の実測：`npx vite build` → `node scripts/measure-zones.mjs > Docs/build-sizes/zone-tris.jsonl`（約25分）。全21区域が予算内。すれすれ：鼻 77.5万／皮質 76.8万（画面 80万）、傷あと 39.9万（VR 40万）。
+- 台帳：`node scripts/build-atlas-doc.mjs` で `Docs/ATLAS.md`（67項目）。
+- **次の一手**：①持ち主の実機確認（iPhone の横向き画面の再確認、iPad、PC・テレビ、Quest 3）の結果を `Docs/DEVICE_RESULTS.md` に記録し調整。②主人公の見た目（A 現状／B つや消し紫 `?suit=matte`／C 灰 `?suit=grey`）は持ち主の判断待ち。③この環境で未確認：WebGPU の絵、実機の fps、音色の聞こえ方、VR の明るさ。
+- 上の「既知の問題・やり残し」「次の一手」（2026-11-22 時点）のうち、5〜7・10 は対応済み。1（WebGPU の実機確認）・8（VR の実機確認）は実機待ちのまま。

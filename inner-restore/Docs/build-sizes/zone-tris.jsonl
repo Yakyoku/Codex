@@ -8,4 +8,14 @@
 {"zone":"alveolus","screen":{"tris":591788,"draws":22},"vr":{"tris":284438,"draws":17},"over":[]}
 {"zone":"alvwall","screen":{"tris":569456,"draws":29},"vr":{"tris":323044,"draws":25},"over":[]}
 {"zone":"villi","screen":{"tris":446780,"draws":35},"vr":{"tris":224258,"draws":31},"over":[]}
-    at /home/user/Codex/inner-restore/scripts/measure-zones.mjs:9:67 {
+{"zone":"colon","screen":{"tris":450004,"draws":24},"vr":{"tris":227482,"draws":20},"over":[]}
+{"zone":"crypt","screen":{"tris":671342,"draws":26},"vr":{"tris":348020,"draws":22},"over":[]}
+{"zone":"valve","screen":{"tris":285478,"draws":23},"vr":{"tris":142312,"draws":18},"over":[]}
+{"zone":"plaque","screen":{"tris":444544,"draws":21},"vr":{"tris":301378,"draws":16},"over":[]}
+{"zone":"clot","screen":{"tris":511174,"draws":23},"vr":{"tris":323368,"draws":18},"over":[]}
+{"zone":"endo","screen":{"tris":332340,"draws":23},"vr":{"tris":204374,"draws":18},"over":[]}
+{"zone":"myo","screen":{"tris":382956,"draws":23},"vr":{"tris":315790,"draws":18},"over":[]}
+{"zone":"scar","screen":{"tris":518562,"draws":22},"vr":{"tris":399396,"draws":17},"over":[]}
+{"zone":"bbb","screen":{"tris":375106,"draws":24},"vr":{"tris":251330,"draws":19},"over":[]}
+{"zone":"cortex","screen":{"tris":768192,"draws":22},"vr":{"tris":327346,"draws":17},"over":[]}
+{"zone":"amyloid","screen":{"tris":496858,"draws":27},"vr":{"tris":366836,"draws":22},"over":[]}
