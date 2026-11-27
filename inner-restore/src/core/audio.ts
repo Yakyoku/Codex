@@ -6,6 +6,8 @@ export class GameAudio {
   private drone: { o: OscillatorNode; g: GainNode; sick: number; well: number }[] = [];
   private flowG!: GainNode; private beamG!: GainNode; private lastBeat = 0;
   volume = 0.8;
+  /** 器官の音色の主題（start() の前に決める）：eye / nose / lung / gut / vessel / heart / brain */
+  theme = 'eye';
   start() {
     if (this.ctx) { void this.ctx.resume(); return; }
     const AC = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
@@ -15,14 +17,25 @@ export class GameAudio {
     const comp = c.createDynamicsCompressor(); comp.threshold.value = -18; comp.ratio.value = 3;
     this.muffle = c.createBiquadFilter(); this.muffle.type = 'lowpass'; this.muffle.frequency.value = 900; this.muffle.Q.value = 0.4;
     this.muffle.connect(comp); comp.connect(this.master); this.master.connect(c.destination);
-    // 持続音：病んだ状態は半音でぶつかる濁った響き、健康な状態は開いた協和音（目の主題＝ガラス質の音）
+    // 持続音：病んだ状態は半音でぶつかる濁った響き、健康な状態は開いた協和音。器官ごとに音色の主題を変える
+    //   目＝ガラス質（澄んだ正弦波と高い倍音）／鼻＝息と風（やわらかい三角波、高め）／肺＝深い息と管楽器（低い三角波）／腸＝低い木管と水（低い三角波＋ゆっくりした揺れ）
+    //   血管＝流れる弦（のこぎり波を濾す、ビブラート）／心臓＝低弦（低いのこぎり波）／脳＝電子音と弦（矩形波と、高いのこぎり波）
+    const TH: Record<string, { root: number; type: OscillatorType; gain: number; vib: number; cut: number; top?: OscillatorType }> = {
+      eye: { root: 110, type: 'sine', gain: 1, vib: 0, cut: 6000 }, nose: { root: 146.83, type: 'triangle', gain: 0.8, vib: 0, cut: 3200 },
+      lung: { root: 87.31, type: 'triangle', gain: 0.9, vib: 0, cut: 2200 }, gut: { root: 73.42, type: 'triangle', gain: 0.9, vib: 0.6, cut: 1500 },
+      vessel: { root: 98, type: 'sawtooth', gain: 0.32, vib: 5.2, cut: 1800 }, heart: { root: 65.41, type: 'sawtooth', gain: 0.36, vib: 4.4, cut: 1100 },
+      brain: { root: 123.47, type: 'square', gain: 0.22, vib: 0, cut: 2600, top: 'sawtooth' },
+    };
+    const th = TH[this.theme] ?? TH.eye, k = th.root / 110;
     const tones: [number, number][] = [[110, 110], [116.54, 164.81], [155.56, 220], [233.08, 277.18], [311.13, 329.63]];
-    for (const [sick, well] of tones) {
-      const o = c.createOscillator(); o.type = 'sine'; o.frequency.value = sick;
-      const g = c.createGain(); g.gain.value = 0.0; o.connect(g); g.connect(this.muffle); o.start();
+    const tone = c.createBiquadFilter(); tone.type = 'lowpass'; tone.frequency.value = th.cut; tone.Q.value = 0.5; tone.connect(this.muffle);
+    tones.forEach(([sick, well], n) => {
+      const o = c.createOscillator(); o.type = n >= 3 && th.top ? th.top : th.type; o.frequency.value = sick * k;
+      const g = c.createGain(); g.gain.value = 0.0; const tg = c.createGain(); tg.gain.value = th.gain * (o.type === 'sawtooth' && th.type !== 'sawtooth' ? 0.5 : 1); o.connect(g); g.connect(tg); tg.connect(tone); o.start();
       const l = c.createOscillator(); l.frequency.value = 0.07 + Math.random() * 0.1; const lg = c.createGain(); lg.gain.value = 0.012; l.connect(lg); lg.connect(g.gain); l.start();
-      this.drone.push({ o, g, sick, well });
-    }
+      if (th.vib > 0) { const v = c.createOscillator(); v.frequency.value = th.vib * (0.9 + 0.2 * Math.random()); const vg = c.createGain(); vg.gain.value = sick * k * 0.004; v.connect(vg); vg.connect(o.frequency); v.start(); }
+      this.drone.push({ o, g, sick: sick * k, well: well * k });
+    });
     // 血流：低く濾した雑音
     const noise = this.noise(4);
     const ns = c.createBufferSource(); ns.buffer = noise; ns.loop = true;

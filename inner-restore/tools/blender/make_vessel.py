@@ -29,7 +29,10 @@ for i in range(nu + 1):
         t = j / nv
         y = math.cos(a) * (1 - 0.35 * t); z = math.sin(a) * (1 - 0.1 * t) * (0.15 + 0.85 * t) if False else math.sin(a) * (0.2 + 0.8 * t)
         x = t * 1.0 - 0.25 * math.sin(a) * math.sin(t * math.pi)   # ポケットのくぼみ
-        verts.append((x, y, z * 0.9))
+        # 薄い膜らしさ：自由な縁（t=1）は中央がゆるく垂れ、付け根から縁へ向かう細いしわが寄る（円錐台に見えないように）
+        sag = 1 - 0.16 * t * t * math.sin(a) ** 2
+        wr = 0.022 * t * math.sin(a * 11 + 1.3 * math.sin(t * 4)) + 0.012 * t * math.sin(a * 23)
+        verts.append((x + wr, y * (1 + 0.03 * t * math.sin(a * 5)), z * 0.9 * sag + wr * 0.6))
 for i in range(nu):
     for j in range(nv):
         a = i * (nv + 1) + j; faces.append((a, a + 1, a + nv + 2, a + nv + 1))

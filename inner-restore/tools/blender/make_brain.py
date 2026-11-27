@@ -38,7 +38,8 @@ def branch(p0, d0, length, r0, r1, n=14, wob=0.25, seed=0):
     for i in range(n):
         t = i / (n - 1); off = np.array([math.sin(t * 3 + seed), math.cos(t * 2.3 + seed * 1.7), math.sin(t * 2.7 + seed * 0.6)]) * wob * length * 0.15 * t
         pts.append(np.asarray(p0, float) + d0 * t * length + off)
-    return sweep("b", np.array(pts), lambda t, a: r0 + (r1 - r0) * t, nr=12, flat=1.0, sub=False)
+    # 根元は細胞体から広がるように太く、すぐ細くなる（管をさしたように見えないように）
+    return sweep("b", np.array(pts), lambda t, a: r1 + (r0 - r1) * (1 - t) ** 1.5 + r0 * 1.6 * math.exp(-t * 14), nr=12, flat=1.0, sub=False)
 
 
 L.reset(); objs = []
@@ -49,16 +50,19 @@ def soma_shape(name, scale=1.0):
         z = v.co.z; k = (1 - 0.8 * max(0, z) ** 0.9) * (1 - 0.25 * max(0, -z) ** 2)   # 上へとがる三角錐、下はやや平ら
         v.co.x *= 9 * k; v.co.y *= 8 * k; v.co.z = z * (13 if z > 0 else 7)
         v.co *= scale
+        v.co *= 1 + 0.07 * noise.noise(v.co * 0.18) + 0.03 * noise.noise(v.co * 0.5)   # 膜のゆるい起伏（幾何学的な円錐に見えないように）
     bpy.ops.object.shade_smooth(); return s
 parts = [soma_shape("pyr_soma")]
 zs = np.linspace(0, 1, 30)
-parts.append(sweep("apical", np.stack([1.2 * np.sin(zs * 3), 0.8 * np.sin(zs * 2 + 1), 10 + zs * 140], 1), lambda t, a: 1.6 - 1.0 * t, nr=14, flat=1.0, sub=False))
+parts.append(sweep("apical", np.stack([1.2 * np.sin(zs * 3), 0.8 * np.sin(zs * 2 + 1), 10 + zs * 140], 1), lambda t, a: 1.5 - 0.95 * t + 3.2 * math.exp(-t * 16), nr=14, flat=1.0, sub=False))
 for k in range(3):   # 尖端の幹から斜めに出る枝
     z0 = 40 + k * 32; a = k * 2.2
     parts.append(branch((0, 0, z0), (math.cos(a), math.sin(a), 1.1), 45, 0.55, 0.22, seed=k))
 for k in range(6):   # 基底樹状突起：横へ放射状、ゆるく下がる
     a = k * math.pi * 2 / 6 + 0.3
     parts.append(branch((math.cos(a) * 5, math.sin(a) * 5, -3), (math.cos(a), math.sin(a), -0.25), 55 + 10 * (k % 2), 0.8, 0.25, seed=k + 5))
+    ln = 55 + 10 * (k % 2); bx, by = math.cos(a) * (5 + ln * 0.45), math.sin(a) * (5 + ln * 0.45)   # 途中で Y の字に枝分かれ（写真⑬）
+    parts.append(branch((bx, by, -3 - ln * 0.11), (math.cos(a + 0.7), math.sin(a + 0.7), -0.1), ln * 0.5, 0.35, 0.18, n=9, seed=k + 20))
 parts.append(branch((0, 0, -10), (0.05, 0, -1), 60, 0.45, 0.3, wob=0.1, seed=11))   # 軸索
 pyr = join(parts, "pyramid"); voxel_smooth(pyr, 0.35, 8); decimate(pyr, 26000); objs.append(pyr)
 objs.append(soma_shape("soma_ghost")); voxel_smooth(objs[-1], 0.4, 4); decimate(objs[-1], 6000)
@@ -122,9 +126,14 @@ for k in range(5):
 mg = join(parts, "microglia_r"); voxel_smooth(mg, 0.15, 4)
 for v in mg.data.vertices: v.co *= 1 + 0.06 * noise.noise(v.co * 1.5)   # 節・こぶ
 decimate(mg, 12000); objs.append(mg)
-bpy.ops.mesh.primitive_uv_sphere_add(segments=40, ring_count=24, radius=5.5); ma = bpy.context.object; ma.name = "microglia_a"
-for v in ma.data.vertices: v.co *= 1 + 0.08 * noise.noise(v.co * 0.5) + 0.04 * noise.noise(v.co * 1.6)
-bpy.ops.object.shade_smooth(); objs.append(ma)
+parts = []
+bpy.ops.mesh.primitive_uv_sphere_add(segments=40, ring_count=24, radius=4.6); parts.append(bpy.context.object)
+for k in range(9):   # 短く太い突起（偽足）
+    d = Vector(rng.normal(size=3)).normalized(); d.z = abs(d.z) * 0.6 - 0.1; d.normalize()
+    bpy.ops.mesh.primitive_uv_sphere_add(segments=16, ring_count=10, radius=rng.uniform(1.4, 2.2), location=tuple(d * rng.uniform(3.6, 4.8))); parts.append(bpy.context.object)
+ma = join(parts, "microglia_a"); voxel_smooth(ma, 0.3, 8)
+for v in ma.data.vertices: v.co *= 1 + 0.07 * noise.noise(v.co * 0.9) + 0.035 * noise.noise(v.co * 2.6)
+decimate(ma, 7000); objs.append(ma)
 # アミロイドβのかたまり：細い線維の短いきれはしが、ぼやけた輪（殻）に集まる。中心はやや少ない。単位の半径 10
 parts = []
 for i in range(1500):   # 写真①：細かな粒が、輪郭のぼやけた輪のように集まる（粒は線維の束。実物の1本の線維は 約10nm で見えない）

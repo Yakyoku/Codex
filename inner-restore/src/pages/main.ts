@@ -23,7 +23,7 @@ import { voiceSettings, setVoice } from '../core/voice';
 import { AtlasViewer, hasModel } from '../game/viewer';
 import { HubView, organs, vitals } from '../game/hub';
 import { resetSave } from '../core/save';
-import { buildUI, renderAtlas, ATLAS, TIPS } from '../game/ui';
+import { buildUI, renderAtlas, ATLAS, TIPS_BY } from '../game/ui';
 import tuning from '../data/tuning.json';
 
 const W = window as unknown as Record<string, unknown>;
@@ -40,6 +40,8 @@ async function main() {
   const sim = Q.has('sim') ? Number(Q.get('sim')) : null;
   const { $ } = buildUI();
   const tipEl = $('load').querySelector('.tip') as HTMLElement, barEl = $('load').querySelector('i') as HTMLElement;
+  // 読み込む区域の器官に合った豆知識を出す
+  const TIPS = TIPS_BY[ZONES.find((z) => z.id === (Q.get('zone') ?? loadSave().zone ?? 'retina'))?.stage ?? 'eye'] ?? TIPS_BY.eye;
   let tipI = Math.floor(Math.random() * TIPS.length); tipEl.textContent = TIPS[tipI];
   const tipTimer = setInterval(() => { tipI = (tipI + 1) % TIPS.length; tipEl.textContent = TIPS[tipI]; }, 5000);
   const progress = (p: number) => (barEl.style.width = `${p * 100}%`);
@@ -86,7 +88,7 @@ async function main() {
   // 仕上げ（浅いピント・光のにじみ・色調）。?post=off で切れる
   // 映像の仕上げは設定で切れる（ir.post=off）。失敗したら自動で切って、そのまま描き続ける
   let post = Q.get('post') === 'off' || (store.get('ir.post') === 'off' && !Q.has('post')) ? null : createPost(renderer, stage.scene, camera, Q.get('post') === 'full' ? 'pc-high' : tier, { ao: Q.get('ao') !== '0' && (tier === 'pc-high' || Q.has('ao')) });
-  const audio = new GameAudio();
+  const audio = new GameAudio(); audio.theme = ZONES[zi].stage;
   const input = new Input(canvas);
   input.sens = { mouse: tuning.camera.mouseSens, pad: tuning.camera.padSens, touch: tuning.camera.touchSens };
 
@@ -208,7 +210,10 @@ async function main() {
     } catch { msgEl.textContent = '読み込めませんでした。書き出した文字列を、そのまま貼り付けてください。'; }
   };
   // ---- 患者の視界 ----
-  const pImg = $('patient').querySelector('img') as HTMLImageElement, pSpot = $('patient').querySelector('.spot') as HTMLElement;
+  const pImg0 = $('patient').querySelector('img') as HTMLImageElement;
+  // 器官ごとに、患者の目に映るものを変える（同じ病室の、花・カーテン・食事の盆・足もとの布団・点滴）。脳は、目覚めて最初に見る窓
+  { const pv = ({ smell: 'smell', breath: 'breath', comfort: 'comfort', circulation: 'circulation', rhythm: 'rhythm' } as Record<string, string>)[M.patient ?? '']; if (pv) pImg0.src = `/static/img/patient_${pv}.jpg`; }
+  const pImg = pImg0, pSpot = $('patient').querySelector('.spot') as HTMLElement;
   // におい（鼻のステージ）：部屋の景色の色と、ただよう香りの帯で見せる。病のあいだは灰色で、香りの帯がない
   const breathP = M.patient === 'breath', comfortP = M.patient === 'comfort', circP = M.patient === 'circulation', rhyP = M.patient === 'rhythm', conP = M.patient === 'conscious';
   const smell = M.patient === 'smell', wc = $('patient').querySelector('.wisps') as HTMLCanvasElement, wx = wc.getContext('2d')!;

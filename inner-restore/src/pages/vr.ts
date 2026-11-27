@@ -62,7 +62,7 @@ async function main() {
   stage.scene.add(rig);
   const [SX, SZ] = stage.size;
   rig.position.copy(stage.start.pos).setY(0); rig.rotation.y = Math.PI + stage.start.yaw;
-  const audio = new GameAudio();
+  const audio = new GameAudio(); audio.theme = ZONES[zi].stage;
 
   // 手：硬質なスーツの前腕（右＝浄化の道具、左＝手首の端末）
   const shell = new THREE.MeshStandardMaterial({ color: 0x7c66c4, roughness: 0.28 }), dark = new THREE.MeshStandardMaterial({ color: 0x1c1236, roughness: 0.45 });
@@ -89,7 +89,7 @@ async function main() {
   // 世界に置くパネル：紹介カード（対象の横）、字幕（視線の少し下に、ゆるやかについてくる）、患者の視界の窓
   const cardP = new Panel(1024, 560, 1.5 * K), subP = new Panel(1024, 200, 1.5 * K), patP = new Panel(640, 360, 1.0 * K);
   stage.scene.add(cardP.mesh, subP.mesh, patP.mesh);
-  const pImg = new Image(); pImg.src = '/static/img/patient_view.jpg';
+  const pImg = new Image(); pImg.src = M.patient && !['sight', 'conscious'].includes(M.patient) ? `/static/img/patient_${M.patient}.jpg` : '/static/img/patient_view.jpg';
   let patDrawn = -1;
   function drawPatient(m: number) {
     if (!pImg.complete || Math.abs(m - patDrawn) < 0.02) return; patDrawn = m;

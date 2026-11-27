@@ -163,10 +163,29 @@ al = bpy.data.lights.new("bounce", "AREA"); al.energy = 12; al.size = 3; al.colo
 ao = bpy.data.objects.new("bounce", al); ao.location = (0, 0.5, 2.75); sc.collection.objects.link(ao)
 
 # ---------- カメラ：ベッドの上から窓へ。窓にピント ----------
-cd = bpy.data.cameras.new("cam"); cd.lens = 30; cd.dof.use_dof = True; cd.dof.aperture_fstop = 1.0
-cam = bpy.data.objects.new("cam", cd); cam.location = (0.04, -1.5, 1.16); sc.collection.objects.link(cam); sc.camera = cam
-tgt = Vector((0.0, 3.0, 1.45)); cam.rotation_euler = (tgt - cam.location).to_track_quat("-Z", "Y").to_euler()
-cd.dof.focus_distance = 2.4      # ベッドの足元にピント。窓の外はやわらかくぼける（目覚めたばかりの視界）
+# 器官ごとの「患者の目に映るもの」：同じ病室の中で、見る場所を変える（VIEW=sight|smell|breath|comfort|circulation|rhythm）
+#   smell＝枕元の花／breath＝風にゆれるカーテンと窓／comfort＝枕元の台の、水と食事の盆／circulation＝足もとの掛け布団／rhythm＝点滴の袋と支柱
+VIEW = os.environ.get("VIEW", "sight")
+if VIEW == "comfort":   # 食事の盆（お椀と湯のみ）を台に足す
+    box("tray", (0.34, 0.24, 0.012), (1.33, 0.80, 0.727), wood, 0.004)
+    bpy.ops.mesh.primitive_uv_sphere_add(radius=0.06, location=(1.27, 0.80, 0.775)); o = bpy.context.object
+    for v in o.data.vertices:
+        if v.co.z > 0.01: v.co.z = 0.01
+    bpy.ops.object.shade_smooth(); add(o, white)
+    bpy.ops.mesh.primitive_cylinder_add(radius=0.03, depth=0.07, location=(1.41, 0.78, 0.77)); add(bpy.context.object, white)
+VIEWS = {  # カメラの位置, 見る先, レンズ, ピントの距離
+    "sight": ((0.04, -1.5, 1.16), (0.0, 3.0, 1.45), 30, 2.4),
+    "smell": ((0.75, 0.15, 1.05), (1.5, 0.75, 0.95), 50, 0.95),
+    "breath": ((0.3, -0.6, 1.2), (-1.1, 3.0, 1.5), 40, 3.2),
+    "comfort": ((0.72, 0.25, 1.12), (1.33, 0.82, 0.76), 45, 0.85),
+    "circulation": ((0.0, -1.2, 1.25), (0.0, 1.0, 0.72), 40, 1.9),
+    "rhythm": ((-0.2, -0.9, 1.25), (-0.95, -0.52, 1.6), 45, 0.95),
+}
+cpos, ctgt, clens, cfocus = VIEWS[VIEW]
+cd = bpy.data.cameras.new("cam"); cd.lens = clens; cd.dof.use_dof = True; cd.dof.aperture_fstop = 1.0 if VIEW == "sight" else 2.0
+cam = bpy.data.objects.new("cam", cd); cam.location = cpos; sc.collection.objects.link(cam); sc.camera = cam
+tgt = Vector(ctgt); cam.rotation_euler = (tgt - cam.location).to_track_quat("-Z", "Y").to_euler()
+cd.dof.focus_distance = cfocus      # sight：ベッドの足元にピント。窓の外はやわらかくぼける（目覚めたばかりの視界）
 sc.render.resolution_x, sc.render.resolution_y = int(os.environ.get("W", "1920")), int(os.environ.get("H", "1080"))
 sc.cycles.samples = int(os.environ.get("SAMPLES", "128")); sc.cycles.use_denoising = True
 sc.cycles.volume_step_rate = 4.0; sc.cycles.max_bounces = 6
@@ -187,6 +206,6 @@ a = a * np.array([1.03, 1.0, 0.95])
 yy, xx = np.mgrid[0:a.shape[0], 0:a.shape[1]]; r = np.hypot((xx / a.shape[1] - 0.5) * 1.6, (yy / a.shape[0] - 0.5) * 1.6)
 a *= (1 - 0.35 * np.clip(r - 0.35, 0, 1) ** 1.6)[..., None]
 im = Image.fromarray((np.clip(a, 0, 1) * 255 + 0.5).astype(np.uint8))
-out = os.environ.get("OUT", os.path.join(L.ROOT, "public", "static", "img", "patient_view.jpg"))
+out = os.environ.get("OUT", os.path.join(L.ROOT, "public", "static", "img", "patient_view.jpg" if VIEW == "sight" else f"patient_{VIEW}.jpg"))
 im.save(out, quality=86); os.remove(tmp)
 print("OK", out, round(time.time() - T0, 1), "s")
