@@ -213,3 +213,9 @@
 - 台帳：`node scripts/build-atlas-doc.mjs` で `Docs/ATLAS.md`（67項目）。
 - **次の一手**：①持ち主の実機確認（iPhone の横向き画面の再確認、iPad、PC・テレビ、Quest 3）の結果を `Docs/DEVICE_RESULTS.md` に記録し調整。②主人公の見た目（A 現状／B つや消し紫 `?suit=matte`／C 灰 `?suit=grey`）は持ち主の判断待ち。③この環境で未確認：WebGPU の絵、実機の fps、音色の聞こえ方、VR の明るさ。
 - 上の「既知の問題・やり残し」「次の一手」（2026-11-22 時点）のうち、5〜7・10 は対応済み。1（WebGPU の実機確認）・8（VR の実機確認）は実機待ちのまま。
+
+## 2026-11-27 主人公の見た目の決定・腕の振り
+- 見た目は A（現状）に決定（持ち主）。`?suit=matte|grey` は比較用に残してある（既定は変えない）。
+- 歩き・走りの腕：`make_anims.py` の `swing_arms()`／`aim_bone()`。胸を基準にした向きで上腕・前腕・手を決める（角度の足し算だと、安静の姿勢のひじの曲がり 約40°が乗って曲がりすぎた）。根拠は `Docs/REFERENCE/hero/gait.md`。
+- 作り直し：`python tools/blender/make_anims.py` → `node tools/pack-glb.mjs assets/models/diver.raw.glb public/static/models/diver.glb --plain 1 --ratio 1`。
+- 手の指は開いたまま（手は関節1つ）。握った形にするには make_hero.py で手の形を変える必要がある。

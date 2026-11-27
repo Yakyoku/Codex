@@ -174,7 +174,29 @@ HIP_L, HIP_R = world_of("thighL", False), world_of("thighR", False)
 # 着地はかかとから、蹴り出しはつま先で。腰の上下・左右、骨盤のひねり、腕の振りは止まらない滑らかな波で動かす。
 import math as _m
 def _ease(u): return 0.5 - 0.5 * _m.cos(_m.pi * u)
-def loco(name, T, fs, D, lift, drop, bob, twist, tilt, shift, lean, arm, elbow, elbow_fwd, run=False, arm_in=0.0, track=0.06):
+def aim_bone(name, d_body):
+    """関節 name の骨を、胸を基準にした向き d_body（x=左, -y=前, z=上）へ向ける。ねじれは最小に。親（胸・上腕）を先に決めてから呼ぶ"""
+    pb = rig.pose.bones[name]; pb.rotation_mode = "QUATERNION"; pb.rotation_quaternion = (1, 0, 0, 0); bpy.context.view_layer.update()
+    ch = rig.pose.bones["chest"]
+    R = ch.matrix.to_3x3() @ rig.data.bones["chest"].matrix_local.to_3x3().inverted()      # 胸の、安静からの回転
+    want = (R @ Vector(d_body)).normalized()
+    M = pb.matrix.copy(); q = M.to_3x3().col[1].normalized().rotation_difference(want)
+    N = (q.to_matrix() @ M.to_3x3()).to_4x4(); N.translation = M.translation
+    pb.matrix = N; bpy.context.view_layer.update()
+def swing_arms(p, fwd, back, el_f, el_b, out, tuck, lag=0.0):
+    """実際の人の腕の振り（Docs/REFERENCE/hero/gait.md）。足と逆の腕が前へ出る。
+       fwd/back: 上腕が肩から前・後ろへ振れる角度, el_f/el_b: 前・後ろでのひじの曲げ, out: 上腕を体の外へ開く角度（手が腰に当たらない）,
+       tuck: 前へ出た手が体の中心へ寄る量（中心線は越えない）"""
+    for side, sx, ph in (("L", 1, 0.0), ("R", -1, 0.5)):
+        c = _m.cos(2 * _m.pi * (p + ph - lag))            # +1＝いちばん後ろ（同じ側の足が前）, -1＝いちばん前
+        u = 0.5 - 0.5 * c                                   # 0＝後ろ, 1＝前
+        th = -back + (fwd + back) * u                       # 上腕の前後の角度（前が正）
+        el = el_b + (el_f - el_b) * u ** 1.3                # ひじは前で深く曲がり、後ろで伸びる
+        up = Vector((sx * _m.sin(out), -_m.sin(th) * _m.cos(out), -_m.cos(th) * _m.cos(out)))
+        fa = Vector((sx * (_m.sin(out) * 0.6 - tuck * u), -_m.sin(th + el), -_m.cos(th + el))).normalized()
+        aim_bone("upperArm" + side, up); aim_bone("foreArm" + side, fa)
+        aim_bone("hand" + side, fa + Vector((-sx * 0.12, 0, -0.1)))   # 手は前腕の延長で、力を抜いて少し内へ・下へ
+def loco(name, T, fs, D, lift, drop, bob, twist, tilt, shift, lean, arms, run=False, track=0.06):
     """T: 1周期（2歩）のコマ数, fs: 足が地面に着いている割合, D: 着いている間に足が後ろへ流れる距離（＝歩幅）,
        lift: 足を上げる高さ, drop: 骨盤を下げる量, bob: 上下動, twist/tilt/shift: 骨盤のひねり・傾き・左右移動,
        lean: 前傾, arm: 腕の振り, elbow: ひじの曲げ, elbow_fwd: 腕が前のときの追加の曲げ"""
@@ -198,12 +220,8 @@ def loco(name, T, fs, D, lift, drop, bob, twist, tilt, shift, lean, arm, elbow, 
         else: z = -drop - bob * _m.cos(4 * _m.pi * p)
         x = shift * _m.sin(2 * _m.pi * p)
         tw = twist * _m.cos(2 * _m.pi * p); tl = tilt * _m.sin(2 * _m.pi * p - 0.6)
-        armL = arm * _m.cos(2 * _m.pi * p); armR = -armL
-        pose = {"pelvis": (lean * 0.45, tw, tl), "chest": (lean * 0.55 + 0.012 * _m.cos(4 * _m.pi * p), -tw * 1.1, -tl * 0.7), "head": (-lean * 0.8, tw * 0.15, tl * 0.3),
-                "upperArmL": (armL, 0, 0.05 - arm_in + abs(armL) * 0.03), "upperArmR": (armR, 0, -0.05 + arm_in - abs(armR) * 0.03),
-                "foreArmL": (-(elbow + elbow_fwd * max(0, -armL) / max(arm, 1e-3)), 0, 0), "foreArmR": (-(elbow + elbow_fwd * max(0, -armR) / max(arm, 1e-3)), 0, 0),
-                "handL": (-0.12, 0, 0.05), "handR": (-0.12, 0, -0.05)}
-        apply(pose, (x, 0, z))
+        pose = {"pelvis": (lean * 0.45, tw, tl), "chest": (lean * 0.55 + 0.012 * _m.cos(4 * _m.pi * p), -tw * 1.1, -tl * 0.7), "head": (-lean * 0.8, tw * 0.15, tl * 0.3)}
+        apply(pose, (x, 0, z)); swing_arms(p, *arms)
         for k, ph0, AN, sx in (("footL", 0.0, AN_L, 1), ("footR", 0.5, AN_R, -1)):
             ph = (p + ph0) % 1
             if ph < fs:                         # 地面に着いている：後ろへ一定の速さで流れる
@@ -230,9 +248,11 @@ def loco(name, T, fs, D, lift, drop, bob, twist, tilt, shift, lean, arm, elbow, 
     bake(a, 1, 1 + T)
     return a
 # 歩き：1.1 秒（33 コマ）で2歩。歩幅 0.62、ゲームでの速さ ≒ 0.62 / (0.62 × 1.1) ≒ 0.91
-loco("walk", 33, 0.62, 0.56, 0.07, 0.04, 0.012, 0.17, 0.1, 0.035, 0.02, 0.28, 0.28, 0.18, arm_in=0.14, track=0.03)
+# 腕：肩から振り子のように。前へ 約18°・後ろへ 約22°、ひじは後ろでほぼ伸び（12°）前で軽く曲がる（38°）。上腕を 9°外へ開き、手は腰の横を通る
+loco("walk", 33, 0.62, 0.56, 0.07, 0.04, 0.012, 0.17, 0.1, 0.035, 0.02, (0.31, 0.38, 0.66, 0.21, 0.16, 0.10, 0.03), track=0.03)
 # 走り：0.68 秒（約 20 コマ）で2歩。着いている割合 0.36、歩幅 0.76、ゲームでの速さ ≒ 0.76 / (0.36 × 0.68) ≒ 3.1
-loco("run", 20, 0.36, 0.76, 0.24, 0.085, 0.03, 0.19, 0.06, 0.016, 0.22, 0.5, 0.9, 0.25, run=True, arm_in=0.36, track=0.045)
+# 腕：ひじを 約90°に曲げたまま肩から振る。ひじは後ろへ大きく引き（上腕 50°）、前では手が胸の高さへ。手は体の中心線を越えない
+loco("run", 20, 0.36, 0.76, 0.24, 0.085, 0.03, 0.19, 0.06, 0.016, 0.22, (0.38, 0.87, 1.75, 1.3, 0.2, 0.2, 0.0), run=True, track=0.045)
 # 立ち：腰に手を当て、体重を左足に。ゆっくり呼吸し、重心を少し揺らす（4 秒＝120 コマ）
 def stand(f, tg, po, init=False):
     s = math.sin((f - 1) / 120 * 2 * math.pi); br = math.sin((f - 1) / 60 * 2 * math.pi)
