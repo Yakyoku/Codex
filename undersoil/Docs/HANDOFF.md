@@ -147,3 +147,4 @@
   `/stage2/`（`stage2/index.html`、`src/pages/stage2.ts`、`src/stage2/scene.ts`・`root.ts`、`src/data/stage2.zone1.layout.json`）。確認：`node scripts/shot.mjs 名前 "/stage2/?pos=52,2,-4,50,-6,-46&wet=1&freeze=6&clean"`。
   次：`FACTCHECK_stage2.md`（別の確認役が作成中）の結果を下書きに反映してから SPECIES.md に載せる → species の json とテスト → モデル（アメーバ・線虫は bpy）→ 遊び。根毛の見た目（破片のように見える）と、表皮の細胞の模様は要改善。
   依頼書の 1 区画は約 1.4 mm なので、根の先から根毛の帯（3.5 mm 以上）までは 1 区画に入らない。区域ごとに別の World を作って切り替える方針。
+- 2026-11-28（続き）：`FACTCHECK_stage2.md` の指摘を反映し、ステージ2 の 4 種＋要素 2 つを `SPECIES.md` と `src/data/species/` に載せた（テストは 17 件）。まだゲームには登場させていない（モデルと紹介カードの接続が次）。

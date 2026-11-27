@@ -1,0 +1,15 @@
+{
+  "id": "acanthamoeba",
+  "kind": "organism",
+  "nameJa": "アカントアメーバ",
+  "sci": "Acanthamoeba castellanii",
+  "taxon": "アメーボゾア アカントアメーバ属",
+  "size": "大きさ 約 0.03 mm",
+  "sizeCompare": "髪の毛の太さの 3 分の 1 ほど",
+  "intro": "大きさ約0.03mm、髪の毛の太さの3分の1ほどのアメーバです。とげのような細い足を出して土の粒の上をはい、細菌を包みこんで食べ、余った窒素を根が使える形で出します。",
+  "stage": 2,
+  "sources": [
+    "Docs/SPECIES.md",
+    "Docs/FACTCHECK_stage2.md"
+  ]
+}

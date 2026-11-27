@@ -1,0 +1,15 @@
+{
+  "id": "nitrosospira",
+  "kind": "organism",
+  "nameJa": "ニトロソスピラ",
+  "sci": "Nitrosospira 属",
+  "taxon": "細菌 アンモニア酸化細菌",
+  "size": "長さ 約 0.002 mm",
+  "sizeCompare": "髪の毛の太さの 40 分の 1 ほど",
+  "intro": "長さ約0.002mm、ばねのように固く巻いた細菌です。土の中のアンモニウム（アメーバや線虫が出したものもふくむ）を亜硝酸に変え、窒素が硝酸（根が吸える形の一つ）になる最初の一歩を担います。",
+  "stage": 2,
+  "sources": [
+    "Docs/SPECIES.md",
+    "Docs/FACTCHECK_stage2.md"
+  ]
+}

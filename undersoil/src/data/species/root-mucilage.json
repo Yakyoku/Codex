@@ -1,0 +1,14 @@
+{
+  "id": "root-mucilage",
+  "kind": "element",
+  "nameJa": "根の粘液と境界細胞",
+  "title": "根の粘液（ねんえき）と境界細胞（きょうかいさいぼう）",
+  "size": "粘液の膜は土の中で 0.002〜0.03 mm",
+  "sizeCompare": "細菌 1〜15 個ぶんの厚さ",
+  "intro": "根の先は糖でできた粘液を出し、根冠（こんかん。根の先のおおい）からはがれた生きた細胞「境界細胞」がその中に散らばっています。根のまわりの微生物を引きよせます。",
+  "stage": 2,
+  "sources": [
+    "Docs/SPECIES.md",
+    "Docs/FACTCHECK_stage2.md"
+  ]
+}

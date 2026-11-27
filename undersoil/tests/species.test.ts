@@ -7,7 +7,7 @@ const dir = new URL('../src/data/species/', import.meta.url);
 const all = readdirSync(dir).map((f) => JSON.parse(readFileSync(new URL(f, dir), 'utf8')));
 
 describe('生き物のデータと台帳', () => {
-  it('11 件ある（2026-11-25 にシロツメクサの種を追加）', () => expect(all.length).toBe(11));
+  it('17 件ある（ステージ1 が 11、ステージ2 が 6）', () => expect(all.length).toBe(17));
   for (const s of all) {
     it(`${s.nameJa}：台帳に載っている`, () => {
       expect(ledger).toContain(s.nameJa.replace(/（.*）/, ''));

@@ -1,0 +1,14 @@
+{
+  "id": "root-hair",
+  "kind": "element",
+  "nameJa": "根毛",
+  "title": "根毛（こんもう）",
+  "size": "太さ 約 0.01 mm",
+  "sizeCompare": "髪の毛の太さの 8 分の 1",
+  "intro": "根の表面の細胞が1個ずつ外へのびた、太さ約0.01mm（髪の毛の8分の1）の管です。根が土にふれる面を大きく広げ、リンなどの養分を集めます。",
+  "stage": 2,
+  "sources": [
+    "Docs/SPECIES.md",
+    "Docs/FACTCHECK_stage2.md"
+  ]
+}

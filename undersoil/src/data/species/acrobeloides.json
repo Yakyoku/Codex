@@ -1,0 +1,16 @@
+{
+  "id": "acrobeloides",
+  "kind": "organism",
+  "nameJa": "アクロベロイデス",
+  "title": "アクロベロイデス（線虫・せんちゅう）",
+  "sci": "Acrobeloides nanus",
+  "taxon": "線虫 ケファロブス科",
+  "size": "体長 約 0.4 mm",
+  "sizeCompare": "髪の毛の太さの 5 倍ほど",
+  "intro": "体長約0.4mm、髪の毛の太さの5倍ほどの線虫（せんちゅう。糸のように細長い動物）です。体をくねらせて土のすき間を進み、細菌を飲みこんで食べ、余った窒素を出します。",
+  "stage": 2,
+  "sources": [
+    "Docs/SPECIES.md",
+    "Docs/FACTCHECK_stage2.md"
+  ]
+}

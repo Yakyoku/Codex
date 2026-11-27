@@ -1,0 +1,16 @@
+{
+  "id": "streptomyces",
+  "kind": "organism",
+  "nameJa": "ストレプトマイセス",
+  "title": "ストレプトマイセス（放線菌・ほうせんきん）",
+  "sci": "Streptomyces 属",
+  "taxon": "細菌 放線菌",
+  "size": "糸の太さ 約 0.001 mm",
+  "sizeCompare": "髪の毛の太さの 80 分の 1 ほど",
+  "intro": "太さ約0.001mmの糸をのばして枝分かれする細菌（放線菌）です。土の匂いのもと「ゲオスミン」を作り、抗生物質を作る仲間も多くいます。",
+  "stage": 2,
+  "sources": [
+    "Docs/SPECIES.md",
+    "Docs/FACTCHECK_stage2.md"
+  ]
+}
