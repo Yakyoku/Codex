@@ -139,3 +139,6 @@
   `creatures.present()`、`controls.swimStyle`、`notebook.ts`（スタンプ、自分の観察）、`dew.shrink()`、roadmap（確認の印＝フォーム confirm、前回からの変化＝data.json の prev を**更新の前に**今の値で書き直す）。
   Netlify のフォームは diag・feedback・confirm の 3 つ（manage-form-submissions で読む）。
   未対応で残した提案：乾眠から戻るクマムシ／シストから出るコルポダの本物の動画（Wikimedia の取得制限）、ピントを回すつまみ（本物の写真では不可）。
+- 2026-11-27（4 回目）：効果音 `audio.fx()`、VR の音、設定の書き出し・読みこみ、`scripts/check-play.mjs`（?fast=25 で早回し。約 10 分。9 項目）、乾眠から戻るクマムシの動画（tardigrade-v2）。
+  直した不具合：種が眠っているうちに着くと、そばで目覚めさせても地上へ進まなかった（goalTick）。
+  持ち主の決定が要るもの：タイトル・物語（→ タイトル画面、物語の場面）、ステージ 2 以降の着手。

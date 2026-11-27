@@ -157,6 +157,8 @@ async function main() {
       else goal.innerHTML = '<b>種（たね）にたどり着きました</b><span>でも、種はまだ眠っています。「水を運ぶ」で土をしめらせよう</span>';
       goal.classList.add('on'); audio.chime();
     }
+    // 眠っている種のそばにいる間に、水が届いて種が目覚めたら、あらためて知らせて地上へ進む
+    if (goalState === 'shown' && d < 30 && game.wake > 0.5 && !goal.textContent?.includes('地上')) { goalT = 0; goal.innerHTML = '<b>種（たね）が目を覚ましました！</b><span>根が顔を出しています。地上（ちじょう）で芽が出るところへ行きます</span>'; goal.classList.add('on'); audio.chime(); }
     if (goalState === 'shown') {
       goalT += dt;
       if (goalT > 5.5) goal.classList.remove('on');
