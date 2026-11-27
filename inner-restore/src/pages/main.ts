@@ -325,7 +325,7 @@ async function main() {
       pv.set(f.x, f.y + 6, f.z).project(camera);
       if (pv.z > 1 || Math.abs(pv.x) > 1.1 || Math.abs(pv.y) > 1.1) { el.style.opacity = '0'; continue; }
       el.style.left = `${Math.min(0.9, Math.max(0.1, pv.x * 0.5 + 0.5)) * innerWidth}px`; el.style.top = `${Math.min(0.85, Math.max(0.3, -pv.y * 0.5 + 0.5)) * innerHeight}px`; el.style.opacity = String(diag.show);
-      el.innerHTML = `<b>病巣${i + 1}</b> ${f.short}　${Math.round(f.dist)}µm`;
+      el.innerHTML = `<b>病巣${i + 1}</b><span> ${f.short}　</span> ${Math.round(f.dist)}µm`;
     }
   }
 

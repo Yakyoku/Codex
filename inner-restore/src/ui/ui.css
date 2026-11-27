@@ -141,11 +141,28 @@ body.shot #viewer, body.shot #errline, body.shot .ir-hud { visibility:hidden; } 
 #patient .wisps { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; mix-blend-mode:screen; }
 #reticle.beat { border-color:#ffd0a0; box-shadow:0 0 10px #ffb07a99; }
 
-/* 横向きのスマホ（背の低い画面）：右のボタンを、右上の患者の窓に重ならない高さにまとめる（上の既定の位置より後に書く） */
+/* ================= 横向きのスマホ（背の低い画面）の配置 =================
+   考え方：主人公のいる「画面の中央から下」には、何も重ねない。
+   文字や案内は、左の列（進み具合の下）と上の列（ボタンの下）に小さくまとめ、操作のボタンは右下に高さ基準（vh）で並べる。
+   Safari のバーを出したままの iPhone（高さ 約290px）でも重ならない大きさにする。 */
 @media (max-height: 520px) {
-  #tb-up { bottom:max(152px,calc(env(safe-area-inset-bottom) + 136px)); right:max(22px,env(safe-area-inset-right)); }
-  #tb-down { bottom:max(96px,calc(env(safe-area-inset-bottom) + 80px)); right:max(118px,calc(env(safe-area-inset-right) + 100px)); }
-  #tb-fire { bottom:max(70px,calc(env(safe-area-inset-bottom) + 54px)); width:5em !important; height:5em !important; }
-  #tb-scan { bottom:max(22px,env(safe-area-inset-bottom)); right:max(118px,calc(env(safe-area-inset-right) + 100px)); }
-  .tb-s { width:3.8em !important; height:3.8em !important; }
+  :root { --b: min(60px, 20vh); }
+  /* 右上：患者の窓は小さく */
+  #patient { width:min(22vw, 50vh); }
+  #patient .cap { font-size:.66em; letter-spacing:.08em; left:5px; bottom:3px; }
+  /* 右下：ボタンを2列×2段に。患者の窓の下に収まる */
+  #touch .tb { font-size:.74em; }
+  #tb-fire { right:max(12px,env(safe-area-inset-right)); bottom:max(5vh,env(safe-area-inset-bottom)); width:calc(var(--b) * 1.15) !important; height:calc(var(--b) * 1.15) !important; }
+  #tb-up { right:max(12px,env(safe-area-inset-right)); bottom:calc(max(5vh,env(safe-area-inset-bottom)) + var(--b) * 1.15 + 6px); width:var(--b) !important; height:var(--b) !important; }
+  #tb-scan { right:calc(max(12px,env(safe-area-inset-right)) + var(--b) * 1.15 + 8px); bottom:max(3vh,env(safe-area-inset-bottom)); width:var(--b) !important; height:var(--b) !important; }
+  #tb-down { right:calc(max(12px,env(safe-area-inset-right)) + var(--b) * 1.15 + 8px); bottom:calc(max(3vh,env(safe-area-inset-bottom)) + var(--b) + 6px); width:var(--b) !important; height:var(--b) !important; }
+  /* 上の列：字幕は、上のボタンのすぐ下に2行まで（長い案内は声で読み上げる） */
+  #subs { top:max(40px,calc(env(safe-area-inset-top) + 34px)); bottom:auto; max-width:50vw; font-size:.74em; line-height:1.4; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; background:#070c0ea8; padding:.25em .7em; border-radius:6px; }
+  /* 左の列：紹介カードとスキャン診断は、進み具合の下の細い列に小さく（同時には出ない） */
+  #card, #dx { left:max(12px,env(safe-area-inset-left)); right:auto; top:calc(max(14px,env(safe-area-inset-top)) + 4.2em); bottom:auto; margin-left:0; width:min(28vw,15em); max-width:none; max-height:calc(100vh - 6.5em); overflow:hidden; font-size:.66em; padding:.45em .6em .5em; }
+  #card .d { -webkit-line-clamp:3; }
+  #dx { font-size:11px; line-height:1.35; } #dx .l small { display:none; } #dx .t { margin-bottom:.1em; }
+  /* 病巣の札は、番号と距離だけ（重なりにくくする） */
+  #tags .tag { font-size:11px; padding:.15em .45em; } #tags .tag span { display:none; }
+  .ir-hud { display:none; }
 }
