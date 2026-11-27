@@ -192,3 +192,9 @@
 - 軽い模型：`assets.ts` の `setLowModels`（pc-high 以外は `<名前>.lo.glb`）。作り方 `node tools/pack-glb.mjs <raw> <lo> --plain 1 --ratio 0.3 --error 0.004 --keep <簡略化しない模型>`（heart: collagen,collagen_lo／brain: plaque,plaque_lo,tangle／vessel: fibrin,fibrin_lo。VR だけ photo.lo も使う）。模型を作り直したら lo も作り直す。
 - 測定：`node scripts/measure-zones.mjs`（画面版＝互換と VR の三角形・描画回数。結果は `Docs/build-sizes/zone-tris.json`）。
 - 区域の移動：`?zone=…&go=1` でタイトルを挟まずに始まる。患者の変化の演出は 6.5秒後から押して飛ばせる。
+
+## 2026-11-27 採点の残りの指摘
+- 音色：`audio.ts` の `theme`（start() の前に器官の id を入れる。TH の表）。
+- 患者の窓：`tools/blender/make_patient_view.py` の `VIEW=smell|breath|comfort|circulation|rhythm`（`W=1280 H=720 SAMPLES=48` で約3分）→ `public/static/img/patient_<VIEW>.jpg`。画面版 `main.ts`・VR 版 `vr.ts` が `M.patient` で選ぶ。
+- 豆知識：`ui.ts` の `TIPS_BY`（器官ごと）。
+- 見送り中：主人公の見た目の変更（持ち主の判断待ち）。
