@@ -15,6 +15,7 @@ import { buildMicroscope } from '../game/microscope';
 import { makeMinimap } from '../ui/minimap';
 import { buildColloids } from '../game/colloids';
 import { makeTools } from '../game/tools';
+import { makeQuest } from '../game/quest';
 import { makeSizes } from '../ui/sizes';
 import { makeNotebook } from '../ui/notebook';
 import { makeEncounters } from '../game/encounters';
@@ -127,6 +128,7 @@ async function main() {
   const tools = makeTools(scene, camera, world, game.seed.position, () => audio.chime(), (p, k) => { game.swarm.attract(p, k); game.swarm2.attract(p, k); }, (k) => audio.fx(k));
   controls.onAction = (a) => { if (a === 'scan') tools.scan(); else if (a === 'sugar') tools.sugar(); else tools.water(); };
   $('waterBtn').addEventListener('click', () => tools.water());
+  const quest = makeQuest(world, { stats: tools.stats, wind: () => tools.wind, windOk: () => tools.stats.windSurvived, startWind: () => tools.startWind(), retryWind: () => tools.retryWind(), wake: () => game.wake, scanned: () => tools.scans });
   $('scanBtn').addEventListener('click', () => tools.scan()); $('sugarBtn').addEventListener('click', () => tools.sugar());
   const scope = await buildMicroscope('./');
   const sizes = makeSizes('./');
@@ -271,8 +273,8 @@ async function main() {
       if (curU === gotoU) { gotoU = null; if (touring) $('tour').click(); } }
     else if (touring) { tourU = (tourU + dt * 0.012) % 1; curU = 0.02 + 0.84 * (0.5 - 0.5 * Math.cos(tourU * Math.PI * 2)); placeOnPath(curU); /* 道の終わりで、吸水した種（seed.ts）に近づく */ }
     else { controls.swimStyle = savedSwim(); controls.speedK = savedSpeed(); controls.lookK = savedLook(); controls.bob = savedBob() && !reduceMotion; controls.water = world.grid.cells[world.cellAt(camera.position)]?.water ?? 0; controls.update(dt); }
-    tools.update(dt); { const mm = $('moveMode'); const txt = touring || mode !== 'soil' ? '' : controls.swimming ? '泳（およ）ぐ' : '歩（ある）く'; if (mm.textContent !== txt) mm.textContent = txt; $('sugarBtn').textContent = `糖のしずく ${tools.stock}`; { const ci = world.cellAt(camera.position); $('waterBtn').textContent = tools.tank < 3 && (ci === 0 || world.grid.cells[ci].water > 0.6) ? '水をくむ' : `水をまく ${tools.tank}`; } document.body.classList.toggle('free', !touring && mode === 'soil'); }
-    if (wetQ === null) { demo.update(dt); game.update(dt, t); }
+    tools.update(dt); if (quest.update(dt, !touring && mode === 'soil')) audio.fx('link'); { const mm = $('moveMode'); const txt = touring || mode !== 'soil' ? '' : controls.swimming ? '泳（およ）ぐ' : '歩（ある）く'; if (mm.textContent !== txt) mm.textContent = txt; $('sugarBtn').textContent = `糖のしずく ${tools.stock}`; { const ci = world.cellAt(camera.position); $('waterBtn').textContent = tools.tank < 3 && (ci === 0 || world.grid.cells[ci].water > 0.6) ? '水をくむ' : `水をまく ${tools.tank}`; } document.body.classList.toggle('free', !touring && mode === 'soil'); }
+    if (wetQ === null) { demo.update(dt); if (FAST > 1) { for (let k = 0; k < FAST; k++) game.update(dt / FAST, t); } else game.update(dt, t); }   // 早回しのときも、土の計算は細かい刻みで進める
     // 手持ちカメラのごくわずかな揺れ（記録映像らしさ）：自動で巡るときだけ、0.15°以内。動きを減らす設定の端末では使わない
     if (touring && !reduceMotion && !testing) { const k = 0.0026; driftQ.setFromEuler(new THREE.Euler(Math.sin(t * 0.53) * k + Math.sin(t * 1.37) * k * 0.4, Math.sin(t * 0.41 + 1.2) * k + Math.sin(t * 1.11) * k * 0.35, 0)); camera.quaternion.multiply(driftQ); }
     if (mode === 'surface') {

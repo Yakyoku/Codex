@@ -20,7 +20,8 @@ export function makeTools(scene: THREE.Scene, camera: THREE.Camera, world: World
   /** 次にどこへ運ぶとよいか：入口から見て、最初に水の足りない区画 */
   const next = () => { const k = world.grid.cells.findIndex((c) => c.water < 0.4); const here = world.cellAt(camera.position);
     return k < 0 ? '道ぞいの区画すべてに、水が行きわたっています' : k === here ? '▼ ここに水が必要です' : `つぎは <b>区画 ${k + 1}</b>（${k > here ? '種のほう' : '入口のほう'}へ ${Math.abs(k - here)} つ）に水を`; };
-  const scan = () => {
+  let scans = 0;
+  const scan = () => { scans++;
     const i = world.cellAt(camera.position), c = world.grid.cells[i], v = world.grid.vitality(i);
     const lacks: [number, string][] = [[c.water, '水が足りません。「水を運ぶ」で、水の橋をつなごう'], [c.microbes, c.water < 0.3 ? '微生物は眠っています。まず水が必要です' : '微生物が少ない。糖のしずくを置くと増えます'], [c.structure, '団粒が育っていません。微生物が増えると、のりで粒がまとまります']];
     lacks.sort((a, b) => a[0] - b[0]);
@@ -56,7 +57,7 @@ export function makeTools(scene: THREE.Scene, camera: THREE.Camera, world: World
   const splashMat = new THREE.MeshBasicMaterial({ color: 0x9fd8e8, transparent: true, opacity: 0.5, depthWrite: false, side: THREE.DoubleSide });
   const splash = (p: THREE.Vector3, big: boolean) => { const m = new THREE.Mesh(new THREE.SphereGeometry(1, 20, 12), splashMat.clone()); m.position.copy(p); m.scale.setScalar(0.3); m.userData.big = big; scene.add(m); splashes.push({ m, t: 0 }); };
   // 山場「乾きの風」：水が 5 区画に行きわたると、乾いた風が 45 秒吹く。その間、水は 6 倍の速さで乾く。水の橋を保てるか
-  let wind: 'wait' | 'on' | 'done' = 'wait', windT = 0; const awake = new Set<number>();
+  let wind: 'wait' | 'on' | 'done' = 'wait', windT = 0, windArmed = false; const awake = new Set<number>();
   const windEl = document.createElement('div'); windEl.className = 'wind'; document.body.append(windEl);
   const water = (pos?: THREE.Vector3) => {
     const i = world.cellAt(pos ?? camera.position), g = world.grid, c = g.cells[i];
@@ -72,7 +73,7 @@ export function makeTools(scene: THREE.Scene, camera: THREE.Camera, world: World
     say(linked ? `水をまきました（残り ${tank}）。となりの区画と、水の橋（はし）がつながりました！` : `水をまきました（残り ${tank}）。となりにも水があると、水の橋がかかります`); return 'pour';
   };
   return {
-    scan, sugar, water, stats, get tank() { return tank; }, get wind() { return wind; }, get message() { return lastSay; },
+    scan, sugar, water, stats, get tank() { return tank; }, get wind() { return wind; }, get scans() { return scans; }, /** 山場を始める（道しるべから呼ぶ） */ startWind() { if (wind === 'wait') windArmed = true; }, /** 風のあと、種のまわりが乾いていたら、もう一度挑める */ retryWind() { if (wind === 'done' && !stats.windSurvived) { wind = 'wait'; windArmed = false; } }, get message() { return lastSay; },
     /** VR の手首の画面用：いまいる区画の数字 */
     read(pos?: THREE.Vector3) { const i = world.cellAt(pos ?? camera.position), c = world.grid.cells[i]; return { cell: i, water: c.water, carbon: c.carbon, microbes: c.microbes, structure: c.structure, vitality: world.grid.vitality(i), all: world.grid.cells.map((_, k) => world.grid.vitality(k)) }; },
     get stock() { return stock; },
@@ -91,11 +92,15 @@ export function makeTools(scene: THREE.Scene, camera: THREE.Camera, world: World
       for (let k = splashes.length - 1; k >= 0; k--) { const sp = splashes[k]; sp.t += dt; const u = sp.t / (sp.m.userData.big ? 1.4 : 0.8); sp.m.scale.setScalar(0.3 + u * (sp.m.userData.big ? 5 : 2.2)); (sp.m.material as THREE.MeshBasicMaterial).opacity = 0.5 * (1 - u); if (u >= 1) { scene.remove(sp.m); splashes.splice(k, 1); } }
       // 区画の目覚め：活力がしきい値を超えた区画を、はじめての 1 回だけ知らせる
       { const g = world.grid; for (let k = 0; k < g.count; k++) if (!awake.has(k) && g.awakened(k)) { awake.add(k); stats.awakened = awake.size; if (stats.pours > 0) { (fx ? fx('awake') : chime()); say(k < 4 ? `区画 ${k + 1} が目覚めました。眠っていた細菌が、泳ぎ出しています` : k < 8 ? `区画 ${k + 1} が目覚めました。細菌を食べるコルポダが、殻から出てきます` : `区画 ${k + 1} が目覚めました。種（たね）まで、あと少しです`); } } }
-      // 乾きの風
-      { const g = world.grid, wet = g.cells.filter((c) => c.water > 0.4).length;
-        if (wind === 'wait' && stats.pours >= 4 && wet >= 5) { wind = 'on'; windT = 45; for (const c of g.cells) c.dryness = 6; windEl.innerHTML = '<b>乾（かわ）きの風（かぜ）</b><span>地上から乾いた風が吹きこんでいます。水の橋を保とう</span><i></i>'; windEl.classList.add('on'); (fx ? fx('wind') : chime()); }
-        if (wind === 'on') { windT -= dt; (windEl.querySelector('i') as HTMLElement).style.width = Math.max(0, windT / 45 * 100) + '%';
-          if (windT <= 0) { wind = 'done'; for (const c of g.cells) c.dryness = 1; windEl.classList.remove('on'); stats.windSurvived = wet >= 4; say(stats.windSurvived ? '乾きの風を乗りきりました！ 水の橋は保たれています' : '風はやみました。乾いた区画に、もう一度水を運ぼう'); chime(); } } }
+      // 乾きの風（設計 GDD 4 の 5）：地表から乾いた空気が下りてきて、入口の側から順に水の膜が切れていく。
+      // 切れる前に水を補い、種のまわり（区画 10〜12）の水をつなぎ続ける。失敗しても、乾いた所が休眠に戻るだけで、やり直せる
+      { const g = world.grid, N = g.count, DUR = 60;
+        if (wind === 'wait' && windArmed) { wind = 'on'; windT = DUR; windEl.innerHTML = '<b>乾（かわ）きの風（かぜ）</b><span>入口の側から、水の膜が切れていきます。水を補って、種のまわりの水を守ろう</span><i></i>'; windEl.classList.add('on'); (fx ? fx('wind') : chime()); }
+        if (wind === 'on') { windT -= dt; (windEl.querySelector('i') as HTMLElement).style.width = Math.max(0, windT / DUR * 100) + '%';
+          const front = (1 - windT / DUR) * (N + 2);                       // 乾いた空気の先頭（区画の番号）。入口から種へ進む
+          for (let k = 0; k < N; k++) { g.cells[k].dryness = k < front ? 12 : 1.5; if (g.cells[k].water < 0.15) for (const o of [...g.links[k]]) g.unlink(k, o); }   // 乾ききった区画は、水の橋が切れる
+          if (windT <= 0) { wind = 'done'; for (const c of g.cells) c.dryness = 1; windEl.classList.remove('on'); stats.windSurvived = g.cells.slice(N - 3).every((c) => c.water > 0.35);
+            say(stats.windSurvived ? '乾きの風を乗りきりました！ 種のまわりの水は保たれています' : '風はやみました。種のまわりが乾いています。もう一度、水を運ぼう'); (fx ? fx(stats.windSurvived ? 'link' : 'awake') : chime()); } } }
       // 細菌は糖の濃いほうへ集まる（走化性）。いちばん新しいしずくへ、数秒かけて寄ってくる。水がないと動けない
       { const d = drops[drops.length - 1]; if (d && world.grid.cells[d.cell].water > 0.25) { pull = Math.min(1, pull + dt / 6); attract?.(d.m.position, pull * Math.max(0, 1 - d.t / 25) ** 0.3); } else { pull = 0; attract?.(null, 0); } }
       // 種のそばで補給（種からしみ出した糖をもらう）

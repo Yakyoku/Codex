@@ -201,3 +201,11 @@ body.surface .wind { display: none; }
 
 .s2-note { position: fixed; left: 50%; top: max(12px, env(safe-area-inset-top)); transform: translateX(-50%); max-width: 80vw; padding: 6px 14px; border-radius: 10px; background: rgba(16,13,10,.7); border: 1px solid rgba(239,230,216,.25); color: #efe6d8; font-size: clamp(11px, 1vw, 14px); text-align: center; pointer-events: none; }
 .s2-note b { display: block; color: #ffd27a; letter-spacing: .06em; } body.clean .s2-note { display: none; }
+
+/* 道しるべ（いまやること） */
+.quest { position: fixed; left: max(12px, env(safe-area-inset-left)); top: max(160px, calc(env(safe-area-inset-top) + 150px)); width: min(19em, 46vw); padding: 9px 12px; border-radius: 10px; background: rgba(16,13,10,.72); border: 1px solid rgba(239,230,216,.25); border-left: 3px solid #d9a441; color: #efe6d8; font-size: clamp(11px, .95vw, 14px); opacity: 0; pointer-events: none; transition: opacity .5s ease, border-color .3s ease; z-index: 5; }
+.quest.on { opacity: 1; } .quest.done { border-color: #6fae6a; border-left-color: #6fae6a; }
+.quest small { display: block; color: #ffd27a; letter-spacing: .04em; } .quest small i { font-style: normal; color: #b9ad98; }
+.quest b { display: block; margin: 3px 0; line-height: 1.5; } .quest span { color: #b9ad98; font-size: .9em; line-height: 1.5; display: block; }
+body.surface .quest, body.clean .quest, body.compare .quest { display: none; }
+@media (max-width: 720px), (max-height: 500px) { .quest { top: 100px; width: 44vw; font-size: 11px; } }

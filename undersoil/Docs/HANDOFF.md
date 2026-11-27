@@ -32,6 +32,8 @@
 6. 公開：Netlify 連携の deploy-site（siteId 指定）で proxy の URL を取り、`build-cache/proxy.txt` に保存 → `node scripts/deploy.mjs draft|prod`（`npm run build` のあと）
 
 ## 決定事項
+- **持ち主の指示が依頼書（GAME_BRIEF.md）と食い違うときは、作業を始める前に「依頼書ではこうなっていますが、どうしますか」と伝える**（持ち主の希望 2026-11-28。持ち主も勘違いすることがあるので、指摘してほしいとのこと）。
+- **順番は依頼書どおり：ステージ1を最終品質まで仕上げてから次へ**。ステージ2（調査・事実確認・設計・台帳・区域 1 の試作まで済み）は**保留**。再開はステージ1（M3・M4）の完成後。
 - **実機診断の結果は、診断ページの「結果を送る」で Netlify のフォーム（名前 diag、formId 6b0829f66228584cbe74807c）に届く**。Netlify 連携の manage-form-submissions（get-submissions）で読み、`public/roadmap/data.json` の diag に足す。
 - **報告のたびに、全体の進み具合ページを更新し、その URL を共有する**（持ち主の指示 2026-11-26）：https://undersoil-web-20261122.netlify.app/roadmap/ 。中身は `public/roadmap/data.json`（各項目の進み具合 s＝0〜1、次にやること、確認待ち、歩み）。全体の割合はページが重みから自動で計算する。
 - リポジトリは Yakyoku/Codex、本体は `undersoil/`、ブランチは `claude/undersoil-web-game-2niuh3`（main には push しない）。公開は Netlify 連携で直接。
@@ -148,3 +150,4 @@
   次：`FACTCHECK_stage2.md`（別の確認役が作成中）の結果を下書きに反映してから SPECIES.md に載せる → species の json とテスト → モデル（アメーバ・線虫は bpy）→ 遊び。根毛の見た目（破片のように見える）と、表皮の細胞の模様は要改善。
   依頼書の 1 区画は約 1.4 mm なので、根の先から根毛の帯（3.5 mm 以上）までは 1 区画に入らない。区域ごとに別の World を作って切り替える方針。
 - 2026-11-28（続き）：`FACTCHECK_stage2.md` の指摘を反映し、ステージ2 の 4 種＋要素 2 つを `SPECIES.md` と `src/data/species/` に載せた（テストは 17 件）。まだゲームには登場させていない（モデルと紹介カードの接続が次）。
+- 2026-11-28（3 回目）：ステージ1 に戻る。`src/game/quest.ts`（道しるべ 8 段）、`tools.ts` の乾きの風を設計どおりに（入口側から順に乾く、乾ききると橋が切れる、種のまわり 3 区画を守る、やり直し可）。`check-play.mjs` は道しるべに沿って確認。

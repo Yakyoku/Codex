@@ -7,13 +7,26 @@ const ev = (f, a) => page.evaluate(f, a); const steps = []; const ok = (name, v)
 const until = async (f, ms, a) => { const t0 = Date.now(); while (Date.now() - t0 < ms) { if (await ev(f, a)) return true; await page.waitForTimeout(1500); } return false; };
 await ev(() => document.getElementById('tour').click()); await page.waitForTimeout(2000);
 const pour = (c) => ev((c) => { const g = window.__game, b = document.getElementById('waterBtn'); g.camera.position.copy(g.world.cellCenter(0)); b.click(); g.camera.position.copy(g.world.cellCenter(c)); b.click(); b.click(); }, c);
-for (let c = 0; c < 6; c++) { await pour(c); await page.waitForTimeout(800); }
-ok('水をくんでまく（6 区画）', await ev(() => window.__game.world.grid.cells.slice(0, 6).every((c) => c.water > 0.3)));
-ok('水の橋がつながる', await ev(() => window.__game.world.grid.links.slice(0, 5).every((s, i) => s.has(i + 1))));
+const step = () => ev(() => document.querySelector('.quest small i')?.textContent ?? '');
+await ev(() => document.getElementById('scanBtn').click());
+ok('道しるべ 1：スキャン', await until(() => document.querySelector('.quest small i')?.textContent.startsWith('2'), 30000));
+for (let c = 0; c < 2; c++) { await pour(c); await page.waitForTimeout(600); }
+ok('道しるべ 2：水の橋を 1 本', await until(() => document.querySelector('.quest small i')?.textContent.startsWith('3'), 30000));
+for (let c = 2; c < 5; c++) { await pour(c); await page.waitForTimeout(600); }
+ok('道しるべ 3：区域 A の細菌が目覚める', await until(() => document.querySelector('.quest small i')?.textContent.startsWith('4'), 120000));
+await ev(() => { const g = window.__game; g.camera.position.copy(g.world.cellCenter(3)); document.getElementById('sugarBtn').click(); });
+ok('道しるべ 4：糖のしずく', await until(() => document.querySelector('.quest small i')?.textContent.startsWith('5'), 30000));
+for (let c = 5; c < 9; c++) { await pour(c); await page.waitForTimeout(600); }
+ok('道しるべ 5：区域 B まで橋をつなぐ', await until(() => document.querySelector('.quest small i')?.textContent.startsWith('6'), 60000));
+for (let c = 9; c < 12; c++) { await pour(c); await page.waitForTimeout(600); }
+ok('道しるべ 6：種の岸まで水', await until(() => document.querySelector('.quest small i')?.textContent.startsWith('7'), 60000));
 ok('乾きの風が始まる', await until(() => document.querySelector('.wind').classList.contains('on'), 60000));
-ok('乾きの風が終わる', await until(() => !document.querySelector('.wind').classList.contains('on'), 240000));
-for (let c = 0; c < 12; c++) { await pour(c); await page.waitForTimeout(500); }
-ok('12 区画すべてに水', await ev(() => window.__game.world.grid.cells.every((c) => c.water > 0.3)));
+// 風の間、種のまわり（区画 10〜12）に水を補いつづける
+let windDone = false; for (let k = 0; k < 40 && !windDone; k++) { for (const c of [9, 10, 11]) await pour(c); await page.waitForTimeout(1200); windDone = await ev(() => !document.querySelector('.wind').classList.contains('on')); }
+ok('乾きの風が終わる', windDone);
+ok('道しるべ 7：風を乗りきる', await until(() => document.querySelector('.quest small i')?.textContent.startsWith('8'), 60000));
+console.log('step', await step());
+for (let c = 0; c < 12; c++) { await pour(c); await page.waitForTimeout(400); }
 ok('種が目覚める', await until(() => window.__game.wake > 0.5, 120000));
 await ev(() => { const g = window.__game; g.camera.position.copy(g.seed.position).add({ x: -70, y: 2, z: 0 }); });
 ok('ゴールの知らせ', await until(() => document.querySelector('.goal').classList.contains('on') || document.body.classList.contains('surface'), 60000));
