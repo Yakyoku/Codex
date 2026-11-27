@@ -5,7 +5,7 @@ import { texture, uv, vec3, float, mix, normalMap, normalView, positionViewDirec
 import { loadGLB, loadTexture } from '../core/assets';
 import type { World } from './world';
 
-export interface Creatures { group: THREE.Group; update(dt: number, t: number): void; anyActive(): boolean; nearest(p: THREE.Vector3): THREE.Vector3 | null; /** 泳いでいる個体の位置（水の中の粒を押しのけるため） */ movers(): { p: THREE.Vector3; r: number }[]; }
+export interface Creatures { group: THREE.Group; update(dt: number, t: number): void; anyActive(): boolean; nearest(p: THREE.Vector3): THREE.Vector3 | null; /** 泳いでいる個体の位置（水の中の粒を押しのけるため） */ movers(): { p: THREE.Vector3; r: number }[]; /** 紹介中：いちばん近い個体が、平たい面（腎臓形とくぼみが分かる向き）をカメラへ向けて、ゆっくりになる */ present(cam: THREE.Camera | null): void; }
 
 function bodyMaterial(na: THREE.Texture) {
   // 持ち主の資料と顕微鏡写真：腎臓形。細い暗い輪郭線。中は淡い灰褐色（#C2B5A4）で、細かい粒々が詰まっている
@@ -84,6 +84,7 @@ export async function buildCreatures(base: string, world: World, opts: { lod: 0 
   // 泳ぎ方（2026-11-26、本物の動画〈iNaturalist、Shelpiakov〉と文献に合わせた）：
   //   ・らせんの道すじを描き、体の長い軸のまわりを回りながら進む（Kim et al. 2016）
   //   ・速さは同属の C. steinii の実測に近い毎秒約 50µm（5 単位）。ときどき止まって向きを変え、少し後ろへ下がる（繊毛虫に普通の動き）
+  let presentCam: THREE.Camera | null = null;
   const posAt = (c: (typeof list)[number], s: number, t: number, out: THREE.Vector3) => {
     side.crossVectors(c.axis, up).normalize();
     out.copy(c.home).addScaledVector(c.axis, Math.sin(s) * 4.2).addScaledVector(side, Math.sin(s * 2) * 1.6).addScaledVector(up, Math.cos(s * 1.3) * 1.1);
@@ -98,6 +99,7 @@ export async function buildCreatures(base: string, world: World, opts: { lod: 0 
   };
   return {
     group,
+    present(cam) { presentCam = cam; },
     anyActive: () => list.some((c) => c.a > 0.6),
     movers: () => list.filter((c) => c.a > 0.6).map((c) => ({ p: c.root.position, r: 3.2 })),
     nearest(from) { let best: THREE.Vector3 | null = null, bd = 1e9; for (const c of list) { if (c.a < 0.6) continue; const d = c.root.position.distanceToSquared(from); if (d < bd) { bd = d; best = c.root.position; } } return best; },
@@ -111,6 +113,11 @@ export async function buildCreatures(base: string, world: World, opts: { lod: 0 
         const ud = c.root.userData as { head?: THREE.Quaternion }; ud.head ??= c.root.quaternion.clone();
         if (nxt.lengthSq() > 1e-8) { nxt.normalize(); if (c.rate < 0) nxt.negate(); ud.head.slerp(new THREE.Quaternion().setFromUnitVectors(fwd, nxt), 1 - Math.exp(-dt * 4)); }   // 向きはなめらかに変える（後ろへ下がるときも頭は前のまま）
         roll.setFromAxisAngle(fwd, c.rollA); q.copy(ud.head).multiply(roll);   // 体の長い軸のまわりに回りながら進む（止まると回りもゆっくり）
+        if (presentCam) { let near = list[0], nd = 1e9; for (const o of list) { if (o.a < 0.6) continue; const dd = o.root.position.distanceToSquared(presentCam.position); if (dd < nd) { nd = dd; near = o; } }
+          if (near === c) { // 体の平たい面（モデルの Y 軸）をカメラへ。長い軸（−Z）は画面の横向きに
+            c.rate = 0.06; c.modeT = 1; const toCam = presentCam.position.clone().sub(p).normalize(), right = new THREE.Vector3(1, 0, 0).applyQuaternion(presentCam.quaternion);
+            const zAxis = right.clone().negate(), xAxis = new THREE.Vector3().crossVectors(toCam, zAxis).normalize(); const mq = new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(xAxis, toCam, new THREE.Vector3().crossVectors(xAxis, toCam)));
+            ud.head.slerp(mq, 1 - Math.exp(-dt * 2.5)); q.copy(ud.head); } }
         c.root.position.copy(p); c.root.quaternion.copy(q); c.root.scale.setScalar(0.6 + 0.4 * Math.min(1, (c.a - 0.5) * 2));
         if (c.cvMesh) c.cvMesh.scale.setScalar(0.55 + 0.45 * Math.abs(Math.sin(t * 0.9 + c.ph))); // 収縮胞の拍動
         void m;

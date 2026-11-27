@@ -22,7 +22,7 @@ import { SPECIES } from '../game/species';
 import { showCard } from '../ui/card';
 import { makePointer } from '../ui/pointer';
 import type { Target } from '../game/encounters';
-import { mountSettings, savedTier, savedBob, savedSpeed, savedLook } from '../ui/settings';
+import { mountSettings, savedTier, savedBob, savedSpeed, savedLook, savedSwim } from '../ui/settings';
 import { createAudio } from '../audio/engine';
 import { makeHud } from './hud';
 
@@ -78,7 +78,7 @@ async function main() {
   let growT = 0; const GROW_SEC = Number(Q.get('grow') ?? 26);
   if (Q.get('g') !== null) surface.setGrowth(Number(Q.get('g')));
   const fade = document.createElement('div'); fade.className = 'fade'; document.body.append(fade);
-  const switchTo = (m: 'soil' | 'surface') => { fade.classList.add('on'); setTimeout(() => { mode = m; growT = 0; surface.setGrowth(0); document.body.classList.toggle('surface', m === 'surface'); renderer.toneMappingExposure = m === 'surface' ? 1.0 : 1.0; fade.classList.remove('on'); }, 900); };
+  const switchTo = (m: 'soil' | 'surface') => { fade.classList.add('on'); setTimeout(() => { mode = m; growT = m === 'surface' ? game.root * 0.2 * GROW_SEC : 0; /* 土の中で根が出ていた分だけ、地上の芽生えも先へ進んだ所から始まる（同じ 1 つの出来事） */ surface.setGrowth(growT / GROW_SEC); document.body.classList.toggle('surface', m === 'surface'); renderer.toneMappingExposure = m === 'surface' ? 1.0 : 1.0; fade.classList.remove('on'); }, 900); };
   surfaceCam = surface.camera; resize();
   if (mode === 'surface') { document.body.classList.add('surface'); renderer.toneMappingExposure = 0.9; }
   let started = false;
@@ -133,6 +133,17 @@ async function main() {
   const notebook = makeNotebook('./', (id) => scope.show(id, SPECIES[id]?.title ?? SPECIES[id]?.nameJa ?? ''));
   $('sizes').addEventListener('click', () => sizes.open());
   $('notebook').addEventListener('click', () => notebook.open());
+  // 結果の画面：地上で芽が開ききったら、今回の記録を出す（1 回だけ）
+  const result = document.createElement('dialog'); result.className = 'notebook result'; document.body.append(result); let resultShown = false;
+  const showResult = () => { resultShown = true; const st = tools.stats, n = notebook.count();
+    result.innerHTML = `<h2>今回（こんかい）の記録（きろく）</h2><p class="nb-lead">種が目を覚まし、地上で芽が開きました。</p>
+      <div class="res-grid"><div><b>${st.pours}</b><span>水をまいた回数</span></div><div><b>${st.links}</b><span>つないだ水の橋</span></div><div><b>${st.awakened}</b><span>目覚めた区画（12 のうち）</span></div><div><b>${st.sugars}</b><span>置いた糖のしずく</span></div><div><b>${n}</b><span>出会った生き物（6 のうち）</span></div><div><b>${tools.wind === 'done' ? (st.windSurvived ? '○' : '△') : '—'}</b><span>乾きの風</span></div></div>
+      <div class="nb-actions"><button type="button" class="btn primary" data-nb>観察ノートを見る</button><button type="button" class="btn" data-close>とじる</button></div>`;
+    result.querySelector('[data-close]')!.addEventListener('click', () => result.close()); result.querySelector('[data-nb]')!.addEventListener('click', () => { result.close(); notebook.open(); }); result.showModal(); };
+  // 気づきを送る：その場の位置と一言を、Netlify のフォーム（feedback）で届ける
+  $('fb').addEventListener('click', async () => { const note = prompt('気になった所・気づいたことを書いてください'); if (!note) return;
+    const info = `mode=${mode} tier=${tier} gpu=${isWebGPU ? 'webgpu' : 'webgl2'} pos=${camera.position.toArray().map((v) => v.toFixed(1)).join(',')} cell=${world.cellAt(camera.position)} scr=${innerWidth}x${innerHeight}`;
+    try { const r = await fetch('/', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ 'form-name': 'feedback', note, info, bot: '' }).toString() }); alert(r.ok ? '送りました。ありがとうございます' : '送れませんでした（' + r.status + '）'); } catch (e) { alert('送れませんでした：' + String(e)); } });
   const minimap = makeMinimap(world.path, { c: game.seed.position, r: 55 }, world.cavern);
   // ゴール：道の終わりで種にたどり着くと、種が目覚めていれば地上の芽生えへ。まだなら「水をあげよう」と知らせる
   const goal = document.createElement('div'); goal.className = 'goal'; document.body.append(goal);
@@ -156,7 +167,7 @@ async function main() {
   };
   // 生き物を見せに行く：カードが出ている間、カメラはその生き物のそばで止まり、離れていれば暗転して移る
   const ORGANISMS = ['bacillus-subtilis', 'pseudomonas-fluorescens', 'colpoda', 'paramacrobiotus-metropolitanus'];
-  const VIEW: Record<string, number> = { 'bacillus-subtilis': 2.2, 'pseudomonas-fluorescens': 2.6, colpoda: 13, 'paramacrobiotus-metropolitanus': 70 };
+  const VIEW: Record<string, number> = { 'bacillus-subtilis': 2.2, 'pseudomonas-fluorescens': 2.6, colpoda: 13, 'paramacrobiotus-metropolitanus': 70, 'water-film': 6 };
   let visit: { get: () => Target; dist: number; pos: THREE.Vector3; anchor: THREE.Vector3; ret: THREE.Vector3; retQ: THREE.Quaternion } | null = null;
   /** 生き物がよく見える位置：まわりの向きを順に試し、間に粒がない向きを選ぶ */
   const clear = (a: THREE.Vector3, b: THREE.Vector3, skip: number) => { const d = b.clone().sub(a), L = d.length(); d.divideScalar(L);
@@ -200,7 +211,7 @@ async function main() {
     { id: 'clay', when: () => mode === 'soil' && cellW(8) > 0.4 && !!grain('clay')(), target: grain('clay') },
     { id: 'clover-seed', when: () => mode === 'soil' && nearSeed() < 70, target: seedT },
     { id: 'trifolium-repens', when: () => mode === 'surface' && surface.growth > 0.75, target: seedling },
-  ], { gapSec: 4, onShow: (id, t) => { audio.chime(); pointer.show(t, SPECIES[id]?.nameJa ?? ''); if (ORGANISMS.includes(id)) beginVisit(id, t); scope.show(id, SPECIES[id]?.title ?? SPECIES[id]?.nameJa ?? ''); notebook.meet(id); }, onHide: () => { pointer.hide(); focusT = null; endVisit(); scope.hide(); } });
+  ], { gapSec: 4, onShow: (id, t) => { audio.chime(); pointer.show(t, SPECIES[id]?.nameJa ?? ''); if (ORGANISMS.includes(id) || id === 'water-film') beginVisit(id, t); game.creatures.present(id === 'colpoda' ? camera : null); scope.show(id, SPECIES[id]?.title ?? SPECIES[id]?.nameJa ?? ''); notebook.meet(id); }, onHide: () => { pointer.hide(); focusT = null; endVisit(); scope.hide(); } });
   $('meet').addEventListener('click', () => { enc.replay(ORGANISMS); if (!touring) $('tour').click(); });
   $('water').addEventListener('click', () => demo.start());
   $('dry').addEventListener('click', () => demo.dry());
@@ -239,6 +250,10 @@ async function main() {
   let hidden = false; document.addEventListener('visibilitychange', () => { hidden = document.hidden; last = 0; });
 
   let frames = 0, last = 0, tourU = 0.02, vitShown = -1, viewShift = 0;
+  let gotoU: number | null = null, curU = 0.02;
+  minimap.onGo = (p) => { let best = 0, bd = 1e9; for (let k = 0; k <= 100; k++) { const u = 0.02 + 0.84 * k / 100, d = world.path.getPointAt(u).distanceToSquared(p); if (d < bd) { bd = d; best = u; } }
+    if (!touring) { let b2 = 1e9; for (let k = 0; k <= 100; k++) { const u = 0.02 + 0.84 * k / 100, d = world.path.getPointAt(u).distanceToSquared(camera.position); if (d < b2) { b2 = d; curU = u; } } $('tour').click(); }
+    gotoU = best; };
   const driftQ = new THREE.Quaternion(); const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const frame = (now: number) => {
     if (hidden) return;
@@ -248,8 +263,11 @@ async function main() {
     else if (camT !== null) placeOnPath(Number(camT));
     else if (touring && visit) { const f = visit.get(); if (f) { const want = f.view ? f.view : visit.pos.clone().add(f.p.clone().sub(visit.anchor)); camera.position.lerp(want, 1 - Math.exp(-dt * 1.2)); const q0 = camera.quaternion.clone(); camera.lookAt(f.p); camera.quaternion.slerp(q0, Math.exp(-dt * 3)); } }
     else if (touring && pointer.focus()) { const f = pointer.focus()!; focusT = focusT ? focusT.lerp(f, 1 - Math.exp(-dt * 2)) : look.clone(); const q0 = camera.quaternion.clone(); camera.lookAt(focusT); camera.quaternion.slerp(q0, Math.exp(-dt * 1.5)); }
-    else if (touring) { tourU = (tourU + dt * 0.012) % 1; placeOnPath(0.02 + 0.84 * (0.5 - 0.5 * Math.cos(tourU * Math.PI * 2))); /* 道の終わりで、吸水した種（seed.ts）に近づく */ }
-    else { controls.speedK = savedSpeed(); controls.lookK = savedLook(); controls.bob = savedBob() && !reduceMotion; controls.water = world.grid.cells[world.cellAt(camera.position)]?.water ?? 0; controls.update(dt); }
+    else if (gotoU !== null) { // 地図で押した所へ、道に沿って向かう。着いたら「自分で動く」に切り替える
+      const dir = Math.sign(gotoU - curU), stepU = dt * 0.035; curU = Math.abs(gotoU - curU) <= stepU ? gotoU : curU + dir * stepU; placeOnPath(curU);
+      if (curU === gotoU) { gotoU = null; if (touring) $('tour').click(); } }
+    else if (touring) { tourU = (tourU + dt * 0.012) % 1; curU = 0.02 + 0.84 * (0.5 - 0.5 * Math.cos(tourU * Math.PI * 2)); placeOnPath(curU); /* 道の終わりで、吸水した種（seed.ts）に近づく */ }
+    else { controls.swimStyle = savedSwim(); controls.speedK = savedSpeed(); controls.lookK = savedLook(); controls.bob = savedBob() && !reduceMotion; controls.water = world.grid.cells[world.cellAt(camera.position)]?.water ?? 0; controls.update(dt); }
     tools.update(dt); { const mm = $('moveMode'); const txt = touring || mode !== 'soil' ? '' : controls.swimming ? '泳（およ）ぐ' : '歩（ある）く'; if (mm.textContent !== txt) mm.textContent = txt; $('sugarBtn').textContent = `糖のしずく ${tools.stock}`; { const ci = world.cellAt(camera.position); $('waterBtn').textContent = tools.tank < 3 && (ci === 0 || world.grid.cells[ci].water > 0.6) ? '水をくむ' : `水をまく ${tools.tank}`; } document.body.classList.toggle('free', !touring && mode === 'soil'); }
     if (wetQ === null) { demo.update(dt); game.update(dt, t); }
     // 手持ちカメラのごくわずかな揺れ（記録映像らしさ）：自動で巡るときだけ、0.15°以内。動きを減らす設定の端末では使わない
@@ -265,6 +283,7 @@ async function main() {
       if (post) post.render(); else renderer.render(scene, camera);
     }
     if (colloids && mode === 'soil') colloids.update(dt, camera.position, world.grid.cells[world.cellAt(camera.position)]?.water ?? 0, !touring && controls.swimming, game.creatures.movers());
+    if (mode === 'surface' && surface.growth >= 1 && !resultShown && !testing) showResult();
     scope.tick(dt); minimap.update(camera, mode === 'soil' && started); goalTick(dt);
     if (!testing) enc.update(dt);
     pointer.update(dt);

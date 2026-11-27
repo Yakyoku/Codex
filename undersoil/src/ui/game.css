@@ -181,3 +181,20 @@ body.surface .guide { display: none; }
 .vr-opts legend { color: var(--dim); padding: 0 6px; } .vr-opts label { display: flex; justify-content: space-between; gap: 10px; align-items: center; } .vr-opts select { font: inherit; }
 .vr-help { display: block; color: var(--dim); max-width: 34em; margin: 0 auto; line-height: 1.6; }
 body.in-vr .vr-opts, body.in-vr .vr-help { display: none; }
+
+/* 山場：乾きの風 */
+.wind { position: fixed; left: 50%; top: 22%; transform: translateX(-50%); width: min(460px, 86vw); padding: 10px 16px 14px; border-radius: 12px; background: rgba(40, 24, 10, .85); border: 1px solid rgba(240, 170, 90, .6); color: #f3dcc0; text-align: center; opacity: 0; pointer-events: none; transition: opacity .5s ease; z-index: 30; }
+.wind.on { opacity: 1; } .wind b { display: block; color: #ffb866; font-size: clamp(15px, 1.5vw, 22px); letter-spacing: .1em; } .wind span { font-size: clamp(12px, 1vw, 15px); }
+.wind i { position: absolute; left: 0; bottom: 0; height: 4px; background: #ffb866; border-radius: 0 0 0 12px; }
+body.surface .wind { display: none; }
+
+.minimap.on { pointer-events: auto; cursor: pointer; }
+.res-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 8px 0 4px; }
+.res-grid div { padding: 10px; border-radius: 10px; background: rgba(255,255,255,.06); text-align: center; } .res-grid b { display: block; font-size: 1.9em; color: #ffd27a; } .res-grid span { font-size: .82em; color: #d8cdb9; }
+@media (max-width: 720px) { .res-grid { grid-template-columns: repeat(2, 1fr); } }
+
+.nb-stamps { display: flex; align-items: center; gap: 6px; margin: 0 0 10px; color: #ffd27a; font-size: .9em; } .nb-stamps img { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; border: 2px solid #ffd27a; }
+.nb-card em { font-style: normal; font-size: .75em; color: #8fe6e0; }
+.nb-note { display: grid; gap: 6px; padding: 10px; margin: 8px 0; border-radius: 10px; background: rgba(255,255,255,.05); border: 1px solid var(--line); }
+.nb-note textarea, .nb-note input[type=date] { font: inherit; color: var(--ink); background: rgba(0,0,0,.35); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; width: 100%; }
+.nb-note label { font-size: .88em; color: #d8cdb9; display: grid; gap: 4px; } .nb-note img { max-width: 220px; border-radius: 8px; }

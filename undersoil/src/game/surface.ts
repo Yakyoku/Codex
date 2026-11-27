@@ -182,16 +182,18 @@ export async function buildSurface(renderer: THREE.WebGPURenderer, base: string,
     ...spotsOnInstances(litter.children[0] as THREE.InstancedMesh, 3, 33, 0.06, 0.32),
   ];
   const dew = buildDew(dewSpots, { max: 260, sun: sunDir }); scene.add(dew.mesh); dew.set(0);
+  let dewIn = 0, dewDry = 0;   // 朝露は、日が当たると 1 分半ほどかけて小さくなり、消えていく（時間の流れの手がかり）
   const focusDistance = uniform(16);
   const surf: Surface = {
     scene, camera, growth: 0, focusDistance, groundY: gy,
     setGrowth(g) {
       surf.growth = g = Math.max(0, Math.min(1, g));
-      pose(g); spill.update(g); dew.set(Math.max(0, Math.min(1, (g - 0.86) / 0.1)));
+      pose(g); spill.update(g); dewIn = Math.max(0, Math.min(1, (g - 0.86) / 0.1)); if (g < 0.9) dewDry = 0; dew.set(dewIn * (1 - dewDry));
     },
     update(_dt, t) {
       // カメラ：写真のように 55°で見下ろし、固定（早回しの間、カメラは動かさない）。画面の幅は約 20 mm。地平線と空は写さない
       const g = surf.growth;
+      if (g >= 1 && dewDry < 1) { dewDry = Math.min(1, dewDry + _dt / 90); dew.set(dewIn * (1 - dewDry)); dew.mesh.scale.setScalar(1); dew.shrink(1 - 0.6 * dewDry); }
       // 雲の流れ：日差しが、ゆっくり強くなったり弱くなったりする（20〜40 秒の周期。薄い雲が通る程度）
       { const tt = performance.now() / 1000; const c = 0.5 + 0.5 * Math.sin(tt * 0.21) * 0.7 + 0.15 * Math.sin(tt * 0.53 + 1.3); sun.intensity = 3.4 * (0.72 + 0.28 * Math.max(0, Math.min(1, c))); } void t;
       const k = Math.max(0, Math.min(1, (g - 0.7) / 0.3)); const kk = k * k * (3 - 2 * k);   // 本葉が伸びる間だけ、ごくゆっくり引く

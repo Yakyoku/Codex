@@ -5,7 +5,7 @@
 import * as THREE from 'three/webgpu';
 import type { Collider } from './world';
 
-export interface FreeControls { update(dt: number): void; enabled: boolean; yaw: number; pitch: number; moving: boolean; /** その場所の水の量（0〜1）。0.45 以上で泳ぐ */ water: number; swimming: boolean; /** 歩くときの、視点のわずかな上下（設定で切れる） */ bob: boolean; /** 設定：動く速さ・見回す速さの倍率 */ speedK: number; lookK: number; onAction?: (a: 'scan' | 'sugar' | 'water') => void; }
+export interface FreeControls { update(dt: number): void; enabled: boolean; yaw: number; pitch: number; moving: boolean; /** その場所の水の量（0〜1）。0.45 以上で泳ぐ */ water: number; swimming: boolean; /** 歩くときの、視点のわずかな上下（設定で切れる） */ bob: boolean; /** 設定：動く速さ・見回す速さの倍率 */ speedK: number; lookK: number; /** 泳ぎ方：glide＝コルポダのようになめらかに滑る、dart＝細菌のようにすぐ進みすぐ止まる */ swimStyle: 'glide' | 'dart'; onAction?: (a: 'scan' | 'sugar' | 'water') => void; }
 
 export function pushOut(p: THREE.Vector3, colliders: Collider[], radius: number) {
   for (let it = 0; it < 2; it++) for (const c of colliders) {
@@ -16,7 +16,7 @@ export function pushOut(p: THREE.Vector3, colliders: Collider[], radius: number)
 
 export function makeFreeControls(camera: THREE.Camera, dom: HTMLElement, colliders: Collider[], stick: HTMLElement | null): FreeControls {
   const keys = new Set<string>(); const vel = new THREE.Vector3(); const move = new THREE.Vector2();
-  const c: FreeControls = { enabled: true, yaw: 0, pitch: 0, moving: false, water: 0, swimming: false, bob: true, speedK: 1, lookK: 1, update };
+  const c: FreeControls = { enabled: true, yaw: 0, pitch: 0, moving: false, water: 0, swimming: false, bob: true, speedK: 1, lookK: 1, swimStyle: 'glide', update };
   let bobPh = 0, bobPrev = 0;
   let swimK = 0; const padPrev = [false, false, false];
   const e = new THREE.Euler().setFromQuaternion(camera.quaternion, 'YXZ'); c.yaw = e.y; c.pitch = e.x;
@@ -51,7 +51,8 @@ export function makeFreeControls(camera: THREE.Camera, dom: HTMLElement, collide
     // 歩く ⇄ 泳ぐ：水の量でなめらかに切り替える
     c.swimming = c.water > 0.45; swimK += ((c.swimming ? 1 : 0) - swimK) * (1 - Math.exp(-dt * 2.5));
     const speed = (4.6 + 2.4 * swimK) * c.speedK;                                   // 歩き 46µm/秒、泳ぎ 70µm/秒
-    const accel = c.moving ? 7 - 3.5 * swimK : 6 - 4.8 * swimK;        // 泳ぎは動き出しがゆるく、止めても滑る
+    const dart = c.swimStyle === 'dart' ? 1 : 0;   // 細菌は体が小さく、水のねばりが勝つので、止めるとすぐ止まる（慣性がほとんどない）
+    const accel = c.moving ? 7 - 3.5 * swimK * (1 - dart) + 5 * dart * swimK : 6 - 4.8 * swimK * (1 - dart) + 8 * dart * swimK;        // 泳ぎは動き出しがゆるく、止めても滑る
     vel.lerp(want.multiplyScalar(speed), 1 - Math.exp(-dt * accel));
     camera.position.addScaledVector(vel, dt);
     camera.position.y -= (1 - swimK) * 1.6 * dt * (my > 0 ? 0 : 1);     // 歩きのときは、足もとの粒へ引かれる（登っている間は効かせない）

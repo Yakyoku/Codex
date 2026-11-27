@@ -11,7 +11,7 @@ export function makeMinimap(path: THREE.Curve<THREE.Vector3>, seed: { c: THREE.V
   const d = pts.map((p, i) => `${i ? 'L' : 'M'}${X(p.x).toFixed(1)},${Y(p.z).toFixed(1)}`).join('');
   const el = document.createElement('div'); el.className = 'minimap';
   el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" aria-label="小さな地図">
-    <text x="8" y="13" class="mm-t">地図（ちず）・真上から</text>
+    <text x="8" y="13" class="mm-t">地図（ちず）・押すと向かう</text>
     <circle cx="${X(cavern.center.x)}" cy="${Y(cavern.center.z)}" r="${cavern.radius * s}" class="mm-cave"/>
     <text x="${X(cavern.center.x)}" y="${Y(cavern.center.z) + 3}" class="mm-l" text-anchor="middle">クマムシ</text>
     <path d="${d}" class="mm-path"/>
@@ -22,8 +22,11 @@ export function makeMinimap(path: THREE.Curve<THREE.Vector3>, seed: { c: THREE.V
   </svg>`;
   document.body.append(el);
   const me = el.querySelector('.mm-me') as SVGGElement; const f = new THREE.Vector3();
+  // 地図を押すと、その場所（道の上のいちばん近い点）へ自動で向かう
+  const api = { onGo: null as ((p: THREE.Vector3) => void) | null };
+  el.addEventListener('click', (e) => { const r = el.querySelector('svg')!.getBoundingClientRect(); const mx = (e.clientX - r.left) / r.width * W, my = (e.clientY - r.top) / r.height * H; api.onGo?.(new THREE.Vector3((mx - 8) / s + x0, pts[0].y, (my - 20) / s + z0)); });
   return {
-    el,
+    el, set onGo(f: ((p: THREE.Vector3) => void) | null) { api.onGo = f; },
     update(cam: THREE.Camera, visible: boolean) {
       el.classList.toggle('on', visible); if (!visible) return;
       cam.getWorldDirection(f); const a = Math.atan2(f.z, f.x) * 180 / Math.PI + 180;

@@ -19,6 +19,7 @@
   <button class="btn" id="mute">音：入</button>
   <button class="btn" id="notebook">観察ノート</button>
   <button class="btn" id="sizes">大きさくらべ</button>
+  <button class="btn" id="fb">気づきを送る</button>
   <button class="btn" id="settings">設定</button>
   <button class="btn" id="fs">全画面</button>
   <a class="btn" id="toVR" href="./vr/">VR で遊ぶ</a>
@@ -59,5 +60,6 @@
   <button class="btn primary" id="start" hidden>クリックして開始</button>
 </div>
 <script type="module" src="/src/pages/screen.ts"></script>
+<form name="feedback" data-netlify="true" netlify-honeypot="bot" hidden><input name="note"><input name="info"><input name="bot"></form>
 </body>
 </html>

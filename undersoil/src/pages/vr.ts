@@ -128,6 +128,8 @@ async function main() {
     { // 道具と酔いにくさ
       const headW = (renderer.xr.isPresenting ? renderer.xr.getCamera() : camera).getWorldPosition(new THREE.Vector3());
       tools.update(dt, headW);
+      // 手ならではのふれ合い：水のある所に手を入れると、まわりの細菌が手から逃げる（糖のしずくを置いていないとき）
+      if (renderer.xr.isPresenting && where === 'soil' && tools.stock === 3) { const h = hands.right ?? hands.left; if (h) { const hp = h.getWorldPosition(new THREE.Vector3()); const wet = world.grid.cells[world.cellAt(hp)]?.water ?? 0; const k = wet > 0.4 ? -0.5 : 0; game.swarm.attract(hp, k); game.swarm2.attract(hp, k); } }
       const mvig = vig.material as THREE.MeshBasicMaterial; const wantV = optVig.value === 'on' && renderer.xr.isPresenting && where === 'soil' ? Math.min(0.85, vel.length() / 2.2) : 0; mvig.opacity += (wantV - mvig.opacity) * (1 - Math.exp(-dt * 6)); vig.visible = mvig.opacity > 0.01;
       if (hands.left) { // 手首の板が顔のほうを向いているときだけ出す
         const wp = wrist.getWorldPosition(new THREE.Vector3()), n = new THREE.Vector3(0, 0, 1).transformDirection(wrist.matrixWorld), facing = n.dot(headW.clone().sub(wp).normalize());

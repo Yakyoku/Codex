@@ -34,7 +34,10 @@ export function buildDew(spots: Spot[], opts: { max?: number; sun?: THREE.Vector
     mesh.setMatrixAt(i, m4.compose(sp.p.clone().addScaledVector(sp.n, -sp.r * 0.3), q, s.set(sp.r, sp.r * 0.95, sp.r)));
   }
   mesh.instanceMatrix.needsUpdate = true; mesh.computeBoundingSphere(); mesh.frustumCulled = false;
-  return { mesh, set(v: number) { show.value = v; mesh.visible = v > 0.01; } };
+  // 小さくなる：それぞれの水滴を、置いた場所のまま縮める
+  const base = spots.slice(0, n);
+  const shrink = (k: number) => { for (let i = 0; i < n; i++) { const sp = base[i]; q.setFromUnitVectors(up, sp.n); const r = sp.r * k; mesh.setMatrixAt(i, m4.compose(sp.p.clone().addScaledVector(sp.n, -r * 0.3), q, s.set(r, r * 0.95, r))); } mesh.instanceMatrix.needsUpdate = true; };
+  return { mesh, shrink, set(v: number) { show.value = v; mesh.visible = v > 0.01; } };
 }
 
 /** メッシュの表面（上を向いた所）から、水滴を置く場所を選ぶ。filter で、使う頂点をしぼる（子葉の表側など） */
