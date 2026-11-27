@@ -82,7 +82,7 @@ async function build(renderer: THREE.WebGPURenderer, tier: string, variant: 'A' 
   if (variant !== 'B') organic(fm, noiseTex, { scale: 2.2, bump: 0.7, sss: 0xff9080, sssAmt: 0.3, planar: variant === 'A' ? 'tri' : 'xz' });   // 細胞の上面の丸み（石畳）と、粘膜の光の透け
   let floor: THREE.Mesh;
   if (variant === 'A') { floor = new THREE.Mesh(geos.vtip, fm); floor.scale.set(VA, VR_, VB); floor.position.y = -VR_; }
-  else { const g = new THREE.PlaneGeometry(W * 1.3, D * 1.3, 120, 90); g.rotateX(-Math.PI / 2); g.rotateX(Math.PI / 2); floor = new THREE.Mesh(g, fm); floor.rotation.x = -Math.PI / 2; }
+  else { const g = new THREE.PlaneGeometry(W * 2.6, D * 2.6, 160, 120);   /* 床の端が見えないよう、霧の向こうまで広げる */ g.rotateX(-Math.PI / 2); g.rotateX(Math.PI / 2); floor = new THREE.Mesh(g, fm); floor.rotation.x = -Math.PI / 2; }
   scene.add(floor);
   if (variant === 'A') {   // となりの絨毛：葉の形の先が、すき間なく並ぶ（実物の走査電顕の写真：舌の形の絨毛が縁を接して敷きつめられる）
     const nm = new THREE.MeshPhysicalNodeMaterial(); nm.colorNode = color(0xe2a094).mul(texture(noiseTex, positionWorld.xz.mul(1 / 7)).r.mul(0.12).add(0.9)); nm.roughnessNode = float(0.28); nm.clearcoatNode = float(0.6); nm.clearcoatRoughnessNode = float(0.15);
@@ -90,7 +90,7 @@ async function build(renderer: THREE.WebGPURenderer, tier: string, variant: 'A' 
     nb.forEach(([ix, iz, rot], i) => { const m = new THREE.Mesh(geos.vtip, nm); const k = 0.92 + (i % 3) * 0.05; m.scale.set(VA * k, VR_ * k, VB * k); m.rotation.y = rot; m.position.set(ix * VA * 2.02, -VR_ - 6 - (i % 3) * 5, iz * VB * 2.02); scene.add(m); });
   }
   if (variant === 'B') {   // 内側の粘液ごしに透ける上皮
-    const g = new THREE.PlaneGeometry(W * 1.4, D * 1.4); g.rotateX(-Math.PI / 2); const m = new THREE.MeshStandardNodeMaterial(); m.colorNode = mix(color(0xb86860), color(0xd89488), H); const e = new THREE.Mesh(g, m); e.position.y = -26; scene.add(e);
+    const g = new THREE.PlaneGeometry(W * 2.8, D * 2.8); g.rotateX(-Math.PI / 2); const m = new THREE.MeshStandardNodeMaterial(); m.colorNode = mix(color(0xb86860), color(0xd89488), H); const e = new THREE.Mesh(g, m); e.position.y = -26; scene.add(e);
     fm.transparent = true; fm.opacityNode = mix(float(0.45), float(0.8), H); fm.depthWrite = false; floor.renderOrder = 20;
   }
   // 区域C：陰窩の口（盛り上がった輪）と、奥のパネート細胞（抗菌の粒が光る）

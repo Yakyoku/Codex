@@ -217,7 +217,7 @@ async function main() {
   if (comfortP) $('patient').querySelector('.cap')!.textContent = '患者のおなかの調子';
   if (circP) $('patient').querySelector('.cap')!.textContent = '患者の足の血のめぐり';
   if (rhyP) $('patient').querySelector('.cap')!.textContent = '患者の心電図';
-  if (conP) $('patient').querySelector('.cap')!.textContent = '患者の脳波と、呼びかけへの反応';
+  if (conP) $('patient').querySelector('.cap')!.textContent = '患者の脳波と反応';
   let wispM = 0;
   const drawWisps = (time: number) => {
     if (conP) {
@@ -472,14 +472,20 @@ async function main() {
       say(conP ? (last ? LINES.wakeLast : LINES.wakeMid) : rhyP ? (last ? LINES.rhythmLast : LINES.rhythmMid) : circP ? (last ? LINES.circLast : LINES.circMid) : comfortP ? (last ? LINES.comfortLast : LINES.comfortMid) : breathP ? (last ? LINES.breathLast : LINES.breathMid) : smell ? (last ? LINES.smellLast : LINES.smellMid) : last ? LINES.sightLast : LINES.sightMid, 7);
     }, 4500);
     const finale = last && ZONES[zi].stage === STAGES[STAGES.length - 1].id;   // 最後の器官（脳）を治しきった：灯先生が目を開ける
-    setTimeout(() => {
+    let shown = false;
+    const showDone = () => {
+      if (shown) return; shown = true; removeEventListener('pointerdown', skip); removeEventListener('keydown', skip);
       $('patient').classList.remove('full', 'waking'); pImg.style.transition = ''; pImg.style.transform = ''; patientDone = true;
       if (finale) { playEnding(); return; }
       $('done').classList.remove('hide'); $('done').querySelector('h2')!.textContent = M.doneTitle;
       const st = STAGES.find((x) => x.id === ZONES[zi].stage); const sn = STAGES.indexOf(st!) + 1;
       $('donetext').textContent = next ? `次は ${next.name} です。` : `ステージ${sn}「${st?.ja}」の治療が終わりました。全身マップで、次の器官を選べます。`;
       $('b-next').classList.toggle('hide', !next); document.exitPointerLock?.();
-    }, 13000);
+    };
+    // 患者の変化を見せ始めて2秒たてば、押して先へ進める（待たせない）。押さなければ 13秒で進む
+    const skip = () => showDone();
+    setTimeout(() => { addEventListener('pointerdown', skip); addEventListener('keydown', skip); }, 6500);
+    setTimeout(showDone, 13000);
   }
 
   // ---- 締めくくり：目を開けた灯先生が、スーツの記録映像（潜行士が見てきた体の中）を見る ----
@@ -506,7 +512,7 @@ async function main() {
     setTimeout(() => { img.style.opacity = '0'; line(LINES.end8, 8); }, tEnd);
     setTimeout(() => { cap.textContent = ''; title.style.opacity = '1'; }, tEnd + 9000);
   }
-  $('b-next').onclick = () => { const next = SZS[si + 1]; if (next) location.href = `${location.pathname}?zone=${next.id}`; };
+  $('b-next').onclick = () => { const next = SZS[si + 1]; if (next) location.href = `${location.pathname}?zone=${next.id}&go=1`; };   // 次の区域は、タイトルを挟まずに始める
   $('b-cont').onclick = () => { $('done').classList.add('hide'); finished = true; };
 
   // ---- 開始 ----
@@ -518,6 +524,7 @@ async function main() {
     if (started) return; started = true; audio.start(); void audio.bed(`/static/audio/${M.id}.m4a`);
     $('title').style.opacity = '0'; setTimeout(() => $('title').classList.add('hide'), 900);
     for (const id of ['hud', 'patient', 'hint', 'topbtns']) $(id).classList.remove('hide');
+    setTimeout(() => { $('hint').style.transition = 'opacity 2s'; $('hint').style.opacity = '0'; }, 20000);   // 操作の案内は、20秒で消える（一時停止の画面でいつでも見られる）
     setKind(input.kind); if (device === 'pc') canvas.requestPointerLock?.();
     say(stage.start.swimming && M.enter ? M.enter : M.arrive, 10);
     $('hud').querySelector('.lab')!.textContent = M.hud;
@@ -582,5 +589,6 @@ async function main() {
   if (Q.has('tune')) tunePanel(tuning as unknown as Record<string, unknown>);
   W.__ending = () => playEnding(); W.__pos = pos; W.__diver = diver; W.__input = input; W.__stage = stage; W.__begin = begin; W.__advance = (n: number) => { for (let i = 0; i < n; i++) step(1 / 30); };
   W.__irReady = { backend: backendLabel, tier, device };
+  if (Q.has('go')) { begin(); const wake = () => { audio.start(); removeEventListener('pointerdown', wake); removeEventListener('keydown', wake); }; addEventListener('pointerdown', wake); addEventListener('keydown', wake); }   // 区域から区域へ進むときは、タイトルを挟まない
 }
 main().catch((e) => { errors.push(String(e)); console.error(e); const el = document.querySelector('#load .tip'); if (el) el.textContent = '読み込みに失敗しました：' + String(e); });

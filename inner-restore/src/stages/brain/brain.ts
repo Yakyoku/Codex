@@ -172,7 +172,7 @@ async function build(renderer: THREE.WebGPURenderer, tier: string, variant: 'A' 
   // 区域C：もつれを持つ細胞（半透明の体の中に、炎の形の線維の束）
   const tangN = neus.filter((n) => n.tangle);
   if (tangN.length) {
-    const gm = new THREE.MeshPhysicalNodeMaterial({ transparent: true, depthWrite: false }); gm.colorNode = color(0xc8b8c0); gm.opacityNode = float(0.35).add(fres.mul(0.4)); gm.roughnessNode = float(0.3);
+    const gm = new THREE.MeshPhysicalNodeMaterial({ transparent: true }); gm.colorNode = color(0xc8b8c0); gm.opacityNode = float(0.55).add(fres.mul(0.4)); gm.roughnessNode = float(0.3);
     const tm = new THREE.MeshPhysicalNodeMaterial(); tm.colorNode = color(0x3a2a34); tm.roughnessNode = float(0.6);
     const gh = instanced(geos.soma_ghost, gm, tangN.length), tg = instanced(geos.tangle, tm, tangN.length); gh.renderOrder = 6;
     tangN.forEach((n, i) => { v.set(n.x, 7, n.z); q.setFromEuler(eu.set(0, n.rot, 0)); gh.setMatrixAt(i, m4.compose(v, q, sv.set(1, 1, 1))); tg.setMatrixAt(i, m4.compose(v, q, sv.set(0.9, 0.9, 0.9))); });

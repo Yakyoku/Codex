@@ -1,0 +1,11 @@
+{"zone":"retina","screen":{"tris":235820,"draws":28},"vr":{"tris":168654,"draws":23},"over":[]}
+{"zone":"lens","screen":{"tris":515928,"draws":22},"vr":{"tris":292484,"draws":18},"over":[]}
+{"zone":"photo","screen":{"tris":546208,"draws":31},"vr":{"tris":244452,"draws":21},"over":[]}
+{"zone":"cilia","screen":{"tris":775060,"draws":25},"vr":{"tris":374174,"draws":20},"over":[]}
+{"zone":"mucus","screen":{"tris":775060,"draws":25},"vr":{"tris":374174,"draws":20},"over":[]}
+{"zone":"olfactory","screen":{"tris":272792,"draws":23},"vr":{"tris":128814,"draws":18},"over":[]}
+{"zone":"bronchiole","screen":{"tris":583460,"draws":25},"vr":{"tris":284394,"draws":20},"over":[]}
+{"zone":"alveolus","screen":{"tris":591788,"draws":22},"vr":{"tris":284438,"draws":17},"over":[]}
+{"zone":"alvwall","screen":{"tris":569456,"draws":29},"vr":{"tris":323044,"draws":25},"over":[]}
+{"zone":"villi","screen":{"tris":446780,"draws":35},"vr":{"tris":224258,"draws":31},"over":[]}
+    at /home/user/Codex/inner-restore/scripts/measure-zones.mjs:9:67 {

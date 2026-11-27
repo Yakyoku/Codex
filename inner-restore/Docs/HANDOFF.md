@@ -185,3 +185,10 @@
 - 区域：`src/stages/brain/brain.ts`（bbb＝血液脳関門・cortex＝神経細胞の森・amyloid＝アミロイドβのかたまりと病巣の核）。模型 `tools/blender/make_brain.py`（錐体細胞・もつれ・とげ・毛細血管・終足・アストロサイト・周皮細胞・ミクログリア2形・かたまり・ふくれた突起・髄鞘・オリゴデンドロサイト）。管や枝の共通の道具は `tools/blender/shapes.py`（make_heart.py と共用）。音（電子音と弦、4秒の発火）。患者の変化 `patient: 'conscious'`（脳波と呼びかけへの反応）。
 - 締めくくり：`main.ts` の `playEnding()`。最後の器官の最後の区域を治しきると、患者の目覚め → 記録映像（`public/static/img/ending/<区域>.jpg`、`node scripts/ending-shots.mjs` で撮り直せる）＋灯先生の言葉（`lines.ts` の end1〜end8）→ 治療完了。確認用 `window.__ending()`。締めくくりの間は後ろの3Dを描かない。
 - 進捗ページの全体：ステージ7 完了で 94%（残りは実機での確認と調整）。
+
+## 2026-11-27 全体の採点と修正・描画の予算
+- 採点：`Docs/REVIEW_2026-11-27.md`（制作に関わっていないサブエージェント）。上位5つのうち、明るさの基調・不具合・待ち時間・画面の表示を修正。主人公の見た目の変更（つや消しの灰色）は見送り（持ち主の確認待ち）。残りの指摘（器官ごとの持続音の音色、基本図形に見える模型、患者の写真が7器官で同じ）は未対応。
+- 明るさ：`realism.ts` の LOOK（半球光 ×0.55、主光源 ×0.8、霧と背景 ×0.72、映りこみ ×0.8、探照灯 20）。区域が毎コマ書き直す値に後から掛ける。`post.ts` の色調は黒の持ち上げを弱めた。
+- 軽い模型：`assets.ts` の `setLowModels`（pc-high 以外は `<名前>.lo.glb`）。作り方 `node tools/pack-glb.mjs <raw> <lo> --plain 1 --ratio 0.3 --error 0.004 --keep <簡略化しない模型>`（heart: collagen,collagen_lo／brain: plaque,plaque_lo,tangle／vessel: fibrin,fibrin_lo。VR だけ photo.lo も使う）。模型を作り直したら lo も作り直す。
+- 測定：`node scripts/measure-zones.mjs`（画面版＝互換と VR の三角形・描画回数。結果は `Docs/build-sizes/zone-tris.json`）。
+- 区域の移動：`?zone=…&go=1` でタイトルを挟まずに始まる。患者の変化の演出は 6.5秒後から押して飛ばせる。

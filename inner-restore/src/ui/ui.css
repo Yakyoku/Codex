@@ -47,7 +47,7 @@
 #fade { position:absolute; inset:0; background:#000; opacity:0; pointer-events:none; transition:opacity 1.2s; z-index:25; } #fade.on { opacity:1; }
 #done { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); text-align:center; z-index:35; text-shadow:0 2px 12px #000; } #done h2 { font-weight:300; letter-spacing:.3em; font-size:1.6em; }
 
-body:has(#ui) .ir-hud { left:auto; right:max(12px,env(safe-area-inset-right)); bottom:max(8px,env(safe-area-inset-bottom)); font-size:13px; opacity:.85; }
+body:has(#ui) .ir-hud { left:auto; right:max(12px,env(safe-area-inset-right)); bottom:max(8px,env(safe-area-inset-bottom)); font-size:11px; opacity:.4; }
 
 /* 表示だけの部品は、タッチやクリックを受け止めない（下の仮想スティックや視点の操作に届くように） */
 #hud, #patient, #hint, #subs, #reticle, #fade { pointer-events:none !important; }

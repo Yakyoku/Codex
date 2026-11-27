@@ -101,6 +101,7 @@ async function build(renderer: THREE.WebGPURenderer, tier: string, variant: 'B' 
   scene.add(t2m);
   const macMat = new THREE.MeshPhysicalNodeMaterial({ transparent: true }); macMat.colorNode = color(0xece0d8); macMat.roughnessNode = float(0.4); macMat.opacityNode = float(0.85); macMat.clearcoatNode = float(0.3);
   const macs = Array.from({ length: room ? 3 : 2 }, () => ({ p: new THREE.Vector3((rnd() - 0.5) * W * 0.6, 0, (rnd() - 0.5) * D * 0.6), ang: rnd() * 6.28, eaten: 0 }));
+  { const sx = room ? -26 : -W / 2 + 10, sz = room ? 10 : 0; for (const m of macs) if (Math.hypot(m.p.x - sx, m.p.z - sz) < 34) { m.p.x = sx + 40; m.p.z = sz + (m.p.z > sz ? 24 : -24); } }   // スタート地点とカメラのあいだをふさがないよう、マクロファージを離す
   const macM = new THREE.InstancedMesh(geos.macro, macMat, macs.length); macM.frustumCulled = false; scene.add(macM);
   // 粒子のたまり（3つ）：すすの房と鉱物の粒が積もった塊
   const plugs: (Plug & { gone: number; shake: number })[] = (room ? [[-0.25, -0.15], [0.2, -0.22], [0.05, 0.25]] : [[-0.07, -0.12], [0.08, -0.06], [0.0, 0.14]]).map(([fx, fz]) => { const x = core.x + fx * W, z = core.z + fz * D; return { p: new THREE.Vector3(x, floorAt(x, z), z), hp: 1, cleared: false, gone: 0, shake: 0 }; });
@@ -128,7 +129,7 @@ async function build(renderer: THREE.WebGPURenderer, tier: string, variant: 'B' 
   const breath = (t: number) => (t % BREATH) / BREATH;
   const stage: ZoneStage = {
     meta: M, scene, health, size: [W, D], u, sun, plugs, progress, floorHeight: floorAt,
-    start: { pos: new THREE.Vector3(room ? -50 : -W / 2 + 10, 0, room ? 10 : 0), yaw: Math.PI / 2, swimming: false },
+    start: { pos: new THREE.Vector3(room ? -26 : -W / 2 + 10, 0, room ? 10 : 0), yaw: Math.PI / 2, swimming: false },
     causeAt: (x, z) => (Math.hypot(x - core.x, z - core.z) < 30 ? { short: '粒子の積もり', cause: '吸いこんだ粒子が壁に積もり、空気と血の間をふさいでいます' } : { short: 'サーファクタントの不足', cause: '壁の表面の液の膜が足りず、肺胞がふくらみにくくなっています' }),
     setOnPlug(f) { onPlug = f; },
     encounters(pos, t, walked) {

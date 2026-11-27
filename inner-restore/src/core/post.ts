@@ -37,7 +37,8 @@ export function createPost(renderer: THREE.WebGPURenderer, scene: THREE.Scene, c
   const c = col.rgb.mul(exposure);
   const lum = dot(c, vec3(0.2126, 0.7152, 0.0722));
   let g = mix(vec3(lum, lum, lum), c, float(1.04));
-  g = g.mul(0.96).add(vec3(0.018, 0.01, 0.006));
+  // 黒は持ち上げすぎない（白っぽく眠い絵になる）。中間をわずかに締めて、明暗の幅を出す
+  g = g.mul(g.mul(0.22).add(0.86)).add(vec3(0.006, 0.003, 0.002));
   // 周辺の減光（顕微鏡の視野のように、縁がやわらかく暗く暖かい）
   const r = length(screenUV.sub(0.5).mul(vec2(1.25, 1)));
   g = g.mul(mix(float(1), float(0.62), smoothstep(0.35, 0.85, r)));

@@ -96,7 +96,7 @@ async function build(renderer: THREE.WebGPURenderer, tier: string, variant: 'A' 
   const ROW = 22, rows: number[] = []; for (let z = -D * 0.62; z < D * 0.62; z += ROW) rows.push(z);
   const floorAt = (x: number, z: number) => {
     if (variant === 'A') { let h = 0; for (let l = 0; l < 3; l++) { const dz = (z - pkZ(l, x)) / 12.5; if (Math.abs(dz) < 1) h = Math.max(h, 3.2 * Math.sqrt(1 - dz * dz)); } return h; }
-    if (variant === 'B') { let best = 1e9; for (const r of rows) best = Math.min(best, Math.abs(z - r)); const dz = best / 8; return Math.max(1.5, dz < 1 ? 6.4 * Math.sqrt(1 - dz * dz) : 0); }
+    if (variant === 'B') { let best = 1e9; for (const r of rows) best = Math.min(best, Math.abs(z - r)); const dz = best / 8; return Math.max(1.5, dz < 1 ? 7.3 * Math.sqrt(1 - dz * dz) : 0); }   /* 線維のうねりと核のふくらみの分、少し高く（足が埋まらないように） */
     return 8 * Math.exp(-(x * x + z * z) / (16 * 16)) * (1 - 0.6 * (plugs.filter((p) => p.cleared).length / 3));   // 区域C：中央の傷あとの丘
   };
 
@@ -111,9 +111,9 @@ async function build(renderer: THREE.WebGPURenderer, tier: string, variant: 'A' 
   } else if (variant === 'C') {
     // コラーゲンの原：淡い、細胞の少ない、波打つ線維（写真⑤。生きた色は確かめられないので、淡い桃色がかった白で）
     // 線維の向きはゆるくうねり、細い筋が密に並ぶ（規則的な模様にならないよう、ゆがめた雑音から作る）
-    const warp = texture(noiseTex, positionWorld.xz.mul(1 / 45)).r.mul(10);
-    const fib = texture(noiseTex, vec2(positionWorld.x.add(warp).mul(1 / 3.0), positionWorld.z.mul(1 / 8))).r;
-    const fib2 = texture(noiseTex, positionWorld.xz.mul(1 / 14)).b;
+    // 線維の向きはゆるくうねる。規則的な縞（木目）に見えないよう、大きさの違う雑音を重ねるだけにする
+    const fib = texture(noiseTex, positionWorld.xz.mul(1 / 11)).r;
+    const fib2 = texture(noiseTex, positionWorld.xz.mul(1 / 3.1).add(0.4)).g;
     fm.colorNode = mix(color(0xa88078), color(0xe6cec2), fib.mul(0.55).add(fib2.mul(0.45))).mul(mix(float(0.8), float(1), H));
     fm.roughnessNode = float(0.42); fm.clearcoatNode = float(0.35); fm.clearcoatRoughnessNode = float(0.3);
   } else { fm.colorNode = color(0x3a1612); fm.roughnessNode = float(0.6); }
@@ -157,7 +157,7 @@ async function build(renderer: THREE.WebGPURenderer, tier: string, variant: 'A' 
     }
   }
   if (variant === 'C') {   // 生き残った細い心筋の帯：ばらばらの向きに波打つ（写真⑤）
-    for (let i = 0; i < 44; i++) { const a = rnd() * Math.PI; const x = (rnd() - 0.5) * W * 1.1, z = (rnd() - 0.5) * D * 1.1; if (Math.hypot(x, z) < loopR + 10) continue; fibers.push({ x, y: 1.4 + floorAt(x, z), z, yaw: a, sx: 0.5 + rnd() * 0.35, sy: 0.24, sz: 0.24 }); }
+    for (let i = 0; i < 44; i++) { const a = rnd() * Math.PI; const x = (rnd() - 0.5) * W * 1.1, z = (rnd() - 0.5) * D * 1.1; if (Math.hypot(x, z) < loopR + 10 || Math.hypot(x + W / 2 - 10, z) < 18) continue;   /* 中央の渦と、スタート地点のまわりはあける */ fibers.push({ x, y: 1.4 + floorAt(x, z), z, yaw: a, sx: 0.5 + rnd() * 0.35, sy: 0.24, sz: 0.24 }); }
   }
   let fibM: THREE.InstancedMesh | null = null, fibYM: THREE.InstancedMesh | null = null, fibBlock: THREE.InstancedBufferAttribute | null = null;
   const fibY: Inst[] = [];
@@ -199,7 +199,7 @@ async function build(renderer: THREE.WebGPURenderer, tier: string, variant: 'A' 
         colls.push({ x: pl.p.x + (rnd() - 0.5) * 16, y: variant === 'B' ? (k % 3 === 1 ? 5.5 : 1.5) : 2 + rnd() * 2, z, yaw: variant === 'B' ? (rnd() - 0.5) * 0.5 : rnd() * Math.PI, sx: 0.45 + rnd() * 0.3, sy: 0.8, sz: 0.6, plug: i }); }
       for (let k = 0; k < 2; k++) fbs.push({ x: pl.p.x + (rnd() - 0.5) * 18, y: (variant === 'B' ? 8 : 3), z: pl.p.z + (rnd() - 0.5) * 18, yaw: rnd() * 6.28, sx: 1, sy: 1, sz: 1, plug: i });
     });
-    if (variant === 'C') for (let k = 0; k < (vr ? 14 : 24); k++) { const x = (rnd() - 0.5) * W * 1.2, z = (rnd() - 0.5) * D * 1.2; colls.push({ x, y: 1 + floorAt(x, z), z, yaw: rnd() * Math.PI, sx: 0.6 + rnd() * 0.5, sy: 1.4, sz: 1, plug: -1 }); }
+    if (variant === 'C') for (let k = 0; k < (vr ? 14 : 24); k++) { const x = (rnd() - 0.5) * W * 1.2, z = (rnd() - 0.5) * D * 1.2; if (Math.hypot(x + W / 2 - 10, z) < 18) continue; colls.push({ x, y: 1 + floorAt(x, z), z, yaw: rnd() * Math.PI, sx: 0.6 + rnd() * 0.5, sy: 1.4, sz: 1, plug: -1 }); }
     const clm = new THREE.MeshPhysicalNodeMaterial({ transparent: true }); clm.colorNode = color(0xf0e4da); clm.roughnessNode = float(0.35); clm.opacityNode = float(0.82).add(fres.mul(0.15)); clm.clearcoatNode = float(0.5);
     collM = instanced(rich ? geos.collagen : geos.collagen_lo ?? geos.collagen, clm, colls.length);
     const fbm = new THREE.MeshPhysicalNodeMaterial({ transparent: true }); fbm.colorNode = color(0xe8d4c8); fbm.roughnessNode = float(0.4); fbm.opacityNode = float(0.8);

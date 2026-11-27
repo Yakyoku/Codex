@@ -15,7 +15,12 @@ export interface Realism { update(dt: number, t: number, diver: THREE.Vector3, c
 export function addRealism(stage: ZoneStage, renderer: THREE.WebGPURenderer, tier: string, opts: { shadows?: boolean; motes?: number } = {}): Realism {
   const scene = stage.scene, vr = tier === 'vr';
   // ---- 1. 探照灯 ----
-  const lamp = new THREE.PointLight(0xfff2e4, 10, 46, 2); scene.add(lamp);
+  const lamp = new THREE.PointLight(0xfff2e4, 20, 52, 2); scene.add(lamp);
+  // 明るさの基調：全体を白っぽく均一に照らさない。まわりの光を落とし、探照灯の届く所が明るく、遠くは沈む（内視鏡・顕微鏡の映像の明暗）
+  const LOOK = { hemi: 0.55, sun: 0.8, fog: 0.72, env: 0.8 };
+  scene.traverse((o) => { if ((o as THREE.HemisphereLight).isHemisphereLight) (o as THREE.HemisphereLight).intensity *= LOOK.hemi; });
+  scene.environmentIntensity *= LOOK.env;
+  const fogOut = new THREE.Color(-1, -1, -1), bgOut = new THREE.Color(-1, -1, -1); let sunOut = -1;
   // ---- 2. 接地の影 ----
   const sm = new THREE.MeshBasicNodeMaterial({ transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
   const sStr = uniform(0.5); const d = length(uv().sub(0.5)).mul(2);
@@ -46,6 +51,10 @@ export function addRealism(stage: ZoneStage, renderer: THREE.WebGPURenderer, tie
   return {
     lamp,
     update(dt, t, diver, camPos) {
+      // 区域が毎コマ書き直す値（主光源・霧・背景）に、基調を掛ける。書き直されていないコマでは掛け直さない
+      const sun = stage.sun; if (sun.intensity !== sunOut) { sun.intensity *= LOOK.sun; sunOut = sun.intensity; }
+      const fog = scene.fog as THREE.FogExp2 | null; if (fog && !fog.color.equals(fogOut)) { fog.color.multiplyScalar(LOOK.fog); fogOut.copy(fog.color); }
+      const bg = scene.background as THREE.Color | null; if (bg?.isColor && !bg.equals(bgOut)) { bg.multiplyScalar(LOOK.fog); bgOut.copy(bg); }
       // 探照灯は、頭の少し上・カメラ寄り。照り返しがカメラの動きで動く
       v.copy(camPos).sub(diver).setY(0); if (v.lengthSq() > 1e-4) v.normalize();
       lamp.position.set(diver.x + v.x * 2.6, diver.y + 3.6, diver.z + v.z * 2.6);
