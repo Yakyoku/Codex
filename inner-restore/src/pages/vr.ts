@@ -5,7 +5,8 @@ import { createRenderer, fitRenderer } from '../core/renderer';
 import { detectDevice, DEVICE_LABEL } from '../core/device';
 import { Hud } from '../core/hud';
 import { GameAudio } from '../core/audio';
-import { ZONES, stageZones } from '../stages/zone';
+import { ZONES, STAGES, stageZones } from '../stages/zone';
+import { LINES } from '../data/lines';
 import { loadSave, writeSave } from '../core/save';
 import { ATLAS } from '../game/ui';
 import { PurifyBeam } from '../game/beam';
@@ -93,6 +94,24 @@ async function main() {
     const c = patP.ctx, k = 1 - m; c.filter = `blur(${(k * 26).toFixed(1)}px) brightness(${0.4 + 0.6 * m}) saturate(${0.35 + 0.65 * m})`; c.drawImage(pImg, 0, 0, patP.w, patP.h); c.filter = 'none';
     const g = c.createRadialGradient(patP.w * 0.46, patP.h * 0.52, 0, patP.w * 0.46, patP.h * 0.52, patP.w * 0.3); g.addColorStop(0, `rgba(20,16,14,${0.85 * k})`); g.addColorStop(1, 'rgba(20,16,14,0)'); c.fillStyle = g; c.fillRect(0, 0, patP.w, patP.h);
     c.fillStyle = '#fff'; c.font = `26px ${FONT}`; c.fillText('患者の視界', 18, patP.h - 18); patP.tex.needsUpdate = true;
+  }
+  // 目のほかの器官：患者の変化を、見出しと目盛りと一言で見せる（画面版の窓と同じ内容を、VR で読みやすい大きさに）
+  const PAT: Record<string, { cap: string; bar: string; col: string; words: [string, string, string] }> = {
+    smell: { cap: '患者の感じる におい', bar: 'におい', col: '#ffd0a0', words: ['ほとんど感じない', '少し戻った', 'ほぼ正常'] },
+    breath: { cap: '患者の呼吸', bar: '呼吸の深さ', col: '#96ebdc', words: ['浅く速い（22回/分）', '少し深く', '深くゆっくり（15回/分）'] },
+    comfort: { cap: '患者のおなかの調子', bar: '食欲', col: '#96ebb4', words: ['痛み・食欲がない', '少し楽に', '落ち着いている'] },
+    circulation: { cap: '患者の足の血のめぐり', bar: '足先のあたたかさ', col: '#ffaa6e', words: ['冷たく、脈が弱い', '少し戻った', 'あたたかい・脈がふれる'] },
+    rhythm: { cap: '患者の心電図', bar: 'リズムのそろい', col: '#78ffaa', words: ['乱れ（112回/分）', '少し乱れ', '規則正しい（72回/分）'] },
+    conscious: { cap: '患者の脳波と、呼びかけへの反応', bar: '反応', col: '#aabeff', words: ['ない', 'かすかに', 'はっきり'] },
+  };
+  function drawGauge(m: number) {
+    const P = PAT[M.patient ?? '']; if (!P || !pImg.complete || Math.abs(m - patDrawn) < 0.02) return; patDrawn = m;
+    const c = patP.ctx, w = patP.w, h = patP.h; c.filter = `brightness(${0.3 + 0.35 * m}) saturate(${0.4 + 0.6 * m})`; c.drawImage(pImg, 0, 0, w, h); c.filter = 'none';
+    c.fillStyle = 'rgba(8,12,14,.55)'; c.fillRect(0, 0, w, h);
+    c.fillStyle = '#fff'; c.font = `30px ${FONT}`; c.fillText(P.cap, 24, 52);
+    c.font = `26px ${FONT}`; c.fillStyle = '#cfd8dc'; c.fillText(P.bar, 24, 150);
+    c.fillStyle = 'rgba(255,255,255,.18)'; c.fillRect(24, 170, w - 48, 26); c.fillStyle = P.col; c.fillRect(24, 170, (w - 48) * (0.08 + 0.92 * m), 26);
+    c.fillStyle = '#fff'; c.font = `600 40px ${FONT}`; c.fillText(P.words[m > 0.95 ? 2 : m > 0.3 ? 1 : 0], 24, 270); patP.tex.needsUpdate = true;
   }
   const known = new Set<string>(); const queue: { id: string; at: THREE.Vector3 | null }[] = []; let cardT = 0, subT = 0, cardOn = false;
   function showCard(id: string, at: THREE.Vector3 | null) {
@@ -254,11 +273,14 @@ async function main() {
     }
     camera.getWorldPosition(v); camera.getWorldDirection(d);
     if (subT > 0) { subT -= dt; hit.copy(v).addScaledVector(d, 1.7 * K); hit.y -= 0.55 * K; subP.mesh.position.lerp(hit, Math.min(1, dt * 2)); subP.mesh.lookAt(v); if (subT <= 0) subP.mesh.visible = false; }
-    drawPatient(prog);
+    { const SZ2 = stageZones(ZONES[zi].stage), si2 = SZ2.indexOf(ZONES[zi]), m = (si2 + prog) / SZ2.length; if (!M.patient || M.patient === 'sight') drawPatient(m); else drawGauge(m); }
     if (!finished && prog >= 1) {
       finished = true; stage.health.setAll(1); audio.resolve();
       const SZS = stageZones(ZONES[zi].stage), next = SZS[SZS.indexOf(ZONES[zi]) + 1]; writeSave({ done: [...new Set([...(loadSave().done ?? []), M.id])], zone: next ? next.id : M.id });
-      say(`${M.done}目の前の窓は、患者の視界です。` + (next ? `次は ${next.name}。VR を終えて「次の区域へ」を押してください。` : 'ステージ1の治療が終わりました。'), 14);
+      const st = STAGES.find((x) => x.id === ZONES[zi].stage), finale = !next && st === STAGES[STAGES.length - 1];
+      // 最後の器官（脳）を治しきったら、灯先生の言葉（画面版の締めくくりの、最初と最後）
+      if (finale) { say(`${M.done}${LINES.wakeLast}`, 10); setTimeout(() => say(LINES.end1, 10), 11000); setTimeout(() => say(LINES.end8, 12), 22000); }
+      else say(M.done + (next ? `次は ${next.name}。VR を終えて「次の区域へ」を押してください。` : `「${st?.ja}」の治療が終わりました。目の前の全身マップで、治した器官が脈打ちます。`), 14);
       // 全身マップ：目の前に、立体の人体を浮かべる（治した器官が脈打つ）。のぞき込める大きさで
       void buildHubModel(loadSave()).then((hm) => {
         const side = new THREE.Vector3(d.z, 0, -d.x);
