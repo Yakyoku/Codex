@@ -116,7 +116,24 @@ async function main() {
   // ---- 紹介カード ----
   const card = $('card'); let cardT = 0, cardDur = 0, cardCur: string | null = null, lastCard: string | null = null; const queue: { id: string; at: THREE.Vector3 | null }[] = [];
   const subs = $('subs'); let subT = 0;
-  const say = (text: string, dur = 6, voice = true) => { subs.textContent = text; subs.classList.add('on'); subT = dur; if (voice) speak(text, ttsSel.value === 'on' && sim === null); };
+  // 字幕：背の低い画面（横向きのスマホ）では2行ぶんしか出せないので、文の切れ目で区切り、順に切り替えて全文を見せる
+  let subPages: string[] = [], subPageT = 0;
+  const pageTime = (p: string) => Math.max(2.4, p.length * 0.17);   // 読み上げの速さ（1秒に 約6文字）に合わせる
+  const paginate = (text: string): string[] => {
+    if (!matchMedia('(max-height: 520px)').matches) return [text];
+    const cs = getComputedStyle(subs), cap = Math.max(16, Math.floor(innerWidth * 0.5 / parseFloat(cs.fontSize) - 2) * 2);
+    if (text.length <= cap) return [text];
+    // 「。」で文に分け、長い文は「、」でも分ける。入るだけ詰めて1枚にする
+    const parts: string[] = []; for (const sen of text.split(/(?<=。)/)) { if (sen.length <= cap) parts.push(sen); else for (const c of sen.split(/(?<=、)/)) { if (c.length <= cap) parts.push(c); else for (let i = 0; i < c.length; i += cap) parts.push(c.slice(i, i + cap)); } }
+    const pages: string[] = []; let cur = ''; for (const q of parts) { if (cur && (cur + q).length > cap) { pages.push(cur); cur = q; } else cur += q; } if (cur) pages.push(cur);
+    return pages;
+  };
+  const say = (text: string, dur = 6, voice = true) => {
+    subs.classList.add('on'); subPages = paginate(text);
+    if (subPages.length > 1) { subs.textContent = subPages[0]; subPageT = pageTime(subPages[0]); subT = Math.max(dur, subPages.reduce((a, p) => a + pageTime(p), 0) + 0.5); subPages.shift(); }
+    else { subs.textContent = text; subT = dur; subPages = []; }
+    if (voice) speak(text, ttsSel.value === 'on' && sim === null);
+  };
   function showCard(id: string, at: THREE.Vector3 | null, replay = false) {
     const e = ATLAS.find((x) => x.id === id); const mode = introSel.value;
     if (!e) { known.add(id); return; }   // 台帳にまだない項目は出さない
@@ -444,7 +461,7 @@ async function main() {
       if (cardCur) { cardT += dt; (card.querySelector('.p i') as HTMLElement).style.width = `${Math.min(100, (cardT / cardDur) * 100)}%`; { const tp = stage.track?.(cardCur); if (tp) focus.copy(tp); } if (cardT > cardDur) hideCard(); }
       else if ((cardGap -= dt) <= 0 && queue.length && !firing && subT <= 0 && t > 1.5) { const q = queue.shift()!; showCard(q.id, q.at); }
     }
-    if (subT > 0) { subT -= dt; if (subT <= 0) subs.classList.remove('on'); }
+    if (subT > 0) { subT -= dt; if (subPages.length && (subPageT -= dt) <= 0) { const p = subPages.shift()!; subs.textContent = p; subPageT = pageTime(p); } if (subT <= 0) subs.classList.remove('on'); }
     const prog = stage.progress();
     // 一区切り（10% ごと）回復するたびに、和音と振動と光の脈で知らせる
     const stepNow = Math.floor(prog * 10);
