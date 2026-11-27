@@ -21,9 +21,11 @@ export const soilUniforms = {
   /** 全体に足す濡れ（確認用。通常 0） */
   wetBias: uniform(0),
   detailStrength: uniform(1),
+  /** スキャン表示（0〜1）：区画の活力を、粒の表面のうすい色で見せる。スーツの画面の表示 */
+  scan: uniform(0),
 };
 
-export function makeSoilMaterial(kind: GrainKind, na: THREE.Texture, detail: THREE.Texture, wetAttr: THREE.InstancedBufferAttribute, seedAttr: THREE.InstancedBufferAttribute, opts: { cheap?: boolean; mottle?: number; tint?: [number, number, number]; style?: 'charcoal' | 'tissue' | 'pellet' } = {}) {
+export function makeSoilMaterial(kind: GrainKind, na: THREE.Texture, detail: THREE.Texture, wetAttr: THREE.InstancedBufferAttribute, seedAttr: THREE.InstancedBufferAttribute, opts: { vit?: THREE.InstancedBufferAttribute; cheap?: boolean; mottle?: number; tint?: [number, number, number]; style?: 'charcoal' | 'tissue' | 'pellet' } = {}) {
   const L = LOOKS[kind];
   const m = new THREE.MeshPhysicalNodeMaterial();
   type F = ReturnType<typeof float>;
@@ -97,6 +99,13 @@ export function makeSoilMaterial(kind: GrainKind, na: THREE.Texture, detail: THR
     const prev = m.emissiveNode as ReturnType<typeof vec3> | null;
     const add = vec3(0.30, 0.28, 0.22).mul(caus).mul(0.5);
     m.emissiveNode = prev ? prev.add(add) : add;
+  }
+  if (opts.vit) {
+    // スキャン表示：元気な区画は青緑、足りない区画は赤茶。細い等高線のような縞をゆっくり流して、「画面の表示」だと分かるようにする
+    const vit = instancedBufferAttribute(opts.vit) as unknown as F;
+    const band = smoothstep(0.75, 0.95, fract(positionWorld.y.mul(0.8).sub(time.mul(0.25)))).mul(0.6).add(0.4);
+    const sc = mix(vec3(0.42, 0.13, 0.05), vec3(0.08, 0.42, 0.40), smoothstep(0.25, 0.75, vit)).mul(band).mul(soilUniforms.scan).mul(0.32);
+    const prev = m.emissiveNode as ReturnType<typeof vec3> | null; m.emissiveNode = prev ? prev.add(sc) : sc;
   }
   m.envMapIntensity = 1;
   return m;

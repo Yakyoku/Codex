@@ -125,7 +125,7 @@ export async function buildWorld(base: string, opts: { grainLod: 0 | 1; density:
     loaded.set(nm, { geo, na: [na0, na1, na2] });
   }));
   const group = new THREE.Group(); group.name = 'soil';
-  const batches: { wet: THREE.InstancedBufferAttribute; cells: Uint16Array }[] = [];
+  const batches: { wet: THREE.InstancedBufferAttribute; vit: THREE.InstancedBufferAttribute; cells: Uint16Array }[] = [];
   const stats = { instances: placements.length, triangles: 0, drawCalls: 0, by: {} as Record<string, number> };
   const m4 = new THREE.Matrix4();
   for (const nm of names) for (const lod of [0, 1, 2, 3] as const) {
@@ -133,11 +133,12 @@ export async function buildWorld(base: string, opts: { grainLod: 0 | 1; density:
     const L = loaded.get(nm)!;
     const wet = new THREE.InstancedBufferAttribute(new Float32Array(list.length), 1); wet.setUsage(THREE.DynamicDrawUsage);
     const seedA = new THREE.InstancedBufferAttribute(new Float32Array(list.map((p) => p.seed)), 1);
-    const mesh = new THREE.InstancedMesh(L.geo[lod], makeSoilMaterial(kindOf(nm), L.na[Math.min(2, lod)], detail, wet, seedA, { cheap: opts.cheap, style: nm === 'humus_a' ? 'charcoal' : nm === 'humus_b' ? 'tissue' : nm === 'humus_c' ? 'pellet' : undefined }), list.length);
+    const vit = new THREE.InstancedBufferAttribute(new Float32Array(list.length), 1); vit.setUsage(THREE.DynamicDrawUsage);
+    const mesh = new THREE.InstancedMesh(L.geo[lod], makeSoilMaterial(kindOf(nm), L.na[Math.min(2, lod)], detail, wet, seedA, { vit: opts.cheap ? undefined : vit, cheap: opts.cheap, style: nm === 'humus_a' ? 'charcoal' : nm === 'humus_b' ? 'tissue' : nm === 'humus_c' ? 'pellet' : undefined }), list.length);
     list.forEach((p, i) => mesh.setMatrixAt(i, m4.compose(p.pos, p.quat, p.scale)));
     mesh.instanceMatrix.needsUpdate = true; mesh.computeBoundingSphere(); mesh.name = `${nm}_L${lod}`;
     mesh.castShadow = lod === 0; mesh.receiveShadow = true;
-    group.add(mesh); batches.push({ wet, cells: Uint16Array.from(list.map((p) => p.cell)) });
+    group.add(mesh); batches.push({ wet, vit, cells: Uint16Array.from(list.map((p) => p.cell)) });
     const tr = (L.geo[lod].index!.count / 3) * list.length; stats.triangles += tr; stats.drawCalls++; stats.by[`${nm}_L${lod}`] = Math.round(tr / 1000) * 1000 + list.length / 1e6;   // 千三角形単位＋個数（小数部）
   }
   // 4) 区画（セル）：道に沿って並べ、隣どうしは「水の橋」がかかるまでつながらない
@@ -163,6 +164,7 @@ export async function buildWorld(base: string, opts: { grainLod: 0 | 1; density:
         const a = b.wet.array as Float32Array; let changed = false;
         for (let i = 0; i < a.length; i++) { const c = grid.cells[b.cells[i]]; const v = Math.min(1, c.water * 0.85 + c.structure * 0.15 * c.water); if (Math.abs(a[i] - v) > 0.004) { a[i] = v; changed = true; } }
         if (changed) b.wet.needsUpdate = true;
+        const va = b.vit.array as Float32Array; let vc = false; for (let i = 0; i < va.length; i++) { const v = grid.vitality(b.cells[i]); if (Math.abs(va[i] - v) > 0.01) { va[i] = v; vc = true; } } if (vc) b.vit.needsUpdate = true;
       }
     },
   };

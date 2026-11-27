@@ -162,3 +162,12 @@ body.compare .cmp-tag { opacity: 1; }
 .tool-toast { position: fixed; left: 50%; top: 14%; transform: translateX(-50%); max-width: 90vw; padding: 8px 16px; border-radius: 999px; background: rgba(16,13,10,.82); border: 1px solid rgba(217,164,65,.5); color: #efe6d8; font-size: clamp(12px, 1.05vw, 16px); opacity: 0; pointer-events: none; transition: opacity .4s ease; z-index: 31; }
 .tool-toast.on { opacity: 1; }
 body.surface .scan, body.surface .tool-toast, body.surface .move-mode { display: none; }
+
+/* 操作の手引き */
+.guide { position: fixed; left: max(16px, env(safe-area-inset-left)); bottom: max(150px, calc(env(safe-area-inset-bottom) + 140px)); padding: 12px 14px; border-radius: 12px; background: rgba(16,13,10,.85); border: 1px solid rgba(239,230,216,.3); color: #efe6d8; font-size: clamp(12px, 1vw, 15px); opacity: 0; pointer-events: none; transition: opacity .5s ease; z-index: 28; }
+.guide.on { opacity: 1; pointer-events: auto; }
+.guide b { display: block; color: #ffd27a; margin-bottom: 6px; letter-spacing: .08em; }
+.guide div { display: grid; grid-template-columns: 11em 1fr; gap: 10px; margin: 3px 0; }
+.guide kbd { font: inherit; color: #1a140c; background: #efe6d8; border-radius: 4px; padding: 0 6px; justify-self: start; }
+.guide small { display: block; margin-top: 8px; color: #b9ad98; }
+body.surface .guide { display: none; }

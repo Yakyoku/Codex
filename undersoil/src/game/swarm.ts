@@ -5,7 +5,7 @@ import { float, vec3, instancedBufferAttribute, time, sin, cos, positionLocal, m
 import type { Collider } from './world';
 import { makeRng } from './rng';
 
-export interface Swarm { highlight(p: THREE.Vector3 | null): void; mesh: THREE.InstancedMesh; count: number; sync(microbesOfCell: (cell: number) => number): void; find(from: THREE.Vector3, fwd: THREE.Vector3): { p: THREE.Vector3; r: number } | null; }
+export interface Swarm { attract(p: THREE.Vector3 | null, k: number): void; highlight(p: THREE.Vector3 | null): void; mesh: THREE.InstancedMesh; count: number; sync(microbesOfCell: (cell: number) => number): void; find(from: THREE.Vector3, fwd: THREE.Vector3): { p: THREE.Vector3; r: number } | null; }
 
 /** 1 単位 = 10 µm。枯草菌は太さ約 0.8 µm × 長さ 2〜3 µm → 0.08 × 0.25 単位 */
 export type Species = 'bacillus' | 'pseudomonas';
@@ -67,7 +67,10 @@ export function buildSwarm(colliders: Collider[], cellOf: (p: THREE.Vector3) => 
   const lp = positionLocal;
   const lps = lp.mul(aScl);
   const rotated = bx.mul(lps.x.add(wig.mul(aSwim))).add(heading.mul(lps.y)).add(bz.mul(lps.z));
-  m.positionNode = aPos.add(drift).add(rotated.mul(live));
+  // 走化性：糖のしずくが置かれると、近く（半径 約 80µm）の細菌が、しずくのまわりへ寄ってくる（しずくの表面で止まり、重ならない）
+  const uSug = uniform(new THREE.Vector3()), uSugK = uniform(0);
+  const pullOf = (p: V) => { const to = uSug.sub(p), dist = to.length(); return to.mul(smoothstep(8.0, 1.5, dist).mul(saturate(dist.sub(0.45).div(dist.max(0.001)))).mul(uSugK).mul(0.82)); };
+  m.positionNode = aPos.add(drift).add(pullOf(aPos)).add(rotated.mul(live));
   // 見た目（持ち主の資料と顕微鏡写真）：両端の丸い棒。細い暗い輪郭線、中は淡い灰色で細かい粒々。
   //   枯草菌：多くは細胞の中に楕円の芽胞（くすんだ灰緑色で、縁がくっきり）。まわりに細く波打つ鞭毛が数本
   //   シュードモナス：やや短く、わずかに黄緑がかる。片方の端から長く波打つ鞭毛が数本の束（P. fluorescens は 1 本より多い極鞭毛。電子顕微鏡の写真で確認）
@@ -111,7 +114,7 @@ export function buildSwarm(colliders: Collider[], cellOf: (p: THREE.Vector3) => 
   { const tt2 = time.mul(mix(float(0.5), float(1.1), fPh)).mul(species === 'pseudomonas' ? 2.2 : 1.0).add(fPh.mul(40.0));
     const side2 = fTan.cross(vec3(0.3, 0.9, 0.2)).normalize();
     const run2 = sin(tt2).mul(0.9).add(sin(tt2.mul(0.37).add(fPh.mul(6.0))).mul(1.6));
-    const center = fPos.add(fTan.mul(run2).add(side2.mul(cos(tt2.mul(0.61)).mul(0.5))).mul(fSw).mul(0.35));
+    const center = fPos.add(pullOf(fPos)).add(fTan.mul(run2).add(side2.mul(cos(tt2.mul(0.61)).mul(0.5))).mul(fSw).mul(0.35));
     const hd = species === 'pseudomonas' ? fTan.mul(cos(tt2).sign().add(0.001)).add(side2.mul(sin(tt2.mul(0.61)).mul(-0.3))).normalize() : fTan;
     const ax = hd.cross(vec3(0.0, 0.0, 1.0)).normalize(), az = hd.cross(ax);
     const radial = ax.mul(cos(fAt.y)).add(az.mul(sin(fAt.y)));
@@ -137,5 +140,5 @@ export function buildSwarm(colliders: Collider[], cellOf: (p: THREE.Vector3) => 
     }
     return best ? { p: best, r: 1.6 } : null;
   };
-  return { highlight(p) { if (p) { uHi.value.copy(p); uHiOn.value = 1; } else uHiOn.value = 0; }, mesh, count: n2, find, sync(w) { const a = liveAttr.array as Float32Array; let ch = false; for (let i = 0; i < n2; i++) { const target = w(cells[i]) > (i % 97) / 97 * 0.9 + 0.05 ? 1 : 0; if (a[i] !== target) { a[i] += Math.sign(target - a[i]) * 0.2; if (Math.abs(a[i] - target) < 0.2) a[i] = target; ch = true; } } if (ch) { liveAttr.needsUpdate = true; const fa = fLive.array as Float32Array; for (let i = 0; i < n2; i++) for (let f = 0; f < NF; f++) fa[i * NF + f] = a[i] * fMask[i * NF + f]; fLive.needsUpdate = true; } } };
+  return { attract(p: THREE.Vector3 | null, k: number) { if (p) uSug.value.copy(p); uSugK.value = k; }, highlight(p) { if (p) { uHi.value.copy(p); uHiOn.value = 1; } else uHiOn.value = 0; }, mesh, count: n2, find, sync(w) { const a = liveAttr.array as Float32Array; let ch = false; for (let i = 0; i < n2; i++) { const target = w(cells[i]) > (i % 97) / 97 * 0.9 + 0.05 ? 1 : 0; if (a[i] !== target) { a[i] += Math.sign(target - a[i]) * 0.2; if (Math.abs(a[i] - target) < 0.2) a[i] = target; ch = true; } } if (ch) { liveAttr.needsUpdate = true; const fa = fLive.array as Float32Array; for (let i = 0; i < n2; i++) for (let f = 0; f < NF; f++) fa[i * NF + f] = a[i] * fMask[i * NF + f]; fLive.needsUpdate = true; } } };
 }

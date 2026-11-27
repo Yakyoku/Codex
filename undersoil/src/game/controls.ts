@@ -5,7 +5,7 @@
 import * as THREE from 'three/webgpu';
 import type { Collider } from './world';
 
-export interface FreeControls { update(dt: number): void; enabled: boolean; yaw: number; pitch: number; moving: boolean; /** その場所の水の量（0〜1）。0.45 以上で泳ぐ */ water: number; swimming: boolean; onAction?: (a: 'scan' | 'sugar') => void; }
+export interface FreeControls { update(dt: number): void; enabled: boolean; yaw: number; pitch: number; moving: boolean; /** その場所の水の量（0〜1）。0.45 以上で泳ぐ */ water: number; swimming: boolean; /** 歩くときの、視点のわずかな上下（設定で切れる） */ bob: boolean; onAction?: (a: 'scan' | 'sugar') => void; }
 
 export function pushOut(p: THREE.Vector3, colliders: Collider[], radius: number) {
   for (let it = 0; it < 2; it++) for (const c of colliders) {
@@ -16,7 +16,8 @@ export function pushOut(p: THREE.Vector3, colliders: Collider[], radius: number)
 
 export function makeFreeControls(camera: THREE.Camera, dom: HTMLElement, colliders: Collider[], stick: HTMLElement | null): FreeControls {
   const keys = new Set<string>(); const vel = new THREE.Vector3(); const move = new THREE.Vector2();
-  const c: FreeControls = { enabled: true, yaw: 0, pitch: 0, moving: false, water: 0, swimming: false, update };
+  const c: FreeControls = { enabled: true, yaw: 0, pitch: 0, moving: false, water: 0, swimming: false, bob: true, update };
+  let bobPh = 0, bobPrev = 0;
   let swimK = 0; const padPrev = [false, false];
   const e = new THREE.Euler().setFromQuaternion(camera.quaternion, 'YXZ'); c.yaw = e.y; c.pitch = e.x;
   addEventListener('keydown', (ev) => { keys.add(ev.code); if (c.enabled && !ev.repeat) { if (ev.code === 'KeyE') c.onAction?.('scan'); if (ev.code === 'KeyQ') c.onAction?.('sugar'); } }); addEventListener('keyup', (ev) => keys.delete(ev.code)); addEventListener('blur', () => keys.clear());
@@ -55,6 +56,10 @@ export function makeFreeControls(camera: THREE.Camera, dom: HTMLElement, collide
     camera.position.addScaledVector(vel, dt);
     camera.position.y -= (1 - swimK) * 1.6 * dt * (my > 0 ? 0 : 1);     // 歩きのときは、足もとの粒へ引かれる（登っている間は効かせない）
     pushOut(camera.position, colliders, 0.9);
+    // 歩行感：歩いて進んでいる間だけ、視点が上下に 0.6µm ほど動く（1 歩 約 0.45 秒）。泳ぎでは使わない。酔いやすいので小さく、設定で切れる
+    const sp = Math.hypot(vel.x, vel.z); bobPh += dt * sp * 3.0;
+    const bob = c.bob ? Math.sin(bobPh) * 0.06 * Math.min(1, sp / 3) * (1 - swimK) : 0;
+    camera.position.y += bob - bobPrev; bobPrev = bob;
   }
   return c;
 }

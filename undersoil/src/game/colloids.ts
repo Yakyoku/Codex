@@ -19,8 +19,9 @@ export function buildColloids(count: number, R = 7, nearFade = 0.15) {
   const S = instancedBufferAttribute(new THREE.InstancedBufferAttribute(size, 1)) as unknown as ReturnType<typeof float>;
   const T = instancedBufferAttribute(new THREE.InstancedBufferAttribute(tone, 1)) as unknown as ReturnType<typeof float>;
   const uWet = uniform(0);
+  const uVel = uniform(new THREE.Vector3());   // 泳いでいるときの、カメラの速さ（単位/秒）。粒を進む向きに引きのばして、流れて見せる
   const m = new THREE.MeshStandardNodeMaterial({ transparent: true, depthWrite: false });
-  m.positionNode = positionLocal.mul(S).add(P);
+  { const sp = uVel.length(), dir = uVel.div(sp.max(0.0001)); m.positionNode = positionLocal.mul(S).add(dir.mul(positionLocal.dot(dir)).mul(S).mul(sp.mul(1.6))).add(P); }
   // 色：粘土は明るい黄褐色、腐植は暗い茶色。遠いほど霧に溶けるので、近い粒ほどはっきり
   m.colorNode = mix(vec3(0.42, 0.34, 0.22), vec3(0.12, 0.08, 0.05), smoothstep(0.55, 0.85, T));
   m.roughnessNode = float(0.6); m.metalnessNode = float(0);
@@ -33,10 +34,11 @@ export function buildColloids(count: number, R = 7, nearFade = 0.15) {
   return {
     mesh,
     /** cam：カメラの位置、wet：その場所の湿り（0〜1） */
-    update(dt: number, cam: THREE.Vector3, wet: number) {
+    update(dt: number, cam: THREE.Vector3, wet: number, swimming = false) {
+      if (!first && dt > 0) { const v = cam.clone().sub(center).divideScalar(dt); if (!swimming || v.length() > 30) v.set(0, 0, 0); uVel.value.lerp(v, 1 - Math.exp(-dt * 6)); }
       uWet.value += (wet - uWet.value) * (1 - Math.exp(-dt * 1.5));
       if (first) { for (let i = 0; i < count; i++) { arr[i * 3] += cam.x; arr[i * 3 + 1] += cam.y; arr[i * 3 + 2] += cam.z; } first = false; }
-      center = cam;
+      center = cam.clone();
       // ブラウン運動：小さい粒ほど大きくふるえる（拡散係数は半径に反比例）。ゆるい流れも少し
       const k = Math.sqrt(Math.min(dt, 0.05));
       for (let i = 0; i < count; i++) {
