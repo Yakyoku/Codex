@@ -16,6 +16,12 @@
 <div class="center-cta">
   <button class="btn primary" id="enterVR">VR で遊ぶ</button>
   <small id="vrMsg">確認中…</small>
+  <fieldset class="vr-opts"><legend>酔いにくさの設定</legend>
+    <label>向きを変える角度 <select id="optSnap"><option value="30">30°ずつ</option><option value="45">45°ずつ</option></select></label>
+    <label>動くとき、視野のまわりを暗くする <select id="optVig"><option value="on">する（酔いにくい）</option><option value="off">しない</option></select></label>
+    <label>動く速さ <select id="optSpeed"><option value="0.7">ゆっくり</option><option value="1" selected>ふつう</option><option value="1.3">はやい</option></select></label>
+  </fieldset>
+  <small class="vr-help">右手：引き金＝糖のしずく、握る＝水をくむ・まく　／　左手：手首の画面を見る＝スキャン、握る＝地上 ⇄ 土の中</small>
 </div>
 <script type="module" src="/src/pages/vr.ts"></script>
 </body>

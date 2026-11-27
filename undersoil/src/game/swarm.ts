@@ -1,7 +1,7 @@
 // 細菌の群れ：桿菌（両端が丸い棒）をインスタンス描画し、動きは頂点シェーダーで作る。
 // 水の膜の中でだけ泳ぐ。乾いた区画では見えない（芽胞として休眠している）。
 import * as THREE from 'three/webgpu';
-import { float, vec3, instancedBufferAttribute, time, sin, cos, positionLocal, mix, saturate, normalView, positionViewDirection, dot, pow, oneMinus, hash, instanceIndex , uniform, smoothstep, mx_noise_float, positionWorld, cameraPosition } from 'three/tsl';
+import { float, vec3, instancedBufferAttribute, time, sin, cos, positionLocal, mix, saturate, normalView, positionViewDirection, dot, pow, oneMinus, hash, instanceIndex , uniform, smoothstep, mx_noise_float, positionWorld, cameraPosition, fract } from 'three/tsl';
 import type { Collider } from './world';
 import { makeRng } from './rng';
 
@@ -64,11 +64,16 @@ export function buildSwarm(colliders: Collider[], cellOf: (p: THREE.Vector3) => 
   const heading = species === 'pseudomonas' ? aTan.mul(cos(tt).sign().add(0.001)).add(side.mul(sin(tt.mul(0.61)).mul(-0.3))).normalize() : aTan;   // 枯草菌は向きを変えない
   const bx = heading.cross(vec3(0.0, 0.0, 1.0)).normalize(), bz = heading.cross(bx);
   const wig = sin(time.mul(18.0).add(aPh.mul(50.0))).mul(0.015); // 細かい震え
+  const uSug = uniform(new THREE.Vector3()), uSugK = uniform(0);
   const lp = positionLocal;
-  const lps = lp.mul(aScl);
+  // 分裂：糖のそばの細菌は、長く伸び、まん中がくびれて、2 つに分かれる（1 回 約 10 秒の早回し。本物は 20〜30 分に 1 回）
+  const nearSug = smoothstep(8.0, 1.5, aPos.sub(uSug).length()).mul(uSugK);
+  const divPh = fract(time.mul(0.1).add(aPh.mul(7.0)));
+  const stretch = smoothstep(0.15, 0.85, divPh).mul(0.85).mul(nearSug).add(1.0);
+  const pinch = oneMinus(smoothstep(0.55, 0.95, divPh).mul(nearSug).mul(smoothstep(0.035, 0.0, lp.y.abs())).mul(0.8));
+  const lps = vec3(lp.x.mul(pinch), lp.y.mul(stretch), lp.z.mul(pinch)).mul(aScl);
   const rotated = bx.mul(lps.x.add(wig.mul(aSwim))).add(heading.mul(lps.y)).add(bz.mul(lps.z));
   // 走化性：糖のしずくが置かれると、近く（半径 約 80µm）の細菌が、しずくのまわりへ寄ってくる（しずくの表面で止まり、重ならない）
-  const uSug = uniform(new THREE.Vector3()), uSugK = uniform(0);
   const pullOf = (p: V) => { const to = uSug.sub(p), dist = to.length(); return to.mul(smoothstep(8.0, 1.5, dist).mul(saturate(dist.sub(0.45).div(dist.max(0.001)))).mul(uSugK).mul(0.82)); };
   m.positionNode = aPos.add(drift).add(pullOf(aPos)).add(rotated.mul(live));
   // 見た目（持ち主の資料と顕微鏡写真）：両端の丸い棒。細い暗い輪郭線、中は淡い灰色で細かい粒々。

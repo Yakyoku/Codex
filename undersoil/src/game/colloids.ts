@@ -34,7 +34,8 @@ export function buildColloids(count: number, R = 7, nearFade = 0.15) {
   return {
     mesh,
     /** cam：カメラの位置、wet：その場所の湿り（0〜1） */
-    update(dt: number, cam: THREE.Vector3, wet: number, swimming = false) {
+    /** movers：近くを動く生き物（位置と半径）。通ると、まわりの粒が水ごと押しのけられる */
+    update(dt: number, cam: THREE.Vector3, wet: number, swimming = false, movers: { p: THREE.Vector3; r: number }[] = []) {
       if (!first && dt > 0) { const v = cam.clone().sub(center).divideScalar(dt); if (!swimming || v.length() > 30) v.set(0, 0, 0); uVel.value.lerp(v, 1 - Math.exp(-dt * 6)); }
       uWet.value += (wet - uWet.value) * (1 - Math.exp(-dt * 1.5));
       if (first) { for (let i = 0; i < count; i++) { arr[i * 3] += cam.x; arr[i * 3 + 1] += cam.y; arr[i * 3 + 2] += cam.z; } first = false; }
@@ -45,6 +46,8 @@ export function buildColloids(count: number, R = 7, nearFade = 0.15) {
         const j = i * 3, amp = 0.006 / size[i] * k;
         vel[j] = vel[j] * 0.6 + (Math.random() * 2 - 1) * amp; vel[j + 1] = vel[j + 1] * 0.6 + (Math.random() * 2 - 1) * amp; vel[j + 2] = vel[j + 2] * 0.6 + (Math.random() * 2 - 1) * amp;
         arr[j] += vel[j]; arr[j + 1] += vel[j + 1] - 0.002 * dt; arr[j + 2] += vel[j + 2];
+        for (const mv of movers) { const dx = arr[j] - mv.p.x, dy = arr[j + 1] - mv.p.y, dz = arr[j + 2] - mv.p.z, d2 = dx * dx + dy * dy + dz * dz, R2 = (mv.r * 1.8) ** 2;
+          if (d2 < R2 && d2 > 1e-4) { const d = Math.sqrt(d2), k = (1 - d / (mv.r * 1.8)) * 2.2 * dt / d; arr[j] += dx * k; arr[j + 1] += dy * k; arr[j + 2] += dz * k; } }
         // カメラから離れすぎた粒は、反対側へ回す
         for (let a = 0; a < 3; a++) { const c = center.getComponent(a); if (arr[j + a] - c > R) arr[j + a] -= 2 * R; else if (arr[j + a] - c < -R) arr[j + a] += 2 * R; }
       }

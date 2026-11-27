@@ -22,7 +22,7 @@ import { SPECIES } from '../game/species';
 import { showCard } from '../ui/card';
 import { makePointer } from '../ui/pointer';
 import type { Target } from '../game/encounters';
-import { mountSettings, savedTier, savedBob } from '../ui/settings';
+import { mountSettings, savedTier, savedBob, savedSpeed, savedLook } from '../ui/settings';
 import { createAudio } from '../audio/engine';
 import { makeHud } from './hud';
 
@@ -125,7 +125,8 @@ async function main() {
   const colloids = game.tier === 'vr' ? null : buildColloids(game.tier === 'pc-high' ? 1400 : game.tier === 'mobile-high' ? 800 : 300, 7, game.q.post.some((e: string) => e.startsWith('dof')) ? 0.15 : 1.6)   // ぼかしのない段階では、近すぎる粒は消す（くっきりした玉に見えるため）; if (colloids) scene.add(colloids.mesh);
   // 道具（M2）：スキャンと糖のしずく。自分で動くときに使う（E・Q キー、ゲームパッド X・Y、画面のボタン）
   const tools = makeTools(scene, camera, world, game.seed.position, () => audio.chime(), (p, k) => { game.swarm.attract(p, k); game.swarm2.attract(p, k); });
-  controls.onAction = (a) => (a === 'scan' ? tools.scan() : tools.sugar());
+  controls.onAction = (a) => { if (a === 'scan') tools.scan(); else if (a === 'sugar') tools.sugar(); else tools.water(); };
+  $('waterBtn').addEventListener('click', () => tools.water());
   $('scanBtn').addEventListener('click', () => tools.scan()); $('sugarBtn').addEventListener('click', () => tools.sugar());
   const scope = await buildMicroscope('./');
   const sizes = makeSizes('./');
@@ -213,9 +214,9 @@ async function main() {
   const showGuide = () => {
     if (guideShown) return; guideShown = true;
     const touch = matchMedia('(pointer: coarse)').matches, pad = !!navigator.getGamepads?.()[0];
-    const rows = pad ? [['左スティック', '動く'], ['右スティック', '見回す'], ['A / B', '上へ / 下へ'], ['X', 'スキャン'], ['Y', '糖のしずく']]
-      : touch ? [['画面の左下をなぞる', '動く'], ['そのほかをなぞる', '見回す'], ['「スキャン」', '土のようすを調べる'], ['「糖のしずく」', '微生物を呼ぶ']]
-      : [['W A S D', '動く'], ['ドラッグ', '見回す'], ['スペース / C', '上へ / 下へ'], ['E', 'スキャン'], ['Q', '糖のしずく']];
+    const rows = pad ? [['左スティック', '動く'], ['右スティック', '見回す'], ['A / B', '上へ / 下へ'], ['RB', '水をくむ・まく'], ['X', 'スキャン'], ['Y', '糖のしずく']]
+      : touch ? [['画面の左下をなぞる', '動く'], ['そのほかをなぞる', '見回す'], ['「水をくむ／まく」', '入口でくみ、乾いた所でまく'], ['「スキャン」', '土のようすを調べる'], ['「糖のしずく」', '微生物を呼ぶ']]
+      : [['W A S D', '動く'], ['ドラッグ', '見回す'], ['スペース / C', '上へ / 下へ'], ['F', '水をくむ・まく'], ['E', 'スキャン'], ['Q', '糖のしずく']];
     guide.innerHTML = '<b>動（うご）かしかた</b>' + rows.map(([k, v]) => `<div><kbd>${k}</kbd><span>${v}</span></div>`).join('') + '<small>水のある所では泳ぎ、乾いた所では歩きます。押すと消えます</small>';
     guide.classList.add('on'); const off = () => guide.classList.remove('on'); guide.addEventListener('click', off); setTimeout(off, 30000);
   };
@@ -248,8 +249,8 @@ async function main() {
     else if (touring && visit) { const f = visit.get(); if (f) { const want = f.view ? f.view : visit.pos.clone().add(f.p.clone().sub(visit.anchor)); camera.position.lerp(want, 1 - Math.exp(-dt * 1.2)); const q0 = camera.quaternion.clone(); camera.lookAt(f.p); camera.quaternion.slerp(q0, Math.exp(-dt * 3)); } }
     else if (touring && pointer.focus()) { const f = pointer.focus()!; focusT = focusT ? focusT.lerp(f, 1 - Math.exp(-dt * 2)) : look.clone(); const q0 = camera.quaternion.clone(); camera.lookAt(focusT); camera.quaternion.slerp(q0, Math.exp(-dt * 1.5)); }
     else if (touring) { tourU = (tourU + dt * 0.012) % 1; placeOnPath(0.02 + 0.84 * (0.5 - 0.5 * Math.cos(tourU * Math.PI * 2))); /* 道の終わりで、吸水した種（seed.ts）に近づく */ }
-    else { controls.bob = savedBob() && !reduceMotion; controls.water = world.grid.cells[world.cellAt(camera.position)]?.water ?? 0; controls.update(dt); }
-    tools.update(dt); { const mm = $('moveMode'); const txt = touring || mode !== 'soil' ? '' : controls.swimming ? '泳（およ）ぐ' : '歩（ある）く'; if (mm.textContent !== txt) mm.textContent = txt; $('sugarBtn').textContent = `糖のしずく ${tools.stock}`; document.body.classList.toggle('free', !touring && mode === 'soil'); }
+    else { controls.speedK = savedSpeed(); controls.lookK = savedLook(); controls.bob = savedBob() && !reduceMotion; controls.water = world.grid.cells[world.cellAt(camera.position)]?.water ?? 0; controls.update(dt); }
+    tools.update(dt); { const mm = $('moveMode'); const txt = touring || mode !== 'soil' ? '' : controls.swimming ? '泳（およ）ぐ' : '歩（ある）く'; if (mm.textContent !== txt) mm.textContent = txt; $('sugarBtn').textContent = `糖のしずく ${tools.stock}`; { const ci = world.cellAt(camera.position); $('waterBtn').textContent = tools.tank < 3 && (ci === 0 || world.grid.cells[ci].water > 0.6) ? '水をくむ' : `水をまく ${tools.tank}`; } document.body.classList.toggle('free', !touring && mode === 'soil'); }
     if (wetQ === null) { demo.update(dt); game.update(dt, t); }
     // 手持ちカメラのごくわずかな揺れ（記録映像らしさ）：自動で巡るときだけ、0.15°以内。動きを減らす設定の端末では使わない
     if (touring && !reduceMotion && !testing) { const k = 0.0026; driftQ.setFromEuler(new THREE.Euler(Math.sin(t * 0.53) * k + Math.sin(t * 1.37) * k * 0.4, Math.sin(t * 0.41 + 1.2) * k + Math.sin(t * 1.11) * k * 0.35, 0)); camera.quaternion.multiply(driftQ); }
@@ -263,7 +264,7 @@ async function main() {
       if (viewShift > 0.002) camera.setViewOffset(innerWidth, innerHeight, innerWidth * viewShift, 0, innerWidth, innerHeight); else if (camera.view) camera.clearViewOffset();
       if (post) post.render(); else renderer.render(scene, camera);
     }
-    if (colloids && mode === 'soil') colloids.update(dt, camera.position, world.grid.cells[world.cellAt(camera.position)]?.water ?? 0, !touring && controls.swimming);
+    if (colloids && mode === 'soil') colloids.update(dt, camera.position, world.grid.cells[world.cellAt(camera.position)]?.water ?? 0, !touring && controls.swimming, game.creatures.movers());
     scope.tick(dt); minimap.update(camera, mode === 'soil' && started); goalTick(dt);
     if (!testing) enc.update(dt);
     pointer.update(dt);

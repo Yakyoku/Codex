@@ -132,3 +132,6 @@
 - 2026-11-27：映像のリアリティの仕上げ（`REFERENCE/realism-pass-2026-11-27.md`）と提案 5 つ（光のゆらめき＝soilMaterial、ピント送り＝screen.ts、雲＝surface.ts、繊維のかけら＝fibres.ts、比べるスライダー＝progress.ts の kind:'compare'）。
   **M2 に着手**：`controls.ts`（歩く ⇄ 泳ぐ。water を screen.ts から渡す）、`tools.ts`（スキャン、糖のしずく）。菌糸を滑るはステージ4まで保留。
   残り：VR の道具と酔いにくさの設定、手触りの調整（PROMPTS.md の「操作が気持ちよくないとき」）。この環境では、動きのある画面の撮影は時間切れになりやすい（状態は page.evaluate で確かめる）。
+- 2026-11-27（続き）：M2 の残りと提案 5 つ。`tools.ts` に water()（入口＝区画 0 は雨水の源。くむ→乾いた区画でまく→となりに水があれば grid.link）、read()、スキャンの帯。
+  `swarm.ts` に走化性と分裂（糖のそばだけ）。`colloids.ts` は生き物（creatures.movers()）に押しのけられる。設定に動く速さ・見回す速さ。
+  VR（`vr.ts`）：右手 引き金＝糖、握る＝水／左手 手首の板＝スキャン、握る＝地上 ⇄ 土の中。酔いにくさの設定は vr/index.html の select（localStorage undersoil.vr.*）。**Quest 3 の実機では未確認**。

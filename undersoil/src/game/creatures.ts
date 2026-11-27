@@ -5,7 +5,7 @@ import { texture, uv, vec3, float, mix, normalMap, normalView, positionViewDirec
 import { loadGLB, loadTexture } from '../core/assets';
 import type { World } from './world';
 
-export interface Creatures { group: THREE.Group; update(dt: number, t: number): void; anyActive(): boolean; nearest(p: THREE.Vector3): THREE.Vector3 | null; }
+export interface Creatures { group: THREE.Group; update(dt: number, t: number): void; anyActive(): boolean; nearest(p: THREE.Vector3): THREE.Vector3 | null; /** 泳いでいる個体の位置（水の中の粒を押しのけるため） */ movers(): { p: THREE.Vector3; r: number }[]; }
 
 function bodyMaterial(na: THREE.Texture) {
   // 持ち主の資料と顕微鏡写真：腎臓形。細い暗い輪郭線。中は淡い灰褐色（#C2B5A4）で、細かい粒々が詰まっている
@@ -99,6 +99,7 @@ export async function buildCreatures(base: string, world: World, opts: { lod: 0 
   return {
     group,
     anyActive: () => list.some((c) => c.a > 0.6),
+    movers: () => list.filter((c) => c.a > 0.6).map((c) => ({ p: c.root.position, r: 3.2 })),
     nearest(from) { let best: THREE.Vector3 | null = null, bd = 1e9; for (const c of list) { if (c.a < 0.6) continue; const d = c.root.position.distanceToSquared(from); if (d < bd) { bd = d; best = c.root.position; } } return best; },
     update(dt, t) {
       for (const c of list) {

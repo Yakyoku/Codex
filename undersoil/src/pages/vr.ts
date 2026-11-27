@@ -9,6 +9,7 @@ import { makeDemo } from '../game/demo';
 import { pushOut } from '../game/controls';
 import { makeHud } from './hud';
 import { buildSurface } from '../game/surface';
+import { makeTools } from '../game/tools';
 
 const errors: string[] = [];
 addEventListener('error', (e) => errors.push(e.message));
@@ -46,6 +47,34 @@ async function main() {
   const doSwitch = () => { if (!pending) return; where = pending; pending = null; (where === 'surface' ? sRig : rig).add(camera); growT = 0; surface.setGrowth(0); if (!renderer.xr.isPresenting) pitch = where === 'surface' ? -0.75 : 0; toggleBtn.textContent = where === 'soil' ? '地上を見る' : '土の中へ戻る'; };
   const toggleBtn = document.createElement('button'); toggleBtn.className = 'btn'; toggleBtn.textContent = '地上を見る'; document.querySelector('.nav')!.prepend(toggleBtn);
   toggleBtn.addEventListener('click', () => goTo(where === 'soil' ? 'surface' : 'soil'));
+  // ---- M2：VR の道具と、酔いにくさの設定
+  const tools = makeTools(scene, camera, world, game.seed.position, () => { /* 音は M3 */ }, (p, k) => { game.swarm.attract(p, k); game.swarm2.attract(p, k); });
+  const opt = (id: string, key: string) => { const el = $(id) as HTMLSelectElement; try { const v = localStorage.getItem(key); if (v) el.value = v; } catch { /* noop */ } el.addEventListener('change', () => { try { localStorage.setItem(key, el.value); } catch { /* noop */ } }); return el; };
+  const optSnap = opt('optSnap', 'undersoil.vr.snap'), optVig = opt('optVig', 'undersoil.vr.vig'), optSpeed = opt('optSpeed', 'undersoil.vr.speed');
+  // 視野のまわりを暗くする輪（動いている間だけ。トンネル効果で酔いを減らす）
+  const vig = new THREE.Mesh(new THREE.RingGeometry(0.19, 1.2, 48), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0, depthTest: false, depthWrite: false, fog: false }));
+  vig.position.z = -0.3; vig.renderOrder = 999; vig.frustumCulled = false; camera.add(vig);
+  // 手：0・1 番のコントローラー。左右は接続時に分かる
+  const hands: { left: THREE.Object3D | null; right: THREE.Object3D | null } = { left: null, right: null };
+  for (const i of [0, 1]) { const c = renderer.xr.getController(i); rig.add(c);
+    c.addEventListener('connected', (e) => { const h = (e as unknown as { data: XRInputSource }).data.handedness; if (h === 'left') { hands.left = c; c.add(wrist); } else if (h === 'right') hands.right = c; });
+    c.addEventListener('selectstart', () => { if (c === hands.right && where === 'soil') tools.sugar(c.getWorldPosition(new THREE.Vector3())); });
+    c.addEventListener('squeezestart', () => { if (c === hands.right) { if (where === 'soil') tools.water(c.getWorldPosition(new THREE.Vector3())); } else goTo(where === 'soil' ? 'surface' : 'soil'); }); }
+  // 手首の画面（スキャン）：左手の甲の上の小さな板。顔のほうへ向けると見える
+  const wc = document.createElement('canvas'); wc.width = 512; wc.height = 384; const wctx = wc.getContext('2d')!; const wtex = new THREE.CanvasTexture(wc); wtex.colorSpace = THREE.SRGBColorSpace;
+  const wrist = new THREE.Mesh(new THREE.PlaneGeometry(0.16, 0.12), new THREE.MeshBasicMaterial({ map: wtex, transparent: true, opacity: 0, depthTest: false, fog: false }));
+  wrist.position.set(0, 0.07, 0.03); wrist.rotation.x = -Math.PI / 2.6; wrist.renderOrder = 998;
+  let wristT = 0;
+  const drawWrist = (pos: THREE.Vector3) => {
+    const r = tools.read(pos), g = wctx; g.clearRect(0, 0, 512, 384); g.fillStyle = 'rgba(8,20,22,.9)'; g.fillRect(0, 0, 512, 384); g.strokeStyle = '#78dcdc'; g.lineWidth = 3; g.strokeRect(2, 2, 508, 380);
+    g.fillStyle = '#8fe6e0'; g.font = 'bold 30px sans-serif'; g.fillText(`スキャン　区画 ${r.cell + 1}`, 20, 44);
+    const rows: [string, number][] = [['水', r.water], ['糖', r.carbon], ['微生物', r.microbes], ['団粒', r.structure]];
+    rows.forEach(([n, v], k) => { const y = 84 + k * 44; g.fillStyle = '#d8f3f0'; g.font = '26px sans-serif'; g.fillText(n, 20, y + 8); g.fillStyle = 'rgba(255,255,255,.12)'; g.fillRect(130, y - 12, 300, 18); g.fillStyle = '#6fd6cf'; g.fillRect(130, y - 12, 300 * v, 18); g.fillStyle = '#d8f3f0'; g.fillText(String(Math.round(v * 100)), 445, y + 8); });
+    g.fillStyle = '#ffd27a'; g.font = 'bold 28px sans-serif'; g.fillText(`土の活力 ${Math.round(r.vitality * 100)}%　水 ${tools.tank}　糖 ${tools.stock}`, 20, 276);
+    r.all.forEach((v, k) => { g.fillStyle = `hsl(${Math.round(12 + v * 160)} 55% ${Math.round(22 + v * 22)}%)`; g.fillRect(20 + k * (472 / r.all.length), 296, 472 / r.all.length - 3, 20); if (k === r.cell) { g.strokeStyle = '#ffd27a'; g.strokeRect(20 + k * (472 / r.all.length) - 1, 294, 472 / r.all.length - 1, 24); } });
+    g.fillStyle = '#ffe2a8'; g.font = '20px sans-serif'; g.fillText(tools.message.slice(0, 26), 20, 356);
+    wtex.needsUpdate = true;
+  };
   const demo = makeDemo(world);
   const resize = () => { if (renderer.xr.isPresenting) return; renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5)); renderer.setSize(innerWidth, innerHeight, false); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); };
   addEventListener('resize', resize); resize();
@@ -63,15 +92,13 @@ async function main() {
   try { supported = !!xr && await xr.isSessionSupported('immersive-vr'); } catch { supported = false; }
   await renderer.compileAsync(scene, camera);
   if (!supported) { btn.disabled = true; msg.textContent = 'このブラウザは VR に対応していません。Meta Quest 3 の標準ブラウザで開いてください。画面をドラッグすると見回せます。'; }
-  else msg.textContent = '座って遊ぶのがおすすめです。左スティックで移動、右スティックで向きを変え、握るボタンで地上の芽生えへ行けます。ときどき休憩をとり、気分が悪くなったらすぐに中断してください。';
+  else msg.textContent = '座って遊ぶのがおすすめです。左スティックで移動、右スティックで向きを変えます。ときどき休憩をとり、気分が悪くなったらすぐに中断してください。';
   setTimeout(() => demo.start(), 4000);
   let session: XRSession | null = null;
   btn.addEventListener('click', async () => {
     if (session) { await session.end(); return; }
     try {
       session = await xr!.requestSession('immersive-vr', { optionalFeatures: ['local-floor', 'bounded-floor', 'hand-tracking'] });
-      // 握るボタン（グリップ）で、土の中 ⇄ 地上を切り替える
-      session.addEventListener('squeeze', () => goTo(where === 'soil' ? 'surface' : 'soil'));
       session.addEventListener('end', () => { session = null; btn.textContent = 'VR で遊ぶ'; document.body.classList.remove('in-vr'); camera.position.set(0, 1.25, 0); resize(); });
       await renderer.xr.setSession(session);
       btn.textContent = 'VR を終了'; document.body.classList.add('in-vr');
@@ -89,15 +116,25 @@ async function main() {
       if (where === 'surface') { /* 地上では移動しない（向きを変えるだけ） */ }
       let mx = 0, mz = 0, tx = 0;
       for (const src of session.inputSources) { const a = src.gamepad?.axes; if (!a) continue; const x = a[2] ?? a[0] ?? 0, y = a[3] ?? a[1] ?? 0; if (src.handedness === 'left') { mx = Math.abs(x) > 0.15 ? x : 0; mz = Math.abs(y) > 0.15 ? y : 0; } else if (src.handedness === 'right') tx = x; }
-      if (Math.abs(tx) > 0.6 && snapReady) { rig.rotation.y -= Math.sign(tx) * Math.PI / 6; snapReady = false; } else if (Math.abs(tx) < 0.3) snapReady = true;
+      if (Math.abs(tx) > 0.6 && snapReady) { rig.rotation.y -= Math.sign(tx) * Number(optSnap.value) * Math.PI / 180; snapReady = false; } else if (Math.abs(tx) < 0.3) snapReady = true;
       const xrCam = renderer.xr.getCamera(); xrCam.getWorldQuaternion(q);
       fwd.set(0, 0, -1).applyQuaternion(q); right.set(1, 0, 0).applyQuaternion(q);
       want.set(0, 0, 0).addScaledVector(fwd, -mz).addScaledVector(right, mx); if (want.lengthSq() > 1) want.normalize();
-      vel.lerp(want.multiplyScalar(3.2), 1 - Math.exp(-dt * 3));
+      vel.lerp(want.multiplyScalar(3.2 * Number(optSpeed.value)), 1 - Math.exp(-dt * 3));
       if (where === 'soil') rig.position.addScaledVector(vel, dt);
       // 頭の位置で粒との当たりを取り、ずれた分だけ体を戻す
       if (where === 'soil') { xrCam.getWorldPosition(head); const before = head.clone(); pushOut(head, world.colliders, 0.7); rig.position.add(head.sub(before)); }
     } else camera.rotation.set(pitch, yaw, 0, 'YXZ');
+    { // 道具と酔いにくさ
+      const headW = (renderer.xr.isPresenting ? renderer.xr.getCamera() : camera).getWorldPosition(new THREE.Vector3());
+      tools.update(dt, headW);
+      const mvig = vig.material as THREE.MeshBasicMaterial; const wantV = optVig.value === 'on' && renderer.xr.isPresenting && where === 'soil' ? Math.min(0.85, vel.length() / 2.2) : 0; mvig.opacity += (wantV - mvig.opacity) * (1 - Math.exp(-dt * 6)); vig.visible = mvig.opacity > 0.01;
+      if (hands.left) { // 手首の板が顔のほうを向いているときだけ出す
+        const wp = wrist.getWorldPosition(new THREE.Vector3()), n = new THREE.Vector3(0, 0, 1).transformDirection(wrist.matrixWorld), facing = n.dot(headW.clone().sub(wp).normalize());
+        const wm = wrist.material as THREE.MeshBasicMaterial; wm.opacity += ((facing > 0.55 && where === 'soil' ? 1 : 0) - wm.opacity) * (1 - Math.exp(-dt * 8)); wrist.visible = wm.opacity > 0.02;
+        wristT -= dt; if (wrist.visible && wristT <= 0) { wristT = 0.4; drawWrist(headW); }
+      }
+    }
     demo.update(dt); game.update(dt, now / 1000);
     if (fadeT > 0) { renderer.setClearColor(0x000000, 1); renderer.clear(); }   // 切り替えの暗転
     else renderer.render(where === 'soil' ? scene : surface.scene, camera);
