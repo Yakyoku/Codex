@@ -124,7 +124,7 @@ async function main() {
   // 水の中をただよう小さな粒（ブラウン運動）。奥行きの手がかり
   const colloids = game.tier === 'vr' ? null : buildColloids(game.tier === 'pc-high' ? 1400 : game.tier === 'mobile-high' ? 800 : 300, 7, game.q.post.some((e: string) => e.startsWith('dof')) ? 0.15 : 1.6)   // ぼかしのない段階では、近すぎる粒は消す（くっきりした玉に見えるため）; if (colloids) scene.add(colloids.mesh);
   // 道具（M2）：スキャンと糖のしずく。自分で動くときに使う（E・Q キー、ゲームパッド X・Y、画面のボタン）
-  const tools = makeTools(scene, camera, world, game.seed.position, () => audio.chime(), (p, k) => { game.swarm.attract(p, k); game.swarm2.attract(p, k); });
+  const tools = makeTools(scene, camera, world, game.seed.position, () => audio.chime(), (p, k) => { game.swarm.attract(p, k); game.swarm2.attract(p, k); }, (k) => audio.fx(k));
   controls.onAction = (a) => { if (a === 'scan') tools.scan(); else if (a === 'sugar') tools.sugar(); else tools.water(); };
   $('waterBtn').addEventListener('click', () => tools.water());
   $('scanBtn').addEventListener('click', () => tools.scan()); $('sugarBtn').addEventListener('click', () => tools.sugar());
@@ -249,6 +249,7 @@ async function main() {
   for (const ev of ['pointerdown', 'pointermove', 'keydown', 'touchstart']) addEventListener(ev, wake, { passive: true }); wake();
   let hidden = false; document.addEventListener('visibilitychange', () => { hidden = document.hidden; last = 0; });
 
+  const FAST = Number(Q.get('fast') ?? 1);
   let frames = 0, last = 0, tourU = 0.02, vitShown = -1, viewShift = 0;
   let gotoU: number | null = null, curU = 0.02;
   minimap.onGo = (p) => { let best = 0, bd = 1e9; for (let k = 0; k <= 100; k++) { const u = 0.02 + 0.84 * k / 100, d = world.path.getPointAt(u).distanceToSquared(p); if (d < bd) { bd = d; best = u; } }
@@ -257,7 +258,7 @@ async function main() {
   const driftQ = new THREE.Quaternion(); const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const frame = (now: number) => {
     if (hidden) return;
-    const t = fixedT !== null ? Number(fixedT) : now / 1000; const dt = last ? Math.min(0.1, (now - last) / 1000) : 0; last = now;
+    const t = fixedT !== null ? Number(fixedT) : now / 1000; const dt = (last ? Math.min(0.1, (now - last) / 1000) : 0) * FAST; last = now;   // ?fast=N：通しの自動確認用の早回し
     camera.quaternion.multiply(driftQ.invert()); driftQ.identity();   // 前のコマの手持ちの揺れを戻す
     if (dbg) { const v = dbg.split(',').map(Number); camera.position.set(v[0], v[1], v[2]); camera.lookAt(v[3], v[4], v[5]); }
     else if (camT !== null) placeOnPath(Number(camT));
@@ -283,7 +284,7 @@ async function main() {
       if (post) post.render(); else renderer.render(scene, camera);
     }
     if (colloids && mode === 'soil') colloids.update(dt, camera.position, world.grid.cells[world.cellAt(camera.position)]?.water ?? 0, !touring && controls.swimming, game.creatures.movers());
-    if (mode === 'surface' && surface.growth >= 1 && !resultShown && !testing) showResult();
+    if (mode === 'surface' && surface.growth >= 1 && !resultShown && (!testing || FAST > 1)) showResult();
     scope.tick(dt); minimap.update(camera, mode === 'soil' && started); goalTick(dt);
     if (!testing) enc.update(dt);
     pointer.update(dt);

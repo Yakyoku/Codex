@@ -10,6 +10,8 @@ export interface AudioEngine {
   /** 地上の場面の成長（0〜1）。子葉が開く瞬間に和音を開く */
   setGrowth(g: number): void;
   chime(): void;
+  /** 効果音：水をまく、水の橋がつながる、乾きの風、区画の目覚め */
+  fx(kind: 'pour' | 'link' | 'wind' | 'awake'): void;
   setMuted(m: boolean): void;
   /** タブが隠れたときに止め、戻ったら再開する（消音の設定とは別） */
   pause(p: boolean): void;
@@ -106,6 +108,14 @@ export function createAudio(): AudioEngine {
       // 新しい生き物の紹介：短く上品な2音（鐘のような倍音）
       if (!ctx) return; const t = ctx.currentTime;
       [[880, 0], [1318.5, 0.16]].forEach(([f, dt]) => bell(f, t + dt, 0.12, 2.2, sfx));
+    },
+    fx(kind) {
+      if (!ctx) return; const t = ctx.currentTime;
+      if (kind === 'pour') { for (let k = 0; k < 4; k++) bell(1100 + Math.random() * 900, t + k * 0.06 + Math.random() * 0.03, 0.05, 0.35, sfx); }          // ぽたぽたと落ちる水
+      else if (kind === 'link') { [[587.33, 0], [739.99, 0.1], [880, 0.2], [1174.66, 0.32]].forEach(([f, d]) => bell(f, t + d, 0.09, 1.8, sfx)); }           // 上っていく 4 音：つながった
+      else if (kind === 'awake') { [[440, 0], [659.25, 0.18]].forEach(([f, d]) => bell(f, t + d, 0.08, 2.6, sfx)); }
+      else { const src = ctx.createBufferSource(); src.buffer = noiseBuffer(ctx, 3, 'pink'); const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.setValueAtTime(500, t); bp.frequency.linearRampToValueAtTime(1500, t + 1.4); bp.frequency.linearRampToValueAtTime(600, t + 3); bp.Q.value = 0.8;
+        const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.5, t + 1.2); g.gain.linearRampToValueAtTime(0.0001, t + 3); src.connect(bp); bp.connect(g); g.connect(sfx); src.start(t); src.stop(t + 3.1); }   // 吹きこむ風
     },
     update(dt) {
       if (!ctx || ctx.state !== 'running') return;

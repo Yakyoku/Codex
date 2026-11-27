@@ -26,10 +26,16 @@ export function mountSettings(openBtn: HTMLElement, info: { renderer: string; ti
     ${group('歩くときの視点のゆれ', 'bob', 'on', [['on', 'あり'], ['off', 'なし（酔いやすい方に）']], false)}
     <p class="now">いまの動作：${info.renderer} ／ ${info.tier}</p>
     <p class="note">設定と進み具合は、このブラウザの中に保存されます。別のブラウザや端末には引き継がれません。表示が乱れる・止まるときは、描画方式を「WebGL 2」にしてください。</p>
+    <fieldset><legend>進み具合の持ち運び</legend><button type="button" class="btn" data-exp>書き出す（ファイルに保存）</button><label class="btn">読みこむ<input type="file" accept="application/json,.json" data-imp hidden></label><small data-msg></small></fieldset>
     <div class="row"><button class="btn primary" value="ok">閉じる</button></div>`;
   document.body.append(d);
+  // 書き出し・読みこみ：設定、観察ノート、スタンプ、自分の観察（undersoil. で始まる保存）を、1 つのファイルで別の端末へ運べる
+  d.querySelector('[data-exp]')!.addEventListener('click', () => { const out: Record<string, string> = {}; try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i)!; if (k.startsWith('undersoil.')) out[k] = localStorage.getItem(k)!; } } catch { /* noop */ }
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify({ app: 'undersoil', version: 1, saved: new Date().toISOString(), data: out })], { type: 'application/json' })); a.download = 'undersoil-save.json'; a.click(); URL.revokeObjectURL(a.href); d.querySelector('[data-msg]')!.textContent = ' 書き出しました'; });
+  d.querySelector('[data-imp]')!.addEventListener('change', async (e) => { const f = (e.target as HTMLInputElement).files?.[0]; if (!f) return; const msg = d.querySelector('[data-msg]')!;
+    try { const j = JSON.parse(await f.text()); if (j.app !== 'undersoil' || typeof j.data !== 'object') throw new Error('このゲームの保存ファイルではありません'); for (const [k, v] of Object.entries(j.data)) if (k.startsWith('undersoil.') && typeof v === 'string') localStorage.setItem(k, v); msg.textContent = ' 読みこみました。開き直します…'; setTimeout(() => location.reload(), 800); } catch (err) { msg.textContent = ' 読みこめませんでした：' + (err as Error).message; } });
   let needReload = false;
-  d.addEventListener('change', (e) => { const i = e.target as HTMLInputElement; set(KEYS[i.name as keyof typeof KEYS], i.value, i.dataset.def!); if (i.dataset.reload === '1') needReload = true; });
-  d.querySelector('button')!.addEventListener('click', () => { d.close(); if (needReload) location.reload(); });
+  d.addEventListener('change', (e) => { const i = e.target as HTMLInputElement; if (i.type !== 'radio') return; set(KEYS[i.name as keyof typeof KEYS], i.value, i.dataset.def!); if (i.dataset.reload === '1') needReload = true; });
+  d.querySelector('button[value=ok]')!.addEventListener('click', () => { d.close(); if (needReload) location.reload(); });
   openBtn.addEventListener('click', () => d.showModal());
 }

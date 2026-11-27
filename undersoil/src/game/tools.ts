@@ -8,7 +8,7 @@ import { pushOut } from './controls';
 import { soilUniforms } from './soilMaterial';
 
 const DBG_SCAN = typeof location !== 'undefined' && location.search.includes('scan=1');   // 確認用
-export function makeTools(scene: THREE.Scene, camera: THREE.Camera, world: World, seedPos: THREE.Vector3, chime: () => void, attract?: (p: THREE.Vector3 | null, k: number) => void) {
+export function makeTools(scene: THREE.Scene, camera: THREE.Camera, world: World, seedPos: THREE.Vector3, chime: () => void, attract?: (p: THREE.Vector3 | null, k: number) => void, fx?: (k: 'pour' | 'link' | 'wind' | 'awake') => void) {
   // ---- 画面：スキャンの板と、糖の残り
   const panel = document.createElement('div'); panel.className = 'scan'; document.body.append(panel);
   const pulse = document.createElement('div'); pulse.className = 'scan-pulse'; document.body.append(pulse);
@@ -66,9 +66,9 @@ export function makeTools(scene: THREE.Scene, camera: THREE.Camera, world: World
       chime(); say(i === 0 ? '入口にしみ込む雨水（あまみず）をくみました（3 回ぶん）' : '水をくみました（3 回ぶん）'); return 'take';
     }
     if (tank <= 0) { say('水がありません。入口（地図の左）か、水のある区画でくめます'); return 'empty'; }
-    tank--; g.addWater(i, 0.55); g.addCarbon(i, 0.08); chime(); stats.pours++;
+    tank--; g.addWater(i, 0.55); g.addCarbon(i, 0.08); (fx ? fx('pour') : chime()); stats.pours++;
     let linked = false; for (const j of [i - 1, i + 1]) if (j >= 0 && j < g.count && g.cells[j].water > 0.3 && !g.links[i].has(j)) { g.link(i, j); linked = true; stats.links++; }
-    splash(pos ?? camera.position.clone().add(new THREE.Vector3(0, -0.4, -2.5).applyQuaternion(camera.quaternion)), linked); if (linked) setTimeout(chime, 180);
+    splash(pos ?? camera.position.clone().add(new THREE.Vector3(0, -0.4, -2.5).applyQuaternion(camera.quaternion)), linked); if (linked) setTimeout(() => (fx ? fx('link') : chime()), 180);
     say(linked ? `水をまきました（残り ${tank}）。となりの区画と、水の橋（はし）がつながりました！` : `水をまきました（残り ${tank}）。となりにも水があると、水の橋がかかります`); return 'pour';
   };
   return {
@@ -90,10 +90,10 @@ export function makeTools(scene: THREE.Scene, camera: THREE.Camera, world: World
       }
       for (let k = splashes.length - 1; k >= 0; k--) { const sp = splashes[k]; sp.t += dt; const u = sp.t / (sp.m.userData.big ? 1.4 : 0.8); sp.m.scale.setScalar(0.3 + u * (sp.m.userData.big ? 5 : 2.2)); (sp.m.material as THREE.MeshBasicMaterial).opacity = 0.5 * (1 - u); if (u >= 1) { scene.remove(sp.m); splashes.splice(k, 1); } }
       // 区画の目覚め：活力がしきい値を超えた区画を、はじめての 1 回だけ知らせる
-      { const g = world.grid; for (let k = 0; k < g.count; k++) if (!awake.has(k) && g.awakened(k)) { awake.add(k); stats.awakened = awake.size; if (stats.pours > 0) { chime(); say(k < 4 ? `区画 ${k + 1} が目覚めました。眠っていた細菌が、泳ぎ出しています` : k < 8 ? `区画 ${k + 1} が目覚めました。細菌を食べるコルポダが、殻から出てきます` : `区画 ${k + 1} が目覚めました。種（たね）まで、あと少しです`); } } }
+      { const g = world.grid; for (let k = 0; k < g.count; k++) if (!awake.has(k) && g.awakened(k)) { awake.add(k); stats.awakened = awake.size; if (stats.pours > 0) { (fx ? fx('awake') : chime()); say(k < 4 ? `区画 ${k + 1} が目覚めました。眠っていた細菌が、泳ぎ出しています` : k < 8 ? `区画 ${k + 1} が目覚めました。細菌を食べるコルポダが、殻から出てきます` : `区画 ${k + 1} が目覚めました。種（たね）まで、あと少しです`); } } }
       // 乾きの風
       { const g = world.grid, wet = g.cells.filter((c) => c.water > 0.4).length;
-        if (wind === 'wait' && stats.pours >= 4 && wet >= 5) { wind = 'on'; windT = 45; for (const c of g.cells) c.dryness = 6; windEl.innerHTML = '<b>乾（かわ）きの風（かぜ）</b><span>地上から乾いた風が吹きこんでいます。水の橋を保とう</span><i></i>'; windEl.classList.add('on'); chime(); }
+        if (wind === 'wait' && stats.pours >= 4 && wet >= 5) { wind = 'on'; windT = 45; for (const c of g.cells) c.dryness = 6; windEl.innerHTML = '<b>乾（かわ）きの風（かぜ）</b><span>地上から乾いた風が吹きこんでいます。水の橋を保とう</span><i></i>'; windEl.classList.add('on'); (fx ? fx('wind') : chime()); }
         if (wind === 'on') { windT -= dt; (windEl.querySelector('i') as HTMLElement).style.width = Math.max(0, windT / 45 * 100) + '%';
           if (windT <= 0) { wind = 'done'; for (const c of g.cells) c.dryness = 1; windEl.classList.remove('on'); stats.windSurvived = wet >= 4; say(stats.windSurvived ? '乾きの風を乗りきりました！ 水の橋は保たれています' : '風はやみました。乾いた区画に、もう一度水を運ぼう'); chime(); } } }
       // 細菌は糖の濃いほうへ集まる（走化性）。いちばん新しいしずくへ、数秒かけて寄ってくる。水がないと動けない
