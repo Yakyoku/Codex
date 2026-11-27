@@ -13,6 +13,7 @@ export default defineConfig({
         vr: resolve(__dirname, 'vr/index.html'),
         diag: resolve(__dirname, 'diag/index.html'),
         progress: resolve(__dirname, 'progress/index.html'),
+        stage2: resolve(__dirname, 'stage2/index.html'),
       },
     },
   },

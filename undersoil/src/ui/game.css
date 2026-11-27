@@ -198,3 +198,6 @@ body.surface .wind { display: none; }
 .nb-note { display: grid; gap: 6px; padding: 10px; margin: 8px 0; border-radius: 10px; background: rgba(255,255,255,.05); border: 1px solid var(--line); }
 .nb-note textarea, .nb-note input[type=date] { font: inherit; color: var(--ink); background: rgba(0,0,0,.35); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; width: 100%; }
 .nb-note label { font-size: .88em; color: #d8cdb9; display: grid; gap: 4px; } .nb-note img { max-width: 220px; border-radius: 8px; }
+
+.s2-note { position: fixed; left: 50%; top: max(12px, env(safe-area-inset-top)); transform: translateX(-50%); max-width: 80vw; padding: 6px 14px; border-radius: 10px; background: rgba(16,13,10,.7); border: 1px solid rgba(239,230,216,.25); color: #efe6d8; font-size: clamp(11px, 1vw, 14px); text-align: center; pointer-events: none; }
+.s2-note b { display: block; color: #ffd27a; letter-spacing: .06em; } body.clean .s2-note { display: none; }

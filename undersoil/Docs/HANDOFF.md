@@ -142,3 +142,8 @@
 - 2026-11-27（4 回目）：効果音 `audio.fx()`、VR の音、設定の書き出し・読みこみ、`scripts/check-play.mjs`（?fast=25 で早回し。約 10 分。9 項目）、乾眠から戻るクマムシの動画（tardigrade-v2）。
   直した不具合：種が眠っているうちに着くと、そばで目覚めさせても地上へ進まなかった（goalTick）。
   持ち主の決定が要るもの：タイトル・物語（→ タイトル画面、物語の場面）、ステージ 2 以降の着手。
+- 2026-11-28：**ステージ2「根のまわり」に着手**（持ち主の指示）。手順は GAME_BRIEF の「ステージ追加」。
+  済：調査 `REFERENCE/rhizosphere.md`・`REFERENCE/stage2-species-draft.md`・形の仕様書 4 本、設計 GDD の 10、`world.ts` のステージ別 layout と capsules、
+  `/stage2/`（`stage2/index.html`、`src/pages/stage2.ts`、`src/stage2/scene.ts`・`root.ts`、`src/data/stage2.zone1.layout.json`）。確認：`node scripts/shot.mjs 名前 "/stage2/?pos=52,2,-4,50,-6,-46&wet=1&freeze=6&clean"`。
+  次：`FACTCHECK_stage2.md`（別の確認役が作成中）の結果を下書きに反映してから SPECIES.md に載せる → species の json とテスト → モデル（アメーバ・線虫は bpy）→ 遊び。根毛の見た目（破片のように見える）と、表皮の細胞の模様は要改善。
+  依頼書の 1 区画は約 1.4 mm なので、根の先から根毛の帯（3.5 mm 以上）までは 1 区画に入らない。区域ごとに別の World を作って切り替える方針。
