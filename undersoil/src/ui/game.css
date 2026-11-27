@@ -143,3 +143,22 @@ body.compare .card, body.compare svg.pointer .ptag { opacity: .25; }
 .cmp-tag { position: fixed; left: 25vw; top: 6%; transform: translateX(-50%); color: #ffd27a; font-weight: 700; font-size: clamp(14px, 1.4vw, 22px); letter-spacing: .08em; text-align: center; text-shadow: 0 0 6px #000; opacity: 0; pointer-events: none; transition: opacity .4s ease; z-index: 8; }
 .cmp-tag small { display: block; color: #efe6d8; font-weight: 500; font-size: .7em; letter-spacing: .04em; }
 body.compare .cmp-tag { opacity: 1; }
+
+/* 道具（M2）：自分で動くときだけ出す */
+.btn.tool { display: none; } body.free .btn.tool { display: inline-flex; }
+.move-mode { position: fixed; left: 50%; top: max(12px, env(safe-area-inset-top)); transform: translateX(-50%); color: #efe6d8; font-size: 13px; letter-spacing: .12em; padding: 3px 12px; border-radius: 999px; background: rgba(16,13,10,.55); border: 1px solid rgba(239,230,216,.2); pointer-events: none; z-index: 5; }
+.move-mode:empty { display: none; }
+.scan { position: fixed; right: max(16px, env(safe-area-inset-right)); bottom: max(96px, calc(env(safe-area-inset-bottom) + 86px)); width: min(22em, 80vw); padding: 12px 14px; border-radius: 12px; background: rgba(8, 20, 22, .82); border: 1px solid rgba(120, 220, 220, .45); color: #d8f3f0; font-size: clamp(12px, 1vw, 15px); opacity: 0; transform: translateY(8px); pointer-events: none; transition: opacity .35s ease, transform .35s ease; z-index: 29; }
+.scan.on { opacity: 1; transform: none; }
+.scan h3 { margin: 0 0 8px; font-size: 1.05em; letter-spacing: .15em; color: #8fe6e0; } .scan h3 small { margin-left: .8em; color: #7fb5b0; font-weight: 400; letter-spacing: .04em; font-size: .8em; }
+.scan-row { display: grid; grid-template-columns: 8.5em 1fr 2.2em; gap: 8px; align-items: center; margin: 4px 0; } .scan-row small { display: none; }
+.scan-bar { height: 7px; border-radius: 4px; background: rgba(255,255,255,.1); overflow: hidden; } .scan-bar i { display: block; height: 100%; background: #6fd6cf; }
+.scan-row b { text-align: right; font-weight: 600; }
+.scan-v { margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(120,220,220,.25); } .scan-v b { color: #ffd27a; font-size: 1.2em; }
+.scan p { margin: 6px 0 0; line-height: 1.6; color: #ffe2a8; }
+.scan-pulse { position: fixed; left: 50%; top: 50%; width: 20vmin; height: 20vmin; margin: -10vmin; border-radius: 50%; border: 2px solid rgba(120, 230, 225, .8); opacity: 0; pointer-events: none; z-index: 4; }
+.scan-pulse.go { animation: scanPulse 1.1s ease-out; }
+@keyframes scanPulse { 0% { opacity: .9; transform: scale(.2); } 100% { opacity: 0; transform: scale(7); } }
+.tool-toast { position: fixed; left: 50%; top: 14%; transform: translateX(-50%); max-width: 90vw; padding: 8px 16px; border-radius: 999px; background: rgba(16,13,10,.82); border: 1px solid rgba(217,164,65,.5); color: #efe6d8; font-size: clamp(12px, 1.05vw, 16px); opacity: 0; pointer-events: none; transition: opacity .4s ease; z-index: 31; }
+.tool-toast.on { opacity: 1; }
+body.surface .scan, body.surface .tool-toast, body.surface .move-mode { display: none; }

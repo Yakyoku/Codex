@@ -14,6 +14,7 @@ import { buildSurface, type Surface } from '../game/surface';
 import { buildMicroscope } from '../game/microscope';
 import { makeMinimap } from '../ui/minimap';
 import { buildColloids } from '../game/colloids';
+import { makeTools } from '../game/tools';
 import { makeSizes } from '../ui/sizes';
 import { makeNotebook } from '../ui/notebook';
 import { makeEncounters } from '../game/encounters';
@@ -122,6 +123,10 @@ async function main() {
   let focusT: THREE.Vector3 | null = null;
   // 水の中をただよう小さな粒（ブラウン運動）。奥行きの手がかり
   const colloids = game.tier === 'vr' ? null : buildColloids(game.tier === 'pc-high' ? 1400 : game.tier === 'mobile-high' ? 800 : 300, 7, game.q.post.some((e: string) => e.startsWith('dof')) ? 0.15 : 1.6)   // ぼかしのない段階では、近すぎる粒は消す（くっきりした玉に見えるため）; if (colloids) scene.add(colloids.mesh);
+  // 道具（M2）：スキャンと糖のしずく。自分で動くときに使う（E・Q キー、ゲームパッド X・Y、画面のボタン）
+  const tools = makeTools(scene, camera, world, game.seed.position, () => audio.chime());
+  controls.onAction = (a) => (a === 'scan' ? tools.scan() : tools.sugar());
+  $('scanBtn').addEventListener('click', () => tools.scan()); $('sugarBtn').addEventListener('click', () => tools.sugar());
   const scope = await buildMicroscope('./');
   const sizes = makeSizes('./');
   const notebook = makeNotebook('./', (id) => scope.show(id, SPECIES[id]?.title ?? SPECIES[id]?.nameJa ?? ''));
@@ -232,7 +237,8 @@ async function main() {
     else if (touring && visit) { const f = visit.get(); if (f) { const want = f.view ? f.view : visit.pos.clone().add(f.p.clone().sub(visit.anchor)); camera.position.lerp(want, 1 - Math.exp(-dt * 1.2)); const q0 = camera.quaternion.clone(); camera.lookAt(f.p); camera.quaternion.slerp(q0, Math.exp(-dt * 3)); } }
     else if (touring && pointer.focus()) { const f = pointer.focus()!; focusT = focusT ? focusT.lerp(f, 1 - Math.exp(-dt * 2)) : look.clone(); const q0 = camera.quaternion.clone(); camera.lookAt(focusT); camera.quaternion.slerp(q0, Math.exp(-dt * 1.5)); }
     else if (touring) { tourU = (tourU + dt * 0.012) % 1; placeOnPath(0.02 + 0.84 * (0.5 - 0.5 * Math.cos(tourU * Math.PI * 2))); /* 道の終わりで、吸水した種（seed.ts）に近づく */ }
-    else controls.update(dt);
+    else { controls.water = world.grid.cells[world.cellAt(camera.position)]?.water ?? 0; controls.update(dt); }
+    tools.update(dt); { const mm = $('moveMode'); const txt = touring || mode !== 'soil' ? '' : controls.swimming ? '泳（およ）ぐ' : '歩（ある）く'; if (mm.textContent !== txt) mm.textContent = txt; $('sugarBtn').textContent = `糖のしずく ${tools.stock}`; document.body.classList.toggle('free', !touring && mode === 'soil'); }
     if (wetQ === null) { demo.update(dt); game.update(dt, t); }
     // 手持ちカメラのごくわずかな揺れ（記録映像らしさ）：自動で巡るときだけ、0.15°以内。動きを減らす設定の端末では使わない
     if (touring && !reduceMotion && !testing) { const k = 0.0026; driftQ.setFromEuler(new THREE.Euler(Math.sin(t * 0.53) * k + Math.sin(t * 1.37) * k * 0.4, Math.sin(t * 0.41 + 1.2) * k + Math.sin(t * 1.11) * k * 0.35, 0)); camera.quaternion.multiply(driftQ); }

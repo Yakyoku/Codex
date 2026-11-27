@@ -1,8 +1,11 @@
-// M1 用の簡易な移動（M2 で作り込む）：見回しはドラッグ、移動は WASD／左スティック／タッチの仮想スティック。粒にはめり込まない。
+// 移動（M2）：見回しはドラッグ／右スティック、移動は WASD／左スティック／タッチの仮想スティック。粒にはめり込まない。
+// ・歩く（乾いた所）：足もとの粒へ引かれ（弱い重力）、きびきび止まる。上下の入力は、登る・下りる
+// ・泳ぐ（水のある所）：全方向に進み、止めてもしばらく滑る（水の抵抗でゆっくり止まる）。少し速い
+// ・道具：スキャン（E キー／ゲームパッド X）、糖のしずく（Q キー／ゲームパッド Y）。画面のボタンでも使える
 import * as THREE from 'three/webgpu';
 import type { Collider } from './world';
 
-export interface FreeControls { update(dt: number): void; enabled: boolean; yaw: number; pitch: number; moving: boolean; }
+export interface FreeControls { update(dt: number): void; enabled: boolean; yaw: number; pitch: number; moving: boolean; /** その場所の水の量（0〜1）。0.45 以上で泳ぐ */ water: number; swimming: boolean; onAction?: (a: 'scan' | 'sugar') => void; }
 
 export function pushOut(p: THREE.Vector3, colliders: Collider[], radius: number) {
   for (let it = 0; it < 2; it++) for (const c of colliders) {
@@ -13,9 +16,10 @@ export function pushOut(p: THREE.Vector3, colliders: Collider[], radius: number)
 
 export function makeFreeControls(camera: THREE.Camera, dom: HTMLElement, colliders: Collider[], stick: HTMLElement | null): FreeControls {
   const keys = new Set<string>(); const vel = new THREE.Vector3(); const move = new THREE.Vector2();
-  const c: FreeControls = { enabled: true, yaw: 0, pitch: 0, moving: false, update };
+  const c: FreeControls = { enabled: true, yaw: 0, pitch: 0, moving: false, water: 0, swimming: false, update };
+  let swimK = 0; const padPrev = [false, false];
   const e = new THREE.Euler().setFromQuaternion(camera.quaternion, 'YXZ'); c.yaw = e.y; c.pitch = e.x;
-  addEventListener('keydown', (ev) => keys.add(ev.code)); addEventListener('keyup', (ev) => keys.delete(ev.code)); addEventListener('blur', () => keys.clear());
+  addEventListener('keydown', (ev) => { keys.add(ev.code); if (c.enabled && !ev.repeat) { if (ev.code === 'KeyE') c.onAction?.('scan'); if (ev.code === 'KeyQ') c.onAction?.('sugar'); } }); addEventListener('keyup', (ev) => keys.delete(ev.code)); addEventListener('blur', () => keys.clear());
   let lookId = -1, lx = 0, ly = 0, stickId = -1, sx = 0, sy = 0;
   dom.addEventListener('pointerdown', (ev) => {
     if (stick && ev.pointerType === 'touch' && ev.clientX < innerWidth * 0.4 && ev.clientY > innerHeight * 0.4) { stickId = ev.pointerId; sx = ev.clientX; sy = ev.clientY; stick.style.left = sx + 'px'; stick.style.top = sy + 'px'; stick.classList.add('on'); }
@@ -41,9 +45,15 @@ export function makeFreeControls(camera: THREE.Camera, dom: HTMLElement, collide
     fwd.set(0, 0, -1).applyQuaternion(camera.quaternion); right.set(1, 0, 0).applyQuaternion(camera.quaternion);
     want.set(0, 0, 0).addScaledVector(fwd, -mz).addScaledVector(right, mx); want.y += my; if (want.lengthSq() > 1) want.normalize();
     c.moving = want.lengthSq() > 0.01;
-    // 穏やかな加速と減速
-    vel.lerp(want.multiplyScalar(6.0), 1 - Math.exp(-dt * (c.moving ? 5 : 3.5)));
+    if (gp) { const b = [!!gp.buttons[2]?.pressed, !!gp.buttons[3]?.pressed]; if (b[0] && !padPrev[0]) c.onAction?.('scan'); if (b[1] && !padPrev[1]) c.onAction?.('sugar'); padPrev[0] = b[0]; padPrev[1] = b[1];
+      my += (gp.buttons[0]?.pressed ? 1 : 0) - (gp.buttons[1]?.pressed ? 1 : 0); want.y += (gp.buttons[0]?.pressed ? 1 : 0) - (gp.buttons[1]?.pressed ? 1 : 0); }
+    // 歩く ⇄ 泳ぐ：水の量でなめらかに切り替える
+    c.swimming = c.water > 0.45; swimK += ((c.swimming ? 1 : 0) - swimK) * (1 - Math.exp(-dt * 2.5));
+    const speed = 4.6 + 2.4 * swimK;                                   // 歩き 46µm/秒、泳ぎ 70µm/秒
+    const accel = c.moving ? 7 - 3.5 * swimK : 6 - 4.8 * swimK;        // 泳ぎは動き出しがゆるく、止めても滑る
+    vel.lerp(want.multiplyScalar(speed), 1 - Math.exp(-dt * accel));
     camera.position.addScaledVector(vel, dt);
+    camera.position.y -= (1 - swimK) * 1.6 * dt * (my > 0 ? 0 : 1);     // 歩きのときは、足もとの粒へ引かれる（登っている間は効かせない）
     pushOut(camera.position, colliders, 0.9);
   }
   return c;
