@@ -5,7 +5,8 @@ import { loadGLB, loadTexture } from '../core/assets';
 import { makeRng } from './rng';
 import { makeSoilMaterial, type GrainKind } from './soilMaterial';
 import { SoilGrid } from '../sim/soil';
-import layout from '../data/stage1.layout.json';
+import stage1Layout from '../data/stage1.layout.json';
+export type Layout = typeof stage1Layout & { capsules?: number[][] };
 
 export interface Collider { x: number; y: number; z: number; r: number; }
 interface Placement { variant: string; lod: 0 | 1 | 2 | 3; pos: THREE.Vector3; quat: THREE.Quaternion; scale: THREE.Vector3; cell: number; seed: number; }
@@ -23,7 +24,11 @@ export interface World {
   find(kind: GrainKind, from: THREE.Vector3, fwd: THREE.Vector3): { p: THREE.Vector3; r: number; geo?: THREE.BufferGeometry; matrix?: THREE.Matrix4 } | null;
 }
 
-export async function buildWorld(base: string, opts: { grainLod: 0 | 1; density: number; cheap?: boolean; lite?: boolean; far3?: boolean }): Promise<World> {
+export async function buildWorld(base: string, opts: { grainLod: 0 | 1; density: number; cheap?: boolean; lite?: boolean; far3?: boolean; layout?: Layout }): Promise<World> {
+  const layout: Layout = opts.layout ?? stage1Layout;   // ステージごとの配置（既定はステージ1）
+  // 粒を置かない筒（根など）：[ax, ay, az, bx, by, bz, 半径] の並び
+  const caps = (layout.capsules ?? []).map((c) => ({ a: new THREE.Vector3(c[0], c[1], c[2]), b: new THREE.Vector3(c[3], c[4], c[5]), r: c[6] }));
+  const inCaps = (p: THREE.Vector3, pad: number) => caps.some((c) => { const ab = c.b.clone().sub(c.a), t = Math.max(0, Math.min(1, p.clone().sub(c.a).dot(ab) / ab.lengthSq())); return p.distanceTo(c.a.clone().addScaledVector(ab, t)) < c.r + pad; });
   const rng = makeRng(layout.seed);
   const path = new THREE.CatmullRomCurve3(layout.path.map((p) => new THREE.Vector3(p[0], p[1], p[2])), false, 'catmullrom', 0.5);
   const samples = path.getSpacedPoints(160);
@@ -38,7 +43,7 @@ export async function buildWorld(base: string, opts: { grainLod: 0 | 1; density:
   const knobD = new THREE.Vector3(...((layout as unknown as { seedKnob: [number, number, number] }).seedKnob)).normalize();
   const rootA = seedC.clone().addScaledVector(knobD, 40), rootB = seedC.clone().addScaledVector(knobD, 70 + (layout as unknown as { rootLen: number }).rootLen), rootR = (layout as unknown as { rootR: number }).rootR;
   const segD = (p: THREE.Vector3) => { const ab = rootB.clone().sub(rootA), t = Math.max(0, Math.min(1, p.clone().sub(rootA).dot(ab) / ab.lengthSq())); return p.distanceTo(rootA.clone().addScaledVector(ab, t)); };
-  const inSeed = (p: THREE.Vector3, pad: number) => { if (segD(p) < rootR + 6 + pad) return true; const dx = (p.x - seedC.x) / (seedR.x + pad), dy = (p.y - seedC.y) / (seedR.y + pad), dz = (p.z - seedC.z) / (seedR.z + pad); return dx * dx + dy * dy + dz * dz < 1; };
+  const inSeed = (p: THREE.Vector3, pad: number) => { if (inCaps(p, pad)) return true; if (segD(p) < rootR + 6 + pad) return true; const dx = (p.x - seedC.x) / (seedR.x + pad), dy = (p.y - seedC.y) / (seedR.y + pad), dz = (p.z - seedC.z) / (seedR.z + pad); return dx * dx + dy * dy + dz * dz < 1; };
 
   const placements: Placement[] = []; const colliders: Collider[] = [];
   const euler = new THREE.Euler();
