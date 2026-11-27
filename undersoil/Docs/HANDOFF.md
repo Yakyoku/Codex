@@ -135,3 +135,7 @@
 - 2026-11-27（続き）：M2 の残りと提案 5 つ。`tools.ts` に water()（入口＝区画 0 は雨水の源。くむ→乾いた区画でまく→となりに水があれば grid.link）、read()、スキャンの帯。
   `swarm.ts` に走化性と分裂（糖のそばだけ）。`colloids.ts` は生き物（creatures.movers()）に押しのけられる。設定に動く速さ・見回す速さ。
   VR（`vr.ts`）：右手 引き金＝糖、握る＝水／左手 手首の板＝スキャン、握る＝地上 ⇄ 土の中。酔いにくさの設定は vr/index.html の select（localStorage undersoil.vr.*）。**Quest 3 の実機では未確認**。
+- 2026-11-27（3 回目）：たまっていた提案 17 個。`tools.ts`（しぶき、乾きの風、区画の目覚めの知らせ、stats）、`screen.ts`（結果の画面、気づきを送る＝フォーム feedback、地図で向かう gotoU、種と地上の同期）、
+  `creatures.present()`、`controls.swimStyle`、`notebook.ts`（スタンプ、自分の観察）、`dew.shrink()`、roadmap（確認の印＝フォーム confirm、前回からの変化＝data.json の prev を**更新の前に**今の値で書き直す）。
+  Netlify のフォームは diag・feedback・confirm の 3 つ（manage-form-submissions で読む）。
+  未対応で残した提案：乾眠から戻るクマムシ／シストから出るコルポダの本物の動画（Wikimedia の取得制限）、ピントを回すつまみ（本物の写真では不可）。
