@@ -14,7 +14,7 @@ const step = async (sec, each) => { for (let i = 0; i < sec * +fps; i++) { ms +=
 await page.evaluate(() => { const t = document.getElementById('tour'); if (t.textContent.includes('自分で動く')) t.click(); const g = window.__game; g.setWetAll(0.75); g.hypha.grow = 1;
   const h = g.hypha, s = h.spore, p0 = h.curve.getPointAt(0.04), side = h.curve.getTangentAt(0.04).cross({ x: 0, y: 1, z: 0 }).normalize();
   const c = window.__controls; g.camera.position.copy(s).addScaledVector(side, -9).add({ x: 0, y: 2.5, z: 0 }); document.querySelectorAll('.guide,#guide').forEach((e) => (e.style.display = 'none')); const d = s.clone().sub(g.camera.position); c.yaw = Math.atan2(-d.x, -d.z); c.pitch = Math.atan2(d.y, Math.hypot(d.x, d.z)); window.__p0 = p0; });
-await step(4);
+await step(5, (k) => { window.__controls.yaw += 0.004; });
 // 菌糸の始まりのほうを向いて、歩いて近づく
 await page.evaluate(() => { const g = window.__game, c = window.__controls, p = g.hypha.curve.getPointAt(0.08), d = p.clone().sub(g.camera.position); c.yaw = Math.atan2(-d.x, -d.z); c.pitch = Math.atan2(d.y, Math.hypot(d.x, d.z)) * 0.6; });
 await page.keyboard.down('KeyW'); await step(5, () => { const g = window.__game, c = window.__controls, p = g.hypha.curve.getPointAt(0.08), d = p.clone().sub(g.camera.position); if (g.hypha.near(g.camera.position).d < 2) return; const want = Math.atan2(-d.x, -d.z); c.yaw += (want - c.yaw) * 0.05; }); await page.keyboard.up('KeyW');
@@ -22,10 +22,10 @@ await page.keyboard.down('KeyW'); await step(5, () => { const g = window.__game,
 await page.evaluate(() => { const g = window.__game, n = g.hypha.near(g.camera.position); if (n.d > 2) g.camera.position.copy(g.hypha.curve.getPointAt(0.1)).add({ x: 0, y: 1.4, z: 0 }); });
 await page.keyboard.press('KeyG'); await step(1.5);
 // 種のほうを向いて、前へ滑る（少しずつ見回しながら）
-await page.evaluate(() => { const g = window.__game, c = window.__controls, t = g.hypha.curve.getTangentAt(0.12); c.yaw = Math.atan2(-t.x, -t.z); c.pitch = -0.12; });
-await page.keyboard.down('KeyW'); await step(16, (k) => { const c = window.__controls, g = window.__game, n = g.hypha.near(g.camera.position), t = g.hypha.curve.getTangentAt(Math.min(0.99, n.u + 0.04)); const want = Math.atan2(-t.x, -t.z) + Math.sin(k * 6.28) * 0.35; c.yaw += (want - c.yaw) * 0.08; c.pitch = -0.12 + Math.sin(k * 9) * 0.08; }); await page.keyboard.up('KeyW');
-await step(3);
-await page.keyboard.press('KeyG'); await step(3, (k) => { window.__controls.yaw += 0.012; });
+await page.evaluate(() => { const g = window.__game, c = window.__controls, t = g.hypha.curve.getTangentAt(0.12); c.yaw = Math.atan2(-t.x, -t.z) + 0.5; c.pitch = -0.42; });
+await page.keyboard.down('KeyW'); await step(9, (k) => { const c = window.__controls, g = window.__game, n = g.hypha.near(g.camera.position), t = g.hypha.curve.getTangentAt(Math.min(0.99, n.u + 0.04)); const want = Math.atan2(-t.x, -t.z) + 0.55 * Math.cos(k * 3.14); c.yaw += (want - c.yaw) * 0.08; c.pitch = -0.42 + Math.sin(k * 6.28) * 0.1; }); await page.keyboard.up('KeyW');
+await step(3, () => { window.__controls.pitch += (-0.15 - window.__controls.pitch) * 0.05; });
+await page.keyboard.press('KeyG'); await step(7, (k) => { window.__controls.yaw += 0.012; });
 await browser.close();
 const out = new URL('../public/progress/m2.mp4', import.meta.url).pathname;
 execFileSync('ffmpeg', ['-y', '-loglevel', 'error', '-framerate', fps, '-i', `${dir}f%05d.jpg`, '-vf', 'minterpolate=fps=24:mi_mode=blend', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', '24', '-movflags', '+faststart', out]);

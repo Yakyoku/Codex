@@ -4,7 +4,7 @@
 //   ・プレイヤーは、近くで「菌糸に乗る」を押すと、菌糸の表面に沿って高速で滑る（前後は移動の入力で。もう一度押すと降りる）
 //   数値（太さ・色・流れの速さ）は Docs/REFERENCE/am-fungus.md と SPECIES.md の台帳から。単位は 1 = 10 µm。
 import * as THREE from 'three/webgpu';
-import { float, mix, normalView, positionViewDirection, dot, pow, oneMinus, saturate, vec3, uniform } from 'three/tsl';
+import { float, mix, normalView, positionViewDirection, dot, pow, oneMinus, saturate, smoothstep, vec3, uniform } from 'three/tsl';
 import { pushOut } from './controls';
 import type { World } from './world';
 import { makeRng } from './rng';
@@ -74,14 +74,14 @@ export function buildHypha(world: World, seedPos: THREE.Vector3, o: HyphaOpts): 
   // 胞子：淡黄〜黄褐色の厚い壁（3 層、合わせて 数 µm）。中に、油の粒（脂質）がぎっしり詰まって透けて見える
   const sc0 = o.sporeColor;
   const wallMat = new THREE.MeshPhysicalNodeMaterial({ transparent: true, depthWrite: false, side: THREE.DoubleSide });
-  { const f = pow(oneMinus(saturate(dot(normalView, positionViewDirection).abs())), 1.6); wallMat.colorNode = vec3(...sc0); wallMat.roughnessNode = float(0.3); wallMat.metalnessNode = float(0);
+  { const f = pow(oneMinus(saturate(dot(normalView, positionViewDirection).abs())), 1.6); wallMat.colorNode = mix(vec3(...sc0), vec3(sc0[0] * 0.25, sc0[1] * 0.2, sc0[2] * 0.12), smoothstep(float(0.35), float(0.8), f)); wallMat.roughnessNode = float(0.3); wallMat.metalnessNode = float(0);
     wallMat.emissiveNode = vec3(sc0[0] * 0.35, sc0[1] * 0.3, sc0[2] * 0.2).mul(f); wallMat.opacityNode = mix(float(0.18), float(0.95), pow(f, float(1.3))); }   // 写真：縁は暗く厚い壁の輪、中は油の粒が透けて見える
   const sporeG = new THREE.Group(); sporeG.position.copy(spore); sporeG.name = 'amSpore'; group.add(sporeG);
   const wall = new THREE.Mesh(new THREE.SphereGeometry(o.spore, 48, 32), wallMat); wall.scale.set(1, 0.94, 1.04); sporeG.add(wall);
   const inner = new THREE.Mesh(new THREE.SphereGeometry(o.spore * 0.9, 40, 28), new THREE.MeshBasicMaterial({ color: new THREE.Color(sc0[0] * 0.55, sc0[1] * 0.45, sc0[2] * 0.25), transparent: true, opacity: 0.25, depthWrite: false })); inner.scale.copy(wall.scale); sporeG.add(inner);
-  { const nL = o.lite ? 120 : 340; const lip = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 10, 8), lipidMat(sc0), nL);
+  { const nL = o.lite ? 260 : 700; const lip = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 10, 8), lipidMat(sc0), nL);
     const r2 = makeRng(o.seed + 3), m = new THREE.Matrix4(), v = new THREE.Vector3(), q0 = new THREE.Quaternion(), s0 = new THREE.Vector3();
-    for (let i = 0; i < nL; i++) { do { v.set(r2.next() * 2 - 1, r2.next() * 2 - 1, r2.next() * 2 - 1); } while (v.lengthSq() > 1); v.multiplyScalar(o.spore * 0.8); lip.setMatrixAt(i, m.compose(v, q0, s0.setScalar(o.spore * (0.075 + r2.next() * 0.035)))); }
+    for (let i = 0; i < nL; i++) { do { v.set(r2.next() * 2 - 1, r2.next() * 2 - 1, r2.next() * 2 - 1); } while (v.lengthSq() > 1); v.multiplyScalar(o.spore * 0.8); lip.setMatrixAt(i, m.compose(v, q0, s0.setScalar(o.spore * (0.045 + r2.next() * 0.035)))); }
     sporeG.add(lip); }
   // 付着菌糸（胞子の柄、太さ 約 11 µm ○）：発芽管は、この柄の中の通り道から出る
   { const dir = pts[0].clone().sub(spore).normalize(); const stub = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.6, o.spore * 0.5, 16, 1, true), wallMat); stub.position.copy(spore).addScaledVector(dir, o.spore * 1.05); stub.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir); group.add(stub); }
@@ -118,7 +118,8 @@ export function buildHypha(world: World, seedPos: THREE.Vector3, o: HyphaOpts): 
     near(p) { let best = 1e9, bi = 0; for (let i = 0; i <= N; i++) { const d = samp[i].distanceToSquared(p); if (d < best) { best = d; bi = i; } } const u = bi / N; return { d: Math.sqrt(best) - o.r, u: Math.min(u, h.grow) }; },
     tangentAt(u, out) { return out.copy(curve.getTangentAt(Math.min(1, Math.max(0, u)))); },
     rideAt(u, up, out) { const uu = Math.min(1, Math.max(0, u)); curve.getPointAt(uu, out); curve.getTangentAt(uu, tmp); nrm.copy(up).addScaledVector(tmp, -up.dot(tmp)).normalize(); return out.addScaledVector(nrm, o.r + 0.85); },
-    highlight(on) { glow.value = on ? 0.6 : 0; },
+    // 乗れる距離に来たら、ほのかに光る（強すぎるとゲームらしく見える）
+    highlight(on) { glow.value = on ? 0.3 : 0; },
     update(dt, vit) {
       // 伸びる：活力が上がると、先端が種のほうへ伸びる（本物はおよそ 1 日に数 mm 以下。ゲームでは時間を縮めている）
       h.grow = Math.min(1, h.grow + dt * (0.004 + vit * 0.03));
