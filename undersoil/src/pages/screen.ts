@@ -18,6 +18,7 @@ import { makeTools } from '../game/tools';
 import { makeQuest } from '../game/quest';
 import { makeSizes } from '../ui/sizes';
 import { makeNotebook } from '../ui/notebook';
+import { makeZukan } from '../ui/zukan';
 import { makeEncounters } from '../game/encounters';
 import { SPECIES } from '../game/species';
 import { showCard } from '../ui/card';
@@ -135,6 +136,8 @@ async function main() {
   const notebook = makeNotebook('./', (id) => scope.show(id, SPECIES[id]?.title ?? SPECIES[id]?.nameJa ?? ''));
   $('sizes').addEventListener('click', () => sizes.open());
   $('notebook').addEventListener('click', () => notebook.open());
+  let zukanOpen = false; const zukan = makeZukan('./', (o) => { zukanOpen = o; last = 0; });   // 図鑑を開いている間は、本体の描画を止める
+  $('zukan').addEventListener('click', () => zukan.open());
   // 結果の画面：地上で芽が開ききったら、今回の記録を出す（1 回だけ）
   const result = document.createElement('dialog'); result.className = 'notebook result'; document.body.append(result); let resultShown = false;
   const showResult = () => { resultShown = true; const st = tools.stats, n = notebook.count();
@@ -216,7 +219,7 @@ async function main() {
     { id: 'clay', when: () => mode === 'soil' && cellW(8) > 0.4 && !!grain('clay')(), target: grain('clay') },
     { id: 'clover-seed', when: () => mode === 'soil' && nearSeed() < 70, target: seedT },
     { id: 'trifolium-repens', when: () => mode === 'surface' && surface.growth > 0.75, target: seedling },
-  ], { gapSec: 4, onShow: (id, t) => { audio.chime(); pointer.show(t, SPECIES[id]?.nameJa ?? ''); if (ORGANISMS.includes(id) || id === 'water-film') beginVisit(id, t); game.creatures.present(id === 'colpoda' ? camera : null); scope.show(id, SPECIES[id]?.title ?? SPECIES[id]?.nameJa ?? ''); notebook.meet(id); }, onHide: () => { pointer.hide(); focusT = null; endVisit(); scope.hide(); } });
+  ], { gapSec: 4, onShow: (id, t) => { audio.chime(); pointer.show(t, SPECIES[id]?.nameJa ?? ''); if (ORGANISMS.includes(id) || id === 'water-film') beginVisit(id, t); game.creatures.present(id === 'colpoda' ? camera : null); scope.show(id, SPECIES[id]?.title ?? SPECIES[id]?.nameJa ?? ''); notebook.meet(id); zukan.meet(id); }, onHide: () => { pointer.hide(); focusT = null; endVisit(); scope.hide(); } });
   $('meet').addEventListener('click', () => { enc.replay(ORGANISMS); if (!touring) $('tour').click(); });
   $('water').addEventListener('click', () => demo.start());
   $('dry').addEventListener('click', () => demo.dry());
@@ -262,7 +265,7 @@ async function main() {
     gotoU = best; };
   const driftQ = new THREE.Quaternion(); const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const frame = (now: number) => {
-    if (hidden) return;
+    if (hidden || zukanOpen) return;
     const t = fixedT !== null ? Number(fixedT) : now / 1000; const dt = (last ? Math.min(0.1, (now - last) / 1000) : 0) * FAST; last = now;   // ?fast=N：通しの自動確認用の早回し
     camera.quaternion.multiply(driftQ.invert()); driftQ.identity();   // 前のコマの手持ちの揺れを戻す
     if (dbg) { const v = dbg.split(',').map(Number); camera.position.set(v[0], v[1], v[2]); camera.lookAt(v[3], v[4], v[5]); }

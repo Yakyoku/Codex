@@ -66,7 +66,7 @@ async function main() {
   const wc = document.createElement('canvas'); wc.width = 512; wc.height = 384; const wctx = wc.getContext('2d')!; const wtex = new THREE.CanvasTexture(wc); wtex.colorSpace = THREE.SRGBColorSpace;
   const wrist = new THREE.Mesh(new THREE.PlaneGeometry(0.16, 0.12), new THREE.MeshBasicMaterial({ map: wtex, transparent: true, opacity: 0, depthTest: false, fog: false }));
   wrist.position.set(0, 0.07, 0.03); wrist.rotation.x = -Math.PI / 2.6; wrist.renderOrder = 998;
-  let wristT = 0;
+  let wristT = 0, vrGoalDone = false;
   const drawWrist = (pos: THREE.Vector3) => {
     const r = tools.read(pos), g = wctx; g.clearRect(0, 0, 512, 384); g.fillStyle = 'rgba(8,20,22,.9)'; g.fillRect(0, 0, 512, 384); g.strokeStyle = '#78dcdc'; g.lineWidth = 3; g.strokeRect(2, 2, 508, 380);
     g.fillStyle = '#8fe6e0'; g.font = 'bold 30px sans-serif'; g.fillText(`スキャン　区画 ${r.cell + 1}`, 20, 44);
@@ -131,6 +131,8 @@ async function main() {
     { // 道具と酔いにくさ
       const headW = (renderer.xr.isPresenting ? renderer.xr.getCamera() : camera).getWorldPosition(new THREE.Vector3());
       tools.update(dt, headW);
+      // 種のゴール（画面版と同じ流れ）：乾きの風のあと、種が目覚めて、種のそばまで来ていたら、地上の芽生えへ。土の中で根が出ていた分だけ、芽生えも先から始まる
+      if (where === 'soil' && !vrGoalDone && game.wake > 0.5 && headW.distanceTo(game.seed.position) < 95 && tools.wind !== 'on') { vrGoalDone = true; audio.chime(); goTo('surface'); }
       // 手ならではのふれ合い：水のある所に手を入れると、まわりの細菌が手から逃げる（糖のしずくを置いていないとき）
       if (renderer.xr.isPresenting && where === 'soil' && tools.stock === 3) { const h = hands.right ?? hands.left; if (h) { const hp = h.getWorldPosition(new THREE.Vector3()); const wet = world.grid.cells[world.cellAt(hp)]?.water ?? 0; const k = wet > 0.4 ? -0.5 : 0; game.swarm.attract(hp, k); game.swarm2.attract(hp, k); } }
       const mvig = vig.material as THREE.MeshBasicMaterial; const wantV = optVig.value === 'on' && renderer.xr.isPresenting && where === 'soil' ? Math.min(0.85, vel.length() / 2.2) : 0; mvig.opacity += (wantV - mvig.opacity) * (1 - Math.exp(-dt * 6)); vig.visible = mvig.opacity > 0.01;
@@ -145,6 +147,7 @@ async function main() {
     if (fadeT > 0) { renderer.setClearColor(0x000000, 1); renderer.clear(); }   // 切り替えの暗転
     else renderer.render(where === 'soil' ? scene : surface.scene, camera);
     hud.tick(now); frames++;
+    W.__vr = { tools, game, rig, goTo, get where() { return where; } };   // 確認用
     W.__state = { ready: frames > 3, frames, isWebGPU, supported, presenting: renderer.xr.isPresenting, errors, stats: world.stats };
   });
 }

@@ -209,3 +209,27 @@ body.surface .wind { display: none; }
 .quest b { display: block; margin: 3px 0; line-height: 1.5; } .quest span { color: #b9ad98; font-size: .9em; line-height: 1.5; display: block; }
 body.surface .quest, body.clean .quest, body.compare .quest { display: none; }
 @media (max-width: 720px), (max-height: 500px) { .quest { top: 100px; width: 44vw; font-size: 11px; } }
+
+/* 図鑑 */
+dialog.zukan { background: rgba(14, 11, 8, .98); color: var(--ink); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; width: min(64em, 96vw); height: min(44em, 92vh); font-size: clamp(13px, 1vw, 16px); }
+dialog.zukan::backdrop { background: rgba(0,0,0,.7); }
+.zk-head { display: flex; justify-content: space-between; align-items: center; } .zk-head h2 { margin: 0; font-weight: 500; letter-spacing: .15em; } .zk-head small { color: var(--dim); font-size: .7em; margin-left: .6em; letter-spacing: .03em; }
+.zk-body { display: grid; grid-template-columns: 13em 1fr; gap: 12px; height: calc(100% - 44px); margin-top: 10px; }
+.zk-list { overflow: auto; display: grid; gap: 4px; align-content: start; }
+.zk-item { font: inherit; text-align: left; color: var(--ink); background: rgba(255,255,255,.05); border: 1px solid transparent; border-radius: 8px; padding: 6px 9px; cursor: pointer; }
+.zk-item small { display: block; color: var(--dim); font-size: .75em; } .zk-item.off { color: #6b6152; } .zk-item.cur { border-color: #d9a441; background: rgba(217,164,65,.12); }
+.zk-main { display: grid; grid-template-columns: minmax(220px, 1fr) 1.2fr; gap: 14px; overflow: hidden; }
+.zk-3d { position: relative; border-radius: 12px; background: radial-gradient(circle at 50% 40%, #2b241c, #0e0b08 70%); overflow: hidden; }
+.zk-3d canvas { width: 100%; height: 100%; display: block; touch-action: none; }
+.zk-hint { position: absolute; left: 10px; bottom: 8px; color: var(--dim); font-size: .8em; pointer-events: none; }
+.zk-text { overflow: auto; padding-right: 4px; } .zk-text h3 { margin: 0 0 4px; color: #ffd27a; font-size: 1.35em; letter-spacing: .05em; }
+.zk-sci { margin: 0 0 6px; color: #d8cdb9; } .zk-size-t { margin: 0 0 6px; } .zk-size-t b { color: #9fe0a0; }
+.zk-size { margin: 6px 0 10px; } .zk-bar { position: relative; height: 10px; border-radius: 5px; background: linear-gradient(90deg, rgba(255,255,255,.06), rgba(255,255,255,.14)); }
+.zk-bar i { position: absolute; top: -3px; width: 16px; height: 16px; margin-left: -8px; border-radius: 50%; border: 2px solid #0e0b08; }
+.me-this { background: #ffd27a; } .me-hero { background: #6fd6cf; } .me-hair { background: #b98b5e; }
+.zk-legend { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 6px; font-size: .8em; color: #d8cdb9; } .zk-legend .a { color: #ffd27a; } .zk-legend .b { color: #6fd6cf; } .zk-legend .c { color: #d4a77a; } .zk-legend small { flex-basis: 100%; color: var(--dim); }
+.zk-size p { margin: 6px 0 0; font-size: .9em; }
+.zk-text dl { margin: 8px 0 0; } .zk-text dt { color: #ffd27a; font-size: .85em; margin-top: 8px; } .zk-text dd { margin: 2px 0 0; line-height: 1.7; }
+.zk-lock { color: var(--dim); line-height: 1.8; }
+@media (max-width: 760px) { .zk-body { grid-template-columns: 1fr; grid-template-rows: auto 1fr; } .zk-list { grid-auto-flow: column; grid-auto-columns: max-content; overflow-x: auto; overflow-y: hidden; }
+  .zk-main { grid-template-columns: 1fr; grid-template-rows: 38vh 1fr; overflow: auto; } }
