@@ -18,6 +18,8 @@ export interface AudioEngine {
   onNote: ((k: number, delay: number) => void) | null;
   /** 近くにいる生き物（0〜1）：細菌のさざめき、コルポダの繊毛の音、クマムシの足音 */
   setNear(bact: number, colp: number, tardi: number): void;
+  /** 菌糸の上を滑る速さ（0〜1）：やわらかい管の表面をこする音と、風を切るような音 */
+  setRide(k: number): void;
   /** 自分がつないだ順の旋律（区域の列）を、通して鳴らす。長さ（秒）を返す */
   playSong(zones: number[]): number;
   /** 目覚め：重なってきた単音が、1 つの和音にまとまる */
@@ -80,7 +82,7 @@ export function createAudio(): AudioEngine {
   let ctx: AudioContext | null = null;
   let master: GainNode, music: GainNode, sfx: GainNode, verb: ConvolverNode, verbIn: GainNode;
   let dryBed: GainNode, wetBed: GainNode, surfBed: GainNode, under: BiquadFilterNode, rainLp: BiquadFilterNode, windBp: BiquadFilterNode, leafBp: BiquadFilterNode;
-  let vit = 0, mode: Mode = 'soil', growth = 0, chordDone = false, noteT = 1.5, bridges = 0, zones: number[] = [], motifT = 2, awoken = false, nb = 0, nc = 0, nt = 0, fizzT = 0, stepT = 0, stepL = false, cilia: GainNode | null = null, dripT = 0.8, grainT = 0.2, gust = 0;
+  let vit = 0, mode: Mode = 'soil', growth = 0, chordDone = false, noteT = 1.5, bridges = 0, zones: number[] = [], motifT = 2, awoken = false, nb = 0, nc = 0, nt = 0, fizzT = 0, stepT = 0, stepL = false, cilia: GainNode | null = null, rideG: GainNode | null = null, rideBp: BiquadFilterNode | null = null, rideK = 0, dripT = 0.8, grainT = 0.2, gust = 0;
   const api: AudioEngine = {
     muted: false,
     state: () => ({ bridges, awoken, running: !!ctx && ctx.state === 'running' }),
@@ -117,6 +119,8 @@ export function createAudio(): AudioEngine {
       { const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 1700; bp.Q.value = 2.5; cilia = ctx.createGain(); cilia.gain.value = 0;
         const trem = ctx.createGain(); trem.gain.value = 0.6; const lfo = ctx.createOscillator(); lfo.frequency.value = 7; const lg = ctx.createGain(); lg.gain.value = 0.4; lfo.connect(lg).connect(trem.gain); lfo.start();
         loop(pink, 0.8, bp); bp.connect(trem).connect(cilia).connect(sfx); }
+      // 菌糸の滑走：帯域をしぼった雑音。速いほど高く、大きく
+      { rideBp = ctx.createBiquadFilter(); rideBp.type = 'bandpass'; rideBp.frequency.value = 400; rideBp.Q.value = 1.2; rideG = ctx.createGain(); rideG.gain.value = 0; loop(pink, 1.0, rideBp); rideBp.connect(rideG).connect(sfx); }
       leafBp = ctx.createBiquadFilter(); leafBp.type = 'bandpass'; leafBp.frequency.value = 3800; leafBp.Q.value = 0.8; leafBp.connect(surfBed); loop(white, 0.09, leafBp);
     },
     setVitality(v) { vit = Number.isFinite(v) ? v : 0; },
@@ -131,6 +135,7 @@ export function createAudio(): AudioEngine {
       }
       bridges = n; zones = zs.slice(0, n);
     },
+    setRide(k) { rideK = fin(k); },
     setNear(b, c, d) { nb = fin(b); nc = fin(c); nt = fin(d); },
     playSong(zs) {
       if (!ctx || !zs.length) return 0; const t = ctx.currentTime + 0.1, step = 0.36;
@@ -181,6 +186,7 @@ export function createAudio(): AudioEngine {
           for (let k = 0; k < bridges; k++) { voice(zones[k] ?? 0, MOTIF[k], t + k * step, 0.11 + vit * 0.06, 3.5); api.onNote?.(k, k * step); } } }
         // 近くの生き物の音
         fizzT -= dt; if (nb > 0.05 && fizzT <= 0) { fizzT = 0.03 + Math.random() * 0.25 / nb; fizz(t, nb); }   // 細菌：細かいさざめき（数が多いほど密に）
+        rideG?.gain.setTargetAtTime(rideK * 0.22 + 0.0001, t, 0.15); rideBp?.frequency.setTargetAtTime(300 + rideK * 1400, t, 0.2);
         cilia?.gain.setTargetAtTime(nc * 0.16 + 0.0001, t, 0.3);                                                // コルポダ：体じゅうの繊毛が水をかく、やわらかい音
         stepT -= dt; if (nt > 0.05 && stepT <= 0) { stepT = 0.55 + Math.random() * 0.25; stepL = !stepL; footstep(t, nt, stepL); }   // クマムシ：ゆっくりした足音
         // ピアノの単音：活力が上がるほど、音の数と高さが増える（旋律が鳴っている間は控えめに）

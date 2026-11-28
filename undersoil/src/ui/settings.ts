@@ -1,7 +1,8 @@
 // 設定（M0 の最小版）：描画方式、品質段階、初登場の紹介。ブラウザの中に保存する。
 import './settings.css';
 import { jaVoices, narrate, pickVoice } from './card';
-const KEYS = { renderer: 'undersoil.renderer', tier: 'undersoil.tier', intro: 'undersoil.intro', bob: 'undersoil.bob', speed: 'undersoil.speed', look: 'undersoil.look', swim: 'undersoil.swim', rate: 'undersoil.rate', voice: 'undersoil.voice', say: 'undersoil.say' } as const;
+import { feel, setRumble } from '../core/haptics';
+const KEYS = { renderer: 'undersoil.renderer', tier: 'undersoil.tier', intro: 'undersoil.intro', bob: 'undersoil.bob', speed: 'undersoil.speed', look: 'undersoil.look', swim: 'undersoil.swim', rate: 'undersoil.rate', voice: 'undersoil.voice', say: 'undersoil.say', rumble: 'undersoil.rumble' } as const;
 export const savedSwim = () => (get(KEYS.swim, 'glide') === 'dart' ? 'dart' : 'glide') as 'glide' | 'dart';
 const K: Record<string, number> = { slow: 0.7, normal: 1, fast: 1.4 };
 export const savedSpeed = () => K[get(KEYS.speed, 'normal')] ?? 1;
@@ -28,6 +29,7 @@ export function mountSettings(openBtn: HTMLElement, info: { renderer: string; ti
     ${group('動く速さ', 'speed', 'normal', [['slow', 'ゆっくり'], ['normal', 'ふつう'], ['fast', 'はやい']], false)}
     ${group('見回す速さ', 'look', 'normal', [['slow', 'ゆっくり'], ['normal', 'ふつう'], ['fast', 'はやい']], false)}
     ${group('泳ぎ方', 'swim', 'glide', [['glide', 'コルポダのように（なめらかに滑る）'], ['dart', '細菌のように（すぐ進み、すぐ止まる）']], false)}
+    ${group('振動（ゲームパッド・VR・一部のスマホ）', 'rumble', 'on', [['on', 'あり'], ['off', 'なし']], false)}
     ${group('歩くときの視点のゆれ', 'bob', 'on', [['on', 'あり'], ['off', 'なし（酔いやすい方に）']], false)}
     <p class="now">いまの動作：${info.renderer} ／ ${info.tier}</p>
     <p class="note">設定と進み具合は、このブラウザの中に保存されます。別のブラウザや端末には引き継がれません。表示が乱れる・止まるときは、描画方式を「WebGL 2」にしてください。</p>
@@ -47,7 +49,7 @@ export function mountSettings(openBtn: HTMLElement, info: { renderer: string; ti
   sel.addEventListener('change', () => set(KEYS.voice, sel.value, 'auto'));
   d.querySelector('[data-try]')!.addEventListener('click', () => { narrate('こんにちは。土の中を、いっしょに見に行きましょう。'); const v = pickVoice(); vmsg.textContent = v ? ` いまの声：${v.name}` : ' 声が見つかりません'; });
   let needReload = false;
-  d.addEventListener('change', (e) => { const i = e.target as HTMLInputElement; if (i.type !== 'radio') return; set(KEYS[i.name as keyof typeof KEYS], i.value, i.dataset.def!); if (i.name === 'rate') narrate('この速さで読みます。'); if (i.dataset.reload === '1') needReload = true; });
+  d.addEventListener('change', (e) => { const i = e.target as HTMLInputElement; if (i.type !== 'radio') return; set(KEYS[i.name as keyof typeof KEYS], i.value, i.dataset.def!); if (i.name === 'rate') narrate('この速さで読みます。'); if (i.name === 'rumble') { setRumble(i.value === 'on'); feel('link'); } if (i.dataset.reload === '1') needReload = true; });
   d.querySelector('button[value=ok]')!.addEventListener('click', () => { d.close(); if (needReload) location.reload(); });
   openBtn.addEventListener('click', () => d.showModal());
 }

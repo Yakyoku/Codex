@@ -9,11 +9,13 @@ import { buildCreatures, type Creatures } from './creatures';
 import { buildTardigrade, type Tardigrade } from './tardigrade';
 import { buildSeed } from './seed';
 import { buildSeedLife } from './seedLife';
+import { buildHypha, type Hypha, type HyphaOpts } from './hypha';
+import HYPHA from '../data/hypha.json';
 import { buildFibres } from './fibres';
 import layout from '../data/stage1.layout.json';
 import { addLights, makeEnvironment, type Lights } from './env';
 
-export interface Game { focus: { value: number }; scene: THREE.Scene; camera: THREE.PerspectiveCamera; world: World; lights: Lights; bridges: WaterBridges; swarm: Swarm; swarm2: Swarm; creatures: Creatures; tardigrade: Tardigrade; tier: QualityTier; q: (typeof quality)['pc-high']; seed: THREE.Mesh; seedLife: ReturnType<typeof buildSeedLife>; readonly wake: number; readonly root: number; update(dt: number, t: number): void; setWetAll(v: number): void; }
+export interface Game { focus: { value: number }; scene: THREE.Scene; camera: THREE.PerspectiveCamera; world: World; lights: Lights; bridges: WaterBridges; swarm: Swarm; swarm2: Swarm; creatures: Creatures; tardigrade: Tardigrade; tier: QualityTier; q: (typeof quality)['pc-high']; seed: THREE.Mesh; seedLife: ReturnType<typeof buildSeedLife>; hypha: Hypha; readonly wake: number; readonly root: number; update(dt: number, t: number): void; setWetAll(v: number): void; }
 
 export async function createGame(renderer: THREE.WebGPURenderer, base: string, tier: QualityTier): Promise<Game> {
   const q = (quality as Record<string, (typeof quality)['pc-high']>)[tier];
@@ -40,6 +42,8 @@ export async function createGame(renderer: THREE.WebGPURenderer, base: string, t
   scene.add(seed);
   const lite = tier === 'vr' || tier === 'compat';
   const seedLife = buildSeedLife(seed, { cells: lite ? 300 : 900, plumes: lite ? 8 : 14 }); scene.add(seedLife.group);
+  // 菌根菌の菌糸：区域 A の終わりの胞子から、道に沿って種の岸まで（数値は src/data/hypha.json。出典は Docs/REFERENCE/am-fungus.md）
+  const hypha = buildHypha(world, seed.position, { ...(HYPHA as unknown as HyphaOpts), lite }); scene.add(hypha.group);
   let wake = 0, root = 0;
   { const hq = typeof location !== 'undefined' ? new URLSearchParams(location.search).get('hide') : null; if (hq) scene.traverse((o) => { if (hq.split(',').some((h) => o.name.startsWith(h))) o.visible = false; }); }
   const syncAll = () => { world.syncWetness(); bridges.sync((c) => world.grid.cells[c].water); swarm.sync((c) => world.grid.cells[c].microbes); swarm2.sync((c) => world.grid.cells[c].microbes * (world.grid.cells[c].water > 0.6 ? 1 : 0)); };   // シュードモナスは、水が十分にあるときだけ泳ぐ
@@ -48,10 +52,10 @@ export async function createGame(renderer: THREE.WebGPURenderer, base: string, t
   const lights = addLights(scene, camera, { shadows: q.shadows });
   let acc = 0, syncT = 0;
   return {
-    scene, camera, world, lights, bridges, swarm, swarm2, creatures, tardigrade, tier, q, focus: { value: 12 }, seed, seedLife,
+    scene, camera, world, lights, bridges, swarm, swarm2, creatures, tardigrade, tier, q, focus: { value: 12 }, seed, seedLife, hypha,
     get wake() { return wake; }, get root() { return root; },
     update(dt, _t) {
-      creatures.update(dt, _t); tardigrade.update(dt, _t); bridges.tick(dt);
+      creatures.update(dt, _t); tardigrade.update(dt, _t); bridges.tick(dt); hypha.update(dt, world.grid.mean());
       acc += Math.min(dt, 0.1);
       while (acc >= 0.1) { world.grid.step(0.1); acc -= 0.1; }
       syncT += dt; if (syncT > 0.1) { syncT = 0; syncAll(); }

@@ -244,5 +244,43 @@
     }
    ]
   }
+ ],
+ "rhizophagus-irregularis": [
+  {
+   "src": "photos/amf-v",
+   "video": true,
+   "method": "明視野（めいしや）顕微鏡・動画（染色なし）",
+   "caption": "根のない皿で、あぶら（ミリスチン酸）をえさにして育てた菌糸の中の流れ。細かい粒が、両方向に流れている（目盛り 0.01 mm）",
+   "credit": "Oyarte Galvez et al. 2025, Nature, Supplementary Video 9（一部を切り出し）/ CC BY 4.0"
+  },
+  {
+   "src": "photos/amf-1.webp",
+   "method": "位相差（いそうさ）顕微鏡・時間の経過（0・6・12 時間）",
+   "caption": "胞子から菌糸が伸びていく（目盛り 0.1 mm）。胞子の中の粒々は、油の粒など",
+   "credit": "Richter et al. 2024, Lab on a Chip, Fig. 2a（一部を切り抜き）/ CC BY 3.0",
+   "parts": [
+    {
+     "x": 15,
+     "y": 13,
+     "label": "胞子（ほうし）"
+    },
+    {
+     "x": 40,
+     "y": 13,
+     "label": "胞子についた古い菌糸"
+    },
+    {
+     "x": 74,
+     "y": 30,
+     "label": "伸びる菌糸の先"
+    }
+   ]
+  },
+  {
+   "src": "photos/amf-2.webp",
+   "method": "位相差（いそうさ）顕微鏡",
+   "caption": "胞子から 1 本の菌糸が、ゆるく波打ちながら伸びる（発芽から 26 時間後、目盛り 0.1 mm）",
+   "credit": "Richter et al. 2024, Lab on a Chip, Fig. 6（一部を切り抜き）/ CC BY 3.0"
+  }
  ]
 }

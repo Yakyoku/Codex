@@ -277,3 +277,133 @@
 - **クマムシの眼**：本種の記載文に「生きた個体に眼はない」と明記。確認。
 - **「蛍光性」の細菌が光る**：台帳は「光らせない」と正しく書いている。カードにも光る記述はない。
 - **水の膜 10〜20 nm**：総説の本文どおり（ほどよく湿った土の、なめらかな鉱物の面での値）。
+
+---
+
+## 追加：アーバスキュラー菌根菌（2026-11-28）
+
+- 確認日：2026-11-28
+- 確認者：制作に関わっていない独立のサブエージェント（この節を書き足した以外、ファイルは変更していない）
+- 対象：`Docs/SPECIES.md` の「アーバスキュラー菌根菌（リゾファガス・イレギュラリス）」の節と、採用・差し替えの一覧の行／`src/data/species/rhizophagus-irregularis.json`／`src/data/asks.json`・`meet.json`・`photos.json` の `rhizophagus-irregularis`／`src/data/hypha.json` の `_comment`
+- 方法：`Docs/REFERENCE/am-fungus.md` は読んだが、印（○△✕）は信用せず、資料を自分で取り直した。PMC の画面は機械判定で開けなかったため、Europe PMC の全文 XML（Richter 2024 = PMC10964749、Oyarte Galvez 2025 = PMC11882455、He 2024 = PMC11520417、Klein 2024 = PMC11524933）で本文・図の説明・ライセンスを読んだ。Nature の補足動画 9（MOESM11）は Springer のサーバーから取得し、5.00 秒のコマをゲーム内の `public/photos/amf-v.*` と見比べた。Richter 2024 の Fig. 6 の画像も取得し、`amf-2.webp` と見比べた。
+
+### 資料を開けたか
+
+| 資料 | 結果 |
+|---|---|
+| INVAM *R. irregularis* の記載 https://invam.ku.edu/irregularis | 開けた（取得ツールの要約。数値は要約で確認） |
+| INVAM 胞子の取り出し https://invam.ku.edu/spore-extraction ／ 根の染色 https://invam.ku.edu/staining-roots | 開けた（取得ツールの要約） |
+| Richter et al. 2024 Lab Chip（PMC10964749） | Europe PMC の全文 XML で本文・図の説明・ライセンスを読んだ。Fig. 6 の画像を取得。補足資料（ESI の方法、動画）は**開けなかった** |
+| Oyarte Galvez et al. 2025 Nature（PMC11882455） | Europe PMC の全文 XML で本文・補足動画の説明・ライセンスを読んだ。補足動画 9 の実物を取得 |
+| He et al. 2024 ISME J（PMC11520417） | Europe PMC の全文 XML |
+| Klein et al. 2024 Front. Microbiol.（PMC11524933） | Europe PMC の全文 XML |
+| Yoneyama et al. 2007 Planta 225:1031、Bago et al. 2002 Plant Physiol、Savary et al. 2018 ISME J | 要旨（Europe PMC／Crossref） |
+| Luginbuehl et al. 2017 Science 356:1175、Kakouridis et al. 2022 New Phytol 236:210、Stockinger et al. 2009 New Phytol 183:1176 | 書誌（Crossref）と検索結果の要約のみ |
+| GBIF Backbone（分類と命名者） https://api.gbif.org/v1/species/match?name=Rhizophagus%20irregularis | 開けた |
+| Index Fungorum | **開けなかった**（403） |
+| 齋藤 2019 日本草地学会誌 64:276 | PDF は取得できたが、日本語の文字を取り出せず**本文を読めなかった** |
+| Jolicoeur et al. 1998（PMC35034） | Europe PMC に全文がなく**開けなかった** |
+
+### 集計
+
+| 判定 | 件数 |
+|---|---|
+| 確認 | 35 |
+| 弱い確認 | 12（うち AM21・AM26・AM40・AM48・AM50 は誤解を招くので、下の「直す文の案」AM-A〜E を出した） |
+| 未確認 | 3 |
+| 誤り | 0 |
+
+（「主張ごとの判定」の AM01〜AM50 の 50 件を数えた。）
+
+全体の評価：**数値・図・動画の出所に作り話や取り違えは見つからなかった。** 写真と動画は、書かれた論文・図・番号のとおりのもので、ライセンスも CC BY 3.0（Richter 2024）／CC BY 4.0（Oyarte Galvez 2025）で正しい。直すべき点は、(1)「糖をもらう」だけでは今の理解と合わない（脂肪酸も受け取る）、(2) 動画の説明「根とつながる前の菌糸」は、実際は「根なしで脂肪酸（ミリスチン酸）を与えて育てた菌糸の網」、(3) 流れの速さ 2〜10 µm/秒は「根とつながった網」で測った値、(4)「根を薄く切って染める」は実際の手順（根を透明にして、切った根の断片ごと染める）と違う、(5) カードの分類の行に「グロムス目」が抜けている、の5点。
+
+### 直す文の案
+
+| # | ファイル・項目 | 今の文 | 判定 | 理由 | 直す文の案 |
+|---|---|---|---|---|---|
+| AM-A | `rhizophagus-irregularis.json` intro ／ SPECIES.md「初登場時の説明文」 | 「根から糖をもらうかわりに」 | 弱い確認（誤解を招く） | 本種は脂肪酸を自分で作れず、宿主の植物が作った脂肪酸（脂質）を受け取る（Luginbuehl 2017 Science「*R. irregularis* is a fatty acid auxotroph… fatty acids synthesized in the host plant are transferred to the fungus」）。今は「糖と脂質の両方」が定説で、「糖だけ」と読める書き方は古い理解。SPECIES.md の「土の中での働き」は「炭素（糖や脂肪酸のもと）」と正しく書いており、説明文と食い違う。 | 「植物の根とつながると、根から糖やあぶら（脂肪酸）をもらうかわりに、根の届かない所の水やリンを運びます。」 |
+| AM-B | `rhizophagus-irregularis.json` role | 「根から糖をもらい、かわりに、」 | 同上 | AM-A と同じ。 | 「根から糖やあぶら（脂肪酸）をもらい、かわりに、」 |
+| AM-C | `photos.json` 1枚目（動画）caption | 「根とつながる前の菌糸の中の流れ。」 | 弱い確認（誤解を招く） | 補足動画 9 の説明は「flow in hyphae of *R. irregularis* in the absence of host root with carbon supplied as myristate」（Extended Data Fig. 10f、A5 株）。根を持たない皿で、脂肪酸（ミリスチン酸）をえさに育てた菌糸の網で、発芽したばかりの「根とつながる前の菌糸」そのものではない。また本文は、この条件では流れが「generally less active」だったと書いている。 | 「根のない皿で、あぶら（ミリスチン酸）をえさにして育てた菌糸の中の流れ。細かい粒が、両方向に流れている（目盛り 0.01 mm）」 |
+| AM-D | `asks.json` a ／ カード motion | 「速さは 1 秒に 0.002〜0.01 mm ほどです。」／「（1 秒に 0.002〜0.01 mm ほど）」 | 弱い確認 | 2〜10 µm/秒は、根とつながった網での値（Oyarte Galvez 2025「speeds between 2 and 5 μm s−1 in 43 videos… between 5 and 10 μm s−1 in 26 videos」、He 2024「6.01 μm·s−1 without rhizobia」も根とつながった網）。根とつながる前の菌糸で測った値は見つからなかった。カードの場面は根とつながる前の菌糸なので、出所を添えるのが正確。 | 「速さは、根とつながった菌糸で測ると、1 秒に 0.002〜0.01 mm ほどです。」（motion は「（根とつながった菌糸で 1 秒に 0.002〜0.01 mm ほど）」） |
+| AM-E | `meet.json` | 「根とつながった菌糸は、根を薄く切って染めると、根の中に見えます」 | 弱い確認（手順が違う） | INVAM の手順は、細い根を熱い 10% 水酸化カリウムで透明にし（中身を抜き）、酸で処理してから、切った根の断片ごと青い色素（direct blue など）で染める。薄く切る（切片を作る）手順は書かれていない。 | 「根とつながった菌糸は、根を薬で透明にしてから染めると、根の中に見えます（青い色は染めた色で、本当の色ではありません）。」 |
+| AM-F | `rhizophagus-irregularis.json` taxon | 「菌類 グロムス菌門 グロムス科 リゾファガス属」 | 確認（抜けあり） | GBIF：Fungi／Glomeromycota／Glomeromycetes／Glomerales／Glomeraceae／*Rhizophagus*。SPECIES.md は「グロムス目」まで書いているのに、カードでは抜けている。誤りではないが台帳とそろえるべき。 | 「菌類 グロムス菌門 グロムス目 グロムス科 リゾファガス属」 |
+
+### 言い換えを勧めるもの（誤りではない）
+
+| # | ファイル・項目 | 今の文 | 判定 | 理由 | 文の案 |
+|---|---|---|---|---|---|
+| AM-G | カード sizeCompare | 「菌糸は、その 10 分の 1 くらい」 | 弱い確認（計算） | 菌糸 2〜10 µm ÷ 胞子 約 100 µm ＝ 1/10〜1/50。ゲームの主な菌糸 8 µm なら約 1/11 で合うが、細い枝（約 2 µm）は 1/50。 | 「菌糸は、その 10 分の 1 より細い」 |
+| AM-H | `photos.json` 3枚目 caption | 「（26 時間後、目盛り 0.1 mm）」 | 確認（言葉を足すとよい） | Fig. 6 の説明「Timepoint 0 h was defined as the point of spore germination」。26 時間は「発芽してから」。画像はこの図の上段（26h）の、障害物の箱の手前までを切り抜いたもの。 | 「（発芽から 26 時間後、目盛り 0.1 mm）」 |
+| AM-I | `photos.json` credit（3件とも） | 「Richter et al. 2024, Lab on a Chip / CC BY 3.0」など | 確認（表示を足すとよい） | ライセンスは正しい。ただし CC BY は「変更したことを示す」ことを求める（Oyarte Galvez 2025 のライセンス文「indicate if changes were made」）。写真は図の一部を切り抜き、動画は 30 秒を 16 秒に短くしている。 | 末尾に「（一部を切り抜き）」「（一部を切り出し）」を足す。例：「Richter et al. 2024, Lab on a Chip, Fig. 2a（一部を切り抜き）/ CC BY 3.0」 |
+| AM-J | `photos.json` 2枚目 parts「胞子の柄（付着菌糸）」 | — | 弱い確認 | Fig. 2a の白い矢印は「germination site（発芽した場所）」で、胞子から矢印までのまっすぐな部分から新しい菌糸が伸びている。Fig. 3 の説明は、発芽の場所の多くが「cut ends of hyphal remnants（前の菌糸の切れ端）」だと書いている。この部分が付着菌糸か、前の菌糸の残りかは図の説明からは決められない。 | 「胞子の柄（付着菌糸）」→「胞子についた古い菌糸」でもよい。今のままでも大きな誤りではない。 |
+
+### 主張ごとの判定
+
+| ID | ファイル・項目 | 主張 | 判定 | 出所と該当箇所 |
+|---|---|---|---|---|
+| AM01 | SPECIES.md 学名 | *Rhizophagus irregularis* (Błaszk., Wubet, Renker & Buscot) C. Walker & A. Schüßler | 確認 | GBIF「Rhizophagus irregularis (Błaszk., Wubet, Renker & Buscot) C.Walker & A.Schüßler… ACCEPTED」。異名に *Glomus irregulare*、*Rhizoglomus irregulare*（Sieverding ら 2014 の属名）。*Rhizoglomus* を使う研究者もいることは注記してよい |
+| AM02 | 同 | 旧名 *Glomus intraradices* として研究されてきた株を含む | 確認 | Stockinger, Walker & Schüßler 2009 New Phytol 183:1176「'Glomus intraradices DAOM197198'… is not Glomus intraradices」（題名。DAOM197198 は *G. irregulare* の系統） |
+| AM03 | SPECIES.md 分類／カード taxon | 菌類 グロムス菌門 グロムス目 グロムス科 リゾファガス属 | 確認（注記つき） | GBIF「Fungi Glomeromycota Glomeromycetes Glomerales Glomeraceae」。Wijayawardene ら 2024（Fungal Diversity の分類体系）、Tedersoo ら 2024（MycoKeys）も Glomeromycota を門として扱う。一方 Spatafora ら 2016 はケカビ門（Mucoromycota）の中のグロムス亜門（Glomeromycotina）とした。どちらも使われていて「今は誤り」とは言えない。門の扱いに議論があることを台帳に一言書くとよい。カードは「グロムス目」が抜けている（AM-F） |
+| AM04 | SPECIES.md 大きさ | 胞子 70〜165 µm（INVAM） | 確認 | INVAM「About 70 to 165 µm」 |
+| AM05 | 同 | ほかの資料で 40〜140 µm | 弱い確認 | 英語版 Wikipedia のみ（台帳どおり二次資料） |
+| AM06 | 同 | 付着菌糸 7.4〜19 µm（平均 11.2） | 確認 | INVAM「7.4 to 19 µm (mean 11.2 µm)」 |
+| AM07 | 同 | 根に入る前の菌糸 2〜12 µm（Richter 2024） | 確認 | Richter 2024「asymbiotic hyphae (Ø = 2–12 μm; measured, Fig. S2)」 |
+| AM08 | 同 | 発芽管 約 3 µm（Jolicoeur 1998） | 未確認 | 本文を開けなかった |
+| AM09 | 同・カード look | 胞子は球形〜ほぼ球形、色はほぼ無色〜黄褐色、L3 が淡黄〜黄褐色、壁は3層 | 確認 | INVAM「Almost hyaline… to yellow brown」「Globose, subglobose, ovoid, or oblong」、L1・L2・L3 |
+| AM10 | カード look | 「淡い黄色〜黄褐色の、丸い胞子」 | 確認 | INVAM（L3 の色）。ほぼ無色のものもあるが、カードの言い方で問題ない |
+| AM11 | カード look | 「厚い壁」 | 弱い確認 | INVAM の壁の厚さ（L1 0.5〜1.5、L2 1.0〜4.9、L3 2.0〜5.5 µm）。胞子の大きさに比べて「厚い」と言えるかは見方による |
+| AM12 | カード look／photos caption | 胞子の中に油の粒がぎっしり | 弱い確認 | Bago 2002 要旨「the main form of carbon stored by the mycobiont at all stages of its life cycle is triacylglycerol」。写真の粒が全部油かは確かめていない（caption の「油の粒など」は適切） |
+| AM13 | カード look | 胞子の柄から菌糸が伸びる | 確認 | INVAM「A germ tube emerges from the lumen of the subtending hypha」 |
+| AM14 | カード look | 菌糸は無色で透明に近く、ゆるく波打つ | 確認 | Richter 2024 Fig. 2・Fig. 6 の画像（目視）、「phase-bright hyphae」 |
+| AM15 | カード look／SPECIES.md | 管には仕切りがない | 確認 | Oyarte Galvez 2025「their networks are composed of one continuous cytoplasm」 |
+| AM16 | SPECIES.md | 生きた菌糸は位相差で明るく、中身の抜けた菌糸は暗い | 確認 | Richter 2024「“normal” phase-bright hyphae and “empty” phase-dark hyphae」 |
+| AM17 | SPECIES.md | 青い菌糸は染色の色 | 確認 | INVAM の記載「stain darkly with trypan blue」、INVAM 根の染色の手順 |
+| AM18 | カード motion／SPECIES.md | 横から枝を出す（先が二つに割れる分枝はない） | 確認 | Richter 2024「Several instances of lateral branching were observed… though no true apical branching was found」 |
+| AM19 | カード motion／asks | 細胞質が両方向に同時に流れ、ときどき向きが変わる | 確認 | Oyarte Galvez 2025「simultaneous antiparallel streams of particles… abrupt direction switching」、根なしでも「similarly rich」 |
+| AM20 | 同 | 流れるものは核や油の粒など | 弱い確認 | Bago 2002 要旨「lipid bodies moving in both directions along hyphae」（根とつながった *G. intraradices*）。Oyarte Galvez 2025 は粒の正体を区別していない（「any organelle or other biological object」）。核が流れることは一般的な記述として妥当 |
+| AM21 | 同 | 速さ 2〜10 µm/秒 | 弱い確認 | AM-D。根とつながった網での値 |
+| AM22 | SPECIES.md | まれに速い流れ | 確認 | Oyarte Galvez 2025「transiently up to 20 μm s−1… between 50 and 120 μm s−1」 |
+| AM23 | SPECIES.md | 染色なしの明視野で記録 | 確認 | Oyarte Galvez 2025「label-free imaging using bright-field microscopy」 |
+| AM24 | カード motion／SPECIES.md | 根が見つからないと中身を引き上げ、空の部分を仕切りで切り離す。本種では伸び直すことがある | 確認 | Richter 2024 Fig. 6・7「reversible cytoplasmic retraction」「up to 8 septa formed in a single retraction process and between 1 and 2 septa breached」 |
+| AM25 | カード role／intro | 根の中に入りこんでつながる | 確認 | INVAM（根の中の樹枝状体・菌糸・胞子） |
+| AM26 | カード role／intro | 根から糖をもらう | 弱い確認（誤解を招く） | AM-A |
+| AM27 | 同 | 菌糸で集めたリンを根へ渡す | 弱い確認 | 菌根菌の一般的な働き（教科書的事実）。今回、一次資料の本文は開いていない |
+| AM28 | 同 | 水を根へ渡す | 確認（仲間で） | Kakouridis 2022 New Phytol「direct evidence of water transport by arbuscular mycorrhizal fungi to host plants」（*R. intraradices* と表記、要約で確認）。量は大きくない、と添えるとより正確 |
+| AM29 | SPECIES.md | 発芽管が出るまで 2〜7 日（25℃） | 確認 | Klein 2024「C2 germination started at 2–4 days」「A5 first germinated between day 4 and 7」「incubated… at 25°C in the dark」 |
+| AM30 | カード relations／SPECIES.md | クローバーのなかまの根はストリゴラクトンを出す（アカツメクサで確認、シロツメクサでは未確認） | 確認 | Yoneyama 2007 Planta 225:1031 要旨「in red clover… promotes the release of a strigolactone, orobanchol」。シロツメクサでの報告は検索で見つからず、「未確認」の書き方は正しい |
+| AM31 | カード relations | 「菌根菌を呼ぶ合図の物質」 | 確認（言い換えの範囲） | 同要旨「the signal for mycorrhizal symbionts」。実際の働きは枝分かれと活動をうながすことで、「呼ぶ」は子ども向けの言い換えとして許せる |
+| AM32 | カード relations／SPECIES.md | 細菌は菌糸を道にして移動する（本種で根粒菌の移動、He 2024） | 確認 | He 2024 要旨「*Rhizophagus irregularis* helps *Shinorhizobium meliloti* to migrate towards the legume *Medicago truncatula*, triggering nodulation」 |
+| AM33 | SPECIES.md | Buffi 2025 の約 2 µm/秒・約 24 µm/秒 | 未確認 | 今回は開いていない（台帳は別の菌糸の上の値と明記しており、書き方は適切） |
+| AM34 | SPECIES.md | 世界中の土に広く分布（Savary 2018） | 確認 | Savary 2018 要旨「widely dispersed AMF genotypes at an intercontinental scale」 |
+| AM35 | SPECIES.md・一覧の行 | 日本の草地はグロムス科が多い（齋藤 2019） | 未確認 | PDF の文字を取り出せなかった |
+| AM36 | SPECIES.md・一覧の行 | 日本の草地で本種そのものの記録は未確認 | 確認（書き方） | 「見つからなかった」ことの確認なので、台帳の書き方（未確認と明記）で適切 |
+| AM37 | 一覧の行 | 発芽と菌糸の動きの資料が最も多い種 | 弱い確認 | Richter 2024、Oyarte Galvez 2025、Klein 2024、Tominaga 2024 など、本種の資料は確かに多い。「最も」は比べていないので判断できない。「とても多い」が安全 |
+| AM38 | meet | 土を水でかきまぜ、目の細かい網（約 0.05 mm）でこす | 確認 | INVAM 胞子の取り出し：下のふるいの目は「38, 45, or 53 µm」 |
+| AM39 | meet | 黄色っぽい丸い粒が見つかる | 確認 | INVAM の色（ほぼ無色〜黄褐色）。ほかの種では赤褐色・黒もある |
+| AM40 | meet | 根を薄く切って染める | 弱い確認（手順が違う） | AM-E |
+| AM41 | photos 2枚目（amf-1） | 0・6・12 時間、目盛り 0.1 mm、本種 | 確認 | Richter 2024 Fig. 2a「*Rhizophagus irregularis* MUCL 41833」「Scale bars: 100 μm」。画像の左の 0h・6h・12h の表示を目視で確認。白い矢印は発芽した場所 |
+| AM42 | photos 2枚目 method | 位相差顕微鏡 | 弱い確認 | 図の説明に方式は書かれていない。方法は補足資料（開けず）。本文は同じ装置の画像を「phase contrast」「phase-bright」と表現しており、見た目（明るい縁どり）も位相差に合う |
+| AM43 | photos 3枚目（amf-2） | 1本の菌糸がゆるく波打って伸びる、26 時間後、目盛り 0.1 mm | 確認 | Richter 2024 Fig. 6 上段（26h、MUCL 41833、「Scale bars: 100 μm」「Timepoint 0 h was defined as the point of spore germination」）。取得した図と目視で一致 |
+| AM44 | photos credit | Richter 2024 は CC BY 3.0 | 確認 | 全文 XML「licensed under a Creative Commons Attribution 3.0 Unported Licence」 |
+| AM45 | photos 1枚目（amf-v） | Oyarte Galvez 2025 の補足動画 9 | 確認 | 全文 XML の補足資料一覧で MOESM11_ESM.mp4 ＝ Supplementary Video 9。取得した動画の 5.00 秒のコマが `amf-v.webp` と一致 |
+| AM46 | photos credit | Oyarte Galvez 2025 は CC BY 4.0 | 確認 | 全文 XML「licensed under a Creative Commons Attribution 4.0 International License」 |
+| AM47 | photos 1枚目 | 染色なし、明視野、目盛り 0.01 mm、細かい粒が両方向に流れる | 確認 | 動画内の目盛り「10μm」を目視。Extended Data Fig. 10f「shows bidirectional movement」、本文「label-free… bright-field」 |
+| AM48 | photos 1枚目 | 「根とつながる前の菌糸」 | 弱い確認（誤解を招く） | AM-C |
+| AM49 | hypha.json | 主な菌糸 8 µm、細い枝 2.4 µm、胞子 90 µm（r 0.4・branchR 0.12・spore 4.5 は半径で、単位 10 µm と合う） | 確認（計算） | 2〜12 µm（Richter 2024）、70〜165 µm（INVAM）の範囲内。細い枝の「約 2 µm」は総説の引用で △ のまま |
+| AM50 | hypha.json | 中の流れ 2〜10 µm/秒 ○ | 弱い確認 | AM-D と同じ（根とつながった網の値。○ は「根とつながった網で」と書き添えるべき） |
+
+### 参照した主な URL
+
+- INVAM *R. irregularis*：https://invam.ku.edu/irregularis
+- INVAM 胞子の取り出し：https://invam.ku.edu/spore-extraction ／ 根の染色：https://invam.ku.edu/staining-roots
+- Richter et al. 2024：https://pmc.ncbi.nlm.nih.gov/articles/PMC10964749/ （全文 XML：https://www.ebi.ac.uk/europepmc/webservices/rest/PMC10964749/fullTextXML）
+- Oyarte Galvez et al. 2025：https://doi.org/10.1038/s41586-025-08614-x （全文 XML：https://www.ebi.ac.uk/europepmc/webservices/rest/PMC11882455/fullTextXML、補足動画 9：https://static-content.springer.com/esm/art%3A10.1038%2Fs41586-025-08614-x/MediaObjects/41586_2025_8614_MOESM11_ESM.mp4）
+- He et al. 2024：https://pmc.ncbi.nlm.nih.gov/articles/PMC11520417/
+- Klein et al. 2024：https://doi.org/10.3389/fmicb.2024.1470469
+- Luginbuehl et al. 2017：https://doi.org/10.1126/science.aan0081
+- Bago et al. 2002：https://doi.org/10.1104/pp.010466
+- Kakouridis et al. 2022：https://doi.org/10.1111/nph.18281
+- Yoneyama et al. 2007：https://doi.org/10.1007/s00425-006-0410-1
+- Savary et al. 2018：https://doi.org/10.1038/ismej.2017.153
+- Stockinger et al. 2009：https://doi.org/10.1111/j.1469-8137.2009.02874.x
+- GBIF：https://api.gbif.org/v1/species/match?name=Rhizophagus%20irregularis

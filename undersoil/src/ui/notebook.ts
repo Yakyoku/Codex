@@ -7,7 +7,7 @@ import { SPECIES } from '../game/species';
 type Part = { x: number; y: number; label: string };
 type Media = { src: string; caption: string; video?: boolean; parts?: Part[] };
 const MEDIA = PHOTOS as Record<string, Media[]>;
-const ORDER = ['bacillus-subtilis', 'pseudomonas-fluorescens', 'colpoda', 'paramacrobiotus-metropolitanus', 'clover-seed', 'trifolium-repens'];
+const ORDER = ['bacillus-subtilis', 'pseudomonas-fluorescens', 'colpoda', 'paramacrobiotus-metropolitanus', 'rhizophagus-irregularis', 'clover-seed', 'trifolium-repens'];
 const KEY = 'undersoil.met', KSTAMP = 'undersoil.stamps', KNOTE = 'undersoil.notes';
 type Note = { text: string; date: string; photo?: string };
 const shuffle = <T,>(a: T[]) => { const b = a.slice(); for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; } return b; };

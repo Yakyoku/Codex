@@ -12,6 +12,7 @@
   - 地上の発芽（`src/game/surface.ts`、芽生えは `assets/blender/clover_seedling.py` のシェイプキー）
   - 読み込み画面、紹介カード（`src/ui/card.ts`）、設定（`src/ui/settings.ts`）、VR 版（`src/pages/vr.ts`。同じ区画で見回す・歩く）
 - M1 の残り：下の「次の一手」。
+- 2026-11-28（夕）：**依頼書の M2「菌糸を滑る（M1 の環境の中で）」を、以前「ステージ4で作る」と自分で決めて後回しにしていた（依頼書との食い違い）。持ち主の「依頼書どおり順番に」を受けて M2 に戻した。** 実在のアーバスキュラー菌根菌 *Rhizophagus irregularis*（`src/game/hypha.ts`、`src/data/hypha.json`、調査 `REFERENCE/am-fungus.md`、第三者の事実確認 `FACTCHECK_stage1.md` 末尾）。滑走は `controls.ts`（riding）と `vr.ts`（toggleRide、乗り物の枠、視野を絞る）。振動 `src/core/haptics.ts`。確認：`scripts/check-ride.mjs`（画面版）、`scripts/check-vr-ride.mjs`（VR）、見え方 `scripts/shot-hypha.mjs`、動画 `scripts/video-m2.mjs`。
 - 2026-11-28：紹介の読み上げ（やさしい女性の声、声・速さを設定で選べる）と、水の橋の旋律・目覚めの和音を追加（GDD §9）。続けて、提案5つ（橋の音と光、区域ごとの楽器、生き物の音、紹介の問いかけ、土の歌）を追加。次は、週末の実機確認の結果を待って、道のりの長さ（15〜25 分）を調整する。
 
 ## 公開 URL

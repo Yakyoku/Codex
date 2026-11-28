@@ -26,6 +26,7 @@ import { makePointer } from '../ui/pointer';
 import type { Target } from '../game/encounters';
 import { mountSettings, savedTier, savedBob, savedSpeed, savedLook, savedSwim } from '../ui/settings';
 import { makeBridgeSong } from '../game/bridgeSong';
+import { feel } from '../core/haptics';
 import { createAudio } from '../audio/engine';
 import { makeHud } from './hud';
 
@@ -88,7 +89,7 @@ async function main() {
   const audio = createAudio(); W.__audio = audio; const bsong = makeBridgeSong(game, audio); W.__bsong = bsong;   // 確認用
   try { audio.muted = localStorage.getItem('undersoil.muted') === '1'; } catch { /* noop */ }
   const demo = makeDemo(world);
-  const controls = makeFreeControls(camera, canvas, world.colliders, $('stick'));
+  const controls = makeFreeControls(camera, canvas, world.colliders, $('stick')); controls.onBump = (k) => feel('bump', k); W.__controls = controls;   // 確認用
   let touring = true; controls.enabled = false;
   const look = new THREE.Vector3();
   const placeOnPath = (u: number) => { world.path.getPointAt(Math.min(0.985, u), camera.position); world.path.getPointAt(Math.min(1, u + 0.06), look); camera.position.y += 1.0; camera.lookAt(look); };
@@ -118,6 +119,7 @@ async function main() {
   const pseudo = anyDir((d) => { const f = game.swarm2.find(camera.position, d); return f ? { ...f, r: 0.6 } : null; });
   const colpoda = (): Target => { const p = game.creatures.nearest(camera.position); return p ? { p: p.clone(), r: 4.5 } : null; };
   const tardi = (): Target => game.tardigrade.target();
+  const hyphaT = (): Target => { const n = game.hypha.near(camera.position); return { p: game.hypha.curve.getPointAt(Math.min(n.u, game.hypha.grow)), r: 2.5 }; };
   const seedling = (): Target => mode === 'surface' ? { p: new THREE.Vector3(0.3, surface.groundY + 1.2, 0.2), r: 3.2 } : null;
   // 吸水した種：道の終わりの先。カメラから種の表面までのおおよその距離と、紹介カードが指す点（根の出ている所）
   const seedC = game.seed.position;
@@ -127,8 +129,12 @@ async function main() {
   // 水の中をただよう小さな粒（ブラウン運動）。奥行きの手がかり
   const colloids = game.tier === 'vr' ? null : buildColloids(game.tier === 'pc-high' ? 1400 : game.tier === 'mobile-high' ? 800 : 300, 7, game.q.post.some((e: string) => e.startsWith('dof')) ? 0.15 : 1.6)   // ぼかしのない段階では、近すぎる粒は消す（くっきりした玉に見えるため）; if (colloids) scene.add(colloids.mesh);
   // 道具（M2）：スキャンと糖のしずく。自分で動くときに使う（E・Q キー、ゲームパッド X・Y、画面のボタン）
-  const tools = makeTools(scene, camera, world, game.seed.position, () => audio.chime(), (p, k) => { game.swarm.attract(p, k); game.swarm2.attract(p, k); }, (k) => audio.fx(k));
-  controls.onAction = (a) => { if (a === 'scan') tools.scan(); else if (a === 'sugar') tools.sugar(); else tools.water(); };
+  let hitStop = 0;
+  const tools = makeTools(scene, camera, world, game.seed.position, () => audio.chime(), (p, k) => { game.swarm.attract(p, k); game.swarm2.attract(p, k); }, (k) => { audio.fx(k); feel(k); if (k === 'link') hitStop = 0.16; });   // 橋がつながった瞬間：振動と、一瞬の間（世界が 0.16 秒だけゆっくりになる）
+  controls.hypha = game.hypha;
+  const ride = () => { const was = controls.riding; if (controls.toggleRide()) { feel('grab'); game.hypha.highlight(false); tools.say(was ? '菌糸から降りました' : '菌糸に乗りました。前へ進むと、菌糸に沿って滑ります（もう一度押すと降ります）'); } else tools.say('菌糸の近くで乗れます。地図の「菌」の印のあたりを探そう'); };
+  controls.onAction = (a) => { if (a === 'scan') tools.scan(); else if (a === 'sugar') tools.sugar(); else if (a === 'ride') ride(); else tools.water(); };
+  $('rideBtn').addEventListener('click', ride);
   $('waterBtn').addEventListener('click', () => tools.water());
   const quest = makeQuest(world, { stats: tools.stats, wind: () => tools.wind, windOk: () => tools.stats.windSurvived, startWind: () => tools.startWind(), retryWind: () => tools.retryWind(), wake: () => game.wake, scanned: () => tools.scans });
   $('scanBtn').addEventListener('click', () => tools.scan()); $('sugarBtn').addEventListener('click', () => tools.sugar());
@@ -143,7 +149,7 @@ async function main() {
   const result = document.createElement('dialog'); result.className = 'notebook result'; document.body.append(result); let resultShown = false;
   const showResult = () => { resultShown = true; const st = tools.stats, n = notebook.count();
     result.innerHTML = `<h2>今回（こんかい）の記録（きろく）</h2><p class="nb-lead">種が目を覚まし、地上で芽が開きました。</p>
-      <div class="res-grid"><div><b>${st.pours}</b><span>水をまいた回数</span></div><div><b>${st.links}</b><span>つないだ水の橋</span></div><div><b>${st.awakened}</b><span>目覚めた区画（12 のうち）</span></div><div><b>${st.sugars}</b><span>置いた糖のしずく</span></div><div><b>${n}</b><span>出会った生き物（6 のうち）</span></div><div><b>${tools.wind === 'done' ? (st.windSurvived ? '○' : '△') : '—'}</b><span>乾きの風</span></div></div>
+      <div class="res-grid"><div><b>${st.pours}</b><span>水をまいた回数</span></div><div><b>${st.links}</b><span>つないだ水の橋</span></div><div><b>${st.awakened}</b><span>目覚めた区画（12 のうち）</span></div><div><b>${st.sugars}</b><span>置いた糖のしずく</span></div><div><b>${n}</b><span>出会った生き物（7 のうち）</span></div><div><b>${tools.wind === 'done' ? (st.windSurvived ? '○' : '△') : '—'}</b><span>乾きの風</span></div></div>
       ${bsong.song.length ? `<div class="res-song"><b>自分の土の歌</b><span>つないだ水の橋の順に、音が並んでいます ${songDots(bsong.song)}</span><div><button type="button" class="btn primary" data-play>▶ 聞く</button><button type="button" class="btn" data-keep>観察ノートに残す</button></div></div>` : ''}
       <div class="nb-actions"><button type="button" class="btn primary" data-nb>観察ノートを見る</button><button type="button" class="btn" data-close>とじる</button></div>`;
     result.querySelector('[data-play]')?.addEventListener('click', () => { audio.start(); audio.playSong(bsong.song); });
@@ -178,7 +184,7 @@ async function main() {
     if (goalState === 'done' && d > 60) goalState = 'away';   // 一度地上へ行ったら、種から離れるまでは知らせない
   };
   // 生き物を見せに行く：カードが出ている間、カメラはその生き物のそばで止まり、離れていれば暗転して移る
-  const ORGANISMS = ['bacillus-subtilis', 'pseudomonas-fluorescens', 'colpoda', 'paramacrobiotus-metropolitanus'];
+  const ORGANISMS = ['bacillus-subtilis', 'pseudomonas-fluorescens', 'colpoda', 'paramacrobiotus-metropolitanus', 'rhizophagus-irregularis'];
   const VIEW: Record<string, number> = { 'bacillus-subtilis': 2.2, 'pseudomonas-fluorescens': 2.6, colpoda: 13, 'paramacrobiotus-metropolitanus': 70, 'water-film': 6 };
   let visit: { get: () => Target; dist: number; pos: THREE.Vector3; anchor: THREE.Vector3; ret: THREE.Vector3; retQ: THREE.Quaternion } | null = null;
   /** 生き物がよく見える位置：まわりの向きを順に試し、間に粒がない向きを選ぶ */
@@ -219,6 +225,7 @@ async function main() {
     { id: 'humus', when: () => mode === 'soil' && cellW(4) > 0.4 && !!grain('humus')(), target: grain('humus') },
     { id: 'pseudomonas-fluorescens', when: () => mode === 'soil' && cellM(6) > 0.3 && !!pseudo(), target: pseudo },
     { id: 'colpoda', when: () => mode === 'soil' && game.creatures.anyActive(), target: colpoda },
+    { id: 'rhizophagus-irregularis', when: () => mode === 'soil' && started && game.hypha.near(camera.position).d < 14, target: hyphaT },
     { id: 'paramacrobiotus-metropolitanus', when: () => mode === 'soil' && game.tardigrade.active(), target: tardi },
     { id: 'clay', when: () => mode === 'soil' && cellW(8) > 0.4 && !!grain('clay')(), target: grain('clay') },
     { id: 'clover-seed', when: () => mode === 'soil' && nearSeed() < 70, target: seedT },
@@ -237,9 +244,9 @@ async function main() {
   const showGuide = () => {
     if (guideShown) return; guideShown = true;
     const touch = matchMedia('(pointer: coarse)').matches, pad = !!navigator.getGamepads?.()[0];
-    const rows = pad ? [['左スティック', '動く'], ['右スティック', '見回す'], ['A / B', '上へ / 下へ'], ['RB', '水をくむ・まく'], ['X', 'スキャン'], ['Y', '糖のしずく']]
-      : touch ? [['画面の左下をなぞる', '動く'], ['そのほかをなぞる', '見回す'], ['「水をくむ／まく」', '入口でくみ、乾いた所でまく'], ['「スキャン」', '土のようすを調べる'], ['「糖のしずく」', '微生物を呼ぶ']]
-      : [['W A S D', '動く'], ['ドラッグ', '見回す'], ['スペース / C', '上へ / 下へ'], ['F', '水をくむ・まく'], ['E', 'スキャン'], ['Q', '糖のしずく']];
+    const rows = pad ? [['左スティック', '動く'], ['右スティック', '見回す'], ['A / B', '上へ / 下へ'], ['RB', '水をくむ・まく'], ['X', 'スキャン'], ['Y', '糖のしずく'], ['LB', '菌糸に乗る・降りる']]
+      : touch ? [['画面の左下をなぞる', '動く'], ['そのほかをなぞる', '見回す'], ['「水をくむ／まく」', '入口でくみ、乾いた所でまく'], ['「スキャン」', '土のようすを調べる'], ['「糖のしずく」', '微生物を呼ぶ'], ['「菌糸に乗る」', '菌糸のそばで出る。乗ると速く進める']]
+      : [['W A S D', '動く'], ['ドラッグ', '見回す'], ['スペース / C', '上へ / 下へ'], ['F', '水をくむ・まく'], ['E', 'スキャン'], ['Q', '糖のしずく'], ['G', '菌糸に乗る・降りる']];
     guide.innerHTML = '<b>動（うご）かしかた</b>' + rows.map(([k, v]) => `<div><kbd>${k}</kbd><span>${v}</span></div>`).join('') + '<small>水のある所では泳ぎ、乾いた所では歩きます。押すと消えます</small>';
     guide.classList.add('on'); const off = () => guide.classList.remove('on'); guide.addEventListener('click', off); setTimeout(off, 30000);
   };
@@ -270,9 +277,10 @@ async function main() {
   const driftQ = new THREE.Quaternion(); const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const frame = (now: number) => {
     if (hidden || zukanOpen) return;
-    const t = fixedT !== null ? Number(fixedT) : now / 1000; const dt = (last ? Math.min(0.1, (now - last) / 1000) : 0) * FAST; last = now;   // ?fast=N：通しの自動確認用の早回し
+    const t = fixedT !== null ? Number(fixedT) : now / 1000; const dt = (last ? Math.min(0.1, (now - last) / 1000) : 0) * FAST; last = now; const dtv = hitStop > 0 ? dt * 0.25 : dt; hitStop = Math.max(0, hitStop - dt / FAST);   // ?fast=N：通しの自動確認用の早回し
     camera.quaternion.multiply(driftQ.invert()); driftQ.identity();   // 前のコマの手持ちの揺れを戻す
-    if (dbg) { const v = dbg.split(',').map(Number); camera.position.set(v[0], v[1], v[2]); camera.lookAt(v[3], v[4], v[5]); }
+    if (dbg) { const v = (W.__pos as number[] | undefined) ?? dbg.split(',').map(Number);   // 確認用：W.__pos で、あとから置き直せる
+    camera.position.set(v[0], v[1], v[2]); camera.lookAt(v[3], v[4], v[5]); }
     else if (camT !== null) placeOnPath(Number(camT));
     else if (touring && visit) { const f = visit.get(); if (f) { const want = f.view ? f.view : visit.pos.clone().add(f.p.clone().sub(visit.anchor)); camera.position.lerp(want, 1 - Math.exp(-dt * 1.2)); const q0 = camera.quaternion.clone(); camera.lookAt(f.p); camera.quaternion.slerp(q0, Math.exp(-dt * 3)); } }
     else if (touring && pointer.focus()) { const f = pointer.focus()!; focusT = focusT ? focusT.lerp(f, 1 - Math.exp(-dt * 2)) : look.clone(); const q0 = camera.quaternion.clone(); camera.lookAt(focusT); camera.quaternion.slerp(q0, Math.exp(-dt * 1.5)); }
@@ -280,9 +288,9 @@ async function main() {
       const dir = Math.sign(gotoU - curU), stepU = dt * 0.035; curU = Math.abs(gotoU - curU) <= stepU ? gotoU : curU + dir * stepU; placeOnPath(curU);
       if (curU === gotoU) { gotoU = null; if (touring) $('tour').click(); } }
     else if (touring) { tourU = (tourU + dt * 0.012) % 1; curU = 0.02 + 0.84 * (0.5 - 0.5 * Math.cos(tourU * Math.PI * 2)); placeOnPath(curU); /* 道の終わりで、吸水した種（seed.ts）に近づく */ }
-    else { controls.swimStyle = savedSwim(); controls.speedK = savedSpeed(); controls.lookK = savedLook(); controls.bob = savedBob() && !reduceMotion; controls.water = world.grid.cells[world.cellAt(camera.position)]?.water ?? 0; controls.update(dt); }
-    tools.update(dt); if (quest.update(dt, !touring && mode === 'soil')) audio.fx('link'); { const mm = $('moveMode'); const txt = touring || mode !== 'soil' ? '' : controls.swimming ? '泳（およ）ぐ' : '歩（ある）く'; if (mm.textContent !== txt) mm.textContent = txt; $('sugarBtn').textContent = `糖のしずく ${tools.stock}`; { const ci = world.cellAt(camera.position); $('waterBtn').textContent = tools.tank < 3 && (ci === 0 || world.grid.cells[ci].water > 0.6) ? '水をくむ' : `水をまく ${tools.tank}`; } document.body.classList.toggle('free', !touring && mode === 'soil'); }
-    if (wetQ === null) { demo.update(dt); if (FAST > 1) { for (let k = 0; k < FAST; k++) game.update(dt / FAST, t); } else game.update(dt, t); }   // 早回しのときも、土の計算は細かい刻みで進める
+    else { controls.swimStyle = savedSwim(); controls.speedK = savedSpeed(); controls.lookK = savedLook(); controls.bob = savedBob() && !reduceMotion; controls.water = world.grid.cells[world.cellAt(camera.position)]?.water ?? 0; controls.update(dtv); }
+    tools.update(dt); if (quest.update(dt, !touring && mode === 'soil')) audio.fx('link'); { const mm = $('moveMode'); const txt = touring || mode !== 'soil' ? '' : controls.swimming ? '泳（およ）ぐ' : '歩（ある）く'; if (mm.textContent !== txt) mm.textContent = txt; $('sugarBtn').textContent = `糖のしずく ${tools.stock}`; { const can = controls.canRide(); $('rideBtn').classList.toggle('near', can || controls.riding); $('rideBtn').textContent = controls.riding ? '菌糸から降りる' : '菌糸に乗る'; if (!controls.riding) game.hypha.highlight(can); if (controls.riding && controls.rideSpeed > 8 && Math.random() < dt * 6) feel('slide'); document.body.classList.toggle('riding', controls.riding); } audio.setRide(controls.riding ? controls.rideSpeed / 18 : 0); { const ci = world.cellAt(camera.position); $('waterBtn').textContent = tools.tank < 3 && (ci === 0 || world.grid.cells[ci].water > 0.6) ? '水をくむ' : `水をまく ${tools.tank}`; } document.body.classList.toggle('free', !touring && mode === 'soil'); }
+    if (wetQ === null) { demo.update(dt); if (FAST > 1) { for (let k = 0; k < FAST; k++) game.update(dtv / FAST, t); } else game.update(dtv, t); }   // 早回しのときも、土の計算は細かい刻みで進める
     // 手持ちカメラのごくわずかな揺れ（記録映像らしさ）：自動で巡るときだけ、0.15°以内。動きを減らす設定の端末では使わない
     if (touring && !reduceMotion && !testing) { const k = 0.0026; driftQ.setFromEuler(new THREE.Euler(Math.sin(t * 0.53) * k + Math.sin(t * 1.37) * k * 0.4, Math.sin(t * 0.41 + 1.2) * k + Math.sin(t * 1.11) * k * 0.35, 0)); camera.quaternion.multiply(driftQ); }
     if (mode === 'surface') {

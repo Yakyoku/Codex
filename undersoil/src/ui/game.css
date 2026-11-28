@@ -244,3 +244,5 @@ dialog.zukan::backdrop { background: rgba(0,0,0,.7); }
 .res-song b { color: #bfe6ff; letter-spacing: .08em; } .res-song span { color: var(--dim); font-size: .88em; line-height: 1.7; } .res-song div { display: flex; gap: 8px; flex-wrap: wrap; }
 .nb-songs { margin: 14px 0 0; display: grid; gap: 6px; } .nb-songs h3 { margin: 0 0 4px; font-size: 1em; font-weight: 600; } .nb-songs h3 small { display: block; font-weight: 400; color: var(--dim); font-size: .78em; margin-top: 2px; }
 .nb-song { text-align: left; justify-content: flex-start; }
+/* 菌糸に乗る：近くにいるときだけ出る */
+body.free .btn.tool.ride { display: none; } body.free .btn.tool.ride.near { display: inline-flex; border-color: rgba(143, 208, 255, .6); box-shadow: 0 0 0 1px rgba(143, 208, 255, .25), 0 0 18px rgba(143, 208, 255, .25); }

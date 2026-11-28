@@ -12,9 +12,10 @@ import { loadGLB } from '../core/assets';
 import { buildSeed } from '../game/seed';
 
 const KEY = 'undersoil.zukan';
-const ORDER = ['water-film', 'aggregate', 'sand', 'humus', 'clay', 'bacillus-subtilis', 'pseudomonas-fluorescens', 'colpoda', 'paramacrobiotus-metropolitanus', 'clover-seed', 'trifolium-repens'];
+const makeRngZ = (seed: number) => { let x = seed * 9301 + 49297; return () => ((x = (x * 9301 + 49297) % 233280) / 233280); };
+const ORDER = ['water-film', 'aggregate', 'sand', 'humus', 'clay', 'bacillus-subtilis', 'pseudomonas-fluorescens', 'colpoda', 'paramacrobiotus-metropolitanus', 'rhizophagus-irregularis', 'clover-seed', 'trifolium-repens'];
 /** 大きさくらべ用のおおよその大きさ（µm）。カードの「実際の大きさ」と同じ値 */
-const UM: Record<string, number> = { 'water-film': 0.015, aggregate: 250, sand: 200, humus: 50, clay: 1, 'bacillus-subtilis': 3, 'pseudomonas-fluorescens': 2.5, colpoda: 60, 'paramacrobiotus-metropolitanus': 500, 'clover-seed': 1200, 'trifolium-repens': 4000 };
+const UM: Record<string, number> = { 'water-film': 0.015, aggregate: 250, sand: 200, humus: 50, clay: 1, 'bacillus-subtilis': 3, 'pseudomonas-fluorescens': 2.5, colpoda: 60, 'rhizophagus-irregularis': 90, 'paramacrobiotus-metropolitanus': 500, 'clover-seed': 1200, 'trifolium-repens': 4000 };
 const fmt = (x: number) => (x >= 10 ? Math.round(x).toLocaleString() : x >= 1 ? x.toFixed(1).replace(/\.0$/, '') : x >= 0.01 ? x.toFixed(2) : x.toFixed(3));
 
 type Model = { group: THREE.Object3D; animate?: (t: number) => void };
@@ -65,6 +66,17 @@ async function makeModel(base: string, id: string): Promise<Model> {
     const ms = await glb('models/creatures/tardigrade.glb', (n) => (n.startsWith('tardigrade_body_LOD0') ? body : n.startsWith('tardigrade_inner_LOD0') ? inner : null));
     const KEYS = ['walk_a', 'walk_b', 'walk_c', 'walk_d'];
     return { group: g, animate: (t) => { const x = (t * 1.6) % 4, i = Math.floor(x), f = x - i; for (const m of ms) { const d = m.morphTargetDictionary!, inf = m.morphTargetInfluences!; inf.fill(0); inf[d[KEYS[i]]] = 1 - f; inf[d[KEYS[(i + 1) % 4]]] = f; } } };
+  } else if (id === 'rhizophagus-irregularis') {
+    // 胞子（直径 約 90 µm）と、柄から伸びる菌糸（太さ 約 8 µm）。大きさの比は本物どおり
+    const wall = physical(0xd8b46a, { roughness: 0.3, transmission: 0.35, thickness: 0.4, transparent: true, opacity: 0.7 });
+    g.add(new THREE.Mesh(new THREE.SphereGeometry(1, 48, 32), wall));
+    const lip = physical(0xe6cf8c, { roughness: 0.2 }); const r = makeRngZ(5);
+    for (let i = 0; i < 90; i++) { const v = new THREE.Vector3(r() * 2 - 1, r() * 2 - 1, r() * 2 - 1); if (v.length() > 1) continue; const m = new THREE.Mesh(new THREE.SphereGeometry(0.08 + r() * 0.04, 10, 8), lip); m.position.copy(v.multiplyScalar(0.8)); g.add(m); }
+    const hy = physical(0xe0dccb, { roughness: 0.2, transmission: 0.7, thickness: 0.1, transparent: true, opacity: 0.55 });
+    const stub = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.13, 0.6, 16), wall); stub.rotation.z = Math.PI / 2; stub.position.x = 1.25; g.add(stub);
+    const pts: THREE.Vector3[] = []; for (let i = 0; i <= 40; i++) { const s = i / 40; pts.push(new THREE.Vector3(1.5 + s * 5, Math.sin(s * 9) * 0.18 + s * 0.3, Math.cos(s * 7) * 0.12)); }
+    g.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 120, 0.09, 10), hy));
+    g.position.x = -2.2;
   } else if (id === 'clover-seed') {
     g.add(buildSeed(new THREE.Vector3(), { segments: 96 }));
   } else if (id === 'trifolium-repens') {

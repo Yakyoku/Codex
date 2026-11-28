@@ -10,6 +10,7 @@ import { pushOut } from '../game/controls';
 import { makeHud } from './hud';
 import { buildSurface } from '../game/surface';
 import { makeTools } from '../game/tools';
+import { addVRPad, feel } from '../core/haptics';
 import { makeBridgeSong } from '../game/bridgeSong';
 import { createAudio } from '../audio/engine';
 
@@ -51,7 +52,7 @@ async function main() {
   toggleBtn.addEventListener('click', () => goTo(where === 'soil' ? 'surface' : 'soil'));
   // ---- M2：VR の道具と、酔いにくさの設定
   const audio = createAudio(); const bsong = makeBridgeSong(game, audio);   // VR でも画面版と同じ音（土の活力で変わる環境音、効果音）。「VR で遊ぶ」を押したときに鳴らし始める
-  const tools = makeTools(scene, camera, world, game.seed.position, () => audio.chime(), (p, k) => { game.swarm.attract(p, k); game.swarm2.attract(p, k); }, (k) => audio.fx(k));
+  const tools = makeTools(scene, camera, world, game.seed.position, () => audio.chime(), (p, k) => { game.swarm.attract(p, k); game.swarm2.attract(p, k); }, (k) => { audio.fx(k); feel(k); });
   const opt = (id: string, key: string) => { const el = $(id) as HTMLSelectElement; try { const v = localStorage.getItem(key); if (v) el.value = v; } catch { /* noop */ } el.addEventListener('change', () => { try { localStorage.setItem(key, el.value); } catch { /* noop */ } }); return el; };
   const optSnap = opt('optSnap', 'undersoil.vr.snap'), optVig = opt('optVig', 'undersoil.vr.vig'), optSpeed = opt('optSpeed', 'undersoil.vr.speed');
   // 視野のまわりを暗くする輪（動いている間だけ。トンネル効果で酔いを減らす）
@@ -60,8 +61,8 @@ async function main() {
   // 手：0・1 番のコントローラー。左右は接続時に分かる
   const hands: { left: THREE.Object3D | null; right: THREE.Object3D | null } = { left: null, right: null };
   for (const i of [0, 1]) { const c = renderer.xr.getController(i); rig.add(c);
-    c.addEventListener('connected', (e) => { const h = (e as unknown as { data: XRInputSource }).data.handedness; if (h === 'left') { hands.left = c; c.add(wrist); } else if (h === 'right') hands.right = c; });
-    c.addEventListener('selectstart', () => { if (c === hands.right && where === 'soil') tools.sugar(c.getWorldPosition(new THREE.Vector3())); });
+    c.addEventListener('connected', (e) => { const src = (e as unknown as { data: XRInputSource }).data; addVRPad(() => src.gamepad); const h = src.handedness; if (h === 'left') { hands.left = c; c.add(wrist); } else if (h === 'right') hands.right = c; });
+    c.addEventListener('selectstart', () => { if (c === hands.right && where === 'soil') tools.sugar(c.getWorldPosition(new THREE.Vector3())); else if (c === hands.left && where === 'soil') toggleRide(); });
     c.addEventListener('squeezestart', () => { if (c === hands.right) { if (where === 'soil') tools.water(c.getWorldPosition(new THREE.Vector3())); } else goTo(where === 'soil' ? 'surface' : 'soil'); }); }
   // 手首の画面（スキャン）：左手の甲の上の小さな板。顔のほうへ向けると見える
   const wc = document.createElement('canvas'); wc.width = 512; wc.height = 384; const wctx = wc.getContext('2d')!; const wtex = new THREE.CanvasTexture(wc); wtex.colorSpace = THREE.SRGBColorSpace;
@@ -109,6 +110,17 @@ async function main() {
     } catch (e) { msg.textContent = 'VR を開始できませんでした：' + (e as Error).message; errors.push(String(e)); }
   });
 
+  // 菌糸の滑走（VR）：左手の引き金で乗る・降りる。酔いにくいように、速さを画面版の 4 割に抑え、視野のまわりを必ず暗くし、
+  // 体の前に「乗り物の枠」（手すりのような半透明の輪）を出して、自分が何かに乗って動いていると分かるようにする
+  let riding = false, rideU = 0, rideV = 0; const rideP = new THREE.Vector3(), tanV = new THREE.Vector3(), upY = new THREE.Vector3(0, 1, 0);
+  const frame = new THREE.Mesh(new THREE.TorusGeometry(0.34, 0.012, 8, 48, Math.PI * 1.2), new THREE.MeshBasicMaterial({ color: 0x9fd8ff, transparent: true, opacity: 0.45, depthWrite: false, fog: false }));
+  frame.rotation.set(Math.PI / 2, 0, Math.PI * -0.1 + Math.PI); frame.position.set(0, 0.95, -0.05); frame.visible = false; rig.add(frame);
+  const toggleRide = () => {
+    const hw = camera.getWorldPosition(new THREE.Vector3());
+    if (riding) { riding = false; frame.visible = false; feel('grab'); tools.say('菌糸から降りました'); return; }
+    const n = game.hypha.near(hw); if (n.d > 2.5) { tools.say('菌糸の近くで、左手の引き金を引くと乗れます'); return; }
+    riding = true; rideU = n.u; rideV = 0; frame.visible = true; feel('grab'); tools.say('菌糸に乗りました。左スティックで前後に滑ります');
+  };
   // 移動：左スティックで、頭の向きへなめらかに（速度は控えめ、加減速は穏やか）。右スティックは 30 度ずつ向きを変える
   const vel = new THREE.Vector3(), want = new THREE.Vector3(), head = new THREE.Vector3(), fwd = new THREE.Vector3(), right = new THREE.Vector3(), q = new THREE.Quaternion();
   let snapReady = true, frames = 0, last = 0;
@@ -127,9 +139,15 @@ async function main() {
       fwd.set(0, 0, -1).applyQuaternion(q); right.set(1, 0, 0).applyQuaternion(q);
       want.set(0, 0, 0).addScaledVector(fwd, -mz).addScaledVector(right, mx); if (want.lengthSq() > 1) want.normalize();
       vel.lerp(want.multiplyScalar(3.2 * Number(optSpeed.value)), 1 - Math.exp(-dt * 3));
-      if (where === 'soil') rig.position.addScaledVector(vel, dt);
+      if (riding && where === 'soil') {   // 菌糸の上：体（リグ）ごと、菌糸に沿って動かす
+        game.hypha.tangentAt(rideU, tanV); const dirIn = -mz * Math.sign(fwd.dot(tanV) || 1), max = 7 * Number(optSpeed.value);
+        rideV += (dirIn * max - rideV) * (1 - Math.exp(-dt * (dirIn ? 1.4 : 1.0))); rideU += rideV * dt / game.hypha.length;
+        if (rideU <= 0 || rideU >= game.hypha.grow) { rideU = Math.max(0, Math.min(game.hypha.grow, rideU)); rideV = 0; }
+        game.hypha.rideAt(rideU, upY, rideP); xrCam.getWorldPosition(head); rig.position.add(rideP.sub(head).multiplyScalar(1 - Math.exp(-dt * 6)));
+        vel.copy(tanV).multiplyScalar(rideV); audio.setRide(Math.abs(rideV) / 7);
+      } else { audio.setRide(0); if (where === 'soil') rig.position.addScaledVector(vel, dt); }
       // 頭の位置で粒との当たりを取り、ずれた分だけ体を戻す
-      if (where === 'soil') { xrCam.getWorldPosition(head); const before = head.clone(); pushOut(head, world.colliders, 0.7); rig.position.add(head.sub(before)); }
+      if (where === 'soil' && !riding) { xrCam.getWorldPosition(head); const before = head.clone(); pushOut(head, world.colliders, 0.7); rig.position.add(head.sub(before)); }
     } else camera.rotation.set(pitch, yaw, 0, 'YXZ');
     { // 道具と酔いにくさ
       const headW = camera.getWorldPosition(new THREE.Vector3());
@@ -138,7 +156,7 @@ async function main() {
       if (where === 'soil' && !vrGoalDone && game.wake > 0.5 && headW.distanceTo(game.seed.position) < 95 && tools.wind !== 'on') { vrGoalDone = true; audio.chime(); goTo('surface'); }
       // 手ならではのふれ合い：水のある所に手を入れると、まわりの細菌が手から逃げる（糖のしずくを置いていないとき）
       if (renderer.xr.isPresenting && where === 'soil' && tools.stock === 3) { const h = hands.right ?? hands.left; if (h) { const hp = h.getWorldPosition(new THREE.Vector3()); const wet = world.grid.cells[world.cellAt(hp)]?.water ?? 0; const k = wet > 0.4 ? -0.5 : 0; game.swarm.attract(hp, k); game.swarm2.attract(hp, k); } }
-      const mvig = vig.material as THREE.MeshBasicMaterial; const wantV = optVig.value === 'on' && renderer.xr.isPresenting && where === 'soil' ? Math.min(0.85, vel.length() / 2.2) : 0; mvig.opacity += (wantV - mvig.opacity) * (1 - Math.exp(-dt * 6)); vig.visible = mvig.opacity > 0.01;
+      const mvig = vig.material as THREE.MeshBasicMaterial; const wantV = optVig.value === 'on' && renderer.xr.isPresenting && where === 'soil' ? Math.max(riding ? 0.55 : 0, Math.min(0.85, vel.length() / 2.2)) : riding && renderer.xr.isPresenting ? 0.55 : 0;; mvig.opacity += (wantV - mvig.opacity) * (1 - Math.exp(-dt * 6)); vig.visible = mvig.opacity > 0.01;   // 滑走中は、設定にかかわらず視野を絞る
       if (hands.left) { // 手首の板が顔のほうを向いているときだけ出す
         const wp = wrist.getWorldPosition(new THREE.Vector3()), n = new THREE.Vector3(0, 0, 1).transformDirection(wrist.matrixWorld), facing = n.dot(headW.clone().sub(wp).normalize());
         const wm = wrist.material as THREE.MeshBasicMaterial; wm.opacity += ((facing > 0.55 && where === 'soil' ? 1 : 0) - wm.opacity) * (1 - Math.exp(-dt * 8)); wrist.visible = wm.opacity > 0.02;
@@ -150,7 +168,7 @@ async function main() {
     if (fadeT > 0) { renderer.setClearColor(0x000000, 1); renderer.clear(); }   // 切り替えの暗転
     else renderer.render(where === 'soil' ? scene : surface.scene, camera);
     hud.tick(now); frames++;
-    W.__vr = { tools, game, rig, goTo, get where() { return where; }, cam: () => camera.getWorldPosition(new THREE.Vector3()) };   // 確認用
+    W.__vr = { tools, game, rig, goTo, toggleRide, get riding() { return riding; }, get rideU() { return rideU; }, frame, vig, get where() { return where; }, cam: () => camera.getWorldPosition(new THREE.Vector3()) };   // 確認用
     W.__state = { ready: frames > 3, frames, isWebGPU, supported, presenting: renderer.xr.isPresenting, errors, stats: world.stats };
   });
 }

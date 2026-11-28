@@ -73,7 +73,7 @@ export function makeTools(scene: THREE.Scene, camera: THREE.Camera, world: World
     say(linked ? `水をまきました（残り ${tank}）。となりの区画と、水の橋（はし）がつながりました！` : `水をまきました（残り ${tank}）。となりにも水があると、水の橋がかかります`); return 'pour';
   };
   return {
-    scan, sugar, water, stats, get tank() { return tank; }, get wind() { return wind; }, /** 確認用：風の残り時間を 1 秒にする */ __endWind() { if (wind === 'on') windT = Math.min(windT, 1); }, get scans() { return scans; }, /** 山場を始める（道しるべから呼ぶ） */ startWind() { if (wind === 'wait') windArmed = true; }, /** 風のあと、種のまわりが乾いていたら、もう一度挑める */ retryWind() { if (wind === 'done' && !stats.windSurvived) { wind = 'wait'; windArmed = true; say('種のまわりに水が戻りました。もう一度、乾きの風が来ます'); } }, get message() { return lastSay; },
+    scan, sugar, water, stats, /** ほかの係（菌糸の滑走など）からの短い知らせ */ say, get tank() { return tank; }, get wind() { return wind; }, /** 確認用：風の残り時間を 1 秒にする */ __endWind() { if (wind === 'on') windT = Math.min(windT, 1); }, get scans() { return scans; }, /** 山場を始める（道しるべから呼ぶ） */ startWind() { if (wind === 'wait') windArmed = true; }, /** 風のあと、種のまわりが乾いていたら、もう一度挑める */ retryWind() { if (wind === 'done' && !stats.windSurvived) { wind = 'wait'; windArmed = true; say('種のまわりに水が戻りました。もう一度、乾きの風が来ます'); } }, get message() { return lastSay; },
     /** VR の手首の画面用：いまいる区画の数字 */
     read(pos?: THREE.Vector3) { const i = world.cellAt(pos ?? camera.position), c = world.grid.cells[i]; return { cell: i, water: c.water, carbon: c.carbon, microbes: c.microbes, structure: c.structure, vitality: world.grid.vitality(i), all: world.grid.cells.map((_, k) => world.grid.vitality(k)) }; },
     get stock() { return stock; },
