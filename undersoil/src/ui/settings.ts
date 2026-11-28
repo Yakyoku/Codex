@@ -1,6 +1,7 @@
 // 設定（M0 の最小版）：描画方式、品質段階、初登場の紹介。ブラウザの中に保存する。
 import './settings.css';
-const KEYS = { renderer: 'undersoil.renderer', tier: 'undersoil.tier', intro: 'undersoil.intro', bob: 'undersoil.bob', speed: 'undersoil.speed', look: 'undersoil.look', swim: 'undersoil.swim' } as const;
+import { jaVoices, narrate, pickVoice } from './card';
+const KEYS = { renderer: 'undersoil.renderer', tier: 'undersoil.tier', intro: 'undersoil.intro', bob: 'undersoil.bob', speed: 'undersoil.speed', look: 'undersoil.look', swim: 'undersoil.swim', rate: 'undersoil.rate', voice: 'undersoil.voice', say: 'undersoil.say' } as const;
 export const savedSwim = () => (get(KEYS.swim, 'glide') === 'dart' ? 'dart' : 'glide') as 'glide' | 'dart';
 const K: Record<string, number> = { slow: 0.7, normal: 1, fast: 1.4 };
 export const savedSpeed = () => K[get(KEYS.speed, 'normal')] ?? 1;
@@ -10,6 +11,7 @@ const get = (k: string, d: string) => { try { return localStorage.getItem(k) ?? 
 const set = (k: string, v: string, d: string) => { try { if (v === d) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch { /* noop */ } };
 export const savedTier = () => { const t = get(KEYS.tier, 'auto'); return t === 'auto' ? null : t; };
 
+export const savedSay = () => get(KEYS.say, 'on') === 'on';
 export function mountSettings(openBtn: HTMLElement, info: { renderer: string; tier: string }) {
   const d = document.createElement('dialog'); d.className = 'settings';
   const group = (title: string, key: keyof typeof KEYS, def: string, opts: [string, string][], reload: boolean) => {
@@ -20,6 +22,9 @@ export function mountSettings(openBtn: HTMLElement, info: { renderer: string; ti
     ${group('描画方式', 'renderer', 'auto', [['auto', '自動'], ['webgpu', 'WebGPU'], ['webgl2', 'WebGL 2']], true)}
     ${group('画質', 'tier', 'auto', [['auto', '自動'], ['pc-high', 'PC 高画質'], ['mobile-high', 'モバイル高画質'], ['compat', '互換（軽い）']], true)}
     ${group('生き物の初登場の紹介', 'intro', 'all', [['all', 'すべて表示'], ['name', '名前だけ'], ['off', '表示しない']], false)}
+    ${group('紹介の読み上げ', 'say', 'on', [['on', '読み上げる'], ['off', '字幕だけ']], false)}
+    <fieldset><legend>読み上げの声</legend><select data-voice><option value="auto">自動（やさしい女性の声）</option></select><button type="button" class="btn" data-try>試しに聞く</button><small data-vmsg></small></fieldset>
+    ${group('読み上げの速さ', 'rate', 'normal', [['slow', 'ゆっくり'], ['normal', 'ふつう'], ['fast', 'はやい']], false)}
     ${group('動く速さ', 'speed', 'normal', [['slow', 'ゆっくり'], ['normal', 'ふつう'], ['fast', 'はやい']], false)}
     ${group('見回す速さ', 'look', 'normal', [['slow', 'ゆっくり'], ['normal', 'ふつう'], ['fast', 'はやい']], false)}
     ${group('泳ぎ方', 'swim', 'glide', [['glide', 'コルポダのように（なめらかに滑る）'], ['dart', '細菌のように（すぐ進み、すぐ止まる）']], false)}
@@ -34,8 +39,15 @@ export function mountSettings(openBtn: HTMLElement, info: { renderer: string; ti
     const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify({ app: 'undersoil', version: 1, saved: new Date().toISOString(), data: out })], { type: 'application/json' })); a.download = 'undersoil-save.json'; a.click(); URL.revokeObjectURL(a.href); d.querySelector('[data-msg]')!.textContent = ' 書き出しました'; });
   d.querySelector('[data-imp]')!.addEventListener('change', async (e) => { const f = (e.target as HTMLInputElement).files?.[0]; if (!f) return; const msg = d.querySelector('[data-msg]')!;
     try { const j = JSON.parse(await f.text()); if (j.app !== 'undersoil' || typeof j.data !== 'object') throw new Error('このゲームの保存ファイルではありません'); for (const [k, v] of Object.entries(j.data)) if (k.startsWith('undersoil.') && typeof v === 'string') localStorage.setItem(k, v); msg.textContent = ' 読みこみました。開き直します…'; setTimeout(() => location.reload(), 800); } catch (err) { msg.textContent = ' 読みこめませんでした：' + (err as Error).message; } });
+  // 声の一覧：端末に入っている日本語の声。あとから届く端末もあるので、届いたら作り直す
+  const sel = d.querySelector('[data-voice]') as HTMLSelectElement, vmsg = d.querySelector('[data-vmsg]')!;
+  const fill = () => { const cur = get(KEYS.voice, 'auto'), vs = jaVoices(); sel.innerHTML = `<option value="auto">自動（やさしい女性の声）</option>` + vs.map((v) => `<option value="${v.name.replace(/"/g, '&quot;')}">${v.name}</option>`).join(''); sel.value = vs.some((v) => v.name === cur) ? cur : 'auto';
+    vmsg.textContent = vs.length ? '' : ' この端末には日本語の声がありません（字幕で読めます）'; };
+  fill(); try { window.speechSynthesis?.addEventListener?.('voiceschanged', fill); } catch { /* noop */ }
+  sel.addEventListener('change', () => set(KEYS.voice, sel.value, 'auto'));
+  d.querySelector('[data-try]')!.addEventListener('click', () => { narrate('こんにちは。土の中を、いっしょに見に行きましょう。'); const v = pickVoice(); vmsg.textContent = v ? ` いまの声：${v.name}` : ' 声が見つかりません'; });
   let needReload = false;
-  d.addEventListener('change', (e) => { const i = e.target as HTMLInputElement; if (i.type !== 'radio') return; set(KEYS[i.name as keyof typeof KEYS], i.value, i.dataset.def!); if (i.dataset.reload === '1') needReload = true; });
+  d.addEventListener('change', (e) => { const i = e.target as HTMLInputElement; if (i.type !== 'radio') return; set(KEYS[i.name as keyof typeof KEYS], i.value, i.dataset.def!); if (i.name === 'rate') narrate('この速さで読みます。'); if (i.dataset.reload === '1') needReload = true; });
   d.querySelector('button[value=ok]')!.addEventListener('click', () => { d.close(); if (needReload) location.reload(); });
   openBtn.addEventListener('click', () => d.showModal());
 }

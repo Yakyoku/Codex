@@ -84,7 +84,7 @@ async function main() {
   surfaceCam = surface.camera; resize();
   if (mode === 'surface') { document.body.classList.add('surface'); renderer.toneMappingExposure = 0.9; }
   let started = false;
-  const audio = createAudio();
+  const audio = createAudio(); W.__audio = audio;   // 確認用
   try { audio.muted = localStorage.getItem('undersoil.muted') === '1'; } catch { /* noop */ }
   const demo = makeDemo(world);
   const controls = makeFreeControls(camera, canvas, world.colliders, $('stick'));
@@ -303,7 +303,7 @@ async function main() {
       underFocus.value += (Math.max(2, Math.min(visit ? 80 : 30, d)) - underFocus.value) * (1 - Math.exp(-dt * (visit ? 0.9 : 3)));
       { const k = 1 - Math.exp(-dt * 2), vr = visit ? Math.max(0.8, visit.dist * 0.3) : 8, vb = visit ? 4.0 : 2.2; underRange.value += (vr - underRange.value) * k; underBokeh.value += (vb - underBokeh.value) * k; }
     }
-    audio.setMode(mode); audio.setVitality(world.grid.mean()); audio.setGrowth(surface.growth); audio.update(dt);
+    audio.setMode(mode); audio.setVitality(world.grid.mean()); { let nb = 0; for (const L of world.grid.links) nb += L.size; audio.setBridges(nb / 2); } if (game.wake > 0.5) audio.awaken(); audio.setGrowth(surface.growth); audio.update(dt);
     hud.tick(now); frames++;
     const vit = Math.round(world.grid.mean() * 100);
     $('sprout').textContent = mode === 'soil' ? '地上を見る' : '土の中へ戻る';

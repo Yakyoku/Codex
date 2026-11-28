@@ -12,16 +12,25 @@ export interface AudioEngine {
   chime(): void;
   /** 効果音：水をまく、水の橋がつながる、乾きの風、区画の目覚め */
   fx(kind: 'pour' | 'link' | 'wind' | 'awake'): void;
+  /** つながった水の橋の数。1 本ごとに、くり返す旋律の音が 1 つ増える */
+  setBridges(n: number): void;
+  /** 目覚め：重なってきた単音が、1 つの和音にまとまる */
+  awaken(): void;
   setMuted(m: boolean): void;
   /** タブが隠れたときに止め、戻ったら再開する（消音の設定とは別） */
   pause(p: boolean): void;
   muted: boolean;
+  /** 確認用：いまの橋の本数と、目覚めの和音が鳴ったか */
+  state(): { bridges: number; awoken: boolean; running: boolean };
   update(dt: number): void;
 }
 
 // ステージ1の主題：ピアノの単音。ペンタトニック（D の音階）で、どの音が重なっても濁らない
 const SCALE = [293.66, 329.63, 369.99, 440.0, 493.88, 587.33, 659.25, 739.99, 880.0];
 const CHORD = [146.83, 220.0, 293.66, 369.99, 440.0, 587.33]; // D の和音（開いた配置）
+
+// 水の橋の旋律：橋が 1 本つながるごとに、この順で音が 1 つずつ加わる（最初は 1 音、8 本で 8 音のフレーズ）
+const MOTIF = [0, 4, 2, 5, 3, 7, 4, 8].map((i) => SCALE[i]);
 
 function noiseBuffer(ctx: AudioContext, sec: number, color: 'white' | 'brown' | 'pink') {
   const n = Math.floor(ctx.sampleRate * sec), buf = ctx.createBuffer(2, n, ctx.sampleRate);
@@ -65,9 +74,10 @@ export function createAudio(): AudioEngine {
   let ctx: AudioContext | null = null;
   let master: GainNode, music: GainNode, sfx: GainNode, verb: ConvolverNode, verbIn: GainNode;
   let dryBed: GainNode, wetBed: GainNode, surfBed: GainNode, under: BiquadFilterNode, rainLp: BiquadFilterNode, windBp: BiquadFilterNode, leafBp: BiquadFilterNode;
-  let vit = 0, mode: Mode = 'soil', growth = 0, chordDone = false, noteT = 1.5, dripT = 0.8, grainT = 0.2, gust = 0;
+  let vit = 0, mode: Mode = 'soil', growth = 0, chordDone = false, noteT = 1.5, bridges = 0, motifT = 2, awoken = false, dripT = 0.8, grainT = 0.2, gust = 0;
   const api: AudioEngine = {
     muted: false,
+    state: () => ({ bridges, awoken, running: !!ctx && ctx.state === 'running' }),
     start() {
       unlockIOS();
       if (ctx) { void ctx.resume(); return; }
@@ -103,6 +113,20 @@ export function createAudio(): AudioEngine {
     setMode(m) { if (m !== mode) { mode = m; growth = 0; chordDone = false; } },
     setGrowth(g) { growth = g; },
     pause(p) { if (!ctx) return; if (p) void ctx.suspend(); else void ctx.resume(); },
+    setBridges(n) {
+      n = Math.max(0, Math.min(MOTIF.length, Math.floor(Number.isFinite(n) ? n : 0)));
+      if (ctx && n > bridges) {   // 新しい音：まず加わった音を少し強く鳴らし、すぐ後に、増えたフレーズを通して聞かせる
+        const t = ctx.currentTime; piano(MOTIF[n - 1], t + 0.05, 0.24, 5); motifT = 1.6;
+      }
+      bridges = n;
+    },
+    awaken() {
+      if (!ctx || awoken) return; awoken = true; const t = ctx.currentTime;
+      // ここまでの単音を速く重ね、低い D の和音に解決する
+      MOTIF.slice(0, Math.max(3, bridges)).forEach((f, i) => piano(f, t + i * 0.07, 0.12, 6));
+      CHORD.forEach((f, i) => piano(f, t + 0.7 + i * 0.05, 0.2, 8));
+      bell(1174.66, t + 0.9, 0.05, 4, sfx);
+    },
     setMuted(m) { api.muted = m; if (ctx) master.gain.setTargetAtTime(m ? 0 : 1.0, ctx.currentTime, 0.1); },
     chime() {
       // 新しい生き物の紹介：短く上品な2音（鐘のような倍音）
@@ -134,7 +158,11 @@ export function createAudio(): AudioEngine {
         // 湿った土：水のしずく。活力が上がるほど増える
         dripT -= dt; if (dripT <= 0) { dripT = 0.6 + Math.random() * 3.5 * (1.2 - vit); if (vit > 0.08) drip(t, vit); }
         // ピアノの単音：活力が上がるほど、音の数と高さが増える
-        noteT -= dt; if (noteT <= 0) { noteT = 2.6 + Math.random() * 3.2 - vit * 1.6; if (vit > 0.15) { const top = Math.min(SCALE.length - 1, 2 + Math.floor(vit * (SCALE.length - 2))); piano(SCALE[Math.floor(Math.random() * (top + 1))], t, 0.16 + vit * 0.1); } }
+        // 水の橋の旋律：つながった本数だけの音を、間をあけてくり返す（1 本なら 1 音、増えるほどフレーズになる）
+        if (bridges > 0) { motifT -= dt; if (motifT <= 0) { const step = 0.42; motifT = bridges * step + 3.2;
+          for (let k = 0; k < bridges; k++) piano(MOTIF[k], t + k * step, 0.11 + vit * 0.06, 3.5); } }
+        // ピアノの単音：活力が上がるほど、音の数と高さが増える（旋律が鳴っている間は控えめに）
+        noteT -= dt; if (noteT <= 0) { noteT = 2.6 + Math.random() * 3.2 - vit * 1.6 + bridges * 0.5; if (vit > 0.15) { const top = Math.min(SCALE.length - 1, 2 + Math.floor(vit * (SCALE.length - 2))); piano(SCALE[Math.floor(Math.random() * (top + 1))], t, 0.16 + vit * 0.1); } }
       } else {
         // 地上：子葉が開く瞬間に、和音が大きく開く
         if (!chordDone && growth > 0.64) { chordDone = true; CHORD.forEach((f, i) => piano(f, t + i * 0.09, 0.2, 7)); }

@@ -9,3 +9,4 @@ dialog.settings label input:checked + span { background: var(--accent); color: #
 dialog.settings label input:focus-visible + span { outline: 2px solid var(--leaf); }
 dialog.settings .now, dialog.settings .note { color: var(--dim); font-size: .78em; line-height: 1.8; margin: .6em 0 0; }
 dialog.settings .row { display: flex; justify-content: flex-end; margin-top: 1em; }
+dialog.settings select { font: inherit; color: inherit; background: rgba(255,255,255,.06); border: 1px solid var(--line); border-radius: 8px; padding: .45em .6em; max-width: 100%; }

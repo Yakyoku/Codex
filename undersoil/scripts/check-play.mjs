@@ -30,6 +30,8 @@ ok('道しるべ 7：風を乗りきる', await until(() => document.querySelect
 console.log('step', await step(), await ev(() => JSON.stringify({ wind: document.querySelector('.wind').className, w: window.__game.world.grid.cells.slice(9).map((c) => +c.water.toFixed(2)), toast: document.querySelector('.tool-toast').textContent })));
 for (let c = 0; c < 12; c++) { await pour(c); await page.waitForTimeout(400); }
 ok('種が目覚める', await until(() => window.__game.wake > 0.5, 120000));
+ok('音：橋の数だけ旋律の音が重なり、目覚めで和音', await until(() => { const a = window.__audio?.state(); return a && a.bridges >= 3 && a.awoken; }, 20000));
+console.log('audio', await ev(() => JSON.stringify(window.__audio.state())));
 await ev(() => { const g = window.__game; g.camera.position.copy(g.seed.position).add({ x: -70, y: 2, z: 0 }); });
 ok('ゴールの知らせ', await until(() => document.querySelector('.goal').classList.contains('on') || document.body.classList.contains('surface'), 60000));
 ok('地上の場面へ', await until(() => document.body.classList.contains('surface'), 120000));
