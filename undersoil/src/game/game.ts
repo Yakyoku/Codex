@@ -51,7 +51,7 @@ export async function createGame(renderer: THREE.WebGPURenderer, base: string, t
     scene, camera, world, lights, bridges, swarm, swarm2, creatures, tardigrade, tier, q, focus: { value: 12 }, seed, seedLife,
     get wake() { return wake; }, get root() { return root; },
     update(dt, _t) {
-      creatures.update(dt, _t); tardigrade.update(dt, _t);
+      creatures.update(dt, _t); tardigrade.update(dt, _t); bridges.tick(dt);
       acc += Math.min(dt, 0.1);
       while (acc >= 0.1) { world.grid.step(0.1); acc -= 0.1; }
       syncT += dt; if (syncT > 0.1) { syncT = 0; syncAll(); }

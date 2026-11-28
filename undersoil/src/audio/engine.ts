@@ -12,8 +12,14 @@ export interface AudioEngine {
   chime(): void;
   /** 効果音：水をまく、水の橋がつながる、乾きの風、区画の目覚め */
   fx(kind: 'pour' | 'link' | 'wind' | 'awake'): void;
-  /** つながった水の橋の数。1 本ごとに、くり返す旋律の音が 1 つ増える */
-  setBridges(n: number): void;
+  /** つながっている水の橋（つながった順）。値は区域（0＝A 細菌、1＝B コルポダ、2＝C 種の岸）。1 本ごとに旋律の音が 1 つ増え、区域で楽器が変わる */
+  setBridges(zones: number[]): void;
+  /** 旋律の k 番目の音が、delay 秒後に鳴る（同じ瞬間に、その橋を光らせるため） */
+  onNote: ((k: number, delay: number) => void) | null;
+  /** 近くにいる生き物（0〜1）：細菌のさざめき、コルポダの繊毛の音、クマムシの足音 */
+  setNear(bact: number, colp: number, tardi: number): void;
+  /** 自分がつないだ順の旋律（区域の列）を、通して鳴らす。長さ（秒）を返す */
+  playSong(zones: number[]): number;
   /** 目覚め：重なってきた単音が、1 つの和音にまとまる */
   awaken(): void;
   setMuted(m: boolean): void;
@@ -30,7 +36,7 @@ const SCALE = [293.66, 329.63, 369.99, 440.0, 493.88, 587.33, 659.25, 739.99, 88
 const CHORD = [146.83, 220.0, 293.66, 369.99, 440.0, 587.33]; // D の和音（開いた配置）
 
 // 水の橋の旋律：橋が 1 本つながるごとに、この順で音が 1 つずつ加わる（最初は 1 音、8 本で 8 音のフレーズ）
-const MOTIF = [0, 4, 2, 5, 3, 7, 4, 8].map((i) => SCALE[i]);
+const MOTIF = [0, 4, 2, 5, 3, 7, 4, 8, 6, 5, 7, 8].map((i) => SCALE[i]);
 
 function noiseBuffer(ctx: AudioContext, sec: number, color: 'white' | 'brown' | 'pink') {
   const n = Math.floor(ctx.sampleRate * sec), buf = ctx.createBuffer(2, n, ctx.sampleRate);
@@ -74,7 +80,7 @@ export function createAudio(): AudioEngine {
   let ctx: AudioContext | null = null;
   let master: GainNode, music: GainNode, sfx: GainNode, verb: ConvolverNode, verbIn: GainNode;
   let dryBed: GainNode, wetBed: GainNode, surfBed: GainNode, under: BiquadFilterNode, rainLp: BiquadFilterNode, windBp: BiquadFilterNode, leafBp: BiquadFilterNode;
-  let vit = 0, mode: Mode = 'soil', growth = 0, chordDone = false, noteT = 1.5, bridges = 0, motifT = 2, awoken = false, dripT = 0.8, grainT = 0.2, gust = 0;
+  let vit = 0, mode: Mode = 'soil', growth = 0, chordDone = false, noteT = 1.5, bridges = 0, zones: number[] = [], motifT = 2, awoken = false, nb = 0, nc = 0, nt = 0, fizzT = 0, stepT = 0, stepL = false, cilia: GainNode | null = null, dripT = 0.8, grainT = 0.2, gust = 0;
   const api: AudioEngine = {
     muted: false,
     state: () => ({ bridges, awoken, running: !!ctx && ctx.state === 'running' }),
@@ -107,18 +113,30 @@ export function createAudio(): AudioEngine {
       const surfWind = ctx.createBiquadFilter(); surfWind.type = 'bandpass'; surfWind.frequency.value = 800; surfWind.Q.value = 0.4; surfWind.connect(surfBed); loop(pink, 0.9, surfWind, 1.0);
       // 開始の合図：鳴っていることがすぐ分かるように、静かな和音を1つ
       setTimeout(() => { if (ctx) [293.66, 440, 587.33].forEach((f, i) => piano(f, ctx!.currentTime + 0.05 + i * 0.12, 0.22, 5)); }, 300);
+      // コルポダの繊毛：帯域をしぼった雑音を、毎秒 7 回ほど細かく揺らす
+      { const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 1700; bp.Q.value = 2.5; cilia = ctx.createGain(); cilia.gain.value = 0;
+        const trem = ctx.createGain(); trem.gain.value = 0.6; const lfo = ctx.createOscillator(); lfo.frequency.value = 7; const lg = ctx.createGain(); lg.gain.value = 0.4; lfo.connect(lg).connect(trem.gain); lfo.start();
+        loop(pink, 0.8, bp); bp.connect(trem).connect(cilia).connect(sfx); }
       leafBp = ctx.createBiquadFilter(); leafBp.type = 'bandpass'; leafBp.frequency.value = 3800; leafBp.Q.value = 0.8; leafBp.connect(surfBed); loop(white, 0.09, leafBp);
     },
     setVitality(v) { vit = Number.isFinite(v) ? v : 0; },
     setMode(m) { if (m !== mode) { mode = m; growth = 0; chordDone = false; } },
     setGrowth(g) { growth = g; },
     pause(p) { if (!ctx) return; if (p) void ctx.suspend(); else void ctx.resume(); },
-    setBridges(n) {
-      n = Math.max(0, Math.min(MOTIF.length, Math.floor(Number.isFinite(n) ? n : 0)));
+    onNote: null,
+    setBridges(zs) {
+      const n = Math.min(MOTIF.length, zs.length);
       if (ctx && n > bridges) {   // 新しい音：まず加わった音を少し強く鳴らし、すぐ後に、増えたフレーズを通して聞かせる
-        const t = ctx.currentTime; piano(MOTIF[n - 1], t + 0.05, 0.24, 5); motifT = 1.6;
+        const t = ctx.currentTime; voice(zs[n - 1], MOTIF[n - 1], t + 0.05, 0.24, 5); api.onNote?.(n - 1, 0.05); motifT = 1.6;
       }
-      bridges = n;
+      bridges = n; zones = zs.slice(0, n);
+    },
+    setNear(b, c, d) { nb = fin(b); nc = fin(c); nt = fin(d); },
+    playSong(zs) {
+      if (!ctx || !zs.length) return 0; const t = ctx.currentTime + 0.1, step = 0.36;
+      zs.forEach((z, k) => voice(z, MOTIF[k % MOTIF.length] * (k >= MOTIF.length ? 2 : 1), t + k * step, 0.2, 3.5));
+      const end = t + zs.length * step + 0.3; CHORD.forEach((f, i) => piano(f, end + i * 0.05, 0.16, 7));
+      return zs.length * step + 3;
     },
     awaken() {
       if (!ctx || awoken) return; awoken = true; const t = ctx.currentTime;
@@ -160,7 +178,11 @@ export function createAudio(): AudioEngine {
         // ピアノの単音：活力が上がるほど、音の数と高さが増える
         // 水の橋の旋律：つながった本数だけの音を、間をあけてくり返す（1 本なら 1 音、増えるほどフレーズになる）
         if (bridges > 0) { motifT -= dt; if (motifT <= 0) { const step = 0.42; motifT = bridges * step + 3.2;
-          for (let k = 0; k < bridges; k++) piano(MOTIF[k], t + k * step, 0.11 + vit * 0.06, 3.5); } }
+          for (let k = 0; k < bridges; k++) { voice(zones[k] ?? 0, MOTIF[k], t + k * step, 0.11 + vit * 0.06, 3.5); api.onNote?.(k, k * step); } } }
+        // 近くの生き物の音
+        fizzT -= dt; if (nb > 0.05 && fizzT <= 0) { fizzT = 0.03 + Math.random() * 0.25 / nb; fizz(t, nb); }   // 細菌：細かいさざめき（数が多いほど密に）
+        cilia?.gain.setTargetAtTime(nc * 0.16 + 0.0001, t, 0.3);                                                // コルポダ：体じゅうの繊毛が水をかく、やわらかい音
+        stepT -= dt; if (nt > 0.05 && stepT <= 0) { stepT = 0.55 + Math.random() * 0.25; stepL = !stepL; footstep(t, nt, stepL); }   // クマムシ：ゆっくりした足音
         // ピアノの単音：活力が上がるほど、音の数と高さが増える（旋律が鳴っている間は控えめに）
         noteT -= dt; if (noteT <= 0) { noteT = 2.6 + Math.random() * 3.2 - vit * 1.6 + bridges * 0.5; if (vit > 0.15) { const top = Math.min(SCALE.length - 1, 2 + Math.floor(vit * (SCALE.length - 2))); piano(SCALE[Math.floor(Math.random() * (top + 1))], t, 0.16 + vit * 0.1); } }
       } else {
@@ -171,6 +193,30 @@ export function createAudio(): AudioEngine {
     },
   };
 
+  const fin = (v: number) => (Number.isFinite(v) ? Math.max(0, Math.min(1, v)) : 0);
+  /** 区域ごとの楽器：A＝ピアノ、B＝木琴に近い音（倍音が 4 倍・10 倍で、すぐ消える）、C＝鐘の響き */
+  function voice(z: number, f: number, t: number, vol: number, len: number) {
+    if (z === 1) marimba(f, t, vol * 1.2); else if (z === 2) { bell(f, t, vol * 0.55, len * 1.3, music); piano(f / 2, t, vol * 0.35, len); } else piano(f, t, vol, len);
+  }
+  function marimba(f: number, t: number, vol: number) {
+    const g = ctx!.createGain(); g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + 0.003); g.gain.exponentialRampToValueAtTime(0.0001, t + 1.1);
+    const pan = ctx!.createStereoPanner(); pan.pan.value = (Math.random() - 0.5) * 0.6; g.connect(pan).connect(music);
+    [[1, 1, 1.1], [3.99, 0.3, 0.25], [10.1, 0.08, 0.08]].forEach(([h, a, d]) => { const o = ctx!.createOscillator(); o.frequency.value = f * h; const og = ctx!.createGain(); og.gain.setValueAtTime(a, t); og.gain.exponentialRampToValueAtTime(0.0001, t + d); o.connect(og).connect(g); o.start(t); o.stop(t + 1.2); });
+  }
+  /** 細菌のさざめき：ごく短く高い、かすかなはじけ */
+  function fizz(t: number, k: number) {
+    const o = ctx!.createOscillator(), g = ctx!.createGain(), pan = ctx!.createStereoPanner(); const f = 3500 + Math.random() * 4000;
+    o.frequency.setValueAtTime(f, t); o.frequency.exponentialRampToValueAtTime(f * 0.7, t + 0.02);
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.012 + 0.02 * k, t + 0.002); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.03);
+    pan.pan.value = (Math.random() - 0.5) * 1.8; o.connect(g).connect(pan).connect(sfx); o.start(t); o.stop(t + 0.05);
+  }
+  /** クマムシの足音：やわらかく低い、短い音を左右交互に */
+  function footstep(t: number, k: number, left: boolean) {
+    const o = ctx!.createOscillator(), g = ctx!.createGain(), pan = ctx!.createStereoPanner();
+    o.frequency.setValueAtTime(120, t); o.frequency.exponentialRampToValueAtTime(55, t + 0.12);
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.18 * k, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
+    pan.pan.value = left ? -0.35 : 0.35; o.connect(g).connect(pan).connect(sfx); o.start(t); o.stop(t + 0.2);
+  }
   /** ピアノに似た音：倍音を重ね、速く立ち上がってゆっくり減衰する */
   function piano(f: number, t: number, vol: number, len = 4) {
     const g = ctx!.createGain(); g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + 0.006); g.gain.exponentialRampToValueAtTime(vol * 0.35, t + 0.4); g.gain.exponentialRampToValueAtTime(0.0001, t + len);

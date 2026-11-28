@@ -4,6 +4,7 @@
 //   ・姿の特徴、動き方、土の中での働き、関係を、短い文章で読める（文章は台帳 SPECIES.md から scripts/zukan-text.py で写したもの）
 //   ・出会っていないものは、輪郭（黒い影）だけを表示する
 // 3D の表示には、図鑑を開いている間だけ小さな描画を 1 つ作り、閉じると捨てる（本体の描画は、その間止める）。
+import { askOf } from './card';
 import * as THREE from 'three/webgpu';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { SPECIES, type Species } from '../game/species';
@@ -96,7 +97,7 @@ export function makeZukan(base: string, onOpenChange: (open: boolean) => void) {
     const row = (k: string, v?: string) => (v ? `<dt>${k}</dt><dd>${v}</dd>` : '');
     return `<h3>${s.title ?? s.nameJa}</h3>${s.sci ? `<p class="zk-sci"><i>${s.sci}</i>　${s.taxon ?? ''}</p>` : ''}
       <p class="zk-size-t"><b>${s.size}</b>　${s.sizeCompare}</p>${sizeRow(s.id)}
-      <dl>${row('姿（すがた）', s.look)}${row('動き方', s.motion)}${row('土の中での働き', s.role)}${row('関係', s.relations)}</dl>`;
+      <dl>${row('姿（すがた）', s.look)}${row('動き方', s.motion)}${row('土の中での働き', s.role)}${row('関係', s.relations)}</dl>${(() => { const k = askOf(s.id); return k ? `<details class="zk-ask"><summary><b>考えてみよう</b>${k.q}<span>答えを見る</span></summary><p>${k.a}</p></details>` : ''; })()}`;
   };
   const render = () => {
     dlg.innerHTML = `<div class="zk-head"><h2>図鑑（ずかん）<small>${ORDER.filter((id) => met.has(id)).length} / ${ORDER.length}</small></h2><button type="button" class="btn" data-close>とじる</button></div>

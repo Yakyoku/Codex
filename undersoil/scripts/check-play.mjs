@@ -30,12 +30,15 @@ ok('道しるべ 7：風を乗りきる', await until(() => document.querySelect
 console.log('step', await step(), await ev(() => JSON.stringify({ wind: document.querySelector('.wind').className, w: window.__game.world.grid.cells.slice(9).map((c) => +c.water.toFixed(2)), toast: document.querySelector('.tool-toast').textContent })));
 for (let c = 0; c < 12; c++) { await pour(c); await page.waitForTimeout(400); }
 ok('種が目覚める', await until(() => window.__game.wake > 0.5, 120000));
-ok('音：橋の数だけ旋律の音が重なり、目覚めで和音', await until(() => { const a = window.__audio?.state(); return a && a.bridges >= 3 && a.awoken; }, 20000));
+ok('音：橋の数だけ旋律の音が重なり、目覚めで和音', await until(() => { const a = window.__audio?.state(); return a && a.bridges >= 3 && a.awoken && window.__bsong.song.length >= 3; }, 20000));
 console.log('audio', await ev(() => JSON.stringify(window.__audio.state())));
 await ev(() => { const g = window.__game; g.camera.position.copy(g.seed.position).add({ x: -70, y: 2, z: 0 }); });
 ok('ゴールの知らせ', await until(() => document.querySelector('.goal').classList.contains('on') || document.body.classList.contains('surface'), 60000));
 ok('地上の場面へ', await until(() => document.body.classList.contains('surface'), 120000));
 ok('結果の画面', await until(() => !!document.querySelector('dialog.result')?.open, 240000));
 const res = await ev(() => document.querySelector('dialog.result')?.textContent?.replace(/\s+/g, ' ').slice(0, 160));
+ok('土の歌：結果の画面で聞けて、ノートに残せる', await ev(() => { const r = document.querySelector('dialog.result'); const p = r.querySelector('[data-play]'), k = r.querySelector('[data-keep]'); if (!p || !k) return false; p.click(); k.click(); return window.__bsong.song.length >= 8 && JSON.parse(localStorage.getItem('undersoil.songs') ?? '[]').length > 0; }));
+ok('観察ノートに土の歌', await ev(() => { document.querySelector('dialog.result [data-nb]').click(); const n = [...document.querySelectorAll('dialog.notebook')].find((d) => d.open); const b = n?.querySelector('[data-song]'); b?.click(); return !!b; }));
+console.log('song', await ev(() => JSON.stringify(window.__bsong.song)), 'audio', await ev(() => JSON.stringify(window.__audio.state())));
 console.log(steps.join('\n')); console.log('結果:', res); console.log('errors=', JSON.stringify(logs.errors.slice(0, 5)), '404=', JSON.stringify(logs.notFound));
 await browser.close(); process.exit(steps.some((s) => s.startsWith('NG')) || logs.errors.length ? 1 : 0);

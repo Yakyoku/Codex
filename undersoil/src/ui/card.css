@@ -21,3 +21,8 @@
 @media (max-width: 720px) { .card { bottom: 178px; font-size: 13px; } }
 .card-where { display: none; font-size: .68em; color: var(--accent); opacity: .85; margin: -.15em 0 .3em; letter-spacing: .08em; }
 .card.pointing .card-where { display: block; }
+
+.card .card-ask { margin: .7em 0 0; padding: .55em .75em; border-radius: 10px; background: rgba(255, 214, 120, .08); border: 1px solid rgba(255, 214, 120, .22); font-size: .84em; line-height: 1.6; color: rgba(255, 238, 200, .95); }
+.card .card-ask:empty { display: none; }
+.card .card-ask b { display: block; font-size: .78em; letter-spacing: .12em; color: #ffd678; font-weight: 600; margin-bottom: .1em; }
+.card .card-ask small { display: block; margin-top: .25em; font-size: .78em; color: var(--dim); }

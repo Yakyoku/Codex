@@ -10,6 +10,7 @@ import { pushOut } from '../game/controls';
 import { makeHud } from './hud';
 import { buildSurface } from '../game/surface';
 import { makeTools } from '../game/tools';
+import { makeBridgeSong } from '../game/bridgeSong';
 import { createAudio } from '../audio/engine';
 
 const errors: string[] = [];
@@ -49,7 +50,7 @@ async function main() {
   const toggleBtn = document.createElement('button'); toggleBtn.className = 'btn'; toggleBtn.textContent = '地上を見る'; document.querySelector('.nav')!.prepend(toggleBtn);
   toggleBtn.addEventListener('click', () => goTo(where === 'soil' ? 'surface' : 'soil'));
   // ---- M2：VR の道具と、酔いにくさの設定
-  const audio = createAudio();   // VR でも画面版と同じ音（土の活力で変わる環境音、効果音）。「VR で遊ぶ」を押したときに鳴らし始める
+  const audio = createAudio(); const bsong = makeBridgeSong(game, audio);   // VR でも画面版と同じ音（土の活力で変わる環境音、効果音）。「VR で遊ぶ」を押したときに鳴らし始める
   const tools = makeTools(scene, camera, world, game.seed.position, () => audio.chime(), (p, k) => { game.swarm.attract(p, k); game.swarm2.attract(p, k); }, (k) => audio.fx(k));
   const opt = (id: string, key: string) => { const el = $(id) as HTMLSelectElement; try { const v = localStorage.getItem(key); if (v) el.value = v; } catch { /* noop */ } el.addEventListener('change', () => { try { localStorage.setItem(key, el.value); } catch { /* noop */ } }); return el; };
   const optSnap = opt('optSnap', 'undersoil.vr.snap'), optVig = opt('optVig', 'undersoil.vr.vig'), optSpeed = opt('optSpeed', 'undersoil.vr.speed');
@@ -144,7 +145,7 @@ async function main() {
         wristT -= dt; if (wrist.visible && wristT <= 0) { wristT = 0.4; drawWrist(headW); }
       }
     }
-    audio.setMode(where); audio.setVitality(world.grid.mean()); { let nb = 0; for (const L of world.grid.links) nb += L.size; audio.setBridges(nb / 2); } if (game.wake > 0.5) audio.awaken(); audio.setGrowth(surface.growth); audio.update(dt);
+    audio.setMode(where); audio.setVitality(world.grid.mean()); bsong.update(camera.getWorldPosition(new THREE.Vector3())); audio.setGrowth(surface.growth); audio.update(dt);
     demo.update(dt); game.update(dt, now / 1000);
     if (fadeT > 0) { renderer.setClearColor(0x000000, 1); renderer.clear(); }   // 切り替えの暗転
     else renderer.render(where === 'soil' ? scene : surface.scene, camera);

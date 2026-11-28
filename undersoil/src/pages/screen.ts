@@ -17,7 +17,7 @@ import { buildColloids } from '../game/colloids';
 import { makeTools } from '../game/tools';
 import { makeQuest } from '../game/quest';
 import { makeSizes } from '../ui/sizes';
-import { makeNotebook } from '../ui/notebook';
+import { makeNotebook, saveSong, songDots } from '../ui/notebook';
 import { makeZukan } from '../ui/zukan';
 import { makeEncounters } from '../game/encounters';
 import { SPECIES } from '../game/species';
@@ -25,6 +25,7 @@ import { showCard } from '../ui/card';
 import { makePointer } from '../ui/pointer';
 import type { Target } from '../game/encounters';
 import { mountSettings, savedTier, savedBob, savedSpeed, savedLook, savedSwim } from '../ui/settings';
+import { makeBridgeSong } from '../game/bridgeSong';
 import { createAudio } from '../audio/engine';
 import { makeHud } from './hud';
 
@@ -84,7 +85,7 @@ async function main() {
   surfaceCam = surface.camera; resize();
   if (mode === 'surface') { document.body.classList.add('surface'); renderer.toneMappingExposure = 0.9; }
   let started = false;
-  const audio = createAudio(); W.__audio = audio;   // 確認用
+  const audio = createAudio(); W.__audio = audio; const bsong = makeBridgeSong(game, audio); W.__bsong = bsong;   // 確認用
   try { audio.muted = localStorage.getItem('undersoil.muted') === '1'; } catch { /* noop */ }
   const demo = makeDemo(world);
   const controls = makeFreeControls(camera, canvas, world.colliders, $('stick'));
@@ -133,7 +134,7 @@ async function main() {
   $('scanBtn').addEventListener('click', () => tools.scan()); $('sugarBtn').addEventListener('click', () => tools.sugar());
   const scope = await buildMicroscope('./');
   const sizes = makeSizes('./');
-  const notebook = makeNotebook('./', (id) => scope.show(id, SPECIES[id]?.title ?? SPECIES[id]?.nameJa ?? ''));
+  const notebook = makeNotebook('./', (id) => scope.show(id, SPECIES[id]?.title ?? SPECIES[id]?.nameJa ?? ''), (z) => { audio.start(); audio.playSong(z); });
   $('sizes').addEventListener('click', () => sizes.open());
   $('notebook').addEventListener('click', () => notebook.open());
   let zukanOpen = false; const zukan = makeZukan('./', (o) => { zukanOpen = o; last = 0; });   // 図鑑を開いている間は、本体の描画を止める
@@ -143,7 +144,10 @@ async function main() {
   const showResult = () => { resultShown = true; const st = tools.stats, n = notebook.count();
     result.innerHTML = `<h2>今回（こんかい）の記録（きろく）</h2><p class="nb-lead">種が目を覚まし、地上で芽が開きました。</p>
       <div class="res-grid"><div><b>${st.pours}</b><span>水をまいた回数</span></div><div><b>${st.links}</b><span>つないだ水の橋</span></div><div><b>${st.awakened}</b><span>目覚めた区画（12 のうち）</span></div><div><b>${st.sugars}</b><span>置いた糖のしずく</span></div><div><b>${n}</b><span>出会った生き物（6 のうち）</span></div><div><b>${tools.wind === 'done' ? (st.windSurvived ? '○' : '△') : '—'}</b><span>乾きの風</span></div></div>
+      ${bsong.song.length ? `<div class="res-song"><b>自分の土の歌</b><span>つないだ水の橋の順に、音が並んでいます ${songDots(bsong.song)}</span><div><button type="button" class="btn primary" data-play>▶ 聞く</button><button type="button" class="btn" data-keep>観察ノートに残す</button></div></div>` : ''}
       <div class="nb-actions"><button type="button" class="btn primary" data-nb>観察ノートを見る</button><button type="button" class="btn" data-close>とじる</button></div>`;
+    result.querySelector('[data-play]')?.addEventListener('click', () => { audio.start(); audio.playSong(bsong.song); });
+    result.querySelector('[data-keep]')?.addEventListener('click', (e) => { const b = e.currentTarget as HTMLButtonElement; b.disabled = true; b.textContent = saveSong(bsong.song) ? 'ノートに残しました' : '残せませんでした'; });
     result.querySelector('[data-close]')!.addEventListener('click', () => result.close()); result.querySelector('[data-nb]')!.addEventListener('click', () => { result.close(); notebook.open(); }); result.showModal(); };
   // 気づきを送る：その場の位置と一言を、Netlify のフォーム（feedback）で届ける
   $('fb').addEventListener('click', async () => { const note = prompt('気になった所・気づいたことを書いてください'); if (!note) return;
@@ -303,7 +307,7 @@ async function main() {
       underFocus.value += (Math.max(2, Math.min(visit ? 80 : 30, d)) - underFocus.value) * (1 - Math.exp(-dt * (visit ? 0.9 : 3)));
       { const k = 1 - Math.exp(-dt * 2), vr = visit ? Math.max(0.8, visit.dist * 0.3) : 8, vb = visit ? 4.0 : 2.2; underRange.value += (vr - underRange.value) * k; underBokeh.value += (vb - underBokeh.value) * k; }
     }
-    audio.setMode(mode); audio.setVitality(world.grid.mean()); { let nb = 0; for (const L of world.grid.links) nb += L.size; audio.setBridges(nb / 2); } if (game.wake > 0.5) audio.awaken(); audio.setGrowth(surface.growth); audio.update(dt);
+    audio.setMode(mode); audio.setVitality(world.grid.mean()); bsong.update(camera.position); audio.setGrowth(surface.growth); audio.update(dt);
     hud.tick(now); frames++;
     const vit = Math.round(world.grid.mean() * 100);
     $('sprout').textContent = mode === 'soil' ? '地上を見る' : '土の中へ戻る';

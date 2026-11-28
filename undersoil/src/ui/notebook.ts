@@ -12,7 +12,13 @@ const KEY = 'undersoil.met', KSTAMP = 'undersoil.stamps', KNOTE = 'undersoil.not
 type Note = { text: string; date: string; photo?: string };
 const shuffle = <T,>(a: T[]) => { const b = a.slice(); for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; } return b; };
 
-export function makeNotebook(base: string, open: (id: string) => void) {
+/** 土の歌：遊ぶたびに、つないだ水の橋の順でできる旋律（値は区域 0/1/2）。観察ノートに残して、あとで聞き直せる */
+const KSONG = 'undersoil.songs';
+export type Song = { d: string; z: number[] };
+export const loadSongs = (): Song[] => { try { const a = JSON.parse(localStorage.getItem(KSONG) ?? '[]'); return Array.isArray(a) ? a : []; } catch { return []; } };
+export const saveSong = (z: number[]) => { const a = loadSongs(); a.unshift({ d: new Date().toISOString(), z }); try { localStorage.setItem(KSONG, JSON.stringify(a.slice(0, 12))); return true; } catch { return false; } };
+export const songDots = (z: number[]) => `<span class="song-dots">${z.map((k) => `<i class="z${k}"></i>`).join('')}</span>`;
+export function makeNotebook(base: string, open: (id: string) => void, play?: (z: number[]) => void) {
   let met = new Set<string>(); try { met = new Set(JSON.parse(localStorage.getItem(KEY) ?? '[]')); } catch { /* 使えないときは、その場かぎり */ }
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify([...met])); } catch { /* noop */ } };
   let stamps = 0; try { stamps = Number(localStorage.getItem(KSTAMP) ?? 0); } catch { /* noop */ }
@@ -29,10 +35,12 @@ export function makeNotebook(base: string, open: (id: string) => void) {
       <div class="nb-grid">${ORDER.map((id) => met.has(id)
         ? `<button type="button" class="nb-card" data-id="${id}"><img src="${thumb(id)}" alt=""><b>${SPECIES[id]?.title ?? SPECIES[id]?.nameJa ?? id}</b>${notes[id] ? '<em>✎ 観察メモあり</em>' : ''}</button>`
         : `<div class="nb-card nb-off"><i>？</i><b>まだ会っていない</b></div>`).join('')}</div>
+      ${loadSongs().length ? `<div class="nb-songs"><h3>土の歌 <small>つないだ水の橋の順でできた旋律。● 区域 A（ピアノ）● 区域 B（木琴）● 区域 C（鐘）</small></h3>${loadSongs().map((sg, i) => `<button type="button" class="btn nb-song" data-song="${i}">▶ ${new Date(sg.d).toLocaleDateString('ja-JP', { month: 'long', day: 'numeric' })}　${sg.z.length} 音 ${songDots(sg.z)}</button>`).join('')}</div>` : ''}
       <div class="nb-actions"><button type="button" class="btn" data-notes>自分の観察を書く</button><button type="button" class="btn primary" data-quiz ${quizItems().length < 2 ? 'disabled' : ''}>部分の名前クイズ</button><button type="button" class="btn" data-close>とじる</button></div>
       ${quizItems().length < 2 ? '<p class="nb-hint">クイズは、生き物に 2 種類以上会うとできます。</p>' : ''}`;
     dlg.querySelectorAll<HTMLButtonElement>('.nb-card[data-id]').forEach((b) => b.addEventListener('click', () => { dlg.close(); open(b.dataset.id!); }));
     dlg.querySelector('[data-close]')!.addEventListener('click', () => dlg.close());
+    dlg.querySelectorAll<HTMLButtonElement>('[data-song]').forEach((b) => b.addEventListener('click', () => { const sg = loadSongs()[+b.dataset.song!]; if (sg) play?.(sg.z); }));
     dlg.querySelector<HTMLButtonElement>('[data-quiz]')!.addEventListener('click', startQuiz);
     dlg.querySelector<HTMLButtonElement>('[data-notes]')!.addEventListener('click', renderNotes);
   };

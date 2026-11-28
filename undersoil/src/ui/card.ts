@@ -1,6 +1,9 @@
 // 初登場時の紹介カード（画面版は HTML）。字幕と、ブラウザの読み上げ機能による仮のナレーションを付ける。
 import './card.css';
 import type { Species } from '../game/species';
+import ASKS from '../data/asks.json';
+/** 紹介のあとの問いかけ（答えは図鑑で見つかる） */
+export const askOf = (id: string) => (ASKS as unknown as Record<string, { q: string; a: string } | undefined>)[id];
 
 export type IntroMode = 'all' | 'name' | 'off';
 export function introMode(): IntroMode { try { const v = localStorage.getItem('undersoil.intro'); if (v === 'name' || v === 'off') return v; } catch { /* noop */ } return 'all'; }
@@ -9,7 +12,7 @@ let el: HTMLElement | null = null; let timer = 0; let onDone: (() => void) | nul
 function root() {
   if (el) return el;
   el = document.createElement('div'); el.className = 'card'; el.setAttribute('role', 'status');
-  el.innerHTML = '<div class="card-tag">はじめての出会い</div><div class="card-where">✦ 画面で金色に光っているもの</div><h2></h2><div class="sci"></div><div class="size"><b></b><span></span></div><p></p><div class="card-foot"><button class="btn skip">次へ</button><i class="life"></i></div>';
+  el.innerHTML = '<div class="card-tag">はじめての出会い</div><div class="card-where">✦ 画面で金色に光っているもの</div><h2></h2><div class="sci"></div><div class="size"><b></b><span></span></div><p></p><div class="card-ask"></div><div class="card-foot"><button class="btn skip">次へ</button><i class="life"></i></div>';
   document.body.append(el);
   el.querySelector('.skip')!.addEventListener('click', () => hideCard());
   addEventListener('keydown', (e) => { if (e.code === 'Enter' && el!.classList.contains('show')) hideCard(); });
@@ -46,12 +49,14 @@ export function showCard(s: Species, opts: { narration?: boolean; done?: () => v
   r.querySelector('.size b')!.textContent = s.size; r.querySelector('.size span')!.textContent = s.sizeCompare;
   r.querySelector('p')!.textContent = mode === 'name' ? '' : s.intro;
   r.classList.toggle('name-only', mode === 'name');
+  const ask = mode === 'all' ? askOf(s.id) : undefined;
+  r.querySelector('.card-ask')!.innerHTML = ask ? `<b>考えてみよう</b>${ask.q}<small>答えは図鑑（ずかん）に</small>` : '';
   // 表示は 5〜8 秒（文の長さに合わせる）
-  const ms = opts.holdMs ?? (mode === 'name' ? 3500 : Math.max(5000, Math.min(8000, 2500 + s.intro.length * 90)));
+  const ms = opts.holdMs ?? (mode === 'name' ? 3500 : Math.max(5000, Math.min(ask ? 11000 : 8000, 2500 + (s.intro.length + (ask ? ask.q.length : 0)) * 90)));
   const life = r.querySelector('.life') as HTMLElement; life.style.transition = 'none'; life.style.width = '100%';
   requestAnimationFrame(() => { r.classList.add('show'); life.style.transition = `width ${ms}ms linear`; life.style.width = '0%'; });
   let say = true; try { say = localStorage.getItem('undersoil.say') !== 'off'; } catch { /* noop */ }
-  if (opts.narration !== false && mode === 'all' && say) narrate(`${s.nameJa}。${s.intro}`);
+  if (opts.narration !== false && mode === 'all' && say) narrate(`${s.nameJa}。${s.intro}${ask ? '　考えてみよう。' + ask.q : ''}`);
   clearTimeout(timer); timer = window.setTimeout(hideCard, ms);
 }
 export function hideCard() { if (!el) return; clearTimeout(timer); el.classList.remove('show'); try { window.speechSynthesis?.cancel(); } catch { /* noop */ } const d = onDone; onDone = null; d?.(); }
