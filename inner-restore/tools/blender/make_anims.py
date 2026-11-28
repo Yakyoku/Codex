@@ -316,6 +316,54 @@ cyclic("float", [(F_A, (0, 0, 0.02)), (F_B, (0, 0, -0.02))], 90)
 for e in [o for o in bpy.data.objects if o.name.startswith(("ik_", "pole_", "rot_"))]: bpy.data.objects.remove(e)
 for a in [a for a in bpy.data.actions if a.name.startswith(("ik_", "pole_", "rot_"))]: bpy.data.actions.remove(a)
 
+# ---------------- 手：指を軽く曲げた、力の抜けた形にする（安静の形そのものを変える） ----------------
+# 人の手は、力を抜くと指が自然に曲がる（付け根 約30°・第2関節 約45°・第1関節 約25°。親指は人さし指の横へ軽く寄る）。
+# 指を伸ばしたままの手は、歩き・走りで「手のひらを見せる、作った動き」に見える（持ち主の指摘）。
+import numpy as _np
+_JD = _np.load(os.path.join(L.OUT_MODELS, "mh_body.npz")); _J = {str(k): Vector(v) for k, v in zip(_JD["jn"], _JD["jp"])}
+def _seg_t(p, a, b):
+    ab = b - a; t = max(0.0, min(1.0, (p - a).dot(ab) / ab.length_squared)); return t, (a + ab * t - p).length
+def curl_hands(body, ang=(0.52, 0.8, 0.45), thumb=0.3):
+    mw = body.matrix_world; inv = mw.inverted(); vs = body.data.vertices; disp = {}
+    for pre in ("l-", "r-"):
+        wr = _J[pre + "hand"]
+        ch = {n: [_J[f"{pre}finger-{n}-{k}"] for k in (1, 2, 3, 4)] for n in range(1, 6)}
+        # 指の付け根の並び（人さし指→小指）と、手のひらの向き
+        across = (ch[5][0] - ch[2][0]).normalized(); along = ((ch[3][0] + ch[4][0]) / 2 - wr).normalized()
+        palm = across.cross(along).normalized()
+        knuck = (ch[2][0] + ch[3][0] + ch[4][0] + ch[5][0]) / 4
+        # 曲げる向き：指先が親指の付け根へ近づく向きを手のひら側とする
+        if ((ch[3][3] + palm * 0.01) - ch[1][1]).length > ((ch[3][3] - palm * 0.01) - ch[1][1]).length: palm = -palm
+        n_moved = 0
+        def rot_finger(p, n):
+            c = ch[n]; q = p.copy()
+            joints = [(c[2], c[3], ang[2]), (c[1], c[2], ang[1]), (c[0], c[1], ang[0])] if n != 1 else [(c[1], c[2], thumb * 0.6), (c[0], c[1], thumb)]
+            for j, nxt, a in joints:                      # 先の関節から順に、関節より先の部分を回す
+                dirn = (nxt - j).normalized()
+                w = max(0.0, min(1.0, ((p - j).dot(dirn) + 0.006) / 0.012))   # 関節の前後 6mm でなめらかに
+                if w <= 0: continue
+                axis = (ch[2][0] - c[0]).cross(dirn).normalized() if n == 1 else dirn.cross(palm).normalized()
+                q = j + Quaternion(axis, -a * w) @ (q - j)
+            return q
+        for v in vs:
+            p = mw @ v.co
+            if (p - wr).length > 0.25: continue
+            # 位置だけで決まる、なめらかな重み（スーツの面と手袋の殻が、同じだけ動く）
+            ds = {}
+            for n, c in ch.items():
+                ext = c[3] + (c[3] - c[2]).normalized() * 0.05
+                ds[n] = min(_seg_t(p, a2, b2)[1] for a2, b2 in ((c[0], c[1]), (c[1], c[2]), (c[2], c[3]), (c[3], ext)))
+            dmin = min(ds.values())
+            if dmin > 0.045: continue
+            ws = {n: _m.exp(-((d - dmin) / 0.004) ** 2) for n, d in ds.items()}; tot = sum(ws.values())
+            q = Vector()
+            for n, wn in ws.items(): q += rot_finger(p, n) * (wn / tot)
+            if (q - p).length > 1e-6: disp[v.index] = q - p; n_moved += 1
+        print("CURL", pre, n_moved)
+    for k, d in disp.items():
+        if d.length > 1e-7: vs[k].co = inv @ ((mw @ vs[k].co) + d)
+curl_hands(bpy.data.objects["body"])
+
 # ---------------- 書き出し ----------------
 rig.animation_data.action = None
 for pb in rig.pose.bones: pb.rotation_quaternion = (1, 0, 0, 0); pb.location = (0, 0, 0)

@@ -218,4 +218,4 @@
 - 見た目は A（現状）に決定（持ち主）。`?suit=matte|grey` は比較用に残してある（既定は変えない）。
 - 歩き・走りの腕：`make_anims.py` の `swing_arms()`／`aim_bone()`。胸を基準にした向きで上腕・前腕・手を決める（角度の足し算だと、安静の姿勢のひじの曲がり 約40°が乗って曲がりすぎた）。根拠は `Docs/REFERENCE/hero/gait.md`。
 - 作り直し：`python tools/blender/make_anims.py` → `node tools/pack-glb.mjs assets/models/diver.raw.glb public/static/models/diver.glb --plain 1 --ratio 1`。
-- 手の指は開いたまま（手は関節1つ）。握った形にするには make_hero.py で手の形を変える必要がある。
+- 手の形（2026-11-28）：`make_anims.py` の `curl_hands()` が、diver.blend を開いた直後に、指を軽く曲げた形へ体の頂点を動かす（MakeHuman の指の関節 `mh_body.npz` を使う。付け根 0.52・第2 0.8・第1 0.45 rad、親指 0.3）。重みは位置だけで決まる（指ごとの距離のガウス）ので、スーツと手袋の殻が同じだけ動く。diver.blend 自体は変えない。
