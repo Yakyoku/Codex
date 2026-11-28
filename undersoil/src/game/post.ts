@@ -6,7 +6,7 @@
 //     （AgX も試したが、地上の場面が白くかすんで、コントラストが落ちたのでやめた）
 //   ・レンズの癖：周辺のわずかな色ずれ（色収差）、周辺減光、にじみ（ブルーム）、粒状感
 import * as THREE from 'three/webgpu';
-import { pass, mrt, output, normalView, directionToColor, colorToDirection, screenUV, smoothstep, mix, float, vec3, vec4, time, fract, sin, dot, vec2, renderOutput } from 'three/tsl';
+import { sample, pass, mrt, output, normalView, directionToColor, colorToDirection, screenUV, smoothstep, mix, float, vec3, vec4, time, fract, sin, dot, vec2, renderOutput } from 'three/tsl';
 import { bloom } from 'three/addons/tsl/display/BloomNode.js';
 import { dof } from 'three/addons/tsl/display/DepthOfFieldNode.js';
 import { ao } from 'three/addons/tsl/display/GTAONode.js';
@@ -22,7 +22,11 @@ export function makePost(renderer: THREE.WebGPURenderer, scene: THREE.Scene, cam
   const color = scenePass.getTextureNode('output');
   let base = color;
   if (useAO) {
-    const aoPass = ao(scenePass.getTextureNode('depth'), colorToDirection(scenePass.getTextureNode('normal')), camera);
+    // GTAO は法線を「読み出せるもの」として受け取る（中で .sample(uv) する）。色に詰めた法線を、読み出すたびに向きへ戻す（three.js の例と同じ形）。
+    // 2026-11-28 に直した：前は colorToDirection(...) をそのまま渡していて、高画質の段階で TSL の組み立てエラーが出ていた
+    const normalTex = scenePass.getTextureNode('normal');
+    const sceneNormal = sample((uv: Parameters<typeof normalTex.sample>[0]) => colorToDirection(normalTex.sample(uv)));
+    const aoPass = ao(scenePass.getTextureNode('depth'), sceneNormal, camera);
     aoPass.resolutionScale = effects.includes('ao-half') ? 0.5 : 1;
     // 土の粒は半径が数単位〜数十単位。遮りを見る範囲は、細かい粒のすき間がちょうど暗くなる大きさ
     (aoPass as unknown as { radius: { value: number }; thickness: { value: number }; scale: { value: number }; samples: { value: number } }).radius.value = 1.6;

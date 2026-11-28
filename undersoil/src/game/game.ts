@@ -45,7 +45,10 @@ export async function createGame(renderer: THREE.WebGPURenderer, base: string, t
   // 菌根菌の菌糸：区域 A の終わりの胞子から、道に沿って種の岸まで（数値は src/data/hypha.json。出典は Docs/REFERENCE/am-fungus.md）
   const hypha = buildHypha(world, seed.position, { ...(HYPHA as unknown as HyphaOpts), lite }); scene.add(hypha.group);
   let wake = 0, root = 0;
-  { const hq = typeof location !== 'undefined' ? new URLSearchParams(location.search).get('hide') : null; if (hq) scene.traverse((o) => { if (hq.split(',').some((h) => o.name.startsWith(h))) o.visible = false; }); }
+  { const hq = typeof location !== 'undefined' ? new URLSearchParams(location.search).get('hide') : null; if (hq) scene.traverse((o) => { if (hq.split(',').some((h) => o.name.startsWith(h))) o.visible = false; });
+    // 確認用：?drop= は、名前が合うものを場面から取り除く（隠すだけだと、前もって描画の準備がされるため）
+    const dq = typeof location !== 'undefined' ? new URLSearchParams(location.search).get('drop') : null;
+    if (dq) { const rm: THREE.Object3D[] = []; scene.traverse((o) => { if (dq.split(',').some((h) => o.name.startsWith(h))) rm.push(o); }); for (const o of rm) o.removeFromParent(); } }
   const syncAll = () => { world.syncWetness(); bridges.sync((c) => world.grid.cells[c].water); swarm.sync((c) => world.grid.cells[c].microbes); swarm2.sync((c) => world.grid.cells[c].microbes * (world.grid.cells[c].water > 0.6 ? 1 : 0)); };   // シュードモナスは、水が十分にあるときだけ泳ぐ
   scene.environment = makeEnvironment(renderer);
   scene.environmentIntensity = 0.55;

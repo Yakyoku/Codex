@@ -69,7 +69,10 @@ export function buildHypha(world: World, seedPos: THREE.Vector3, o: HyphaOpts): 
   // 先の丸み（伸びている先端）
   const tip = new THREE.Mesh(new THREE.SphereGeometry(o.r, radial, 8), mat); group.add(tip);
   // 胞子：道の始まりの横に、丸い大きな粒（菌糸の付け根）
-  const spore = pts[0].clone().addScaledVector(curve.getTangentAt(0).negate(), o.spore * 0.9);
+  // 胞子は、道から離れた横に置く（道の上や近くだと、通り道と自動で巡るカメラの前をふさぐ）
+  const away = new THREE.Vector3().crossVectors(world.path.getTangentAt(o.uFrom), new THREE.Vector3(0, 1, 0)).normalize().multiplyScalar(Math.sign(o.side) || 1);
+  const spore = pts[0].clone().addScaledVector(away, o.spore * 1.15).addScaledVector(curve.getTangentAt(0), -o.spore * 0.25);
+  for (let k = 0; k < 8 && world.distToPath(spore) < o.spore + 4; k++) spore.addScaledVector(away, 1.5);
   for (let k = 0; k < 4; k++) pushOut(spore, world.colliders, o.spore);
   // 胞子：淡黄〜黄褐色の厚い壁（3 層、合わせて 数 µm）。中に、油の粒（脂質）がぎっしり詰まって透けて見える
   const sc0 = o.sporeColor;

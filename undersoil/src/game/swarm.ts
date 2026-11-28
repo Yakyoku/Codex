@@ -46,12 +46,17 @@ export function buildSwarm(colliders: Collider[], cellOf: (p: THREE.Vector3) => 
   }
   const n2 = k;
   type F = ReturnType<typeof float>; type V = ReturnType<typeof vec3>;
-  const aPos = instancedBufferAttribute(new THREE.InstancedBufferAttribute(pos.subarray(0, n2 * 3), 3)) as unknown as V;
-  const aTan = instancedBufferAttribute(new THREE.InstancedBufferAttribute(tang.subarray(0, n2 * 3), 3)) as unknown as V;
-  const aPh = instancedBufferAttribute(new THREE.InstancedBufferAttribute(ph.subarray(0, n2), 1)) as unknown as F;
-  const aScl = instancedBufferAttribute(new THREE.InstancedBufferAttribute(scl.subarray(0, n2 * 3), 3)) as unknown as V;
-  const aBright = instancedBufferAttribute(new THREE.InstancedBufferAttribute(bright.subarray(0, n2), 1)) as unknown as F;
-  const aSwim = instancedBufferAttribute(new THREE.InstancedBufferAttribute(swim.subarray(0, n2), 1)) as unknown as F;
+  // 1 個ずつの値（位置・向き・位相・大きさ・明るさ・泳ぎ）を、1 つのバッファに並べて渡す。
+  // 別々に渡すと、WebGPU の「頂点バッファは 8 本まで」を超えて、群れが描かれない（2026-11-28 に見つけて直した）
+  const PER = 12, pack = new Float32Array(n2 * PER);
+  for (let i = 0; i < n2; i++) { const o = i * PER; pack.set(pos.subarray(i * 3, i * 3 + 3), o); pack.set(tang.subarray(i * 3, i * 3 + 3), o + 3); pack[o + 6] = ph[i]; pack.set(scl.subarray(i * 3, i * 3 + 3), o + 7); pack[o + 10] = bright[i]; pack[o + 11] = swim[i]; }
+  const ib = new THREE.InstancedInterleavedBuffer(pack, PER);
+  const aPos = instancedBufferAttribute(ib, 'vec3', PER, 0) as unknown as V;
+  const aTan = instancedBufferAttribute(ib, 'vec3', PER, 3) as unknown as V;
+  const aPh = instancedBufferAttribute(ib, 'float', PER, 6) as unknown as F;
+  const aScl = instancedBufferAttribute(ib, 'vec3', PER, 7) as unknown as V;
+  const aBright = instancedBufferAttribute(ib, 'float', PER, 10) as unknown as F;
+  const aSwim = instancedBufferAttribute(ib, 'float', PER, 11) as unknown as F;
   const liveAttr = new THREE.InstancedBufferAttribute(new Float32Array(n2), 1); liveAttr.setUsage(THREE.DynamicDrawUsage);
   const live = instancedBufferAttribute(liveAttr) as unknown as F;
   const m = new THREE.MeshPhysicalNodeMaterial({ transparent: true, depthWrite: true });

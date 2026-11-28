@@ -13,6 +13,7 @@
   - 読み込み画面、紹介カード（`src/ui/card.ts`）、設定（`src/ui/settings.ts`）、VR 版（`src/pages/vr.ts`。同じ区画で見回す・歩く）
 - M1 の残り：下の「次の一手」。
 - 2026-11-28（夕）：**依頼書の M2「菌糸を滑る（M1 の環境の中で）」を、以前「ステージ4で作る」と自分で決めて後回しにしていた（依頼書との食い違い）。持ち主の「依頼書どおり順番に」を受けて M2 に戻した。** 実在のアーバスキュラー菌根菌 *Rhizophagus irregularis*（`src/game/hypha.ts`、`src/data/hypha.json`、調査 `REFERENCE/am-fungus.md`、第三者の事実確認 `FACTCHECK_stage1.md` 末尾）。滑走は `controls.ts`（riding）と `vr.ts`（toggleRide、乗り物の枠、視野を絞る）。振動 `src/core/haptics.ts`。確認：`scripts/check-ride.mjs`（画面版）、`scripts/check-vr-ride.mjs`（VR）、見え方 `scripts/shot-hypha.mjs`、動画 `scripts/video-m2.mjs`。
+- 2026-11-28（夜）：**WebGPU のエラー 2 件を見つけて直した（どちらも今日より前からあった）。** (1) 細菌の群れ（swarm.ts）の 1 個ずつの値が別々の 7 本の頂点バッファで、WebGPU の上限 8 本を超え、群れの描画の準備に失敗していた → 1 本の InstancedInterleavedBuffer にまとめた。(2) GTAO（post.ts）に法線を colorToDirection(...) のまま渡していて、高画質の段階で TSL の組み立てエラー（WebGL 2 でも）→ sample() で包んだ。確かめ方：`GPUDevice.prototype.createRenderPipelineAsync` を包んで、頂点バッファが 8 本を超える描画の準備を記録する。なお、この環境の WebGPU（swiftshader）は、数秒で「Device Lost（Instance dropped）」になる。今朝の版でも、互換モードでも同じなので、環境の制限と判断した（実機の診断で確かめる）。
 - 2026-11-28：紹介の読み上げ（やさしい女性の声、声・速さを設定で選べる）と、水の橋の旋律・目覚めの和音を追加（GDD §9）。続けて、提案5つ（橋の音と光、区域ごとの楽器、生き物の音、紹介の問いかけ、土の歌）を追加。次は、週末の実機確認の結果を待って、道のりの長さ（15〜25 分）を調整する。
 
 ## 公開 URL
