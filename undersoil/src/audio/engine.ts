@@ -99,7 +99,7 @@ export function createAudio(): AudioEngine {
       setTimeout(() => { if (ctx) [293.66, 440, 587.33].forEach((f, i) => piano(f, ctx!.currentTime + 0.05 + i * 0.12, 0.22, 5)); }, 300);
       leafBp = ctx.createBiquadFilter(); leafBp.type = 'bandpass'; leafBp.frequency.value = 3800; leafBp.Q.value = 0.8; leafBp.connect(surfBed); loop(white, 0.09, leafBp);
     },
-    setVitality(v) { vit = v; },
+    setVitality(v) { vit = Number.isFinite(v) ? v : 0; },
     setMode(m) { if (m !== mode) { mode = m; growth = 0; chordDone = false; } },
     setGrowth(g) { growth = g; },
     pause(p) { if (!ctx) return; if (p) void ctx.suspend(); else void ctx.resume(); },
@@ -119,6 +119,7 @@ export function createAudio(): AudioEngine {
     },
     update(dt) {
       if (!ctx || ctx.state !== 'running') return;
+      if (!Number.isFinite(dt) || dt < 0) dt = 0; if (!Number.isFinite(vit)) vit = 0; if (!Number.isFinite(gust)) gust = 0;   // VR の描画ループは、時刻が渡らないコマがある
       const t = ctx.currentTime, soil = mode === 'soil' ? 1 : 0;
       gust += dt * 0.13;
       const gustAmt = 0.55 + 0.45 * Math.sin(gust) * Math.sin(gust * 0.37 + 1);

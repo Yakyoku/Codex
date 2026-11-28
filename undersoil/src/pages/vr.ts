@@ -112,6 +112,7 @@ async function main() {
   const vel = new THREE.Vector3(), want = new THREE.Vector3(), head = new THREE.Vector3(), fwd = new THREE.Vector3(), right = new THREE.Vector3(), q = new THREE.Quaternion();
   let snapReady = true, frames = 0, last = 0;
   renderer.setAnimationLoop((now: number) => {
+    if (!Number.isFinite(now)) now = performance.now();   // XR のコマでは時刻が渡らないことがある
     const dt = last ? Math.min(0.1, (now - last) / 1000) : 0; last = now;
     if (fadeT > 0) { fadeT -= dt; if (fadeT <= 0.17 && pending) doSwitch(); }
     if (where === 'surface') { growT += dt; surface.setGrowth(Math.min(1, growT / 26)); surface.update(dt, now / 1000); }
@@ -120,7 +121,8 @@ async function main() {
       let mx = 0, mz = 0, tx = 0;
       for (const src of session.inputSources) { const a = src.gamepad?.axes; if (!a) continue; const x = a[2] ?? a[0] ?? 0, y = a[3] ?? a[1] ?? 0; if (src.handedness === 'left') { mx = Math.abs(x) > 0.15 ? x : 0; mz = Math.abs(y) > 0.15 ? y : 0; } else if (src.handedness === 'right') tx = x; }
       if (Math.abs(tx) > 0.6 && snapReady) { rig.rotation.y -= Math.sign(tx) * Number(optSnap.value) * Math.PI / 180; snapReady = false; } else if (Math.abs(tx) < 0.3) snapReady = true;
-      const xrCam = renderer.xr.getCamera(); xrCam.getWorldQuaternion(q);
+      // 頭の位置と向きは、体（リグ）に付いたカメラから取る。renderer.xr.getCamera() は体の移動と向き変えを含まないことがある（2026-11-28 に見つけた不具合）
+      const xrCam = camera; xrCam.getWorldQuaternion(q);
       fwd.set(0, 0, -1).applyQuaternion(q); right.set(1, 0, 0).applyQuaternion(q);
       want.set(0, 0, 0).addScaledVector(fwd, -mz).addScaledVector(right, mx); if (want.lengthSq() > 1) want.normalize();
       vel.lerp(want.multiplyScalar(3.2 * Number(optSpeed.value)), 1 - Math.exp(-dt * 3));
@@ -129,7 +131,7 @@ async function main() {
       if (where === 'soil') { xrCam.getWorldPosition(head); const before = head.clone(); pushOut(head, world.colliders, 0.7); rig.position.add(head.sub(before)); }
     } else camera.rotation.set(pitch, yaw, 0, 'YXZ');
     { // 道具と酔いにくさ
-      const headW = (renderer.xr.isPresenting ? renderer.xr.getCamera() : camera).getWorldPosition(new THREE.Vector3());
+      const headW = camera.getWorldPosition(new THREE.Vector3());
       tools.update(dt, headW);
       // 種のゴール（画面版と同じ流れ）：乾きの風のあと、種が目覚めて、種のそばまで来ていたら、地上の芽生えへ。土の中で根が出ていた分だけ、芽生えも先から始まる
       if (where === 'soil' && !vrGoalDone && game.wake > 0.5 && headW.distanceTo(game.seed.position) < 95 && tools.wind !== 'on') { vrGoalDone = true; audio.chime(); goTo('surface'); }
@@ -147,7 +149,7 @@ async function main() {
     if (fadeT > 0) { renderer.setClearColor(0x000000, 1); renderer.clear(); }   // 切り替えの暗転
     else renderer.render(where === 'soil' ? scene : surface.scene, camera);
     hud.tick(now); frames++;
-    W.__vr = { tools, game, rig, goTo, get where() { return where; } };   // 確認用
+    W.__vr = { tools, game, rig, goTo, get where() { return where; }, cam: () => camera.getWorldPosition(new THREE.Vector3()) };   // 確認用
     W.__state = { ready: frames > 3, frames, isWebGPU, supported, presenting: renderer.xr.isPresenting, errors, stats: world.stats };
   });
 }
