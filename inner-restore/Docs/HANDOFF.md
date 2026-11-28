@@ -219,3 +219,4 @@
 - 歩き・走りの腕：`make_anims.py` の `swing_arms()`／`aim_bone()`。胸を基準にした向きで上腕・前腕・手を決める（角度の足し算だと、安静の姿勢のひじの曲がり 約40°が乗って曲がりすぎた）。根拠は `Docs/REFERENCE/hero/gait.md`。
 - 作り直し：`python tools/blender/make_anims.py` → `node tools/pack-glb.mjs assets/models/diver.raw.glb public/static/models/diver.glb --plain 1 --ratio 1`。
 - 手の形（2026-11-28）：`make_anims.py` の `curl_hands()` が、diver.blend を開いた直後に、指を軽く曲げた形へ体の頂点を動かす（MakeHuman の指の関節 `mh_body.npz` を使う。付け根 0.52・第2 0.8・第1 0.45 rad、親指 0.3）。重みは位置だけで決まる（指ごとの距離のガウス）ので、スーツと手袋の殻が同じだけ動く。diver.blend 自体は変えない。
+- コンソールのエラーの総点検（2026-11-28）：`npm run build` → `node scripts/check-errors.mjs`（約30分）。全21区域の画面版・VR 版、タイトル・診断・進捗で エラー 0（WebGL 2）。警告は、この環境に WebGPU が無いこと・ソフトウェア描画の読み戻しの遅さ（GPU stall due to ReadPixels）だけ。WebGPU でのエラーは実機の /diag/ で確認する。
